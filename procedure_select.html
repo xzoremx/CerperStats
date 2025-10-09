@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Procedimiento - CerperStats</title>
+  <link rel="stylesheet" href="css/procedure_select.css" />
+  
+
+</head>
+
+<body>
+  <header class="header">
+    <img src="assets/logos/cerper_logo.png" alt="CERPER" class="logo" />
+    <h1 id="lab-title">Procedimientos</h1>
+  </header>
+
+  <main class="container">
+    <section class="intro">
+      <p id="lab-info">Seleccione el tipo de procedimiento que desea realizar para su laboratorio.</p>
+    </section>
+
+    <section class="procedures">
+      <button class="procedure-card" data-proc="Autorizaciones">
+        <i data-lucide="clipboard-check"></i> Autorizaciones
+      </button>
+      <button class="procedure-card" data-proc="Implementaciones">
+        <i data-lucide="settings-2"></i> Implementaciones
+      </button>
+      <button class="procedure-card" data-proc="Intralaboratorios">
+        <i data-lucide="flask-round"></i> Intralaboratorios
+      </button>
+      <button class="procedure-card" data-proc="Interlaboratorios">
+        <i data-lucide="globe"></i> Interlaboratorios
+      </button>
+    </section>
+
+    <button id="go-menu" class="btn-back">
+      <i data-lucide="arrow-left"></i> Volver al menú
+    </button>
+  </main>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/procedure_select.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

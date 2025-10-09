@@ -1,0 +1,116 @@
+body {
+  background: radial-gradient(circle at top, #001f2f, #000);
+  color: #00ffff;
+  font-family: 'Segoe UI', sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 1.5rem 0;
+  background: rgba(0, 255, 255, 0.05);
+  box-shadow: 0 2px 10px rgba(0, 255, 255, 0.1);
+}
+
+.logo {
+  height: 60px;
+  margin-bottom: 0.3rem;
+}
+
+.subtitle {
+  color: #aeefff;
+  font-size: 1.1rem;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+}
+
+.select-btn {
+  padding: 1.2rem 2rem;
+  border: 2px solid #00ffff;
+  background: rgba(0, 255, 255, 0.05);
+  color: #00ffff;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.select-btn:hover {
+  background: rgba(0, 255, 255, 0.25);
+  transform: scale(1.05);
+}
+
+.btn-back {
+  background: none;
+  border: 1px solid #00ffff;
+  color: #00ffff;
+  padding: 0.7rem 1.4rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-back:hover {
+  background-color: rgba(0, 255, 255, 0.1);
+  box-shadow: 0 0 10px #00ffff;
+}
+
+/* Parámetro: iconos */
+.select-btn i {
+  opacity: 0.9;
+  stroke-width: 1.8;
+}
+
+
+.form-block {
+  background: rgba(0, 255, 255, 0.05);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+}
+
+.form-block input {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #00ffff66;
+  border-radius: 8px;
+  background: rgba(0, 255, 255, 0.05);
+  color: #00ffff;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+

@@ -1,0 +1,358 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #0e0e0e; 
+  overflow: hidden;
+  color: #fff;
+}
+
+.about-title {
+	font-size: 7.5rem;
+	font-weight: 900;
+	text-transform: uppercase;
+	letter-spacing: -0.02em;
+	position: absolute;
+	top: 45px;
+	left: 50%;
+	transform: translateX(-50%);
+	pointer-events: none;
+	white-space: nowrap;
+	font-family: "Arial Black", "Arial Bold", Arial, sans-serif;
+	background: linear-gradient(
+		to bottom,
+		rgb(8 42 123 / 35%) 30%,
+		rgb(255 255 255 / 0%) 76%
+	);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+}
+
+
+.about-logo {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  opacity: 0.9;              /* baja opacidad como marca de agua */
+  max-width: 280px;           /* ajusta según lo grande que quieras tu logo */
+  height: auto;
+  filter: brightness(0) invert(1); /* opcional: lo vuelve blanco translúcido */
+}
+
+
+.carousel-container {
+	width: 100%;
+	max-width: 1200px;
+	height: 450px;
+	position: relative;
+	perspective: 1000px;
+	margin-top: 80px;
+}
+
+.carousel-track {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	position: relative;
+	transform-style: preserve-3d;
+	transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.card {
+  position: absolute;
+  width: 280px;
+  height: 380px;
+  border-radius: 20px;
+  padding: 22px;
+  background: rgba(16, 11, 11, 0.08); /* efecto glass */
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3),
+              0 10px 25px rgba(0,0,0,0.5);
+  color: #fff;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: pointer;
+  position: absolute;
+  overflow: hidden;
+}
+
+/* Hover: efecto metálico ligero */
+.card:hover {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6),
+              inset 0 1px 0 rgba(255,255,255,0.5);
+}
+
+/* Reflejo metálico animado */
+.card::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -70%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(
+    120deg,
+    rgba(10, 7, 7, 0.1) 0%,
+    rgba(255,255,255,0.6) 50%,
+    rgba(255,255,255,0.05) 100%
+  );
+  transform: skewX(-20deg);
+  opacity: 0;
+  transition: opacity 0.3s, left 0.7s;
+  pointer-events: none;
+}
+
+.card:hover::before {
+  opacity: 1;
+  left: 130%;
+}
+
+.card h2 {
+  margin-top: 15px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+}
+
+
+/* --- Íconos con efecto neón --- */
+.lab-icon svg {
+  width: 80px;
+  height: 80px;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 10px currentColor);
+}
+
+
+
+/* Colores por laboratorio */
+.card[data-index="0"] .lab-icon svg { color: #00e6ff; } /* gas */
+.card[data-index="1"] .lab-icon svg { color: #1e90ff; } /* líquida */
+.card[data-index="2"] .lab-icon svg { color: #ffae00; } /* alimentos */
+.card[data-index="3"] .lab-icon svg { color: #39ff14; } /* agrícola */
+.card[data-index="4"] .lab-icon svg { color: #ff33cc; } /* microbio */
+.card[data-index="5"] .lab-icon svg { color: #66ff66; } /* ambiental */
+.card[data-index="6"] .lab-icon svg { color: #9933ff; } /* molecular */
+.card[data-index="7"] .lab-icon svg { color: #ffd700; } /* metales */
+.card[data-index="8"] .lab-icon svg { color: #ff8800; } /* sensorial */
+.card[data-index="9"] .lab-icon svg { color: #33ccff; } /* hidro */
+
+
+.member-info {
+  text-align: center;
+  margin-top: 40px;
+  transition: all 0.5s ease-out;
+}
+
+.card.center {
+	z-index: 10;
+	transform: scale(1.1) translateZ(0);
+}
+
+.card.left-2 {
+	z-index: 1;
+	transform: translateX(-400px) scale(0.8) translateZ(-300px);
+	opacity: 0.7;
+}
+
+.card.left-1 {
+	z-index: 5;
+	transform: translateX(-200px) scale(0.9) translateZ(-100px);
+	opacity: 0.9;
+}
+
+.card.right-1 {
+	z-index: 5;
+	transform: translateX(200px) scale(0.9) translateZ(-100px);
+	opacity: 0.9;
+}
+
+.card.right-2 {
+	z-index: 1;
+	transform: translateX(400px) scale(0.8) translateZ(-300px);
+	opacity: 0.7;
+}
+
+
+.card.hidden {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.member-info {
+	text-align: center;
+	margin-top: 40px;
+	transition: all 0.5s ease-out;
+}
+
+.member-name {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  position: relative;
+  display: inline-block;
+  transition: color 0.4s ease, text-shadow 0.4s ease;
+}
+
+.member-name::before,
+.member-name::after {
+	content: "";
+	position: absolute;
+	top: 100%;
+	width: 100px;
+	height: 2px;
+	background: rgb(223, 225, 230);
+}
+
+.member-name::before {
+	left: -120px;
+}
+
+.member-name::after {
+	right: -120px;
+}
+
+.member-role {
+  color: #aaa;
+  font-size: 1.2rem;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 0;
+}
+.dots {
+	display: flex;
+	justify-content: center;
+	gap: 10px;
+	margin-top: 60px;
+}
+
+.dot {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: rgba(8, 42, 123, 0.2);
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+
+.dot.active {
+	background: rgb(255, 255, 255);
+	transform: scale(1.2);
+}
+
+.nav-arrow {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	background: rgb(65, 65, 65);
+	color: white;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	z-index: 20;
+	transition: all 0.3s ease;
+	font-size: 1.5rem;
+	border: none;
+	outline: none;
+	padding-bottom: 4px;
+}
+
+.nav-arrow:hover {
+	background: rgba(10, 16, 44, 0.8);
+	transform: translateY(-50%) scale(1.1);
+}
+
+.nav-arrow.left {
+	left: 20px;
+	padding-right: 3px;
+}
+
+.nav-arrow.right {
+	right: 20px;
+	padding-left: 3px;
+}
+
+@media (max-width: 768px) {
+	.about-title {
+		font-size: 4.5rem;
+	}
+
+	.card {
+		width: 200px;
+		height: 280px;
+	}
+
+	.card.left-2 {
+		transform: translateX(-250px) scale(0.8) translateZ(-300px);
+	}
+
+	.card.left-1 {
+		transform: translateX(-120px) scale(0.9) translateZ(-100px);
+	}
+
+	.card.right-1 {
+		transform: translateX(120px) scale(0.9) translateZ(-100px);
+	}
+
+	.card.right-2 {
+		transform: translateX(250px) scale(0.8) translateZ(-300px);
+	}
+
+	.member-name {
+		font-size: 2rem;
+	}
+
+	.member-role {
+		font-size: 1.2rem;
+	}
+
+	.member-name::before,
+	.member-name::after {
+		width: 50px;
+	}
+
+	.member-name::before {
+		left: -70px;
+	}
+
+	.member-name::after {
+		right: -70px;
+	}
+}
+
+
+.icon-frame {
+  width: 120px;
+  height: 120px;
+  border: none;
+  background: transparent;
+  pointer-events: none;
+}

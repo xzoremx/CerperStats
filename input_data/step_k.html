@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ingreso de Datos - Definir K</title>
+  <link rel="stylesheet" href="../css/input_data.css" />
+</head>
+
+<body>
+  <header class="header">
+    <img src="../assets/logos/cerper_logo.png" alt="CERPER" class="logo" />
+    <h1 id="lab-title">Definición de K</h1>
+    <p class="subtitle">
+      Ingrese la cantidad de <span id="param-name">parámetros</span> (K) y el número de lecturas esperadas
+    </p>
+  </header>
+
+  <main class="container" id="main-container">
+    <div class="form-block">
+      <label for="input-k">Cantidad de <span id="param-label">parámetros</span> (K):</label>
+      <input type="number" id="input-k" min="1" value="3" />
+
+      <div id="lecturas-container">
+        <label for="input-n">Lecturas por parámetro:</label>
+        <input type="number" id="input-n" min="1" value="5" />
+      </div>
+
+      <div id="lecturas-k2" style="display:none;">
+        <p>Como K=2, puede especificar lecturas diferentes:</p>
+        <div class="flex">
+          <input type="number" id="input-n1" min="1" value="5" /> 
+          <span>y</span> 
+          <input type="number" id="input-n2" min="1" value="4" />
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="continue" class="select-btn">Continuar</button>
+      <button id="go-back" class="btn-back">
+        <i data-lucide="arrow-left"></i> Volver
+      </button>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../js/input_data/step_k.js" type="module"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => lucide.createIcons());
+  </script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ingreso de Datos - Tipo de Análisis</title>
+  <link rel="stylesheet" href="../css/input_data.css" />
+  
+</head>
+
+<body>
+  <header class="header">
+    <img src="../assets/logos/cerper_logo.png" alt="CERPER" class="logo" />
+    <h1>Ingreso de Datos</h1>
+    <p class="subtitle">Seleccione el tipo de análisis</p>
+  </header>
+
+  <main class="container">
+    <section class="options">
+      <button id="mono-btn" class="select-btn" data-mode="mono">
+        <i data-lucide="flask-round"></i> Monoanalito
+      </button>
+      <button id="multi-btn" class="select-btn" data-mode="multi">
+        <i data-lucide="layers"></i> Multianalito
+      </button>
+    </section>
+
+    <div class="actions">
+      <button id="go-menu" class="btn-back">
+        <i data-lucide="arrow-left"></i> Volver al menú
+      </button>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../js/input_data/step_type.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+{
+  "name": "CerperStats",
+  "description": "Aplicación para la evaluación estadística de resultados analíticos de laboratorios CERPER.",
+  "version": "1.0.0",
+  "author": "Renato Huamani",
+  "organization": "Certificaciones del Perú S.A. - CERPER",
+  "created_at": "2025-10-09",
+  "last_updated": "2025-10-09",
+  "default_language": "es-PE",
+  "framework": "Electron",
+  "modules_path": "./modules/",
+  "results_path": "./results/",
+  "default_lab": null,
+  "supported_labs": [
+    "Agrícola",
+    "Ambiental",
+    "Biología Molecular",
+    "Cromatografía de Gases",
+    "Cromatografía Líquida",
+    "Físico Químico Alimentos",
+    "Físico Sensorial",
+    "Hidrobiología",
+    "Metales",
+    "Microbiología"
+  ],
+  "default_structure": {
+    "monoanalito": {
+      "parametros": ["Analista 1", "Analista 2"],
+      "lecturas": 8
+    },
+    "multianalito": {
+      "parametros": ["Analista", "Analito 1", "Analito 2"],
+      "lecturas": 10
+    }
+  },
+  "outputs": {
+    "pdf": true,
+    "json": true,
+    "csv": false
+  },
+  "metadata_fields": [
+    "Método",
+    "Producto",
+    "Fecha",
+    "Ensayo",
+    "Participantes",
+    "Expediente"
+  ],
+  "ui_theme": {
+    "style": "neon_dark",
+    "colors": {
+      "primary": "#00ffff",
+      "accent": "#00ff88",
+      "background": "#000a14"
+    }
+  }
+}

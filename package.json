@@ -1,0 +1,17 @@
+{
+  "name": "cerperstats",
+  "version": "0.1.0",
+  "description": "App estadística de CERPER - prototipo inicial",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "Renato Huamani",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^32.0.0"
+  },
+  "dependencies": {
+    "lucide": "^0.545.0"
+  }
+}
