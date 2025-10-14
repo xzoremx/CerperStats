@@ -16,9 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log(`Modo seleccionado: ${mode}`);
       // Navegar al siguiente paso
       if (window.cerper && window.cerper.openPage) {
-        await window.cerper.openPage("input_data/step_dato.html");
+        await window.cerper.openPage("input_data/step_2_parametro.html");
       } else {
-        window.location.href = "step_dato.html";
+        window.location.href = "step_2_parametro.html";
       }
     });
   });

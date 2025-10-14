@@ -40,9 +40,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Volver ---
   document.getElementById("go-back").addEventListener("click", () => {
     if (window.cerper && window.cerper.openPage) {
-      window.cerper.openPage("input_data/step_k.html");
+      window.cerper.openPage("input_data/step_4_k.html");
     } else {
-      window.location.href = "step_k.html";
+      window.location.href = "step_4_k.html";
     }
   });
 });

@@ -1,0 +1,97 @@
+body {
+  background: radial-gradient(circle at top, #001f2e, #000);
+  color: #00ffff;
+  font-family: 'Consolas', monospace;
+  text-align: center;
+  padding: 40px;
+}
+
+h2, h3 {
+  color: #00ffff;
+  margin-bottom: 20px;
+  text-shadow: 0 0 10px #00ffff88;
+}
+
+.select-btn {
+  padding: 14px 24px;
+  border: 2px solid #0ff;
+  background: rgba(0,255,255,0.08);
+  color: #0ff;
+  font-weight: bold;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+  margin: 10px;
+}
+
+.select-btn:hover { background: rgba(0,255,255,0.3); transform: scale(1.05); }
+
+.excel-container {
+  display: inline-block;
+  border: 1px solid #00ffff70;
+  border-radius: 8px;
+  overflow: scroll;
+  background: rgba(0,255,255,0.05);
+  width: 95%;
+  height: 500px;
+  margin-top: 20px;
+  box-shadow: 0 0 10px #00ffff33 inset;
+}
+
+table.excel {
+  border-collapse: collapse;
+  table-layout: fixed;
+  cursor: text;
+  min-width: 1500px;
+}
+
+table.excel td {
+  border: 1px solid #00ffff33;
+  padding: 4px;
+  width: 110px;
+  min-width: 110px;
+  max-width: 110px;
+  height: 26px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: rgba(0,255,255,0.03);
+  transition: 0.2s;
+}
+
+td.placeholder { 
+  color: #00ffff55; 
+  font-style: italic; 
+}
+
+td:focus {
+  outline: 2px solid #00ffff;
+  background: rgba(0,255,255,0.15);
+}
+
+.actions { margin-top: 20px; }
+
+button#validate-btn, button#send-btn {
+  margin: 0 10px;
+  padding: 10px 20px;
+  background: rgba(0,255,255,0.08);
+  border: 1px solid #0ff;
+  color: #0ff;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button#validate-btn:hover, button#send-btn:hover {
+  background: rgba(0,255,255,0.3);
+  transform: scale(1.05);
+}
+
+#feedback {
+  margin-top: 15px;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+#data-entry { display: none; }

@@ -31,17 +31,17 @@ document.addEventListener("DOMContentLoaded", () => {
   // Botón volver
   document.getElementById("go-back").addEventListener("click", () => {
     if (window.cerper && window.cerper.openPage) {
-      window.cerper.openPage("input_data/step_type.html");
+      window.cerper.openPage("input_data/step_1_type.html");
     } else {
-      window.location.href = "step_type.html";
+      window.location.href = "step_1_type.html";
     }
   });
 });
 
 function avanzarPaso() {
   if (window.cerper && window.cerper.openPage) {
-    window.cerper.openPage("input_data/step_parametro.html");
+    window.cerper.openPage("input_data/step_2_parametro.html");
   } else {
-    window.location.href = "step_parametro.html";
+    window.location.href = "step_2_parametro.html";
   }
 }

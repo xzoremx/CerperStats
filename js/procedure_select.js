@@ -37,9 +37,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Ir al siguiente paso: selección Mono / Multi (step_type)
       if (window.cerper && window.cerper.openPage) {
-        await window.cerper.openPage("input_data/step_type.html");
+        await window.cerper.openPage("input_data/step_1_type.html");
       } else {
-        window.location.href = "input_data/step_type.html";
+        window.location.href = "input_data/step_1_type.html";
       }
     });
   });
