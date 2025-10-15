@@ -80,8 +80,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Botón Continuar ---
   document.getElementById("continue").addEventListener("click", () => {
     const k = parseInt(inputK.value);
-    if (isNaN(k) || k < 1)
-      return notify("Ingrese un valor válido para la cantidad (≥1).", "error");
+    if (isNaN(k) || k < 2)
+      return notify("La cantidad de parámetros debe ser mayor a 1.", "error");
 
     let lecturas = [];
     if (k === 2) {

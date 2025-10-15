@@ -8,8 +8,26 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!parametro.endsWith("s")) parametro += "s";
 
   document.getElementById("lab-title").textContent = `${lab} - Ingreso de Lecturas`;
+  // --- Obtener datos de cantidad y lecturas ---
+  const K = parseInt(sessionStorage.getItem("K")) || 1;
+  const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
+  const lecturasPromedio =
+    lecturas.length === 1
+      ? lecturas[0]
+      : lecturas.every(v => v === lecturas[0])
+        ? lecturas[0]
+        : `${lecturas.join(", ")}`;
+
+  // --- Texto descriptivo ---
+  const resumenLecturas =
+    lecturas.every(v => v === lecturas[0])
+      ? `(${K}×${lecturasPromedio})`
+      : `(${K} parámetros con lecturas: ${lecturas.join(" y ")})`;
+
+  // --- Actualizar subtítulo ---
   document.getElementById("sheet-subtitle").innerHTML =
-    `Pegue o escriba las lecturas para <strong>${parametro}</strong>.`;
+    `Pegue o escriba las lecturas para <strong>${parametro}</strong> <span style="opacity:0.8;">${resumenLecturas}</span>.`;
+
 
   // Oculta selector redundante
   const configContainer = document.getElementById("config-container");
@@ -18,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Muestra área principal y genera la tabla según el tipoAnalisis guardado
   document.getElementById("data-entry").style.display = "block";
   document.getElementById("mode-title").innerText =
-    tipoAnalisis === "mono" ? "Modo: Un solo analito" : "Modo: Varios analitos";
+    tipoAnalisis === "mono" ? "Modo: Un solo analito" : "Modo: Multianalito";
 
   generarTabla(tipoAnalisis);
 
@@ -46,67 +64,127 @@ function selectMode(selected) {
   document.getElementById("config-container").style.display = "none";
   document.getElementById("data-entry").style.display = "block";
   document.getElementById("mode-title").innerText =
-    selected === "mono" ? "Modo: Un solo analito" : "Modo: Varios analitos";
+    selected === "mono" ? "Modo: Un solo analito" : "Modo: Multianalito";
   generarTabla(selected);
 }
 
-// --- Generar tabla editable ---
 function generarTabla(tipo) {
   const tbody = document.querySelector("#excel tbody");
   tbody.innerHTML = "";
-  const filas = 20, columnas = tipo === "mono" ? 10 : 12;
 
-  const placeholders =
-    tipo === "mono"
-      ? Array.from({ length: 10 }, (_, i) => `Analista ${i + 1}`)
-      : [
-          "Analista",
-          "Analito 1",
-          "Analito 2",
-          "Analito 3",
-          "Analito 4",
-          "Analito 5",
-          "Analito 6",
-          "Analito 7",
-          "Analito 8",
-          "Analito 9",
-          "Analito 10",
-          "Analito 11",
-        ];
+  const K = parseInt(sessionStorage.getItem("K")) || 1;
+  const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
+  const parametroRaw = sessionStorage.getItem("parametroSeleccionado") || "Parámetro";
 
-  const headerRow = document.createElement("tr");
-  for (let c = 0; c < columnas; c++) {
-    const td = document.createElement("td");
-    td.contentEditable = true;
-    td.classList.add("placeholder");
-    td.textContent = placeholders[c] || `Col ${c + 1}`;
-    td.addEventListener("input", () => togglePlaceholder(td));
-    headerRow.appendChild(td);
+  // Convertir a minúsculas y plural coherente
+  let parametro = parametroRaw.toLowerCase();
+  if (!parametro.endsWith("s")) parametro += "s";
+
+  // --- Determinar cantidad de filas
+  let filasTotales = 0;
+  if (lecturas.length === K) {
+    filasTotales = Math.max(...lecturas);
+  } else {
+    filasTotales = lecturas[0] || 10;
   }
-  tbody.appendChild(headerRow);
 
-  const bloqueAnalistas = 5;
-  let analistaActual = 1;
+  // --- MONOANALITO ---
+  if (tipo === "mono") {
+    const columnas = K;
+    const headerRow = document.createElement("tr");
 
-  for (let i = 0; i < filas; i++) {
-    const tr = document.createElement("tr");
-    for (let j = 0; j < columnas; j++) {
-      const td = document.createElement("td");
-      td.contentEditable = true;
-      td.classList.add("placeholder");
-      td.addEventListener("input", () => togglePlaceholder(td));
-      if (tipo === "multi" && j === 0) {
-        td.textContent = `Analista ${analistaActual}`;
-      }
-      tr.appendChild(td);
+    // Derivar forma singular si termina en "s"
+    let singular = parametroRaw.toLowerCase();
+    if (singular.endsWith("s")) singular = singular.slice(0, -1);
+
+    for (let i = 0; i < columnas; i++) {
+      const th = document.createElement("td");
+      th.textContent = `${capitalize(singular)} ${i + 1}`;
+      th.classList.add("placeholder");
+      headerRow.appendChild(th);
     }
-    tbody.appendChild(tr);
-    if (tipo === "multi" && (i + 1) % bloqueAnalistas === 0) analistaActual++;
+    tbody.appendChild(headerRow);
+
+    // Filas de lecturas
+    for (let r = 0; r < filasTotales; r++) {
+      const tr = document.createElement("tr");
+      for (let c = 0; c < columnas; c++) {
+        const td = document.createElement("td");
+        td.contentEditable = true;
+        td.classList.add("placeholder");
+        td.addEventListener("input", () => togglePlaceholder(td));
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+  }
+
+  // --- MULTIANALITO ---
+  else if (tipo === "multi") {
+    const columnas = K + 1; // primera columna = parámetro (ej. analista)
+    const headerRow = document.createElement("tr");
+
+    // Encabezado: parámetro + analitos (editables)
+    const headers = [
+      capitalize(parametroRaw),
+      ...Array.from({ length: K }, (_, i) => `Analito ${i + 1}`),
+    ];
+
+    headers.forEach((h, index) => {
+      const th = document.createElement("td");
+      th.textContent = h;
+      th.classList.add("placeholder");
+
+      if (index === 0) {
+        // parámetro (ej. Analista) bloqueado
+        th.contentEditable = false;
+        th.classList.add("fixed-param");
+      } else {
+        // nombres de analitos editables
+        th.contentEditable = true;
+        th.addEventListener("input", () => togglePlaceholder(th));
+      }
+
+      headerRow.appendChild(th);
+    });
+    tbody.appendChild(headerRow);
+
+
+    // Filas: una sección por cada parámetro (ej. analista)
+    for (let a = 0; a < K; a++) {
+      const lecturasActuales = lecturas[a] || lecturas[0] || 5;
+      for (let l = 0; l < lecturasActuales; l++) {
+        const tr = document.createElement("tr");
+        for (let c = 0; c < columnas; c++) {
+          const td = document.createElement("td");
+          td.contentEditable = true;
+          td.classList.add("placeholder");
+          td.addEventListener("input", () => togglePlaceholder(td));
+          if (c === 0) {
+            td.textContent = `${capitalize(parametroRaw)} ${a + 1}`;
+            td.contentEditable = false; 
+            td.classList.add("fixed-param");
+          } else {
+            td.contentEditable = true; 
+            td.addEventListener("input", () => togglePlaceholder(td));
+          }
+          tr.appendChild(td);
+
+        }
+        tbody.appendChild(tr);
+      }
+    }
   }
 
   activarNavegacion();
   activarPegado();
 }
+
+// --- Función auxiliar ---
+function capitalize(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 
 // --- Placeholders dinámicos ---
 function togglePlaceholder(td) {
