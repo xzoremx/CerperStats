@@ -1,21 +1,31 @@
-let mode = null;
-
 document.addEventListener("DOMContentLoaded", () => {
   const lab = sessionStorage.getItem("labSeleccionado") || "Laboratorio";
-  const parametro = sessionStorage.getItem("parametroSeleccionado") || "Parámetro";
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "cuantitativo";
+  const parametroRaw = sessionStorage.getItem("parametroSeleccionado") || "Parámetro";
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono"; // default: mono
+
+  // Convertir parámetro a minúsculas y plural coherente
+  let parametro = parametroRaw.toLowerCase();
+  if (!parametro.endsWith("s")) parametro += "s";
 
   document.getElementById("lab-title").textContent = `${lab} - Ingreso de Lecturas`;
   document.getElementById("sheet-subtitle").innerHTML =
-    `Pegue o escriba las lecturas para <strong>${parametro}</strong> (${tipoAnalisis}).`;
+    `Pegue o escriba las lecturas para <strong>${parametro}</strong>.`;
 
-  document.getElementById("mono-btn").addEventListener("click", () => selectMode("mono"));
-  document.getElementById("multi-btn").addEventListener("click", () => selectMode("multi"));
+  // Oculta selector redundante
+  const configContainer = document.getElementById("config-container");
+  if (configContainer) configContainer.style.display = "none";
+
+  // Muestra área principal y genera la tabla según el tipoAnalisis guardado
+  document.getElementById("data-entry").style.display = "block";
+  document.getElementById("mode-title").innerText =
+    tipoAnalisis === "mono" ? "Modo: Un solo analito" : "Modo: Varios analitos";
+
+  generarTabla(tipoAnalisis);
 
   document.getElementById("validate-btn").addEventListener("click", () => {
     const rows = leerTabla();
-    if (mode === "mono") validarMono(rows);
-    else if (mode === "multi") validarMulti(rows);
+    if (tipoAnalisis === "mono") validarMono(rows);
+    else if (tipoAnalisis === "multi") validarMulti(rows);
   });
 
   document.getElementById("continue-btn").addEventListener("click", () => {
@@ -26,13 +36,9 @@ document.addEventListener("DOMContentLoaded", () => {
       else window.location.href = "../evaluation_select.html";
     }, 1000);
   });
-
-  document.getElementById("go-back").addEventListener("click", () => {
-    if (window.cerper && window.cerper.openPage)
-      window.cerper.openPage("step_4_k.html");
-    else window.location.href = "step_4_k.html";
-  });
 });
+
+
 
 // --- Selección de modo ---
 function selectMode(selected) {
@@ -106,6 +112,8 @@ function generarTabla(tipo) {
 function togglePlaceholder(td) {
   td.classList.toggle("placeholder", td.textContent.trim() === "");
 }
+
+
 
 // --- Navegación con flechas ---
 function activarNavegacion() {
@@ -257,6 +265,15 @@ function feedback(msg, type) {
   fb.innerText = msg;
   fb.style.color = type === "ok" ? "#00ff88" : "#ff6666";
 }
+
+// --- Botón Volver ---
+  document.getElementById("go-back").addEventListener("click", () => {
+    if (window.cerper && window.cerper.openPage) {
+      window.cerper.openPage("input_data/step_4_k.html");
+    } else {
+      window.location.href = "step_4_k.html";
+    }
+  });
 
 // --- Notificaciones flotantes ---
 function notify(message, type = "info") {
