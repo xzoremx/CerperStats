@@ -1,76 +1,87 @@
+let mode = null;
+
 document.addEventListener("DOMContentLoaded", () => {
-  const lab = sessionStorage.getItem("labSeleccionado");
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis"); // mono/multi
-  const tipoDato = sessionStorage.getItem("tipoDato"); // cuantitativo/cualitativo
-  const parametro = sessionStorage.getItem("parametroSeleccionado");
-  const K = parseInt(sessionStorage.getItem("K"));
-  const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
+  const lab = sessionStorage.getItem("labSeleccionado") || "Laboratorio";
+  const parametro = sessionStorage.getItem("parametroSeleccionado") || "Parámetro";
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "cuantitativo";
 
-  const title = document.getElementById("lab-title");
-  const subtitle = document.getElementById("sheet-subtitle");
-  const tbody = document.querySelector("#excel tbody");
+  document.getElementById("lab-title").textContent = `${lab} - Ingreso de Lecturas`;
+  document.getElementById("sheet-subtitle").innerHTML =
+    `Pegue o escriba las lecturas para <strong>${parametro}</strong> (${tipoAnalisis}).`;
 
-  title.textContent = `${lab} - Ingreso de Lecturas`;
-  subtitle.textContent = `${tipoAnalisis === "multi" ? "Multianalito" : "Monoanalito"} | ${tipoDato} | ${parametro} | K=${K}`;
+  document.getElementById("mono-btn").addEventListener("click", () => selectMode("mono"));
+  document.getElementById("multi-btn").addEventListener("click", () => selectMode("multi"));
 
-  generarTabla(tipoAnalisis, K, lecturas);
-  activarNavegacion();
-  activarPegado();
-
-  // --- Validar y guardar ---
   document.getElementById("validate-btn").addEventListener("click", () => {
-    const datos = leerTabla();
-    const valido = validarDatos(datos, tipoAnalisis, tipoDato, K, lecturas);
-    if (valido) {
-      feedback("Datos válidos. Puede continuar.", "ok");
-      document.getElementById("continue-btn").disabled = false;
-      sessionStorage.setItem("lecturasAnaliticas", JSON.stringify(datos));
-    }
+    const rows = leerTabla();
+    if (mode === "mono") validarMono(rows);
+    else if (mode === "multi") validarMulti(rows);
   });
 
-  // --- Continuar ---
   document.getElementById("continue-btn").addEventListener("click", () => {
-    if (window.cerper && window.cerper.openPage) {
-      window.cerper.openPage("evaluation_select.html");
-    } else {
-      window.location.href = "../evaluation_select.html";
-    }
+    notify("Datos guardados correctamente.", "success");
+    setTimeout(() => {
+      if (window.cerper && window.cerper.openPage)
+        window.cerper.openPage("../evaluation_select.html");
+      else window.location.href = "../evaluation_select.html";
+    }, 1000);
   });
 
-  // --- Volver ---
   document.getElementById("go-back").addEventListener("click", () => {
-    if (window.cerper && window.cerper.openPage) {
-      window.cerper.openPage("input_data/step_4_k.html");
-    } else {
-      window.location.href = "step_4_k.html";
-    }
+    if (window.cerper && window.cerper.openPage)
+      window.cerper.openPage("step_4_k.html");
+    else window.location.href = "step_4_k.html";
   });
 });
 
-function generarTabla(tipoAnalisis, K, lecturas) {
+// --- Selección de modo ---
+function selectMode(selected) {
+  mode = selected;
+  document.getElementById("config-container").style.display = "none";
+  document.getElementById("data-entry").style.display = "block";
+  document.getElementById("mode-title").innerText =
+    selected === "mono" ? "Modo: Un solo analito" : "Modo: Varios analitos";
+  generarTabla(selected);
+}
+
+// --- Generar tabla editable ---
+function generarTabla(tipo) {
   const tbody = document.querySelector("#excel tbody");
   tbody.innerHTML = "";
-  const filas = Math.max(...lecturas, 10);
-  const columnas = tipoAnalisis === "mono" ? K : K + 1;
+  const filas = 20, columnas = tipo === "mono" ? 10 : 12;
 
   const placeholders =
-    tipoAnalisis === "mono"
-      ? Array.from({ length: K }, (_, i) => `Analista ${i + 1}`)
-      : ["Analista", ...Array.from({ length: K }, (_, i) => `Analito ${i + 1}`)];
+    tipo === "mono"
+      ? Array.from({ length: 10 }, (_, i) => `Analista ${i + 1}`)
+      : [
+          "Analista",
+          "Analito 1",
+          "Analito 2",
+          "Analito 3",
+          "Analito 4",
+          "Analito 5",
+          "Analito 6",
+          "Analito 7",
+          "Analito 8",
+          "Analito 9",
+          "Analito 10",
+          "Analito 11",
+        ];
 
-  // Cabecera
-  const header = document.createElement("tr");
-  placeholders.forEach(text => {
-    const th = document.createElement("td");
-    th.textContent = text;
-    th.classList.add("placeholder");
-    header.appendChild(th);
-  });
-  tbody.appendChild(header);
+  const headerRow = document.createElement("tr");
+  for (let c = 0; c < columnas; c++) {
+    const td = document.createElement("td");
+    td.contentEditable = true;
+    td.classList.add("placeholder");
+    td.textContent = placeholders[c] || `Col ${c + 1}`;
+    td.addEventListener("input", () => togglePlaceholder(td));
+    headerRow.appendChild(td);
+  }
+  tbody.appendChild(headerRow);
 
-  // Celdas
-  const bloque = tipoAnalisis === "multi" ? lecturas[0] || 5 : lecturas[0] || 5;
+  const bloqueAnalistas = 5;
   let analistaActual = 1;
+
   for (let i = 0; i < filas; i++) {
     const tr = document.createElement("tr");
     for (let j = 0; j < columnas; j++) {
@@ -78,59 +89,127 @@ function generarTabla(tipoAnalisis, K, lecturas) {
       td.contentEditable = true;
       td.classList.add("placeholder");
       td.addEventListener("input", () => togglePlaceholder(td));
-      if (tipoAnalisis === "multi" && j === 0) {
+      if (tipo === "multi" && j === 0) {
         td.textContent = `Analista ${analistaActual}`;
-        td.classList.add("placeholder");
       }
       tr.appendChild(td);
     }
     tbody.appendChild(tr);
-    if (tipoAnalisis === "multi" && (i + 1) % bloque === 0) analistaActual++;
+    if (tipo === "multi" && (i + 1) % bloqueAnalistas === 0) analistaActual++;
   }
+
+  activarNavegacion();
+  activarPegado();
 }
 
+// --- Placeholders dinámicos ---
 function togglePlaceholder(td) {
   td.classList.toggle("placeholder", td.textContent.trim() === "");
 }
 
+// --- Navegación con flechas ---
 function activarNavegacion() {
   const table = document.getElementById("excel");
-  table.addEventListener("keydown", e => {
+  table.addEventListener("keydown", function (e) {
     const cell = document.activeElement;
     if (cell.tagName !== "TD") return;
+
     const tr = cell.parentElement;
     const rowIndex = [...table.rows].indexOf(tr);
     const colIndex = [...tr.cells].indexOf(cell);
-    let targetRow = rowIndex, targetCol = colIndex;
 
-    if (e.key === "ArrowUp") targetRow = Math.max(0, rowIndex - 1);
-    if (e.key === "ArrowDown") targetRow = rowIndex + 1;
-    if (e.key === "ArrowLeft") targetCol = Math.max(0, colIndex - 1);
-    if (e.key === "ArrowRight") targetCol = colIndex + 1;
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+      e.preventDefault();
+      let targetRow = rowIndex;
+      let targetCol = colIndex;
 
-    const nextRow = table.rows[targetRow];
-    const nextCell = nextRow?.cells[targetCol];
-    if (nextCell) nextCell.focus();
+      if (e.key === "ArrowUp") targetRow = Math.max(0, rowIndex - 1);
+      if (e.key === "ArrowDown") targetRow = rowIndex + 1;
+      if (e.key === "ArrowLeft") targetCol = Math.max(0, colIndex - 1);
+      if (e.key === "ArrowRight") targetCol = colIndex + 1;
+
+      expandIfNeeded(table, targetRow, targetCol);
+      const nextRow = table.rows[targetRow];
+      const nextCell = nextRow?.cells[targetCol];
+      if (nextCell) nextCell.focus();
+    }
   });
 }
 
+// --- Expansión automática ---
+function expandIfNeeded(table, targetRow, targetCol) {
+  const totalRows = table.rows.length;
+  const totalCols = table.rows[0].cells.length;
+
+  if (targetRow >= totalRows) {
+    const newRow = document.createElement("tr");
+    for (let j = 0; j < totalCols; j++) {
+      const td = document.createElement("td");
+      td.contentEditable = true;
+      td.classList.add("placeholder");
+      td.addEventListener("input", () => togglePlaceholder(td));
+      newRow.appendChild(td);
+    }
+    table.tBodies[0].appendChild(newRow);
+  }
+
+  if (targetCol >= totalCols) {
+    for (let r of table.rows) {
+      const td = document.createElement("td");
+      td.contentEditable = true;
+      td.classList.add("placeholder");
+      td.addEventListener("input", () => togglePlaceholder(td));
+      r.appendChild(td);
+    }
+  }
+}
+
+// --- Pegar desde Excel ---
 function activarPegado() {
-  const table = document.getElementById("excel");
-  table.addEventListener("paste", e => {
+  document.getElementById("excel").addEventListener("paste", function (e) {
     const active = document.activeElement;
     if (active.tagName !== "TD") return;
-    e.preventDefault();
 
+    e.preventDefault();
     const text = (e.clipboardData || window.clipboardData).getData("text");
-    const rows = text.trim().split(/\r?\n/).map(r => r.split("\t"));
+    const rows = text.trim().split(/\r?\n/).map((r) => r.split("\t"));
+    const table = document.getElementById("excel");
     const startRow = [...table.rows].indexOf(active.parentElement);
     const startCol = [...active.parentElement.cells].indexOf(active);
 
-    rows.forEach((r, ri) => {
-      const tr = table.rows[startRow + ri] || table.insertRow();
-      r.forEach((c, ci) => {
-        const td = tr.cells[startCol + ci] || tr.insertCell();
+    const neededRows = startRow + rows.length;
+    const neededCols = startCol + Math.max(...rows.map((r) => r.length));
+
+    while (table.rows.length < neededRows) {
+      const newRow = document.createElement("tr");
+      for (let j = 0; j < table.rows[0].cells.length; j++) {
+        const td = document.createElement("td");
         td.contentEditable = true;
+        td.classList.add("placeholder");
+        td.addEventListener("input", () => togglePlaceholder(td));
+        newRow.appendChild(td);
+      }
+      table.tBodies[0].appendChild(newRow);
+    }
+
+    if (neededCols > table.rows[0].cells.length) {
+      for (let r of table.rows) {
+        for (let c = r.cells.length; c < neededCols; c++) {
+          const td = document.createElement("td");
+          td.contentEditable = true;
+          td.classList.add("placeholder");
+          td.addEventListener("input", () => togglePlaceholder(td));
+          r.appendChild(td);
+        }
+      }
+    }
+
+    rows.forEach((r, ri) => {
+      const tr = table.rows[startRow + ri];
+      if (!tr) return;
+      r.forEach((c, ci) => {
+        const td = tr.cells[startCol + ci];
+        if (!td) return;
         td.textContent = c.trim();
         togglePlaceholder(td);
       });
@@ -138,43 +217,58 @@ function activarPegado() {
   });
 }
 
+// --- Validación y feedback ---
 function leerTabla() {
   const data = [];
-  document.querySelectorAll("#excel tr").forEach(tr => {
+  document.querySelectorAll("#excel tr").forEach((tr) => {
     const row = [];
-    tr.querySelectorAll("td").forEach(td => row.push(td.textContent.trim()));
-    if (row.some(c => c !== "")) data.push(row);
+    tr.querySelectorAll("td").forEach((td) => row.push(td.textContent.trim()));
+    if (row.some((c) => c !== "")) data.push(row);
   });
   return data;
 }
 
-function validarDatos(rows, tipoAnalisis, tipoDato, K, lecturas) {
-  if (!rows.length) return feedback("No se detectaron datos.", "error"), false;
-
+function validarMono(rows) {
+  if (!rows.length) return feedback("No se detectaron datos.", "error");
   const headers = rows[0];
-  const valores = rows.slice(1).flat();
-
-  // Reglas básicas
-  if (tipoDato === "cuantitativo") {
-    const valid = valores.every(v => v === "" || !isNaN(parseFloat(v)));
-    if (!valid) return feedback("Hay valores no numéricos.", "error"), false;
-  } else if (tipoDato === "cualitativo") {
-    const valid = valores.every(v => v === "" || (/^\d+$/.test(v) && parseInt(v) >= 0));
-    if (!valid) return feedback("Solo se permiten enteros ≥0 para datos cualitativos.", "error"), false;
-  }
-
-  // Validar estructura
-  if (K !== 2) {
-    const conteo = rows.slice(1).map(r => r.filter(v => v !== "").length);
-    const iguales = conteo.every(c => c === conteo[0]);
-    if (!iguales) return feedback("No se puede continuar: lecturas desiguales.", "error"), false;
-  }
-
-  return true;
+  const numericCheck = rows.slice(1).flat().every((v) => !isNaN(parseFloat(v)) || v === "");
+  if (!numericCheck) return feedback("Hay valores no numéricos.", "error");
+  feedback(`Modo monoanalito válido (${headers.length} analistas).`, "ok");
+  document.getElementById("continue-btn").disabled = false;
 }
 
+function validarMulti(rows) {
+  if (!rows.length) return feedback("No se detectaron datos.", "error");
+  const headers = rows[0];
+  if (headers[0].toLowerCase() !== "analista")
+    return feedback("La primera columna debe llamarse 'Analista'.", "error");
+  const numericCheck = rows
+    .slice(1)
+    .flatMap((r) => r.slice(1))
+    .every((v) => !isNaN(parseFloat(v)) || v === "");
+  if (!numericCheck) return feedback("Hay celdas no numéricas.", "error");
+  feedback(`Modo multianalito válido (${headers.length - 1} analitos).`, "ok");
+  document.getElementById("continue-btn").disabled = false;
+}
+
+// --- Feedback visual ---
 function feedback(msg, type) {
   const fb = document.getElementById("feedback");
-  fb.textContent = msg;
+  fb.innerText = msg;
   fb.style.color = type === "ok" ? "#00ff88" : "#ff6666";
+}
+
+// --- Notificaciones flotantes ---
+function notify(message, type = "info") {
+  const existing = document.querySelector(".notify");
+  if (existing) existing.remove();
+
+  const div = document.createElement("div");
+  div.className = `notify ${type}`;
+  div.textContent = message;
+  document.body.appendChild(div);
+
+  setTimeout(() => div.classList.add("show"), 50);
+  setTimeout(() => div.classList.remove("show"), 3000);
+  setTimeout(() => div.remove(), 3500);
 }

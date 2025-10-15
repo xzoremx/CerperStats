@@ -4,37 +4,62 @@
   <meta charset="UTF-8" />
   <title>Ingreso de Lecturas - CerperStats</title>
   <link rel="stylesheet" href="../css/input_data.css" />
+  <link rel="stylesheet" href="../css/sheet.css" />
 </head>
 
 <body>
+  <!-- ENCABEZADO -->
   <header class="header">
     <img src="../assets/logos/cerper_logo.png" alt="CERPER" class="logo" />
     <h1 id="lab-title">Ingreso de Lecturas</h1>
-    <p class="subtitle" id="sheet-subtitle"></p>
+    <p class="subtitle" id="sheet-subtitle">Pegue o escriba los datos de las lecturas</p>
   </header>
 
+  <!-- CONTENIDO PRINCIPAL -->
   <main class="container">
-    <section id="data-entry">
+    <!-- Selección de modo -->
+    <section id="config-container" class="options">
+      <h2>Seleccione el modo de ingreso de datos</h2>
+      <button id="mono-btn" class="select-btn">
+        <i data-lucide="beaker"></i> Modo Monoanalito
+      </button>
+      <button id="multi-btn" class="select-btn">
+        <i data-lucide="flask-round"></i> Modo Multianalito
+      </button>
+    </section>
+
+    <!-- Área de ingreso de datos -->
+    <section id="data-entry" class="form-block">
+      <h3 id="mode-title" style="margin-bottom: 1rem;">Modo: </h3>
+
       <div class="excel-container">
-        <table id="excel" class="excel"><tbody></tbody></table>
+        <table id="excel" class="excel">
+          <tbody></tbody>
+        </table>
       </div>
 
       <div class="actions">
         <button id="validate-btn" class="select-btn">Validar</button>
         <button id="continue-btn" class="select-btn" disabled>Continuar</button>
-        <button id="go-back" class="btn-back">
-          <i data-lucide="arrow-left"></i> Volver
-        </button>
       </div>
 
       <div id="feedback"></div>
     </section>
   </main>
 
+  <!-- BOTÓN VOLVER -->
+  <button id="go-back" class="btn-back">
+    <i data-lucide="arrow-left"></i> Volver
+  </button>
+
+  <!-- ICONOS Y SCRIPTS -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="../js/input_data/step_5_sheet.js" type="module"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", () => lucide.createIcons());
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+    });
   </script>
 </body>
 </html>
+
