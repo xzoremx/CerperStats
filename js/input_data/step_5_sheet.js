@@ -133,20 +133,21 @@ function generarTabla(tipo) {
     headers.forEach((h, index) => {
       const th = document.createElement("td");
       th.textContent = h;
-      th.classList.add("placeholder");
 
       if (index === 0) {
-        // parámetro (ej. Analista) bloqueado
+        // primera celda: nombre del parámetro (ej. Analista)
         th.contentEditable = false;
-        th.classList.add("fixed-param");
+        th.classList.add("fixed-param", "placeholder");
       } else {
-        // nombres de analitos editables
+        // celdas "Analito 1, 2, 3..."
         th.contentEditable = true;
+        th.classList.add("analito-header"); 
         th.addEventListener("input", () => togglePlaceholder(th));
       }
 
       headerRow.appendChild(th);
     });
+
     tbody.appendChild(headerRow);
 
 
@@ -191,11 +192,22 @@ function togglePlaceholder(td) {
   td.classList.toggle("placeholder", td.textContent.trim() === "");
 }
 
+// --- Mover el cursor al final del texto ---
+function moveCaretToEnd(td) {
+  if (!td || !td.isContentEditable) return;
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.selectNodeContents(td);
+  range.collapse(false); 
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
 
 
 // --- Navegación con flechas ---
 function activarNavegacion() {
   const table = document.getElementById("excel");
+
   table.addEventListener("keydown", function (e) {
     const cell = document.activeElement;
     if (cell.tagName !== "TD") return;
@@ -204,23 +216,69 @@ function activarNavegacion() {
     const rowIndex = [...table.rows].indexOf(tr);
     const colIndex = [...tr.cells].indexOf(cell);
 
+    let targetRow = rowIndex;
+    let targetCol = colIndex;
+    let handled = false;
+
+    // --- Flechas de dirección ---
     if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
       e.preventDefault();
-      let targetRow = rowIndex;
-      let targetCol = colIndex;
+      handled = true;
 
       if (e.key === "ArrowUp") targetRow = Math.max(0, rowIndex - 1);
       if (e.key === "ArrowDown") targetRow = rowIndex + 1;
       if (e.key === "ArrowLeft") targetCol = Math.max(0, colIndex - 1);
       if (e.key === "ArrowRight") targetCol = colIndex + 1;
+    }
 
+    // --- Tab y Shift+Tab ---
+    if (e.key === "Tab") {
+      e.preventDefault();
+      handled = true;
+
+      if (e.shiftKey) {
+        // Retrocede una celda
+        if (colIndex > 0) targetCol = colIndex - 1;
+        else {
+          targetCol = tr.cells.length - 1;
+          targetRow = Math.max(0, rowIndex - 1);
+        }
+      } else {
+        // Avanza una celda
+        if (colIndex < tr.cells.length - 1) targetCol = colIndex + 1;
+        else {
+          targetCol = 0;
+          targetRow = rowIndex + 1;
+        }
+      }
+    }
+
+    // --- Enter y Shift+Enter ---
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handled = true;
+
+      if (e.shiftKey) {
+        // Subir una celda
+        targetRow = Math.max(0, rowIndex - 1);
+      } else {
+        // Bajar una celda
+        targetRow = rowIndex + 1;
+      }
+    }
+
+    if (handled) {
       expandIfNeeded(table, targetRow, targetCol);
       const nextRow = table.rows[targetRow];
       const nextCell = nextRow?.cells[targetCol];
-      if (nextCell) nextCell.focus();
+      if (nextCell) {
+        nextCell.focus();
+        if (nextCell.isContentEditable) moveCaretToEnd(nextCell);
+      }
     }
   });
 }
+
 
 // --- Expansión automática ---
 function expandIfNeeded(table, targetRow, targetCol) {
@@ -234,6 +292,7 @@ function expandIfNeeded(table, targetRow, targetCol) {
       td.contentEditable = true;
       td.classList.add("placeholder");
       td.addEventListener("input", () => togglePlaceholder(td));
+      td.addEventListener("focus", () => moveCaretToEnd(td)); 
       newRow.appendChild(td);
     }
     table.tBodies[0].appendChild(newRow);

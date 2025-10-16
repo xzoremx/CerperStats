@@ -150,3 +150,16 @@ td.error {
   background-color: rgba(0, 180, 255, 0.9);
   box-shadow: 0 0 12px rgba(0, 180, 255, 0.6);
 }
+
+/* Encabezados de analitos: blanco translúcido */
+.analito-header {
+  color: rgba(255, 255, 255, 0.5);     /* blanco casi transparente */
+  font-weight: 500;
+  text-shadow: 0 0 4px rgba(255,255,255,0.1);
+}
+
+/* Mantiene coherencia con el resto del diseño */
+.analito-header:focus {
+  outline: 1px solid rgba(255,255,255,0.3);
+  background-color: rgba(255,255,255,0.05);
+}
