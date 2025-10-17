@@ -40,12 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   generarTabla(tipoAnalisis);
 
-  document.getElementById("validate-btn").addEventListener("click", () => {
-    const rows = leerTabla();
-    if (tipoAnalisis === "mono") validarMono(rows);
-    else if (tipoAnalisis === "multi") validarMulti(rows);
-  });
-
   document.getElementById("continue-btn").addEventListener("click", () => {
     notify("Datos guardados correctamente.", "success");
     setTimeout(() => {
@@ -55,7 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 1000);
   });
 });
-
 
 
 // --- Selección de modo ---
@@ -362,46 +355,184 @@ function activarPegado() {
   });
 }
 
-// --- Validación y feedback ---
-function leerTabla() {
-  const data = [];
-  document.querySelectorAll("#excel tr").forEach((tr) => {
-    const row = [];
-    tr.querySelectorAll("td").forEach((td) => row.push(td.textContent.trim()));
-    if (row.some((c) => c !== "")) data.push(row);
-  });
-  return data;
+// --- VALIDACIÓN VISUAL AUTOMÁTICA (Mono y Multi) ---
+function validarVisual() {
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
+  const table = document.getElementById("excel");
+  const K = parseInt(sessionStorage.getItem("K")) || 1;
+  const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
+
+  if (!table) return;
+  const rows = [...table.rows];
+
+  // Reset de botón continuar
+  const continuar = document.getElementById("continue-btn");
+  continuar.disabled = true;
+
+  // --- MONOANALITO ---
+  if (tipoAnalisis === "mono") {
+    const columnas = K;
+    const filasEsperadas = Math.max(...lecturas);
+    const colores = generarColores(K);
+
+    let todoValido = true;
+
+    for (let r = 1; r < rows.length; r++) {
+      const celdas = [...rows[r].cells];
+      for (let c = 0; c < celdas.length; c++) {
+        const td = celdas[c];
+        td.style.transition = "background 0.15s ease";
+
+        const limiteCol = c < columnas;
+        const limiteFila = r <= (lecturas[c] || lecturas[0] || 1);
+        const dentroRango = limiteCol && limiteFila;
+
+        const valor = td.textContent.trim();
+        const esNumero = /^[+]?(?:\d+|\d*\.\d+)$/.test(valor);
+
+        if (!dentroRango) {
+          // Fuera del rango permitido
+          td.style.background = valor ? "rgba(255,50,50,0.25)" : "transparent";
+          if (valor) todoValido = false;
+          continue;
+        }
+
+        // Dentro del rango válido
+        if (valor === "") {
+          td.style.background = "rgba(0,255,200,0.05)"; // tenue
+        } else if (esNumero && parseFloat(valor) > 0) {
+          td.style.background = "rgba(0,255,200,0.18)"; // más visible
+        } else {
+          td.style.background = "rgba(255,50,50,0.25)"; // error
+          todoValido = false;
+        }
+      }
+    }
+
+    if (todoValido) continuar.disabled = false;
+  }
+
+  // --- MULTIANALITO ---
+  else if (tipoAnalisis === "multi") {
+    const columnas = K + 1;
+    const colores = generarColores(K);
+    const headers = [...rows[0].cells].slice(1);
+    let todoValido = true;
+
+    // Detectar duplicados en encabezados y vacíos con datos debajo
+    const nombres = headers.map(td => td.textContent.trim().toLowerCase());
+    const duplicados = nombres.filter((v, i, a) => v && a.indexOf(v) !== i);
+
+    headers.forEach(td => {
+      const nombre = td.textContent.trim().toLowerCase();
+      const colIndex = [...td.parentElement.cells].indexOf(td);
+      const celdasColumna = rows.slice(1).map(r => r.cells[colIndex]);
+      const tieneDatos = celdasColumna.some(td => td?.textContent.trim() !== "");
+
+      const esDuplicado = duplicados.includes(nombre);
+      const esVacioConDatos = nombre === "" && tieneDatos;
+
+      // --- Caso 1: encabezado duplicado ---
+      if (esDuplicado) {
+        td.style.background = "rgba(255,60,60,0.25)";
+      }
+
+      // --- Caso 2: encabezado vacío pero con datos debajo ---
+      else if (esVacioConDatos) {
+        td.style.background = "rgba(255,60,60,0.25)";
+      }
+
+      // --- Caso 3: encabezado válido ---
+      else {
+        td.style.background = tieneDatos
+          ? "rgba(200,200,200,0.10)"
+          : "transparent";
+      }
+    });
+
+
+    // Bloques por analista
+    let inicioFila = 1;
+    let ultimaFila = 1;
+
+    for (let a = 0; a < K; a++) {
+      const colorBase = colores[a];
+      const lecturasActuales = lecturas[a] || lecturas[0] || 1;
+      const finFila = inicioFila + lecturasActuales - 1;
+      ultimaFila = finFila; // guardar última fila válida
+
+      for (let r = inicioFila; r <= finFila && r < rows.length; r++) {
+        const celdas = [...rows[r].cells];
+        celdas.forEach((td, c) => {
+          td.style.transition = "background 0.2s ease";
+
+          if (c === 0) {
+            td.style.background = "transparent";
+            td.style.borderTop = `2px solid ${colorBase.replace("0.25", "0.15")}`;
+            return;
+          }
+
+          const valor = td.textContent.trim();
+          const esNumero = /^[+]?(?:\d+|\d*\.\d+)$/.test(valor);
+
+          if (valor === "") {
+            td.style.background = `${colorBase.replace("0.25", "0.07")}`; // tenue base
+          } else if (esNumero && parseFloat(valor) > 0) {
+            td.style.background = `${colorBase.replace("0.25", "0.15")}`; // más notorio
+          } else {
+            td.style.background = "rgba(255,60,60,0.25)";
+            todoValido = false;
+          }
+        });
+      }
+
+      inicioFila = finFila + 1;
+    }
+
+    // Filas fuera del rango (debajo del último analista)
+    for (let r = ultimaFila + 1; r < rows.length; r++) {
+      const celdas = [...rows[r].cells];
+      celdas.forEach((td, c) => {
+        if (c === 0) return; // no validar la columna fija (Analista)
+        const valor = td.textContent.trim();
+        if (valor !== "") {
+          td.style.background = "rgba(255,60,60,0.25)"; // fuera de rango => rojo
+          todoValido = false;
+        } else {
+          td.style.background = "transparent"; // sin color si vacío
+        }
+      });
+    }
+
+    if (todoValido) continuar.disabled = false;
+  }
+
+
 }
 
-function validarMono(rows) {
-  if (!rows.length) return feedback("No se detectaron datos.", "error");
-  const headers = rows[0];
-  const numericCheck = rows.slice(1).flat().every((v) => !isNaN(parseFloat(v)) || v === "");
-  if (!numericCheck) return feedback("Hay valores no numéricos.", "error");
-  feedback(`Modo monoanalito válido (${headers.length} analistas).`, "ok");
-  document.getElementById("continue-btn").disabled = false;
+// --- Generador de colores dinámicos (para K analistas o columnas) ---
+function generarColores(K) {
+  const colores = [];
+  for (let i = 0; i < K; i++) {
+    const hue = (i * 360) / K;
+    colores.push(`hsla(${hue}, 70%, 50%, 0.25)`); 
+  }
+  return colores;
 }
 
-function validarMulti(rows) {
-  if (!rows.length) return feedback("No se detectaron datos.", "error");
-  const headers = rows[0];
-  if (headers[0].toLowerCase() !== "analista")
-    return feedback("La primera columna debe llamarse 'Analista'.", "error");
-  const numericCheck = rows
-    .slice(1)
-    .flatMap((r) => r.slice(1))
-    .every((v) => !isNaN(parseFloat(v)) || v === "");
-  if (!numericCheck) return feedback("Hay celdas no numéricas.", "error");
-  feedback(`Modo multianalito válido (${headers.length - 1} analitos).`, "ok");
-  document.getElementById("continue-btn").disabled = false;
-}
 
-// --- Feedback visual ---
-function feedback(msg, type) {
-  const fb = document.getElementById("feedback");
-  fb.innerText = msg;
-  fb.style.color = type === "ok" ? "#00ff88" : "#ff6666";
-}
+// --- Disparo dinámico de validación ---
+document.addEventListener("input", e => {
+  if (e.target.tagName === "TD" && e.target.isContentEditable) validarVisual();
+});
+document.addEventListener("paste", e => {
+  setTimeout(() => validarVisual(), 50);
+});
+
+// Ejecutar validación inicial al cargar
+window.addEventListener("load", () => setTimeout(() => validarVisual(), 150));
+
+
 
 // --- Botón Volver ---
   document.getElementById("go-back").addEventListener("click", () => {
