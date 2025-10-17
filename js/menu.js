@@ -66,7 +66,7 @@ function updateCarousel(newIndex) {
     memberName.textContent = labs[currentIndex].name;
     memberRole.textContent = labs[currentIndex].role;
     memberName.style.color = color;
-    memberName.style.textShadow = `0 0 8px ${color}, 0 0 15px ${color}`;
+    memberName.style.textShadow = `0 0 1px ${color}, 0 0 2px ${color}`;
     memberName.style.opacity = "1";
     memberRole.style.opacity = "1";
   }, 300);

@@ -280,31 +280,32 @@ body {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(0, 255, 255, 0.08);
-  border: 1.5px solid rgba(0, 255, 255, 0.35);
-  color: #00ffff;
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 20;
-  transition: all 0.35s ease;
   font-size: 1.5rem;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.15);
+  color: #b8ecff;
+  background: linear-gradient(145deg, rgba(6, 5, 7, 0.947), rgba(5, 10, 15, 0.8));
+  border: 1.8px solid rgba(79, 79, 79, 0.25);
+  backdrop-filter: blur(6px) saturate(180%);
+  transition: all 0.35s ease;
   outline: none;
-  border: none;
   padding-bottom: 4px;
 }
 
 .nav-arrow:hover {
-  background: rgba(0, 255, 255, 0.25);
-  box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
-  transform: translateY(-50%) scale(1.12);
-  color: #aeefff;
+  background: linear-gradient(145deg, rgba(7, 12, 17, 0.95), rgba(10, 15, 25, 0.85));
+  border-color: rgba(1, 14, 14, 0.6);
+  box-shadow:
+    inset 1px 1px 4px rgba(255, 255, 255, 0.1),
+    0 0 5px rgba(220, 220, 220, 0.4);
+  transform: translateY(-50%) scale(1.08);
+  color: #e6ffff;
 }
 
 .nav-arrow.left {
@@ -316,6 +317,8 @@ body {
   right: 22px;
   padding-left: 3px;
 }
+
+
 
 
 @media (max-width: 768px) {
