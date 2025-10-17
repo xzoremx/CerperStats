@@ -24,12 +24,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Volver al menú principal
+  // Volver a preinfo
   goMenu.addEventListener("click", () => {
     if (window.cerper && window.cerper.openPage) {
-      window.cerper.openPage("menu.html");
+      window.cerper.openPage("input_data/preinfo.html");
     } else {
-      window.location.href = "../menu.html";
+      window.location.href = "preinfo.html"; 
     }
   });
+
 });

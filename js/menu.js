@@ -1,7 +1,7 @@
 // --- Datos de laboratorios ---
 const labs = [
-  { key: "Cromatografía de Gases", name: "Laboratorio CG", role: "Análisis instrumental avanzado" },
-  { key: "Cromatografía Líquida", name: "Laboratorio CL", role: "Separación de compuestos químicos" },
+  { key: "Cromatografía de Gases", name: "Laboratorio de Cromatografía de Gases", role: "Análisis instrumental avanzado" },
+  { key: "Cromatografía Líquida", name: "Laboratorio de Cromatografía Líquida", role: "Separación de compuestos químicos" },
   { key: "Físico Químico Alimentos", name: "Laboratorio Físico Químico", role: "Evaluación nutricional y calidad" },
   { key: "Agrícola", name: "Laboratorio Agrícola", role: "Estudios de suelos y cultivos" },
   { key: "Microbiología", name: "Laboratorio de Microbiología", role: "Detección de microorganismos" },

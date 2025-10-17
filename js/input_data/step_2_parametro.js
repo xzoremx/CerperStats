@@ -1,5 +1,5 @@
 // input_data/step_2_parametro.js
-import { LAB_CONFIG } from "../../modules/labs_config.js";
+import { LAB_CONFIG } from "../../modules/_common/labs_config.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   // --- Recuperar laboratorio (clave y nombre visible) ---

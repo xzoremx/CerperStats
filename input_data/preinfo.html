@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Información del Informe</title>
+  <link rel="stylesheet" href="../css/preinfo.css">
+</head>
+<body>
+  <header class="header">
+    <img src="../assets/logos/cerper_logo.png" alt="CERPER" class="logo" />
+    <h1 id="lab-title">Información del Informe</h1>
+    <p class="subtitle">Complete los campos antes de continuar</p>
+  </header>
+
+  <main class="container">
+    <div class="grid">
+      <div class="info-card">
+        <label for="metodo">Método</label>
+        <input type="text" id="metodo" placeholder="EPA 8260D" />
+      </div>
+
+      <div class="info-card">
+        <label for="producto">Producto</label>
+        <input type="text" id="producto" placeholder="Agua potable" />
+      </div>
+
+      <div class="info-card">
+        <label for="ensayo">Ensayo</label>
+        <input type="text" id="ensayo" placeholder="Determinación de COVs" />
+      </div>
+
+      <div class="info-card">
+        <label for="expediente">Expediente</label>
+        <input type="text" id="expediente" placeholder="EXPE-01234-2025" />
+      </div>
+    </div>
+
+    <button id="btn-siguiente" class="next-btn">Continuar</button>
+
+  </main>
+
+  <button id="go-menu" class="btn-back">
+    <i data-lucide="arrow-left"></i> Volver
+  </button>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+    <script type="module" src="../js/input_data/preinfo.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        lucide.createIcons();
+      });
+    </script>  
+</body>
+</html>

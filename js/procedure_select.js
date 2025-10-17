@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Mostrar información del laboratorio ---
   if (labKey) {
     labTitle.textContent = labName;
-    labInfo.textContent = `Seleccione el procedimiento para ${labName}.`;
+    labInfo.textContent = `Seleccione el procedimiento para esta sesión.`;
   } else {
     labTitle.textContent = "Procedimientos";
     labInfo.textContent = "Seleccione el procedimiento correspondiente al laboratorio.";
@@ -37,11 +37,11 @@ document.addEventListener("DOMContentLoaded", () => {
       // Guardar procedimiento actual
       sessionStorage.setItem("procedimientoSeleccionado", proc);
 
-      // Ir al siguiente paso: selección Mono / Multi (step_1_type)
+      // Ir al siguiente paso:
       if (window.cerper?.openPage) {
-        await window.cerper.openPage("input_data/step_1_type.html");
+        await window.cerper.openPage("input_data/preinfo.html");
       } else {
-        window.location.href = "input_data/step_1_type.html";
+        window.location.href = "input_data/preinfo.html";
       }
     });
   });

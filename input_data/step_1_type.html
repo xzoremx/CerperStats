@@ -4,14 +4,14 @@
   <meta charset="UTF-8" />
   <title>Ingreso de Datos - Tipo de Análisis</title>
   <link rel="stylesheet" href="../css/input_data.css" />
-  
 </head>
 
 <body>
   <header class="header">
     <img src="../assets/logos/cerper_logo.png" alt="CERPER" class="logo" />
-    <h1>Modo de estructura de datos</h1>
-    <p class="subtitle">Seleccione el tipo de estructura</p>
+    <!-- 🔹 El título ahora se completa dinámicamente -->
+    <h1 id="lab-title">Modo de estructura de datos</h1>
+    <p class="subtitle">Seleccione el tipo de estructura de datos</p>
   </header>
 
   <main class="container">
@@ -23,19 +23,30 @@
         <i data-lucide="layers"></i> Multianalito
       </button>
     </section>
-
-    <div class="actions">
-      <button id="go-menu" class="btn-back">
-        <i data-lucide="arrow-left"></i> Volver al menú
-      </button>
-    </div>
   </main>
+
+  <div class="actions">
+    <button id="go-menu" class="btn-back">
+      <i data-lucide="arrow-left"></i> Volver
+    </button>
+  </div>
 
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="../js/input_data/step_1_type.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
+
+      // 🔹 Recuperar los datos del laboratorio y procedimiento
+      const labKey = sessionStorage.getItem("labSeleccionado") || localStorage.getItem("labSeleccionado");
+      const labName = sessionStorage.getItem("labNombreVisible") || labKey;
+      const proc = sessionStorage.getItem("procedimientoSeleccionado") || localStorage.getItem("procedimientoSeleccionado");
+
+      // 🔹 Actualizar el título
+      const labTitle = document.getElementById("lab-title");
+      if (labTitle) {
+        labTitle.textContent = `${labName} - ${proc}`;
+      }
     });
   </script>
 </body>
