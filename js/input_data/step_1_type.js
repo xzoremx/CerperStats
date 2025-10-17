@@ -3,10 +3,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const goMenu = document.getElementById("go-menu");
 
   // Recuperar laboratorio y procedimiento actuales
-  const lab = sessionStorage.getItem("labSeleccionado") || localStorage.getItem("labSeleccionado");
+  const labKey = sessionStorage.getItem("labSeleccionado") || localStorage.getItem("labSeleccionado");
+  const labName = sessionStorage.getItem("labNombreVisible") || labKey;
   const proc = sessionStorage.getItem("procedimientoSeleccionado") || localStorage.getItem("procedimientoSeleccionado");
 
-  console.log(`Lab: ${lab} | Procedimiento: ${proc}`);
+  console.log(`Lab (key): ${labKey} | Visible: ${labName} | Procedimiento: ${proc}`);
 
   buttons.forEach(btn => {
     btn.addEventListener("click", async () => {

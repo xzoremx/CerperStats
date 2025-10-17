@@ -1,16 +1,17 @@
 // --- Datos de laboratorios ---
 const labs = [
-  { name: "Laboratorio CG", role: "Análisis instrumental avanzado" },
-  { name: "Laboratorio CL", role: "Separación de compuestos químicos" },
-  { name: "Labortorio Físico Químico", role: "Evaluación nutricional y calidad" },
-  { name: "Laboratorio Agrícola", role: "Estudios de suelos y cultivos" },
-  { name: "Laboratorio de Microbiología", role: "Detección de microorganismos" },
-  { name: "Laboratorio Ambiental", role: "Monitoreo de aire, agua y suelo" },
-  { name: "Laboratorio de Biología Molecular", role: "Análisis genético y molecular" },
-  { name: "Laboratorio de Metales", role: "Detección de metales pesados" },
-  { name: "Laboratorio Físico Sensorial", role: "Evaluación sensorial y percepción" },
-  { name: "Laboratorio de Hidrobiología", role: "Estudios de ecosistemas acuáticos" }
+  { key: "Cromatografía de Gases", name: "Laboratorio CG", role: "Análisis instrumental avanzado" },
+  { key: "Cromatografía Líquida", name: "Laboratorio CL", role: "Separación de compuestos químicos" },
+  { key: "Físico Químico Alimentos", name: "Laboratorio Físico Químico", role: "Evaluación nutricional y calidad" },
+  { key: "Agrícola", name: "Laboratorio Agrícola", role: "Estudios de suelos y cultivos" },
+  { key: "Microbiología", name: "Laboratorio de Microbiología", role: "Detección de microorganismos" },
+  { key: "Ambiental", name: "Laboratorio Ambiental", role: "Monitoreo de aire, agua y suelo" },
+  { key: "Biología Molecular", name: "Laboratorio de Biología Molecular", role: "Análisis genético y molecular" },
+  { key: "Metales", name: "Laboratorio de Metales", role: "Detección de metales pesados" },
+  { key: "Físico Sensorial", name: "Laboratorio Físico Sensorial", role: "Evaluación sensorial y percepción" },
+  { key: "Hidrobiología", name: "Laboratorio de Hidrobiología", role: "Estudios de ecosistemas acuáticos" }
 ];
+
 
 const labColors = [
   "#00e6ff", // Cromatografía de Gases
@@ -95,11 +96,17 @@ cards.forEach((card, i) => {
   card.addEventListener("click", async () => {
     updateCarousel(i);
 
-    // Guardar laboratorio seleccionado para las siguientes vistas
-    const selectedLab = labs[i].name;
-    localStorage.setItem("labSeleccionado", selectedLab);
+    const selectedLab = labs[i];
 
-    // Navegar a la siguiente página (solo si existe la API de Electron)
+    // Guardar clave técnica y nombre visible
+    sessionStorage.setItem("labSeleccionado", selectedLab.key);
+    sessionStorage.setItem("labNombreVisible", selectedLab.name);
+
+    // También lo guardamos en localStorage por compatibilidad (opcional)
+    localStorage.setItem("labSeleccionado", selectedLab.key);
+    localStorage.setItem("labNombreVisible", selectedLab.name);
+
+    // Navegar a la siguiente página
     if (window.cerper && typeof window.cerper.openPage === "function") {
       await window.cerper.openPage("procedure_select.html");
     } else {
@@ -108,6 +115,7 @@ cards.forEach((card, i) => {
     }
   });
 });
+
 
 // --- Inicializa carrusel ---
 updateCarousel(0);

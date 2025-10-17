@@ -1,5 +1,11 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const lab = sessionStorage.getItem("labSeleccionado") || "Laboratorio";
+  // --- Recuperar laboratorio (clave y nombre visible) ---
+  const labKey =
+    sessionStorage.getItem("labSeleccionado") ||
+    localStorage.getItem("labSeleccionado");
+  const labName =
+    sessionStorage.getItem("labNombreVisible") || labKey || "Laboratorio";
+
   const parametroRaw = sessionStorage.getItem("parametroSeleccionado") || "Parámetro";
   const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono"; // default: mono
 
@@ -7,7 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let parametro = parametroRaw.toLowerCase();
   if (!parametro.endsWith("s")) parametro += "s";
 
-  document.getElementById("lab-title").textContent = `${lab} - Ingreso de Lecturas`;
+  document.getElementById("lab-title").textContent = `${labName} - Ingreso de Lecturas`;
+
   // --- Obtener datos de cantidad y lecturas ---
   const K = parseInt(sessionStorage.getItem("K")) || 1;
   const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
@@ -40,14 +47,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   generarTabla(tipoAnalisis);
 
+  // --- Botón "Continuar" con validación estructural ---
   document.getElementById("continue-btn").addEventListener("click", () => {
-    notify("Datos guardados correctamente.", "success");
-    setTimeout(() => {
-      if (window.cerper && window.cerper.openPage)
-        window.cerper.openPage("../evaluation_select.html");
-      else window.location.href = "../evaluation_select.html";
-    }, 1000);
+    // Ejecutar validación estructural y de contenido
+    const esValido = validarEstructuraYContenido();
+
+    if (esValido) {
+      // Si la validación pasa, continuar tras un breve delay
+      setTimeout(() => {
+        if (window.cerper && window.cerper.openPage)
+          window.cerper.openPage("../evaluation_select.html");
+        else
+          window.location.href = "../evaluation_select.html";
+      }, 1000);
+    } else {
+      // Si la validación falla, no continuar
+      notify("Corrige los errores antes de continuar.", "error");
+    }
   });
+
 });
 
 

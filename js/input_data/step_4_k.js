@@ -1,13 +1,22 @@
+// input_data/step_4_k.js
 document.addEventListener("DOMContentLoaded", () => {
-  const lab = sessionStorage.getItem("labSeleccionado") || localStorage.getItem("labSeleccionado");
-  const parametro = sessionStorage.getItem("parametroSeleccionado") || "Parámetro";
-  const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
+  // --- Recuperar datos del laboratorio y del flujo ---
+  const labKey =
+    sessionStorage.getItem("labSeleccionado") ||
+    localStorage.getItem("labSeleccionado");
+  const labName =
+    sessionStorage.getItem("labNombreVisible") || labKey || "Laboratorio";
 
+  const parametro =
+    sessionStorage.getItem("parametroSeleccionado") || "Parámetro";
+  const tipoDato =
+    sessionStorage.getItem("tipoDato") || "cuantitativo";
+
+  // --- Referencias del DOM ---
   const title = document.getElementById("lab-title");
   const paramName = document.getElementById("param-name");
   const paramLabel = document.getElementById("param-label");
   const paramSingular = document.getElementById("param-singular");
-
   const inputK = document.getElementById("input-k");
   const inputN = document.getElementById("input-n");
   const lecturasContainer = document.getElementById("lecturas-container");
@@ -24,7 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // --- Actualizar textos en pantalla ---
-  title.textContent = `${lab} - Definir cantidad de ${capitalize(plural)}`;
+  title.textContent = `${labName} - Definir cantidad de ${capitalize(plural)}`;
   paramName.textContent = plural;
   paramLabel.textContent = plural;
   paramSingular.textContent = singular;
@@ -44,14 +53,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Validación automática al escribir
+  // --- Validación automática al escribir ---
   [inputK, inputN].forEach(input => {
     input.addEventListener("input", () => {
       const val = input.value.trim();
-
-      // Permitir borrar temporalmente
       if (val === "") return;
-
       const num = Number(val);
       if (!Number.isInteger(num) || num < 1) {
         notify("Por favor, ingrese solo números enteros positivos (sin decimales).", "error");
@@ -64,10 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const field = document.getElementById(id);
     field.addEventListener("input", () => {
       const val = field.value.trim();
-
-      // Permitir borrar temporalmente
       if (val === "") return;
-
       const num = Number(val);
       if (!Number.isInteger(num) || num < 1) {
         notify("Por favor, ingrese solo números enteros positivos (sin decimales).", "error");
@@ -75,7 +78,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
-
 
   // --- Botón Continuar ---
   document.getElementById("continue").addEventListener("click", () => {
@@ -97,14 +99,14 @@ document.addEventListener("DOMContentLoaded", () => {
       lecturas = Array(k).fill(n);
     }
 
+    // --- Guardar datos ---
     sessionStorage.setItem("K", k);
     sessionStorage.setItem("lecturasPorParametro", JSON.stringify(lecturas));
 
-    console.log(`K=${k}, lecturas=${lecturas}, tipoDato=${tipoDato}`);
     notify("Datos guardados correctamente.", "success");
 
     setTimeout(() => {
-      if (window.cerper && window.cerper.openPage) {
+      if (window.cerper?.openPage) {
         window.cerper.openPage("input_data/step_5_sheet.html");
       } else {
         window.location.href = "step_5_sheet.html";
@@ -114,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Botón Volver ---
   document.getElementById("go-back").addEventListener("click", () => {
-    if (window.cerper && window.cerper.openPage) {
+    if (window.cerper?.openPage) {
       window.cerper.openPage("input_data/step_2_parametro.html");
     } else {
       window.location.href = "step_2_parametro.html";
