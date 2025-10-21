@@ -161,9 +161,15 @@ function checkEncabezadosMulti(rows, errores) {
 }
 
 
-// ---Multianalito: Bloques de datos ---
+// --- Multianalito: Bloques de datos (rango dinámico según encabezados y tipo de análisis) ---
 function checkBloquesMulti(rows, K, lecturas, encabezados, errores) {
+  const columnasValidas = encabezados
+    .map((h, i) => ({ nombre: h, idx: i + 1 }))
+    .filter(c => c.nombre && !/nuevo/i.test(c.nombre));
+
+  const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo"; // cuanti o cuali
   let filaActual = 1;
+
   for (let a = 0; a < K; a++) {
     const parametro = rows[filaActual]?.cells[0]?.textContent.trim() || `Parámetro ${a + 1}`;
     const lecturasEsperadas = lecturas[a] || lecturas[0] || 1;
@@ -171,19 +177,83 @@ function checkBloquesMulti(rows, K, lecturas, encabezados, errores) {
     for (let r = 0; r < lecturasEsperadas; r++) {
       const tr = rows[filaActual + r];
       if (!tr) break;
-      const celdas = [...tr.cells].slice(1);
-      celdas.forEach((td, idx) => {
+
+      columnasValidas.forEach(col => {
+        const td = tr.cells[col.idx];
+        if (!td) return;
+
         const valor = td.textContent.trim();
-        if (!valor) return;
+        const celdaPos = `fila ${filaActual + r + 1}, columna ${col.idx + 1}`;
+
+        // === 1) Celda vacía dentro del rango válido ===
+        if (valor === "") {
+          errores.push(`Celda vacía no permitida dentro del rango (${parametro}, ${celdaPos})`);
+          td.style.outline = "2px solid #ff0033";
+          return;
+        }
+
+        // === 2) Validaciones específicas según tipo de análisis ===
         const num = parseFloat(valor.replace(",", "."));
-        if (isNaN(num) || num <= 0)
-          errores.push(`Valor inválido en ${parametro}, fila ${filaActual + r + 1}, columna ${idx + 2}`);
+
+        if (isNaN(num)) {
+          errores.push(`Valor no numérico en ${parametro}, ${celdaPos}`);
+          td.style.outline = "2px solid #ff0033";
+          return;
+        }
+
+        if (tipoDato === "cuantitativo") {
+          // --- Cuantitativo: solo números reales mayores a 0 ---
+          if (num <= 0) {
+            errores.push(`Valor no permitido (${parametro}, ${celdaPos}). Debe ser > 0`);
+            td.style.outline = "2px solid #ff0033";
+          } else {
+            td.style.outline = "";
+          }
+        }
+
+        else if (tipoDato === "cualitativo") {
+          // --- Cualitativo: solo valores enteros dentro del conjunto permitido ---
+          const permitidos = [0, 1, 3, 5, 7];
+          const esEntero = Number.isInteger(num);
+
+          if (!esEntero || !permitidos.includes(num)) {
+            errores.push(`Valor inválido (${parametro}, ${celdaPos}). Permitidos: ${permitidos.join(", ")}`);
+            td.style.outline = "2px solid #ff0033";
+          } else {
+            td.style.outline = "";
+          }
+        }
       });
     }
 
     filaActual += lecturasEsperadas;
   }
+
+  // === 3) Revisión global adicional: filas vacías completas entre la primera y última con datos ===
+  const primeraFila = rows.findIndex(
+    (r, i) => i > 0 && columnasValidas.some(c => (r.cells[c.idx]?.textContent.trim() || "") !== "")
+  );
+  const ultimaFila = [...rows].reverse().findIndex(
+    r => columnasValidas.some(c => (r.cells[c.idx]?.textContent.trim() || "") !== "")
+  );
+  const ultimaFilaReal = rows.length - 1 - ultimaFila;
+
+  if (primeraFila !== -1 && ultimaFilaReal > primeraFila) {
+    for (let i = primeraFila; i <= ultimaFilaReal; i++) {
+      const fila = rows[i];
+      const todasVacias = columnasValidas.every(c => (fila.cells[c.idx]?.textContent.trim() || "") === "");
+      if (todasVacias) {
+        errores.push(`Fila ${i + 1} completamente vacía dentro del rango total.`);
+        columnasValidas.forEach(c => {
+          const td = fila.cells[c.idx];
+          if (td) td.style.outline = "2px solid #ff0033";
+        });
+      }
+    }
+  }
 }
+
+
 
 
 // ---Multianalito: Filas fuera de rango ---

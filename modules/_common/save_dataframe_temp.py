@@ -82,7 +82,6 @@ def save_dataframe_temp(lab_name: str, json_str: str) -> dict:
     info_path = os.path.join(output_dir, "info.json")
 
     df.to_csv(csv_path, index=False, encoding="utf-8-sig")
-    df.to_parquet(parquet_path, index=False)
 
     meta = {
         "lab": lab_name,
@@ -92,29 +91,27 @@ def save_dataframe_temp(lab_name: str, json_str: str) -> dict:
         "fecha_creacion": timestamp
     }
 
-    with open(info_path, "w", encoding="utf-8") as f:
+    with open(info_path, "w", encoding="utf-8-sig") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
 
     return {"ok": True, "output_dir": output_dir, **meta}
 
 
 def _main_cli():
-    """
-    CLI simple para ser invocado desde Electron:
-      python save_dataframe_temp.py "<lab_name>"
-    Recibe el JSON por STDIN.
-    """
     if len(sys.argv) < 2:
         print(json.dumps({"ok": False, "error": "Falta lab_name"}))
         sys.exit(1)
 
     lab_name = sys.argv[1]
     try:
-        json_str = sys.stdin.read()
+        json_bytes = sys.stdin.buffer.read()
+        json_str = json_bytes.decode("utf-8", errors="replace")
+
         res = save_dataframe_temp(lab_name, json_str)
         print(json.dumps(res, ensure_ascii=False))
     except Exception as e:
         print(json.dumps({"ok": False, "error": str(e)}))
+
 
 
 if __name__ == "__main__":

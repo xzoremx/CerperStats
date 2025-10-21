@@ -479,12 +479,24 @@ function validarVisual() {
         // Dentro del rango válido
         if (valor === "") {
           td.style.background = "rgba(0,255,200,0.05)"; // vacía dentro del rango
-        } else if (esNumero && parseFloat(valor) > 0) {
-          td.style.background = "rgba(0,255,200,0.18)"; // número válido
         } else {
-          td.style.background = "rgba(255,50,50,0.25)"; // 🔴 texto, símbolo o encabezado añadido
-          todoValido = false;
+
+          const num = parseFloat(valor.replace(",", "."));
+          const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
+          const permitidos = [0, 1, 3, 5, 7];
+
+          if (tipoDato === "cuantitativo" && num > 0) {
+            td.style.background = "rgba(0,255,200,0.18)"; // válido
+          }
+          else if (tipoDato === "cualitativo" && Number.isInteger(num) && permitidos.includes(num)) {
+            td.style.background = "rgba(0,255,200,0.18)"; // válido
+          }
+          else {
+            td.style.background = "rgba(255,50,50,0.25)"; // inválido
+            todoValido = false;
+          }
         }
+
       }
     }
 
@@ -557,12 +569,23 @@ function validarVisual() {
 
           if (valor === "") {
             td.style.background = `${colorBase.replace("0.25", "0.07")}`; // tenue base
-          } else if (esNumero && parseFloat(valor) > 0) {
-            td.style.background = `${colorBase.replace("0.25", "0.15")}`; // más notorio
-          } else {
-            td.style.background = "rgba(255,60,60,0.25)";
-            todoValido = false;
-          }
+            } else {
+              const num = parseFloat(valor.replace(",", "."));
+              const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
+              const permitidos = [0, 1, 3, 5, 7];
+
+              if (tipoDato === "cuantitativo" && num > 0) {
+                td.style.background = `${colorBase.replace("0.25", "0.15")}`; // válido
+              }
+              else if (tipoDato === "cualitativo" && Number.isInteger(num) && permitidos.includes(num)) {
+                td.style.background = `${colorBase.replace("0.25", "0.15")}`; // válido
+              }
+              else {
+                td.style.background = "rgba(255,60,60,0.25)"; // error
+                todoValido = false;
+              }
+            }
+
         });
       }
 
@@ -613,10 +636,8 @@ function validarVisual() {
         }
       });
     }
-
     
   }
-
 
 }
 
