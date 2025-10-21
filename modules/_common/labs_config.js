@@ -113,7 +113,7 @@ export const LAB_CONFIG = {
   "Hidrobiología": {
     tiposDisponibles: [
       { tipoDato: "cuantitativo" },
-      { tipoDato: "cualitativo", modo: "binario", valoresPermitidos: [0, 1] }
+      { tipoDato: "cualitativo", modo: "presencia / no presencia", valoresPermitidos: [0, 1] }
     ],
     placeholders: {
       metodo: "SM 10200 F",

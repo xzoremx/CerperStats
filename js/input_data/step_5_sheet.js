@@ -47,24 +47,62 @@ document.addEventListener("DOMContentLoaded", () => {
 
   generarTabla(tipoAnalisis);
 
-  // --- Botón "Continuar" con validación estructural ---
-  document.getElementById("continue-btn").addEventListener("click", () => {
-    // Ejecutar validación estructural y de contenido
-    const esValido = validarEstructuraYContenido();
+  // --- Habilitar botón "Continuar" ---
+  const continuarBtn = document.getElementById("continue-btn");
+  if (continuarBtn) continuarBtn.disabled = false;
 
-    if (esValido) {
-      // Si la validación pasa, continuar tras un breve delay
-      setTimeout(() => {
-        if (window.cerper && window.cerper.openPage)
-          window.cerper.openPage("../evaluation_select.html");
-        else
-          window.location.href = "../evaluation_select.html";
-      }, 1000);
-    } else {
-      // Si la validación falla, no continuar
-      notify("Corrige los errores antes de continuar.", "error");
+
+  // --- Botón "Continuar" con validación estructural + guardado de DataFrame ---
+  document.getElementById("continue-btn").addEventListener("click", async () => {
+    try {
+      const resultado = validarEstructuraYContenido();
+
+      // --- Caso exitoso ---
+      if (resultado === true) {
+        notify("Datos validados correctamente. Guardando datos temporales...", "success");
+
+        // 🔹 Intentar guardar DataFrame (llama al proceso Python)
+        if (typeof window.guardarDataframeTemp === "function") {
+          const res = await window.guardarDataframeTemp();
+          if (!res || !res.ok) {
+            notify(`No se pudo guardar el DataFrame temporal: ${res?.error || "Error desconocido"}`, "error");
+            console.error("[CerperStats] Error guardando DataFrame:", res);
+            return; // no continuar si falló el guardado
+          }
+
+          console.log(`[CerperStats] DataFrame guardado en: ${res.output_dir}`);
+          notify(" DataFrame guardado correctamente.", "success");
+        } else {
+          console.warn("[CerperStats] La función guardarDataframeTemp no está definida.");
+        }
+
+        // 🔹 Continuar a la siguiente vista
+        setTimeout(() => {
+          if (window.cerper && window.cerper.openPage)
+            window.cerper.openPage("evaluation_select.html");
+          else
+            window.location.href = "evaluation_select.html";
+        }, 1000);
+
+        return;
+      }
+
+      // --- Caso con errores ---
+      if (resultado && resultado.errores && resultado.errores.length > 0) {
+        mostrarErroresSecuenciales(resultado.errores);
+        return;
+      }
+
+      // --- Caso inesperado ---
+      notify("Error interno o estructura no válida.", "error");
+    } catch (err) {
+      console.error("Error durante la validación/guardado:", err);
+      notify("Error inesperado durante la validación o guardado.", "error");
     }
   });
+
+
+
 
 });
 
@@ -389,9 +427,7 @@ function validarVisual() {
   if (!table) return;
   const rows = [...table.rows];
 
-  // Reset de botón continuar
-  const continuar = document.getElementById("continue-btn");
-  continuar.disabled = true;
+  
   // --- MONOANALITO ---
   if (tipoAnalisis === "mono") {
     const columnas = K;
@@ -407,7 +443,7 @@ function validarVisual() {
       if (index >= K) {
         const valor = td.textContent.trim();
         if (valor !== "") {
-          td.style.background = "rgba(255,50,50,0.25)"; // 🔴 error si tiene texto o número
+          td.style.background = "rgba(255,50,50,0.25)"; // error si tiene texto o número
           todoValido = false;
         } else {
           td.style.background = "transparent"; // sin color si vacío
@@ -452,7 +488,7 @@ function validarVisual() {
       }
     }
 
-    if (todoValido) continuar.disabled = false;
+    
   }
 
 
@@ -533,6 +569,36 @@ function validarVisual() {
       inicioFila = finFila + 1;
     }
 
+    // --- Validar columna fija (parámetro) fuera del rango de analistas válidos ---
+    const totalFilas = rows.length;
+    for (let r = 1; r < totalFilas; r++) {
+      const td = rows[r].cells[0]; // primera columna
+      const valor = td.textContent.trim();
+
+      // Determinar qué analista corresponde según las secciones esperadas
+      let filasValidas = 0;
+      for (let a = 0; a < K; a++) filasValidas += (lecturas[a] || lecturas[0] || 1);
+
+      // --- Solo validar celdas fuera del rango de filas válidas ---
+      if (r > filasValidas) {
+        if (valor !== "") {
+          td.style.background = "rgba(255,50,50,0.25)"; // error si hay texto fuera de rango
+          todoValido = false;
+        } else {
+          td.style.background = "transparent"; // vacío fuera de rango = ok
+          td.style.color = "";
+          td.style.fontWeight = "";
+        }
+      } else {
+        // Dentro del rango válido → mantener transparente
+        td.style.background = "transparent";
+        td.style.color = "";
+        td.style.fontWeight = "";
+      }
+    }
+
+
+
     // Filas fuera del rango (debajo del último analista)
     for (let r = ultimaFila + 1; r < rows.length; r++) {
       const celdas = [...rows[r].cells];
@@ -548,7 +614,7 @@ function validarVisual() {
       });
     }
 
-    if (todoValido) continuar.disabled = false;
+    
   }
 
 
@@ -719,8 +785,6 @@ function activarCopiadoExcel() {
 
 
 
-
-
 // --- Disparo dinámico de validación ---
 document.addEventListener("input", e => {
   if (e.target.tagName === "TD" && e.target.isContentEditable) validarVisual();
@@ -763,4 +827,26 @@ window.notify = function (message, type = "info") {
   setTimeout(() => div.classList.remove("show"), 2800);
   setTimeout(() => div.remove(), 3300);
 };
+
+
+// --- Mostrar errores uno por uno ---
+function mostrarErroresSecuenciales(listaErrores) {
+  if (!listaErrores || listaErrores.length === 0) {
+    notify("Corrige los errores antes de continuar.", "error");
+    return;
+  }
+
+  let index = 0;
+
+  function mostrarSiguiente() {
+    if (index < listaErrores.length) {
+      notify(listaErrores[index], "error");
+      index++;
+      // muestra el siguiente tras un pequeño delay
+      setTimeout(mostrarSiguiente, 1800);
+    }
+  }
+
+  mostrarSiguiente();
+}
 
