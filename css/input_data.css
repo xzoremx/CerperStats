@@ -221,7 +221,14 @@ h1, .page-title {
   font-size: 0.9rem;
 }
 
-/* === NOTIFICACIONES (TOAST) === */
+#excel td.selected {
+  outline: 2px solid #00ffff;
+  outline-offset: -2px;
+  background: rgba(0,255,255,0.15);
+}
+
+
+/* === NOTIFICACIONES === */
 .notify {
   position: fixed;
   bottom: 25px;

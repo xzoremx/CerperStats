@@ -190,6 +190,8 @@ function generarTabla(tipo) {
 
   activarNavegacion();
   activarPegado();
+  activarCopiadoExcel();
+
 }
 
 // --- Función auxiliar ---
@@ -371,7 +373,11 @@ function activarPegado() {
       });
     });
   });
+
 }
+
+
+
 
 // --- VALIDACIÓN VISUAL AUTOMÁTICA (Mono y Multi) ---
 function validarVisual() {
@@ -386,7 +392,6 @@ function validarVisual() {
   // Reset de botón continuar
   const continuar = document.getElementById("continue-btn");
   continuar.disabled = true;
-
   // --- MONOANALITO ---
   if (tipoAnalisis === "mono") {
     const columnas = K;
@@ -395,6 +400,26 @@ function validarVisual() {
 
     let todoValido = true;
 
+    // --- Fila 0 (encabezado debe estar vacío) ---
+    const headerCells = [...rows[0].cells];
+    headerCells.forEach((td, index) => {
+      // Solo validar celdas fuera del rango de encabezados originales
+      if (index >= K) {
+        const valor = td.textContent.trim();
+        if (valor !== "") {
+          td.style.background = "rgba(255,50,50,0.25)"; // 🔴 error si tiene texto o número
+          todoValido = false;
+        } else {
+          td.style.background = "transparent"; // sin color si vacío
+        }
+      } else {
+        // No marcar las K primeras celdas del encabezado
+        td.style.background = "transparent";
+      }
+    });
+
+
+    // --- Filas de datos ---
     for (let r = 1; r < rows.length; r++) {
       const celdas = [...rows[r].cells];
       for (let c = 0; c < celdas.length; c++) {
@@ -417,11 +442,11 @@ function validarVisual() {
 
         // Dentro del rango válido
         if (valor === "") {
-          td.style.background = "rgba(0,255,200,0.05)"; // tenue
+          td.style.background = "rgba(0,255,200,0.05)"; // vacía dentro del rango
         } else if (esNumero && parseFloat(valor) > 0) {
-          td.style.background = "rgba(0,255,200,0.18)"; // más visible
+          td.style.background = "rgba(0,255,200,0.18)"; // número válido
         } else {
-          td.style.background = "rgba(255,50,50,0.25)"; // error
+          td.style.background = "rgba(255,50,50,0.25)"; // 🔴 texto, símbolo o encabezado añadido
           todoValido = false;
         }
       }
@@ -429,6 +454,7 @@ function validarVisual() {
 
     if (todoValido) continuar.disabled = false;
   }
+
 
   // --- MULTIANALITO ---
   else if (tipoAnalisis === "multi") {
@@ -538,6 +564,162 @@ function generarColores(K) {
   return colores;
 }
 
+// --- Copiar desde UI a Excel (modo Excel; toggle con Ctrl+Tab o Ctrl+Shift+X) ---
+function activarCopiadoExcel() {
+  const table = document.getElementById("excel");
+  if (!table) return;
+
+  let startCell = null;
+  let endCell = null;
+  let modoSeleccionActivo = false;
+
+  // Badge visual (opcional) para indicar modo activo
+  let badge = document.getElementById("copy-badge");
+  if (!badge) {
+    badge = document.createElement("div");
+    badge.id = "copy-badge";
+    badge.textContent = "Modo Copia: OFF";
+    Object.assign(badge.style, {
+      position: "fixed", bottom: "16px", right: "16px",
+      padding: "8px 12px", borderRadius: "10px",
+      background: "rgba(0,255,255,0.12)", color: "rgba(6, 244, 248, 1)",
+      fontFamily: "Segoe UI, sans-serif", fontSize: "12px",
+      border: "1px solid rgba(0,255,255,0.35)",
+      boxShadow: "0 0 12px rgba(0,255,255,0.2)",
+      backdropFilter: "blur(6px)", zIndex: 9999
+    });
+    document.body.appendChild(badge);
+  }
+  const setBadge = (on) => { badge.textContent = `Modo Copia: ${on ? "ON" : "OFF"}`; };
+
+  function clearSelection() {
+    table.querySelectorAll("td.selected").forEach(td => td.classList.remove("selected"));
+  }
+
+  function selectRange(start, end) {
+    clearSelection();
+    const rows = [...table.rows];
+    const startRow = Math.min(start.parentElement.rowIndex, end.parentElement.rowIndex);
+    const endRow = Math.max(start.parentElement.rowIndex, end.parentElement.rowIndex);
+    const startCol = Math.min(start.cellIndex, end.cellIndex);
+    const endCol = Math.max(start.cellIndex, end.cellIndex);
+
+    for (let r = startRow; r <= endRow; r++) {
+      for (let c = startCol; c <= endCol; c++) {
+        const cell = rows[r]?.cells[c];
+        if (cell) cell.classList.add("selected");
+      }
+    }
+  }
+
+  // Toggle modo selección: Ctrl+Tab (primario) o Ctrl+Shift+X (fallback)
+  document.addEventListener("keydown", (e) => {
+    const isCtrlTab = e.ctrlKey && e.key === "Tab";
+    const isFallback = e.ctrlKey && e.shiftKey && (e.key.toLowerCase() === "x");
+    if (isCtrlTab || isFallback) {
+      e.preventDefault();
+      modoSeleccionActivo = !modoSeleccionActivo;
+      if (!modoSeleccionActivo) clearSelection();
+      setBadge(modoSeleccionActivo);
+      notify(modoSeleccionActivo ? "Modo de copiado activado." : "Modo de copiado desactivado.", "success");
+    }
+  });
+
+  // Selección por arrastre (solo en modo activo)
+  table.addEventListener("mousedown", (e) => {
+    if (!modoSeleccionActivo) return;
+    const td = e.target.closest("td");
+    if (!td) return;
+    e.preventDefault();
+    startCell = td;
+    endCell = td;
+    selectRange(startCell, endCell);
+    table.addEventListener("mouseover", onMouseOver);
+    document.addEventListener("mouseup", onMouseUp, { once: true });
+  });
+
+  function onMouseOver(e) {
+    if (!modoSeleccionActivo) return;
+    const td = e.target.closest("td");
+    if (!td) return;
+    endCell = td;
+    selectRange(startCell, endCell);
+  }
+
+  function onMouseUp() {
+    table.removeEventListener("mouseover", onMouseOver);
+  }
+
+  // Copiar con Ctrl+C (sin depender del evento 'copy')
+  document.addEventListener("keydown", async (e) => {
+    if (!modoSeleccionActivo) return;
+    if (!(e.ctrlKey || e.metaKey)) return;
+    if (e.key.toLowerCase() !== "c") return;
+
+    e.preventDefault();
+
+    const rows = [...table.rows];
+    const selected = [...table.querySelectorAll("td.selected")];
+
+    // Si no hay rango, copiar celda activa
+    if (selected.length === 0) {
+      const active = document.activeElement?.closest?.("td");
+      const text = active ? active.textContent.trim() : "";
+      try {
+        await navigator.clipboard.writeText(text);
+        notify("Celda copiada al portapapeles.", "success");
+      } catch {
+        fallbackClipboardWrite(text, e);
+      }
+      return;
+    }
+
+    // Armar el TSV del rango rectangular más pequeño que contiene la selección
+    const rowIdx = [...new Set(selected.map(td => td.parentElement.rowIndex))].sort((a, b) => a - b);
+    const colIdx = [...new Set(selected.map(td => td.cellIndex))].sort((a, b) => a - b);
+
+    let tsv = "";
+    for (let r = rowIdx[0]; r <= rowIdx[rowIdx.length - 1]; r++) {
+      const line = colIdx.map(c => (rows[r]?.cells[c]?.textContent ?? "").toString().trim()).join("\t");
+      tsv += line + (r < rowIdx[rowIdx.length - 1] ? "\n" : "");
+    }
+
+    try {
+      await navigator.clipboard.writeText(tsv);
+      notify("Datos copiados al portapapeles.", "success");
+    } catch {
+      fallbackClipboardWrite(tsv, e);
+    }
+  });
+
+  // Fallback si el permiso de clipboard falla
+  function fallbackClipboardWrite(text, evt) {
+    try {
+      // Intentar usar el portapapeles del evento 'copy' si existe
+      if (evt && evt.clipboardData) {
+        evt.clipboardData.setData("text/plain", text);
+        notify("Datos copiados (fallback).", "success");
+      } else {
+        // Último recurso: textarea temporal + execCommand
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        notify("Datos copiados (fallback).", "success");
+      }
+    } catch {
+      notify("No se pudo copiar. Revisa permisos del portapapeles.", "error");
+    }
+  }
+}
+
+
+
+
 
 // --- Disparo dinámico de validación ---
 document.addEventListener("input", e => {
@@ -561,17 +743,24 @@ window.addEventListener("load", () => setTimeout(() => validarVisual(), 150));
     }
   });
 
-// --- Notificaciones flotantes ---
-function notify(message, type = "info") {
+
+// === Notificaciones flotantes ===
+window.notify = function (message, type = "info") {
+  // Elimina notificación previa
   const existing = document.querySelector(".notify");
   if (existing) existing.remove();
 
+  // Crear elemento
   const div = document.createElement("div");
   div.className = `notify ${type}`;
   div.textContent = message;
   document.body.appendChild(div);
 
-  setTimeout(() => div.classList.add("show"), 50);
-  setTimeout(() => div.classList.remove("show"), 3000);
-  setTimeout(() => div.remove(), 3500);
-}
+  // Mostrar con animación
+  requestAnimationFrame(() => div.classList.add("show"));
+
+  // Ocultar y eliminar
+  setTimeout(() => div.classList.remove("show"), 2800);
+  setTimeout(() => div.remove(), 3300);
+};
+
