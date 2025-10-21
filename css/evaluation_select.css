@@ -12,9 +12,9 @@ html, body {
 }
 
 body {
-  background: radial-gradient(circle at top, #1a0003, #000);
+  background: radial-gradient(circle at top, #111, #000);
   font-family: 'Poppins', 'Segoe UI', sans-serif;
-  color: #ffeaea;
+  color: #e8e8e8;
   display: flex;
   overflow: hidden;
 }
@@ -24,8 +24,8 @@ body {
    ============================== */
 #sidebar {
   width: 240px;
-  background: rgba(20, 0, 0, 0.85);
-  border-right: 1px solid rgba(255, 0, 60, 0.12);
+  background: rgba(0, 0, 0, 0.85);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
@@ -50,7 +50,7 @@ body {
   padding: 12px 18px;
   margin: 6px 0;
   border-radius: 10px;
-  color: #ffc9c9;
+  color: #ccc;
   cursor: pointer;
   transition: all 0.25s ease;
   font-size: 0.98rem;
@@ -58,20 +58,20 @@ body {
 }
 
 .menu-item:hover {
-  background: rgba(255, 0, 60, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
   transform: translateX(4px);
-  box-shadow: inset 2px 0 0 #ff0033aa;
+  box-shadow: inset 2px 0 0 rgba(255, 255, 255, 0.25);
 }
 
 .menu-item.active {
-  background: rgba(255, 0, 60, 0.25);
+  background: rgba(255, 255, 255, 0.12);
   color: #fff;
-  box-shadow: inset 3px 0 0 #ff0033;
+  box-shadow: inset 3px 0 0 #0d0d0d;
 }
 
 .menu-item .icon i {
-  color: #ff0033;
+  color: #e0e0e0;
   width: 22px;
   height: 22px;
 }
@@ -94,14 +94,14 @@ body {
 
 .dashboard-layout h1 {
   font-size: 1.9rem;
-  color: #ff0033;
+  color: #f0f0f0;
   letter-spacing: 0.5px;
   margin-bottom: 10px;
 }
 
 .dashboard-layout p {
   font-size: 1rem;
-  color: #ffbcbc;
+  color: #c9c9c9;
   opacity: 0.9;
 }
 
@@ -116,12 +116,12 @@ body {
 }
 
 .analysis-card {
-  background: rgba(255, 0, 60, 0.05);
-  border: 1px solid rgba(255, 0, 60, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
   padding: 36px 26px;
   text-align: center;
-  box-shadow: 0 0 20px rgba(255, 0, 60, 0.06);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(16px);
   transition: all 0.3s ease;
   position: relative;
@@ -130,28 +130,28 @@ body {
 
 .analysis-card:hover {
   transform: translateY(-6px) scale(1.04);
-  border-color: rgba(255, 0, 60, 0.6);
-  box-shadow: 0 0 24px rgba(255, 0, 60, 0.35);
-  background: rgba(255, 0, 60, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 24px rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .card-icon img {
   width: 90px;
   height: 90px;
-  filter: drop-shadow(0 0 8px rgba(255, 0, 60, 0.4));
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.25));
   margin-bottom: 16px;
 }
 
 .card-title {
   font-size: 1.25rem;
-  color: #fff5f5;
+  color: #fff;
   font-weight: 600;
   margin-bottom: 8px;
 }
 
 .card-desc {
   font-size: 0.95rem;
-  color: #ffcccc;
+  color: #ddd;
   line-height: 1.4;
   opacity: 0.95;
 }
@@ -163,11 +163,11 @@ body {
   width: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 0, 60, 0.25);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 0, 60, 0.45);
+  background: rgba(255, 255, 255, 0.35);
 }
 
 /* ==============================
@@ -203,7 +203,6 @@ body {
   }
 }
 
-
 /* === BOTÓN VOLVER === */
 .btn-back {
   position: fixed;
@@ -213,9 +212,9 @@ body {
   align-items: center;
   gap: 0.4rem;
 
-  background: rgba(255, 0, 60, 0.08);
-  border: 1px solid rgba(255, 0, 60, 0.5);
-  color: #ff0033;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #f0f0f0;
 
   padding: 0.7rem 1.5rem;
   border-radius: 12px;
@@ -225,7 +224,7 @@ body {
   font-size: 0.95rem;
 
   backdrop-filter: blur(10px);
-  box-shadow: 0 0 12px rgba(255, 0, 60, 0.25);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.12);
   transition: all 0.25s ease-in-out;
   z-index: 50;
 }
@@ -237,10 +236,10 @@ body {
 
 /* Hover con brillo neón */
 .btn-back:hover {
-  background-color: rgba(255, 0, 60, 0.15);
-  border-color: rgba(255, 0, 60, 0.7);
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.4);
   color: #fff;
-  box-shadow: 0 0 20px rgba(255, 0, 60, 0.55), 0 0 8px rgba(255, 0, 60, 0.3);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.4), 0 0 8px rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
 }
 
@@ -251,15 +250,37 @@ body {
 /* Pulso suave neón */
 @keyframes pulseNeon {
   0%, 100% {
-    box-shadow: 0 0 14px rgba(255, 0, 60, 0.3), 0 0 28px rgba(255, 0, 60, 0.1);
+    box-shadow: 0 0 14px rgba(255, 255, 255, 0.2), 0 0 28px rgba(255, 255, 255, 0.1);
   }
   50% {
-    box-shadow: 0 0 24px rgba(255, 0, 60, 0.5), 0 0 42px rgba(255, 0, 60, 0.25);
+    box-shadow: 0 0 24px rgba(255, 255, 255, 0.4), 0 0 42px rgba(255, 255, 255, 0.2);
   }
 }
 
 .btn-back {
   animation: pulseNeon 2.5s infinite ease-in-out;
+}
+
+/* === EFECTO DE BRILLO NEGRO NEÓN === */
+:root {
+  --neon-black: #0d0d0d;
+  --neon-glow: rgba(255, 255, 255, 0.35);
+}
+
+.analysis-card,
+.menu-item.active,
+.btn-back {
+  border-color: var(--neon-black);
+  color: var(--neon-glow);
+  box-shadow: 0 0 12px var(--neon-glow), inset 0 0 10px var(--neon-black);
+}
+
+.analysis-card:hover,
+.menu-item:hover,
+.btn-back:hover {
+  color: #fff;
+  box-shadow: 0 0 20px var(--neon-glow), 0 0 10px rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 
