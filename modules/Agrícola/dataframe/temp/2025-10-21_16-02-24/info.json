@@ -1,0 +1,11 @@
+﻿{
+  "lab": "Agrícola",
+  "tipo": "mono",
+  "filas": 32,
+  "columnas": [
+    "Columna",
+    "N",
+    "Valor"
+  ],
+  "fecha_creacion": "2025-10-21_16-02-24"
+}

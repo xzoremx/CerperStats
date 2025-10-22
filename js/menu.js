@@ -118,4 +118,4 @@ cards.forEach((card, i) => {
 
 
 // --- Inicializa carrusel ---
-updateCarousel(0);
+updateCarousel(3);
