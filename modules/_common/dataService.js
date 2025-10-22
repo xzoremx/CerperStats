@@ -1,4 +1,3 @@
-// modules/_common/dataService.js
 export const dataService = {
   // --- Obtener expedientes desde fuente local (por ahora)
   async getExpediente(code) {
