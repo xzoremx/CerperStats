@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
   container.className = "form-block";
 
   const msg = document.createElement("h3");
-  msg.textContent = "Seleccione el tipo de análisis a realizar:";
+  msg.textContent = "Seleccione el tipo de dato:";
   container.appendChild(msg);
 
   tipos.forEach(tipo => {
