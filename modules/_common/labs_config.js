@@ -1,5 +1,5 @@
 export const LAB_CONFIG = {
-  "Cromatografía de Gases": {
+  "crom_gases": {
     tiposDisponibles: [
       { tipoDato: "cuantitativo" }
     ],
@@ -11,7 +11,7 @@ export const LAB_CONFIG = {
     }
   },
 
-  "Cromatografía Líquida": {
+  "crom_liquida": {
     tiposDisponibles: [
       { tipoDato: "cuantitativo" }
     ],
@@ -23,7 +23,7 @@ export const LAB_CONFIG = {
     }
   },
 
-  "Físico Químico Alimentos": {
+  "fisico_alimentos": {
     tiposDisponibles: [
       { tipoDato: "cuantitativo" }
     ],
@@ -35,7 +35,7 @@ export const LAB_CONFIG = {
     }
   },
 
-  "Agrícola": {
+  "agricola": {
     tiposDisponibles: [
       { tipoDato: "cuantitativo" }
     ],
@@ -47,7 +47,7 @@ export const LAB_CONFIG = {
     }
   },
 
-  "Microbiología": {
+  "microbiologia": {
     tiposDisponibles: [
       { tipoDato: "cuantitativo" },
       { tipoDato: "cualitativo", modo: "binario", valoresPermitidos: [0, 1] }
@@ -60,7 +60,7 @@ export const LAB_CONFIG = {
     }
   },
 
-  "Ambiental": {
+  "ambiental": {
     tiposDisponibles: [
       { tipoDato: "cuantitativo" }
     ],
@@ -72,7 +72,7 @@ export const LAB_CONFIG = {
     }
   },
 
-  "Biología Molecular": {
+  "biomolecular": {
     tiposDisponibles: [
       { tipoDato: "cualitativo", modo: "binario", valoresPermitidos: [0, 1] }
     ],
@@ -84,7 +84,7 @@ export const LAB_CONFIG = {
     }
   },
 
-  "Metales": {
+  "metales": {
     tiposDisponibles: [
       { tipoDato: "cuantitativo" }
     ],
@@ -96,7 +96,7 @@ export const LAB_CONFIG = {
     }
   },
 
-  "Físico Sensorial": {
+  "fisico_sensorial": {
     tiposDisponibles: [
       { tipoDato: "cuantitativo" },
       { tipoDato: "cualitativo", modo: "binario", valoresPermitidos: [0, 1] },
@@ -110,7 +110,7 @@ export const LAB_CONFIG = {
     }
   },
 
-  "Hidrobiología": {
+  "hidrobiología": {
     tiposDisponibles: [
       { tipoDato: "cuantitativo" },
       { tipoDato: "cualitativo", modo: "presencia / no presencia", valoresPermitidos: [0, 1] }
