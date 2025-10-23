@@ -1,57 +1,38 @@
 {
-  "name": "CerperStats",
-  "description": "Aplicación para la evaluación estadística de resultados analíticos de laboratorios CERPER.",
-  "version": "1.0.0",
-  "author": "Renato Huamani",
-  "organization": "Certificaciones del Perú S.A. - CERPER",
-  "created_at": "2025-10-09",
-  "last_updated": "2025-10-09",
-  "default_language": "es-PE",
-  "framework": "Electron",
-  "modules_path": "./modules/",
-  "results_path": "./results/",
-  "default_lab": null,
-  "supported_labs": [
-    "Agrícola",
-    "Ambiental",
-    "Biología Molecular",
-    "Cromatografía de Gases",
-    "Cromatografía Líquida",
-    "Físico Químico Alimentos",
-    "Físico Sensorial",
-    "Hidrobiología",
-    "Metales",
-    "Microbiología"
-  ],
-  "default_structure": {
-    "monoanalito": {
-      "parametros": ["Analista 1", "Analista 2"],
-      "lecturas": 8
-    },
-    "multianalito": {
-      "parametros": ["Analista", "Analito 1", "Analito 2"],
-      "lecturas": 10
+  "app": {
+    "name": "CerperStats",
+    "version": "1.0.0",
+    "description": "Sistema de evaluación estadística para laboratorios CERPER",
+    "author": "Renato Huamani",
+    "theme": "dark-glass",
+    "build": {
+      "mode": "offline",
+      "platform": "electron"
     }
   },
-  "outputs": {
-    "pdf": true,
-    "json": true,
-    "csv": false
-  },
-  "metadata_fields": [
-    "Método",
-    "Producto",
-    "Fecha",
-    "Ensayo",
-    "Participantes",
-    "Expediente"
+  "labs": [
+    { "key": "crom_gases", "name": "Laboratorio de Cromatografía de Gases", "role": "Análisis instrumental avanzado", "color": "#00e6ff" },
+    { "key": "crom_liquida", "name": "Laboratorio de Cromatografía Líquida", "role": "Separación de compuestos químicos", "color": "#1e90ff" },
+    { "key": "fisico_alimentos", "name": "Laboratorio Físico Químico", "role": "Evaluación nutricional y calidad", "color": "#ffae00" },
+    { "key": "agricola", "name": "Laboratorio Agrícola", "role": "Estudios de suelos y cultivos", "color": "#39ff14" },
+    { "key": "microbiologia", "name": "Laboratorio de Microbiología", "role": "Detección de microorganismos", "color": "#ff33cc" },
+    { "key": "ambiental", "name": "Laboratorio Ambiental", "role": "Monitoreo de aire, agua y suelo", "color": "#66ff66" },
+    { "key": "biomolecular", "name": "Laboratorio de Biología Molecular", "role": "Análisis genético y molecular", "color": "#9933ff" },
+    { "key": "metales", "name": "Laboratorio de Metales", "role": "Detección de metales pesados", "color": "#ffd700" },
+    { "key": "fisico_sensorial", "name": "Laboratorio Físico Sensorial", "role": "Evaluación sensorial y percepción", "color": "#ff8800" },
+    { "key": "hidrobiologia", "name": "Laboratorio de Hidrobiología", "role": "Estudios de ecosistemas acuáticos", "color": "#33ccff" }
   ],
-  "ui_theme": {
-    "style": "neon_dark",
-    "colors": {
-      "primary": "#00ffff",
-      "accent": "#00ff88",
-      "background": "#000a14"
-    }
+  "paths": {
+    "assets": "./assets/",
+    "modules": "./modules/",
+    "input_data": "./input_data/",
+    "results": "./results/",
+    "runtime": "./run_time/"
+  },
+  "ui": {
+    "font": "Segoe UI",
+    "background": "radial-gradient(circle at top, #001f2f, #000)",
+    "accent": "#00ffff"
   }
 }
+

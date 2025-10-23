@@ -1,30 +1,7 @@
-// --- Datos de laboratorios ---
-const labs = [
-  { key: "Cromatografía de Gases", name: "Laboratorio de Cromatografía de Gases", role: "Análisis instrumental avanzado" },
-  { key: "Cromatografía Líquida", name: "Laboratorio de Cromatografía Líquida", role: "Separación de compuestos químicos" },
-  { key: "Físico Químico Alimentos", name: "Laboratorio Físico Químico", role: "Evaluación nutricional y calidad" },
-  { key: "Agrícola", name: "Laboratorio Agrícola", role: "Estudios de suelos y cultivos" },
-  { key: "Microbiología", name: "Laboratorio de Microbiología", role: "Detección de microorganismos" },
-  { key: "Ambiental", name: "Laboratorio Ambiental", role: "Monitoreo de aire, agua y suelo" },
-  { key: "Biología Molecular", name: "Laboratorio de Biología Molecular", role: "Análisis genético y molecular" },
-  { key: "Metales", name: "Laboratorio de Metales", role: "Detección de metales pesados" },
-  { key: "Físico Sensorial", name: "Laboratorio Físico Sensorial", role: "Evaluación sensorial y percepción" },
-  { key: "Hidrobiología", name: "Laboratorio de Hidrobiología", role: "Estudios de ecosistemas acuáticos" }
-];
+// --- variables de laboratorios ---
+let labs = [];
+let labColors = [];
 
-
-const labColors = [
-  "#00e6ff", // Cromatografía de Gases
-  "#1e90ff", // Cromatografía Líquida
-  "#ffae00", // Físico Químico Alimentos
-  "#39ff14", // Agrícola
-  "#ff33cc", // Microbiología
-  "#66ff66", // Ambiental
-  "#9933ff", // Biología Molecular
-  "#ffd700", // Metales
-  "#ff8800", // Físico Sensorial
-  "#33ccff"  // Hidrobiología
-];
 
 // --- Elementos del carrusel ---
 const cards = document.querySelectorAll(".card");
@@ -36,6 +13,31 @@ const rightArrow = document.querySelector(".nav-arrow.right");
 
 let currentIndex = 0;
 let isAnimating = false;
+
+
+// --- Intento de carga y fusión del manifest ---
+const keyOrder = labs.map(l => l.key);
+
+async function loadLabsFromManifest() {
+  try {
+    const res = await fetch("./manifest.json", { cache: "no-store" });
+    if (!res.ok) throw new Error("No se pudo cargar manifest.json");
+    const manifest = await res.json();
+    if (!manifest.labs || !Array.isArray(manifest.labs)) throw new Error("Formato inválido en manifest");
+
+    labs = manifest.labs.map(l => ({
+      key: l.key,
+      name: l.name,
+      role: l.role
+    }));
+    labColors = manifest.labs.map(l => l.color || "#00ffff");
+  } catch (err) {
+    console.error("Error cargando manifest.json:", err);
+    labs = [];
+    labColors = [];
+  }
+}
+
 
 // --- Actualiza posición y texto ---
 function updateCarousel(newIndex) {
@@ -118,4 +120,14 @@ cards.forEach((card, i) => {
 
 
 // --- Inicializa carrusel ---
-updateCarousel(3);
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadLabsFromManifest();
+
+  // seguridad: si no hay labs, evita romper animación
+  if (!labs.length) {
+    console.error("No se encontraron laboratorios en manifest.json");
+    return;
+  }
+
+  updateCarousel(3);
+});

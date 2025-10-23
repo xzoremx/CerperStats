@@ -1,3 +1,4 @@
+// input_data/step_1_type.js
 document.addEventListener("DOMContentLoaded", () => {
   const buttons = document.querySelectorAll(".select-btn");
   const goMenu = document.getElementById("go-menu");
