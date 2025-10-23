@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (resultado === true) {
         notify("Datos validados correctamente. Guardando datos temporales...", "success");
 
-        // 🔹 Intentar guardar DataFrame (llama al proceso Python)
+        // Intentar guardar DataFrame (llama al proceso Python)
         if (typeof window.guardarDataframeTemp === "function") {
           const res = await window.guardarDataframeTemp();
           if (!res || !res.ok) {
@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
           console.warn("[CerperStats] La función guardarDataframeTemp no está definida.");
         }
 
-        // 🔹 Continuar a la siguiente vista
+        // Continuar a la siguiente vista
         setTimeout(() => {
           if (window.cerper && window.cerper.openPage)
             window.cerper.openPage("evaluation_select.html");
