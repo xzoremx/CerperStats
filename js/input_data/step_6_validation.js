@@ -308,42 +308,52 @@ window.validarEstructuraYContenido = validarEstructuraYContenido;
 // === Guardado de DataFrame temporal ===
 window.guardarDataframeTemp = async function guardarDataframeTemp() {
   try {
+    const session_id = sessionStorage.getItem("sessionID") || null;
     const tipo = sessionStorage.getItem("tipoAnalisis") || "mono";
     const key = (tipo === "multi") ? "multiAnalitoDatos" : "monoAnalitoDatos";
     const jsonStr = sessionStorage.getItem(key);
-    const lab = sessionStorage.getItem("labSeleccionado") || "Cromatografía de Gases";
+    const dataObj = JSON.parse(jsonStr);
 
-    console.log(`[CerperStats] Intentando guardar DataFrame temporal...`);
-    console.log(`[CerperStats] Laboratorio: ${lab}`);
-    console.log(`[CerperStats] Tipo de análisis: ${tipo}`);
-    console.log(`[CerperStats] Longitud del JSON: ${jsonStr?.length || 0}`);
+    const datosParaInsertar = [];
 
-    // --- Validaciones previas ---
-    if (!jsonStr || jsonStr.trim() === "") {
-      const msg = "No hay datos validados en sessionStorage.";
-      console.error(`[CerperStats] ${msg}`);
-      return { ok: false, error: msg };
+    if (tipo === "mono") {
+      for (const [analito, lects] of Object.entries(dataObj.lecturas)) {
+        lects.forEach((v, idx) => {
+          datosParaInsertar.push({
+            analito,
+            parametro: dataObj.columnas[0],
+            lectura_idx: idx + 1,
+            valor: v,
+            tipo_dato: sessionStorage.getItem("tipoDato"),
+          });
+        });
+      }
+    } else if (tipo === "multi") {
+      dataObj.datosPorParametro.forEach(bloque => {
+        const parametro = bloque.parametro;
+        for (const [analito, lects] of Object.entries(bloque.lecturas)) {
+          lects.forEach((v, idx) => {
+            datosParaInsertar.push({
+              analito,
+              parametro,
+              lectura_idx: idx + 1,
+              valor: v,
+              tipo_dato: sessionStorage.getItem("tipoDato"),
+            });
+          });
+        }
+      });
     }
 
-    if (!window.cerper || !window.cerper.saveDataframeTemp) {
-      const msg = "API cerper.saveDataframeTemp no disponible (preload no cargado).";
-      console.error(`[CerperStats] ${msg}`);
-      return { ok: false, error: msg };
-    }
+    const res = await window.cerper.insertInputs(session_id, tipo, datosParaInsertar);
 
-    // --- Llamada al proceso Python vía IPC ---
-    console.log(`[CerperStats] Ejecutando IPC → save-dataframe-temp`);
-    const res = await window.cerper.saveDataframeTemp(lab, jsonStr);
+    if (res.ok)
+      notify("Datos guardados en base de datos correctamente.", "success");
+    else
+      notify(`Error guardando datos: ${res.error}`, "error");
 
-    // --- Logs y retorno ---
-    if (res && res.ok) {
-      console.log(`[CerperStats] DataFrame guardado correctamente.`);
-      console.log(`[CerperStats] Ruta de salida: ${res.output_dir || "(sin ruta)"}`);
-    } else {
-      console.error(`[CerperStats] Error guardando DataFrame:`, res);
-    }
+    return res; 
 
-    return res;
   } catch (e) {
     console.error(`[CerperStats] Excepción en guardarDataframeTemp:`, e);
     return { ok: false, error: e.message || String(e) };

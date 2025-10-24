@@ -2,5 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('cerper', {
   openPage: (page) => ipcRenderer.invoke('open-page', page),
-  saveDataframeTemp: (labName, jsonStr) => ipcRenderer.invoke('save-dataframe-temp', labName, jsonStr)
+
+  insertInputs: (session_id, tipoAnalisis, datos) =>
+    ipcRenderer.invoke("db-insert-inputs", { session_id, tipoAnalisis, datos }),
 });

@@ -79,113 +79,42 @@ ipcMain.handle('open-page', async (_event, page) => {
   }
 });
 
-// === IPC: guardar DataFrame temporal (mejorado) ===
-ipcMain.handle('save-dataframe-temp', async (_event, labName, jsonStr) => {
-  return new Promise((resolve) => {
-    try {
-      // ---  Validaciones iniciales ---
-      if (!labName || typeof labName !== 'string') {
-        return resolve({ ok: false, error: 'Laboratorio no especificado.' });
-      }
-      if (!jsonStr || jsonStr.trim() === '') {
-        return resolve({ ok: false, error: 'JSON vacío o inválido.' });
-      }
 
-      // --- Localización del script Python ---
-      const scriptPath = path.join(__dirname, 'modules', '_common', 'save_dataframe_temp.py');
-      const exists = require('fs').existsSync(scriptPath);
-      if (!exists) {
-        return resolve({ ok: false, error: `No se encontró el script Python en: ${scriptPath}` });
-      }
+// === Capa de base de datos ===
+const sqlite3 = require("sqlite3");
+const { open } = require("sqlite");
 
-      // --- Determinar ejecutable de Python ---
-      const localVenv = path.join(__dirname, 'venv', 'Scripts', 'python.exe');
-      const pythonExec = require('fs').existsSync(localVenv)
-        ? localVenv
-        : process.env.CERPER_PYTHON_PATH || 'python';
 
-      console.log(`[CerperStats] Ejecutando Python: ${pythonExec}`);
-      console.log(`[CerperStats] Script: ${scriptPath}`);
-      console.log(`[CerperStats] Laboratorio: ${labName}`);
-
-      // --- Lanzar proceso Python ---
-      const py = spawn(pythonExec, [scriptPath, labName], { stdio: ['pipe', 'pipe', 'pipe'] });
-
-      let stdoutData = '';
-      let stderrData = '';
-
-      py.stdout.on('data', (chunk) => {
-        const msg = chunk.toString();
-        stdoutData += msg;
-        console.log('[PYTHON OUT]', msg.trim());
-      });
-
-      py.stderr.on('data', (chunk) => {
-        const msg = chunk.toString();
-        stderrData += msg;
-        console.error('[PYTHON ERR]', msg.trim());
-      });
-
-      // --- Error de lanzamiento (cuando python no existe) ---
-      py.on('error', (err) => {
-        console.error('[CerperStats] Error al iniciar Python:', err);
-        return resolve({
-          ok: false,
-          error: `No se pudo iniciar Python: ${err.message}`,
-          hint: 'Verifica que Python esté instalado o define CERPER_PYTHON_PATH.',
-        });
-      });
-
-      // --- Cierre del proceso ---
-      py.on('close', (code) => {
-        console.log(`[CerperStats] Proceso Python finalizó con código ${code}`);
-
-        // Si no hubo salida estándar y sí errores
-        if (!stdoutData && stderrData) {
-          return resolve({
-            ok: false,
-            error: 'Python devolvió un error.',
-            details: stderrData.trim(),
-            exitCode: code,
-          });
-        }
-
-        // Intentar parsear JSON
-        try {
-          const parsed = JSON.parse(stdoutData);
-          resolve({
-            ok: true,
-            message: 'DataFrame temporal guardado correctamente.',
-            ...parsed,
-            exitCode: code,
-          });
-        } catch (err) {
-          console.error('[CerperStats] Error parseando salida Python:', err);
-          resolve({
-            ok: false,
-            error: 'No se pudo interpretar la respuesta de Python.',
-            raw: stdoutData.trim(),
-            stderr: stderrData.trim(),
-            exitCode: code,
-          });
-        }
-      });
-
-      // --- Enviar el JSON a Python ---
-      py.stdin.write(jsonStr);
-      py.stdin.end();
-
-      // Failsafe: si tarda demasiado, cortar (20 s)
-      setTimeout(() => {
-        try {
-          py.kill();
-          resolve({ ok: false, error: 'El proceso Python excedió el tiempo límite (20s).' });
-        } catch (_) {}
-      }, 20000);
-    } catch (err) {
-      console.error('[CerperStats] Error general en save-dataframe-temp:', err);
-      resolve({ ok: false, error: err.message || String(err) });
-    }
+// Conexión global (abierta una sola vez)
+let db;
+async function initDB() {
+  db = await open({
+    filename: "./database/cerperstats.db",
+    driver: sqlite3.Database
   });
+  console.log("[DB] Conectado a cerperstats.db");
+}
+initDB();
+
+ipcMain.handle("db-insert-inputs", async (event, { session_id, tipoAnalisis, datos }) => {
+  try {
+    const table = tipoAnalisis === "multi" ? "inputs_multianalito" : "inputs_monoanalito";
+    const placeholders = datos.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+    const values = datos.flatMap(d => [
+      session_id, d.analito, d.parametro, d.lectura_idx, d.valor,
+      d.unidad || null, d.tipo_dato || "cuantitativo", 1, d.comentario || null
+    ]);
+    await db.run(
+      `INSERT INTO ${table} (session_id, analito, parametro, lectura_idx, valor, unidad, tipo_dato, valido, comentario)
+       VALUES ${placeholders}`, values
+    );
+    return { ok: true };
+  } catch (err) {
+    console.error("[DB] Error insertando inputs:", err);
+    return { ok: false, error: err.message };
+  }
 });
+
+
+
 
