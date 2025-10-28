@@ -9,6 +9,8 @@ document.addEventListener("DOMContentLoaded", () => {
     producto: document.getElementById("producto"),
     ensayo: document.getElementById("ensayo"),
     expediente: document.getElementById("expediente"),
+    expediente: document.getElementById("unidad"),
+
   };
 
   const btnSiguiente = document.getElementById("btn-siguiente");
@@ -77,6 +79,16 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       inputs.ensayo.classList.remove("input-error");
     }
+
+    // Validar unidad
+    if (!dataService.validateUnidad(data.unidad)) {
+      notify("Ingrese una unidad de medida válida (ej: mg/L, %, µg/kg, etc.).", "error");
+      inputs.unidad.classList.add("input-error");
+      return;
+    } else {
+      inputs.unidad.classList.remove("input-error");
+    }
+
 
 
     // (Futuro) Buscar expediente en base local o BD

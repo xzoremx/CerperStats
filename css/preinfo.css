@@ -78,6 +78,12 @@ body {
   box-sizing: border-box;
 }
 
+.grid .info-card:last-child {
+  grid-column: 1 / -1; 
+  justify-self: center; 
+  max-width: 400px;
+}
+
 .info-card:hover {
   background: rgba(0, 255, 255, 0.09);
   border-color: rgba(0, 255, 255, 0.45);

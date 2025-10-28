@@ -117,4 +117,3 @@ ipcMain.handle("db-insert-inputs", async (event, { session_id, tipoAnalisis, dat
 
 
 
-

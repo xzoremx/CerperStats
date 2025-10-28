@@ -43,6 +43,12 @@ export const dataService = {
     return pattern.test(ensayo);
   },
 
+  // --- Validar formato de ensayo ---
+  validateUnidad(valor) {
+  return /^[a-zA-Zµ%/.\s-]+$/.test(valor) && valor.length >= 1 && valor.length <= 20;
+  },
+
+
 
   
 

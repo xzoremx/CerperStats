@@ -7,7 +7,8 @@ export const LAB_CONFIG = {
       metodo: "ASTM D1945",
       producto: "Gas natural seco",
       ensayo: "Composición de gases por cromatografía",
-      expediente: "EXGA-00514-2025"
+      expediente: "EXGA-00514-2025",
+      unidad: "µg/L"
     }
   },
 
@@ -19,7 +20,8 @@ export const LAB_CONFIG = {
       metodo: "EPA 8260D",
       producto: "Disolución acuosa",
       ensayo: "Determinación de compuestos orgánicos volátiles",
-      expediente: "EXLI-02245-2025"
+      expediente: "EXLI-02245-2025",
+      unidad: "µg/L"
     }
   },
 
@@ -31,7 +33,8 @@ export const LAB_CONFIG = {
       metodo: "AOAC 999.11",
       producto: "Leche evaporada",
       ensayo: "Determinación de plomo y cadmio",
-      expediente: "EXAL-10345-2025"
+      expediente: "EXAL-10345-2025",
+      unidad: "mg/kg"
     }
   },
 
@@ -43,7 +46,8 @@ export const LAB_CONFIG = {
       metodo: "NTP 209.031",
       producto: "Uva de mesa",
       ensayo: "Determinación de residuos de pesticidas",
-      expediente: "EXAG-08762-2025"
+      expediente: "EXAG-08762-2025",
+      unidad: "mg/kg"
     }
   },
 
@@ -56,7 +60,8 @@ export const LAB_CONFIG = {
       metodo: "ISO 4833-1",
       producto: "Queso fresco",
       ensayo: "Recuento de mesófilos aerobios",
-      expediente: "EXMI-01893-2025"
+      expediente: "EXMI-01893-2025",
+      unidad: "UFC/g"
     }
   },
 
@@ -68,7 +73,8 @@ export const LAB_CONFIG = {
       metodo: "SM 2320 B",
       producto: "Muestra de suelo",
       ensayo: "Determinación de alcalinidad",
-      expediente: "EXAM-07321-2025"
+      expediente: "EXAM-07321-2025",
+      unidad: "mg/L"
     }
   },
 
@@ -80,7 +86,8 @@ export const LAB_CONFIG = {
       metodo: "RT-qPCR",
       producto: "Superficie ambiental",
       ensayo: "Detección de SARS-CoV-2",
-      expediente: "EXMO-02415-2025"
+      expediente: "EXMO-02415-2025",
+      unidad: "N/A"
     }
   },
 
@@ -92,7 +99,8 @@ export const LAB_CONFIG = {
       metodo: "EPA 200.7",
       producto: "Muestra líquida",
       ensayo: "Determinación de metales por ICP-OES",
-      expediente: "EXME-09011-2025"
+      expediente: "EXME-09011-2025",
+      unidad: "mg/L"
     }
   },
 
@@ -106,7 +114,8 @@ export const LAB_CONFIG = {
       metodo: "NTP 209.100",
       producto: "Galletas dulces",
       ensayo: "Evaluación de color y textura",
-      expediente: "EXFS-01015-2025"
+      expediente: "EXFS-01015-2025",
+      unidad: "N/A"
     }
   },
 
@@ -119,7 +128,8 @@ export const LAB_CONFIG = {
       metodo: "SM 10200 F",
       producto: "Agua de mar",
       ensayo: "Determinación de fitoplancton",
-      expediente: "EXHI-04264-2025"
+      expediente: "EXHI-04264-2025",
+      unidad: "Organismos/m³"
     }
   }
 };
