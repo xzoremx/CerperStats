@@ -15,28 +15,31 @@ let currentIndex = 0;
 let isAnimating = false;
 
 
-// --- Intento de carga y fusión del manifest ---
-const keyOrder = labs.map(l => l.key);
-
-async function loadLabsFromManifest() {
+// --- Cargar laboratorios desde la base de datos (vía preload / main.js) ---
+async function loadLabsFromDB() {
   try {
-    const res = await fetch("./manifest.json", { cache: "no-store" });
-    if (!res.ok) throw new Error("No se pudo cargar manifest.json");
-    const manifest = await res.json();
-    if (!manifest.labs || !Array.isArray(manifest.labs)) throw new Error("Formato inválido en manifest");
+    const rows = await window.cerper.getLabs();
 
-    labs = manifest.labs.map(l => ({
+    if (!rows || !Array.isArray(rows) || !rows.length)
+      throw new Error("No se encontraron laboratorios en la base de datos.");
+
+    labs = rows.map(l => ({
       key: l.key,
       name: l.name,
       role: l.role
     }));
-    labColors = manifest.labs.map(l => l.color || "#00ffff");
+
+    labColors = rows.map(l => l.color || "#00ffff");
+
+    console.table(labs);
+    console.log(`[CerperStats] Laboratorios cargados desde la base de datos (${labs.length})`);
   } catch (err) {
-    console.error("Error cargando manifest.json:", err);
+    console.error("[CerperStats] Error al cargar laboratorios:", err);
     labs = [];
     labColors = [];
   }
 }
+
 
 
 // --- Actualiza posición y texto ---
@@ -119,13 +122,12 @@ cards.forEach((card, i) => {
 });
 
 
-// --- Inicializa carrusel ---
+// --- Inicialización del carrusel ---
 document.addEventListener("DOMContentLoaded", async () => {
-  await loadLabsFromManifest();
+  await loadLabsFromDB();
 
-  // seguridad: si no hay labs, evita romper animación
   if (!labs.length) {
-    console.error("No se encontraron laboratorios en manifest.json");
+    console.error("[CerperStats] No se encontraron laboratorios activos en la base de datos.");
     return;
   }
 

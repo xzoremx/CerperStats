@@ -10,18 +10,10 @@
       "platform": "electron"
     }
   },
-  "labs": [
-    { "key": "crom_gases", "name": "Laboratorio de Cromatografía de Gases", "role": "Análisis instrumental avanzado", "color": "#00e6ff" },
-    { "key": "crom_liquida", "name": "Laboratorio de Cromatografía Líquida", "role": "Separación de compuestos químicos", "color": "#1e90ff" },
-    { "key": "fisico_alimentos", "name": "Laboratorio Físico Químico", "role": "Evaluación nutricional y calidad", "color": "#ffae00" },
-    { "key": "agricola", "name": "Laboratorio Agrícola", "role": "Estudios de suelos y cultivos", "color": "#39ff14" },
-    { "key": "microbiologia", "name": "Laboratorio de Microbiología", "role": "Detección de microorganismos", "color": "#ff33cc" },
-    { "key": "ambiental", "name": "Laboratorio Ambiental", "role": "Monitoreo de aire, agua y suelo", "color": "#66ff66" },
-    { "key": "biomolecular", "name": "Laboratorio de Biología Molecular", "role": "Análisis genético y molecular", "color": "#9933ff" },
-    { "key": "metales", "name": "Laboratorio de Metales", "role": "Detección de metales pesados", "color": "#ffd700" },
-    { "key": "fisico_sensorial", "name": "Laboratorio Físico Sensorial", "role": "Evaluación sensorial y percepción", "color": "#ff8800" },
-    { "key": "hidrobiologia", "name": "Laboratorio de Hidrobiología", "role": "Estudios de ecosistemas acuáticos", "color": "#33ccff" }
-  ],
+  "database": {
+    "path": "./database/cerperstats.db"
+  },
+  "labs": "dynamic",
   "paths": {
     "assets": "./assets/",
     "modules": "./modules/",

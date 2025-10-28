@@ -85,7 +85,7 @@ const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
 
 
-// Conexión global (abierta una sola vez)
+// Conexión global
 let db;
 async function initDB() {
   db = await open({
@@ -96,6 +96,24 @@ async function initDB() {
 }
 initDB();
 
+// === Lectura de laboratorios para el menú principal ===
+ipcMain.handle("db-get-labs", async () => {
+  try {
+    const rows = await db.all(`
+      SELECT lab_key AS key, nombre AS name, descripcion AS role, color
+      FROM labs
+      WHERE activo = 1
+      ORDER BY id ASC;
+    `);
+    return { ok: true, data: rows };
+  } catch (err) {
+    console.error("[DB] Error leyendo laboratorios:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+
+// === Inserción de inputs de análisis ===
 ipcMain.handle("db-insert-inputs", async (event, { session_id, tipoAnalisis, datos }) => {
   try {
     const table = tipoAnalisis === "multi" ? "inputs_multianalito" : "inputs_monoanalito";
