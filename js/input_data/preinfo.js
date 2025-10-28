@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     producto: document.getElementById("producto"),
     ensayo: document.getElementById("ensayo"),
     expediente: document.getElementById("expediente"),
-    expediente: document.getElementById("unidad"),
+    unidad: document.getElementById("unidad"),
 
   };
 
@@ -98,6 +98,8 @@ document.addEventListener("DOMContentLoaded", () => {
       inputs.metodo.value = found.metodo || "";
       inputs.producto.value = found.producto || "";
       inputs.ensayo.value = found.ensayo || "";
+      inputs.unidad.value = found.unidad || "";
+
     }
 
     // Guardar datos y continuar
