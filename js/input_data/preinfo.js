@@ -1,8 +1,7 @@
 // input_data/preinfo.js
 import { dataService } from "../../modules/_common/dataService.js";
-import { LAB_CONFIG } from "../../modules/_common/labs_config.js";
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   // --- Referencias de inputs ---
   const inputs = {
     metodo: document.getElementById("metodo"),
@@ -24,13 +23,33 @@ document.addEventListener("DOMContentLoaded", () => {
   if (labTitle) labTitle.textContent = `${labName} - ${proc}`;
 
   // --- Aplicar placeholders dinámicos desde LAB_CONFIG ---
-  const config = LAB_CONFIG[labKey];
-  if (config?.placeholders) {
-    Object.entries(config.placeholders).forEach(([id, text]) => {
-      const input = document.getElementById(id);
-      if (input) input.placeholder = text;
-    });
+  // --- Cargar configuración del laboratorio desde la base de datos ---
+  try {
+    const res = await window.cerper.getLabByKey(labKey);
+    if (res?.ok && res.data) {
+      const lab = res.data;
+
+      const placeholders = {
+        metodo: lab.metodo_default || "",
+        producto: lab.producto_default || "",
+        ensayo: lab.ensayo_default || "",
+        expediente: lab.expediente_demo || "",
+        unidad: lab.unidad_default || "",
+      };
+
+      Object.entries(placeholders).forEach(([id, text]) => {
+        const input = document.getElementById(id);
+        if (input && text) input.placeholder = text;
+      });
+
+      console.log(`[CerperStats] Placeholders cargados desde BD para ${labKey}:`, placeholders);
+    } else {
+      console.warn(`[CerperStats] No se encontró configuración para labKey: ${labKey}`);
+    }
+  } catch (err) {
+    console.error("[CerperStats] Error cargando configuración del laboratorio:", err);
   }
+
 
 
   // --- Validación solo al presionar continuar ---

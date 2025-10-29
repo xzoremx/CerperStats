@@ -112,6 +112,38 @@ ipcMain.handle("db-get-labs", async () => {
   }
 });
 
+// === Lectura completa de un laboratorio por clave ===
+ipcMain.handle("db-get-lab-by-key", async (event, labKey) => {
+  try {
+    const row = await db.get(`
+      SELECT
+        id,
+        lab_key,
+        nombre,
+        descripcion,
+        metodo_default,
+        producto_default,
+        ensayo_default,
+        unidad_default,
+        expediente_demo,
+        color,
+        activo
+      FROM labs
+      WHERE lab_key = ?
+      LIMIT 1;
+    `, [labKey]);
+
+    if (row) {
+      return { ok: true, data: row };
+    } else {
+      return { ok: false, error: `No se encontró laboratorio con key: ${labKey}` };
+    }
+  } catch (err) {
+    console.error("[DB] Error obteniendo laboratorio por clave:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
 
 // === Lectura de módulos / configuraciones por laboratorio ===
 ipcMain.handle("db-get-lab-modes", async (_e, labKey) => {

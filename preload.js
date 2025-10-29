@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('cerper', {
     if (!res.ok) throw new Error(res.error || "Error obteniendo laboratorios");
     return res.data;
   },
+  getLabByKey: (labKey) => ipcRenderer.invoke("db-get-lab-by-key", labKey),
   getLabModules: (labKey) => ipcRenderer.invoke("db-get-lab-modes", labKey),
   insertInputs: (session_id, tipoAnalisis, datos) =>
     ipcRenderer.invoke("db-insert-inputs", { session_id, tipoAnalisis, datos }),
