@@ -1,7 +1,6 @@
 // input_data/step_3_dato.js
-import { LAB_CONFIG } from "../../modules/_common/labs_config.js";
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   // --- Recuperar laboratorio (clave y nombre visible) ---
   const labKey =
     sessionStorage.getItem("labSeleccionado") ||
@@ -12,31 +11,71 @@ document.addEventListener("DOMContentLoaded", () => {
   const title = document.getElementById("lab-title");
   const main = document.getElementById("main-container");
 
-  // --- Obtener configuración del laboratorio ---
-  const config = LAB_CONFIG[labKey];
+// --- Obtener configuración del laboratorio desde la base ---
+let tipos = [];
+try {
+  const res = await window.cerper.getLabModules(labKey);
+  if (res?.ok && Array.isArray(res.data)) {
+    tipos = res.data.map(row => {
+      const tipoDato = (row.tipo_dato || "").toString().trim();
+      const modo =
+        (row.modo ?? row.modo_cualitativo ?? "")
+          .toString()
+          .trim() || null; // acepta alias "modo" o el nombre original
+      const valoresPermitidos =
+        (row.valores_permitidos ?? null);
+
+      return { tipoDato, modo, valoresPermitidos };
+    });
+
+    // Debug opcional:
+    console.log("[S3] filas BD:", res.data);
+    console.log("[S3] tipos mapeados:", tipos);
+  }
+} catch (err) {
+  console.error("[CerperStats] Error leyendo módulos:", err);
+}
+
 
   // --- Título ---
   title.textContent = `${labName} - Tipo de Dato`;
 
   // --- Validar configuración ---
-  if (!config || !config.tiposDisponibles) {
+  if (!tipos || tipos.length === 0) {
     sessionStorage.setItem("tipoDato", "cuantitativo");
     avanzarPaso();
     return;
   }
 
-  const tipos = config.tiposDisponibles;
-
   // --- Si solo hay un tipo, guardar y continuar ---
   if (tipos.length === 1) {
     const unico = tipos[0];
     sessionStorage.setItem("tipoDato", unico.tipoDato);
-    if (unico.modo) sessionStorage.setItem("modoCualitativo", unico.modo);
-    if (unico.valoresPermitidos)
-      sessionStorage.setItem("valoresPermitidos", JSON.stringify(unico.valoresPermitidos));
+
+    // Guardar modo si existe, limpiar si no
+    if (unico.modo) {
+      sessionStorage.setItem("modoCualitativo", unico.modo);
+    } else {
+      sessionStorage.removeItem("modoCualitativo");
+    }
+
+    // Guardar valores permitidos (con parseo seguro)
+    if (unico.valoresPermitidos) {
+      let vals = unico.valoresPermitidos;
+      try {
+        vals = typeof vals === "string" ? JSON.parse(vals.replace(/'/g, '"')) : vals;
+      } catch {
+        vals = vals.split(",").map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
+      }
+      sessionStorage.setItem("valoresPermitidos", JSON.stringify(vals));
+    } else {
+      sessionStorage.removeItem("valoresPermitidos");
+    }
+
     avanzarPaso();
     return;
   }
+
 
   // --- Si hay varios tipos (cuantitativo + cualitativo) ---
   const container = document.createElement("div");
@@ -51,32 +90,40 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.className = "select-btn";
     btn.dataset.tipo = tipo.tipoDato;
 
-    btn.textContent =
-      tipo.tipoDato === "cuantitativo"
-        ? "Cuantitativo"
-        : tipo.modo
-        ? `Cualitativo (${tipo.modo})`
-        : "Cualitativo";
+    if (tipo.tipoDato === "cuantitativo") {
+      btn.textContent = "Cuantitativo";
+    } else {
+      if (tipo.modo) {
+        const modoTexto = tipo.modo.charAt(0).toUpperCase() + tipo.modo.slice(1);
+        btn.textContent = `Cualitativo - ${modoTexto}`;
+      } else {
+        btn.textContent = "Cualitativo";
+      }
+    }
+
 
     btn.addEventListener("click", () => {
       sessionStorage.setItem("tipoDato", tipo.tipoDato);
 
       if (tipo.tipoDato === "cualitativo") {
-        const modos = tipos.filter(t => t.tipoDato === "cualitativo");
+        sessionStorage.setItem("modoCualitativo", tipo.modo);
 
-        if (modos.length > 1 && !tipo.modo) {
-          mostrarSelectorDeModo(modos);
-        } else {
-          const modoSel = tipo.modo || "binario";
-          sessionStorage.setItem("modoCualitativo", modoSel);
-          if (tipo.valoresPermitidos)
-            sessionStorage.setItem("valoresPermitidos", JSON.stringify(tipo.valoresPermitidos));
-          avanzarPaso();
+        if (tipo.valoresPermitidos) {
+          let vals = tipo.valoresPermitidos;
+          try {
+            vals = typeof vals === "string" ? JSON.parse(vals.replace(/'/g, '"')) : vals;
+          } catch {
+            vals = vals.split(",").map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
+          }
+          sessionStorage.setItem("valoresPermitidos", JSON.stringify(vals));
         }
+
+        avanzarPaso();
       } else {
         avanzarPaso();
       }
     });
+
 
     container.appendChild(btn);
   });

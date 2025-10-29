@@ -113,6 +113,24 @@ ipcMain.handle("db-get-labs", async () => {
 });
 
 
+// === Lectura de módulos / configuraciones por laboratorio ===
+ipcMain.handle("db-get-lab-modes", async (_e, labKey) => {
+  try {
+    const rows = await db.all(`
+      SELECT tipo_dato, modo_cualitativo, valores_permitidos
+      FROM lab_data_modes
+      WHERE lab_key = ? AND activo = 1
+      ORDER BY id ASC;
+    `, [labKey]);
+    return { ok: true, data: rows };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+
+
+
 // === Inserción de inputs de análisis ===
 ipcMain.handle("db-insert-inputs", async (event, { session_id, tipoAnalisis, datos }) => {
   try {

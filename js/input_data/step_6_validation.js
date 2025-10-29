@@ -50,6 +50,9 @@ function validarMulti(rows, errores) {
 function validarMono(rows, errores) {
   const K = parseInt(sessionStorage.getItem("K")) || 1;
   const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
+  const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
+  const valoresStr = sessionStorage.getItem("valoresPermitidos");
+  const permitidos = valoresStr ? JSON.parse(valoresStr) : null;
   const filasMax = Math.max(...lecturas);
 
   // --- Validar encabezados ---
@@ -68,7 +71,7 @@ function validarMono(rows, errores) {
       errores.push(`Encabezado vacío con datos debajo (columna ${i + 1})`);
   });
 
-  // --- Validar lecturas numéricas y cantidad esperada ---
+  // --- Validar lecturas numéricas o cualitativas según tipo ---
   for (let c = 0; c < K; c++) {
     const nombre = headers[c].textContent.trim() || `Columna ${c + 1}`;
     const filasEsperadas = lecturas[c] || lecturas[0] || 1;
@@ -88,9 +91,25 @@ function validarMono(rows, errores) {
         continue;
       }
 
-      if (isNaN(num) || num <= 0)
-        errores.push(`Valor inválido en fila ${r + 1}, columna ${c + 1} (${nombre})`);
-      else lecturasValidas++;
+      // --- Validación diferenciada por tipo de dato ---
+      if (tipoDato === "cuantitativo") {
+        if (isNaN(num) || num <= 0)
+          errores.push(`Valor inválido en fila ${r + 1}, columna ${c + 1} (${nombre}). Debe ser > 0`);
+        else
+          lecturasValidas++;
+      }
+
+      else if (tipoDato === "cualitativo") {
+        const esEntero = Number.isInteger(num);
+        if (!permitidos) {
+          errores.push(`No hay valores permitidos definidos para el modo cualitativo.`);
+          return;
+        }
+        if (!esEntero || !permitidos.includes(num))
+          errores.push(`Valor inválido en fila ${r + 1}, columna ${c + 1} (${nombre}). Permitidos: ${permitidos.join(", ")}`);
+        else
+          lecturasValidas++;
+      }
     }
 
     if (lecturasValidas < filasEsperadas)
@@ -110,6 +129,7 @@ function validarMono(rows, errores) {
     sessionStorage.setItem("monoAnalitoDatos", JSON.stringify(estructura));
   }
 }
+
 
 // --- Estructura final ---
 function buildMonoAnalitoData(rows, K, lecturas) {
@@ -213,10 +233,15 @@ function checkBloquesMulti(rows, K, lecturas, encabezados, errores) {
 
         else if (tipoDato === "cualitativo") {
           // --- Cualitativo: solo valores enteros dentro del conjunto permitido ---
-          const permitidos = [0, 1, 3, 5, 7];
+          const valoresStr = sessionStorage.getItem("valoresPermitidos");
+          const permitidos = valoresStr ? JSON.parse(valoresStr) : null;
+
           const esEntero = Number.isInteger(num);
 
-          if (!esEntero || !permitidos.includes(num)) {
+          if (!permitidos) {
+            errores.push(`No hay valores permitidos definidos para este modo cualitativo.`);
+            td.style.outline = "2px solid #ff0033";
+          } else if (!esEntero || !permitidos.includes(num)) {
             errores.push(`Valor inválido (${parametro}, ${celdaPos}). Permitidos: ${permitidos.join(", ")}`);
             td.style.outline = "2px solid #ff0033";
           } else {

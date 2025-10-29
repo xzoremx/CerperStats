@@ -1,7 +1,6 @@
 // input_data/step_2_parametro.js
-import { LAB_CONFIG } from "../../modules/_common/labs_config.js";
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   // --- Recuperar laboratorio (clave y nombre visible) ---
   const labKey =
     sessionStorage.getItem("labSeleccionado") ||
@@ -11,8 +10,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
 
-  // --- Buscar configuración del laboratorio ---
-  const config = LAB_CONFIG[labKey];
+  // --- Buscar configuración del laboratorio desde la base ---
+  let tiposUnicos = [];
+  try {
+    const res = await window.cerper.getLabModules(labKey);
+    if (res?.ok && Array.isArray(res.data)) {
+      const tipos = res.data.map(r => r.tipo_dato).filter(Boolean);
+      tiposUnicos = [...new Set(tipos)];
+    }
+  } catch (err) {
+    console.error("[CerperStats] Error leyendo módulos:", err);
+  }
+
 
   // --- UI: título ---
   const title = document.getElementById("lab-title");
@@ -81,15 +90,10 @@ document.addEventListener("DOMContentLoaded", () => {
     sessionStorage.removeItem("modoCualitativo");
     sessionStorage.removeItem("valoresPermitidos");
 
-    if (config?.tiposDisponibles) {
-      const tipos = config.tiposDisponibles.map(t => t.tipoDato);
-      const tiposUnicos = [...new Set(tipos)];
-
-      // Si el laboratorio maneja más de un tipo o tiene cualitativo → ir a step 3
-      if (tiposUnicos.length > 1 || tiposUnicos.includes("cualitativo")) {
-        return irAStep3Dato();
-      }
+    if (tiposUnicos.length > 1 || tiposUnicos.includes("cualitativo")) {
+      return irAStep3Dato();
     }
+
 
     // Caso contrario → ir a step 4
     return irAStep4();

@@ -31,9 +31,25 @@ document.addEventListener("DOMContentLoaded", () => {
       ? `(${K}×${lecturasPromedio})`
       : `(${K} parámetros con lecturas: ${lecturas.join(" y ")})`;
 
+  // --- Tipo de dato y modo ---
+  const tipoDato = (sessionStorage.getItem("tipoDato") || "cuantitativo").toLowerCase();
+  const modoSeleccionado = sessionStorage.getItem("modoCualitativo") || null;
+
+  // --- Texto complementario según tipo ---
+  let tipoDescripcion = "";
+  if (tipoDato === "cuantitativo") {
+    tipoDescripcion = `<span style="opacity:0.7;">Tipo de dato: <strong>Cuantitativo</strong></span>`;
+  } else if (tipoDato === "cualitativo") {
+    tipoDescripcion = `<span style="opacity:0.7;">Tipo de dato: <strong>Cualitativo</strong>${modoSeleccionado ? ` — ${modoSeleccionado}` : ""}</span>`;
+  }
+
   // --- Actualizar subtítulo ---
-  document.getElementById("sheet-subtitle").innerHTML =
-    `Pegue o escriba las lecturas para <strong>${parametro}</strong> <span style="opacity:0.8;">${resumenLecturas}</span>.`;
+  document.getElementById("sheet-subtitle").innerHTML = `
+    Pegue o escriba las lecturas para <strong>${parametro}</strong> 
+    <span style="opacity:0.8;">${resumenLecturas}</span>.<br>
+    ${tipoDescripcion}
+  `;
+
 
 
   // Oculta selector redundante
@@ -105,6 +121,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 });
+
+// --- Validación de Cualitativo: usar valores elegidos en Step 3 ---
+document.addEventListener("DOMContentLoaded", () => {
+  const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
+
+  if (tipoDato === "cualitativo") {
+    const modoSeleccionado = sessionStorage.getItem("modoCualitativo") || "no definido";
+    const valoresStr = sessionStorage.getItem("valoresPermitidos");
+
+    if (!valoresStr) {
+      console.error("[CerperStats] No se encontraron valoresPermitidos en sessionStorage (step 3 no guardó nada).");
+      notify(`No se encontraron valores permitidos para el modo: ${modoSeleccionado}`, "error");
+      return;
+    }
+
+    try {
+      const valores = JSON.parse(valoresStr);
+      console.log(`[CerperStats] Usando valores permitidos desde Step 3 (${modoSeleccionado}):`, valores);
+    } catch (err) {
+      console.error("Error al parsear valoresPermitidos guardados:", err);
+      notify("Error al leer los valores permitidos definidos en Step 3.", "error");
+    }
+  }
+});
+
 
 
 // --- Selección de modo ---
@@ -483,18 +524,24 @@ function validarVisual() {
 
           const num = parseFloat(valor.replace(",", "."));
           const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
-          const permitidos = [0, 1, 3, 5, 7];
+          const valoresStr = sessionStorage.getItem("valoresPermitidos");
+          const permitidos = valoresStr ? JSON.parse(valoresStr) : null;
 
           if (tipoDato === "cuantitativo" && num > 0) {
             td.style.background = "rgba(0,255,200,0.18)"; // válido
           }
-          else if (tipoDato === "cualitativo" && Number.isInteger(num) && permitidos.includes(num)) {
+          else if (tipoDato === "cualitativo" && permitidos && Number.isInteger(num) && permitidos.includes(num)) {
             td.style.background = "rgba(0,255,200,0.18)"; // válido
+          }
+          else if (tipoDato === "cualitativo") {
+            td.style.background = "rgba(255,50,50,0.25)"; // inválido
+            todoValido = false;
           }
           else {
             td.style.background = "rgba(255,50,50,0.25)"; // inválido
             todoValido = false;
           }
+
         }
 
       }
@@ -572,18 +619,24 @@ function validarVisual() {
             } else {
               const num = parseFloat(valor.replace(",", "."));
               const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
-              const permitidos = [0, 1, 3, 5, 7];
+              const valoresStr = sessionStorage.getItem("valoresPermitidos");
+              const permitidos = valoresStr ? JSON.parse(valoresStr) : null;
 
               if (tipoDato === "cuantitativo" && num > 0) {
                 td.style.background = `${colorBase.replace("0.25", "0.15")}`; // válido
               }
-              else if (tipoDato === "cualitativo" && Number.isInteger(num) && permitidos.includes(num)) {
+              else if (tipoDato === "cualitativo" && permitidos && Number.isInteger(num) && permitidos.includes(num)) {
                 td.style.background = `${colorBase.replace("0.25", "0.15")}`; // válido
               }
-              else {
-                td.style.background = "rgba(255,60,60,0.25)"; // error
+              else if (tipoDato === "cualitativo") {
+                td.style.background = "rgba(255,60,60,0.25)"; // inválido
                 todoValido = false;
               }
+              else {
+                td.style.background = "rgba(255,60,60,0.25)"; // inválido
+                todoValido = false;
+              }
+
             }
 
         });
