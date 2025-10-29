@@ -160,12 +160,13 @@ ipcMain.handle("db-get-lab-modes", async (_e, labKey) => {
   }
 });
 
-// === Creación de sesión activa ===
 
+// === Creación de sesión activa ===
 ipcMain.handle("db-insert-session", async (event, data) => {
   try {
     const {
       lab_key,
+      procedure,
       metodo,
       producto,
       ensayo,
@@ -180,13 +181,13 @@ ipcMain.handle("db-insert-session", async (event, data) => {
 
     const result = await db.run(`
       INSERT INTO sessions (
-        lab_key, metodo, producto, ensayo, expediente, unidad,
+        lab_key, procedure, metodo, producto, ensayo, expediente, unidad,
         tipo_analisis, tipo_dato, modo_cualitativo, parametro, usuario,
         estado, creado_en, actualizado_en
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', datetime('now'), datetime('now'))
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', datetime('now'), datetime('now'))
     `, [
-      lab_key, metodo, producto, ensayo, expediente, unidad,
+      lab_key, procedure, metodo, producto, ensayo, expediente, unidad,
       tipo_analisis, tipo_dato, modo_cualitativo, parametro, usuario
     ]);
 

@@ -80,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const usuario = sessionStorage.getItem("usuario") || "Analista_Local";
         const sessionData = {
           lab_key: sessionStorage.getItem("labSeleccionado"),
+          procedure: sessionStorage.getItem("procedimientoSeleccionado"),
           metodo: sessionStorage.getItem("metodo"),
           producto: sessionStorage.getItem("producto"),
           ensayo: sessionStorage.getItem("ensayo"),

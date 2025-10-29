@@ -94,6 +94,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       return irAStep3Dato();
     }
 
+    
+    // Si solo hay tipo cuantitativo, establecerlo explícitamente
+    if (!(tiposUnicos.length > 1 || tiposUnicos.includes("cualitativo"))) {
+      sessionStorage.setItem("tipoDato", "cuantitativo");
+      sessionStorage.removeItem("modoCualitativo");
+      sessionStorage.removeItem("valoresPermitidos");
+    }
 
     // Caso contrario → ir a step 4
     return irAStep4();
