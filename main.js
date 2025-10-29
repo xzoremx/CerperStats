@@ -160,28 +160,93 @@ ipcMain.handle("db-get-lab-modes", async (_e, labKey) => {
   }
 });
 
+// === Creación de sesión activa ===
+
+ipcMain.handle("db-insert-session", async (event, data) => {
+  try {
+    const {
+      lab_key,
+      metodo,
+      producto,
+      ensayo,
+      expediente,
+      unidad,
+      tipo_analisis,
+      tipo_dato,
+      modo_cualitativo,
+      parametro,
+      usuario
+    } = data;
+
+    const result = await db.run(`
+      INSERT INTO sessions (
+        lab_key, metodo, producto, ensayo, expediente, unidad,
+        tipo_analisis, tipo_dato, modo_cualitativo, parametro, usuario,
+        estado, creado_en, actualizado_en
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', datetime('now'), datetime('now'))
+    `, [
+      lab_key, metodo, producto, ensayo, expediente, unidad,
+      tipo_analisis, tipo_dato, modo_cualitativo, parametro, usuario
+    ]);
+
+    return { ok: true, session_id: result.lastID };
+  } catch (err) {
+    console.error("[DB] Error insertando sesión:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+
 
 
 
 // === Inserción de inputs de análisis ===
 ipcMain.handle("db-insert-inputs", async (event, { session_id, tipoAnalisis, datos }) => {
   try {
-    const table = tipoAnalisis === "multi" ? "inputs_multianalito" : "inputs_monoanalito";
-    const placeholders = datos.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+    const table =
+      tipoAnalisis === "multi"
+        ? "inputs_multianalito"
+        : "inputs_monoanalito";
+
+    // --- Generar placeholders dinámicos según cantidad de registros ---
+    const placeholders = datos
+      .map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .join(", ");
+
+    // --- Mapear los valores exactamente según las columnas existentes ---
     const values = datos.flatMap(d => [
-      session_id, d.analito, d.parametro, d.lectura_idx, d.valor,
-      d.unidad || null, d.tipo_dato || "cuantitativo", 1, d.comentario || null
+      session_id,         // 1
+      d.analito,          // 2
+      d.parametro,        // 3
+      d.lectura_idx,      // 4
+      d.valor,            // 5
+      d.unidad,           // 6
+      d.tipo_dato,        // 7
+      d.modo_cualitativo, // 8
+      1,                  // 9 (valido)
+      d.comentario        // 10
     ]);
+
+    // --- Ejecutar la inserción ---
     await db.run(
-      `INSERT INTO ${table} (session_id, analito, parametro, lectura_idx, valor, unidad, tipo_dato, valido, comentario)
-       VALUES ${placeholders}`, values
+      `INSERT INTO ${table} (
+        session_id, analito, parametro, lectura_idx, valor,
+        unidad, tipo_dato, modo_cualitativo, valido, comentario
+      )
+      VALUES ${placeholders}`,
+      values
     );
+
     return { ok: true };
   } catch (err) {
     console.error("[DB] Error insertando inputs:", err);
     return { ok: false, error: err.message };
   }
 });
+
+
+
 
 
 

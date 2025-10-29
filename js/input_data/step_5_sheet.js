@@ -73,49 +73,58 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const resultado = validarEstructuraYContenido();
 
-      // --- Caso exitoso ---
       if (resultado === true) {
-        notify("Datos validados correctamente. Guardando datos temporales...", "success");
+        notify("Datos validados correctamente. Creando sesión...", "success");
 
-        // Intentar guardar DataFrame (llama al proceso Python)
-        if (typeof window.guardarDataframeTemp === "function") {
-          const res = await window.guardarDataframeTemp();
-          if (!res || !res.ok) {
-            notify(`No se pudo guardar el DataFrame temporal: ${res?.error || "Error desconocido"}`, "error");
-            console.error("[CerperStats] Error guardando DataFrame:", res);
-            return; // no continuar si falló el guardado
-          }
+        // --- Crear sesión ---
+        const usuario = sessionStorage.getItem("usuario") || "Analista_Local";
+        const sessionData = {
+          lab_key: sessionStorage.getItem("labSeleccionado"),
+          metodo: sessionStorage.getItem("metodo"),
+          producto: sessionStorage.getItem("producto"),
+          ensayo: sessionStorage.getItem("ensayo"),
+          expediente: sessionStorage.getItem("expediente"),
+          unidad: sessionStorage.getItem("unidad"),
+          tipo_analisis: sessionStorage.getItem("tipoAnalisis"),
+          tipo_dato: sessionStorage.getItem("tipoDato"),
+          modo_cualitativo: sessionStorage.getItem("modoCualitativo"),
+          parametro: sessionStorage.getItem("parametroSeleccionado"),
+          usuario
+        };
 
-          console.log(`[CerperStats] DataFrame guardado en: ${res.output_dir}`);
-          notify(" DataFrame guardado correctamente.", "success");
-        } else {
-          console.warn("[CerperStats] La función guardarDataframeTemp no está definida.");
+        const resSession = await window.cerper.insertSession(sessionData);
+
+        if (!resSession.ok) {
+          notify(`No se pudo crear la sesión: ${resSession.error}`, "error");
+          return;
         }
 
-        // Continuar a la siguiente vista
-        setTimeout(() => {
-          if (window.cerper && window.cerper.openPage)
+        sessionStorage.setItem("sessionID", resSession.session_id);
+        console.log(`[CerperStats] Nueva sesión creada con ID ${resSession.session_id}`);
+        notify("Sesión creada correctamente. Guardando lecturas...", "success");
+
+        // --- Guardar lecturas en inputs ---
+        const res = await window.guardarDataframeTemp();
+
+        if (res.ok) {
+          notify("Datos guardados correctamente en la base de datos.", "success");
+          setTimeout(() => {
             window.cerper.openPage("evaluation_select.html");
-          else
-            window.location.href = "evaluation_select.html";
-        }, 1000);
-
-        return;
-      }
-
-      // --- Caso con errores ---
-      if (resultado && resultado.errores && resultado.errores.length > 0) {
+          }, 1000);
+        } else {
+          notify(`Error guardando datos: ${res.error}`, "error");
+        }
+      } else if (resultado?.errores?.length > 0) {
         mostrarErroresSecuenciales(resultado.errores);
-        return;
+      } else {
+        notify("Error interno o estructura no válida.", "error");
       }
-
-      // --- Caso inesperado ---
-      notify("Error interno o estructura no válida.", "error");
     } catch (err) {
       console.error("Error durante la validación/guardado:", err);
       notify("Error inesperado durante la validación o guardado.", "error");
     }
   });
+
 
 
 

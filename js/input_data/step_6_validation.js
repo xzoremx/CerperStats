@@ -329,9 +329,11 @@ function buildMultiAnalitoData(rows, K, lecturas, encabezados) {
 
 // --- Exponer funciones al contexto global ---
 window.validarEstructuraYContenido = validarEstructuraYContenido;
+window.guardarDataframeTemp = guardarDataframeTemp;
+
 
 // === Guardado de DataFrame temporal ===
-window.guardarDataframeTemp = async function guardarDataframeTemp() {
+async function guardarDataframeTemp() {
   try {
     const session_id = sessionStorage.getItem("sessionID") || null;
     const tipo = sessionStorage.getItem("tipoAnalisis") || "mono";
@@ -342,32 +344,55 @@ window.guardarDataframeTemp = async function guardarDataframeTemp() {
     const datosParaInsertar = [];
 
     if (tipo === "mono") {
-      for (const [analito, lects] of Object.entries(dataObj.lecturas)) {
-        lects.forEach((v, idx) => {
-          datosParaInsertar.push({
-            analito,
-            parametro: dataObj.columnas[0],
-            lectura_idx: idx + 1,
-            valor: v,
-            tipo_dato: sessionStorage.getItem("tipoDato"),
-          });
-        });
-      }
-    } else if (tipo === "multi") {
-      dataObj.datosPorParametro.forEach(bloque => {
-        const parametro = bloque.parametro;
-        for (const [analito, lects] of Object.entries(bloque.lecturas)) {
+        const unidad = sessionStorage.getItem("unidad") || null;
+        const modo_cualitativo = sessionStorage.getItem("modoCualitativo") || null;
+        const tipo_dato = sessionStorage.getItem("tipoDato") || "cuantitativo";
+        const comentario = sessionStorage.getItem("comentario") || "Conforme";
+
+
+        dataObj.columnas.forEach((parametro) => {
+          const lects = dataObj.lecturas[parametro] || [];
           lects.forEach((v, idx) => {
             datosParaInsertar.push({
-              analito,
-              parametro,
+              session_id,
+              analito: "Analito", // valor fijo
+              parametro,           // nombre real de la columna
               lectura_idx: idx + 1,
               valor: v,
-              tipo_dato: sessionStorage.getItem("tipoDato"),
+              unidad,
+              tipo_dato,
+              modo_cualitativo,
+              valido: 1,
+              comentario,
             });
           });
-        }
-      });
+        });
+    } else if (tipo === "multi") {
+        const unidad = sessionStorage.getItem("unidad") || null;
+        const modo_cualitativo = sessionStorage.getItem("modoCualitativo") || null;
+        const tipo_dato = sessionStorage.getItem("tipoDato") || "cuantitativo";
+        const comentario = sessionStorage.getItem("comentario") || "Conforme";
+
+        dataObj.datosPorParametro.forEach(bloque => {
+          const parametro = bloque.parametro;
+
+          for (const [analito, lects] of Object.entries(bloque.lecturas)) {
+            lects.forEach((v, idx) => {
+              datosParaInsertar.push({
+                session_id,
+                analito,
+                parametro,
+                lectura_idx: idx + 1,
+                valor: v,
+                unidad,
+                tipo_dato,
+                modo_cualitativo,
+                valido: 1,
+                comentario,              
+              });
+            });
+          }
+        });
     }
 
     const res = await window.cerper.insertInputs(session_id, tipo, datosParaInsertar);
