@@ -284,5 +284,58 @@ body {
 }
 
 
+/* === TARJETAS SELECCIONADAS === */
+.analysis-card.selected {
+  border-color: rgba(0, 255, 180, 0.8);
+  background: rgba(0, 255, 180, 0.06);
+  box-shadow: 0 0 18px rgba(0, 255, 200, 0.25);
+  transform: scale(1.02);
+  transition: all 0.2s ease-in-out;
+}
+
+/* === BOTONES DERECHA INFERIOR === */
+.button-group-right {
+  position: fixed;
+  bottom: 25px;
+  right: 35px;
+  display: flex;
+  gap: 12px;
+  z-index: 100;
+}
+
+.button-group-right button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.75rem 1.6rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition: all 0.25s ease-in-out;
+}
+
+/* === ESTILOS DE BOTONES === */
+button.primary {
+  background: rgba(0, 255, 180, 0.15);
+  border: 1px solid rgba(0, 255, 180, 0.4);
+  color: #00ffc8;
+}
+button.primary:hover {
+  background: rgba(0, 255, 180, 0.25);
+  box-shadow: 0 0 18px rgba(0, 255, 180, 0.35);
+}
+
+button.secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ddd;
+}
+button.secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.25);
+}
 
 

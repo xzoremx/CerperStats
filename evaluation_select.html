@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>CerperStats – Selección de Evaluación</title>
-  <!-- Estilos -->
   <link rel="stylesheet" href="css/evaluation_select.css">
   <script src="https://unpkg.com/feather-icons"></script>
 </head>
@@ -13,23 +12,15 @@
   <aside id="sidebar">
     <ul class="menu">
       <li class="menu-item active">
-        <span class="icon">
-          <i data-feather="command"></i>
-        </span>
+        <span class="icon"><i data-feather="command"></i></span>
         <span class="label">Dashboard</span>
       </li>
-
-      <li class="menu-item">
-        <span class="icon">
-          <i data-feather="bar-chart-2"></i>
-        </span>
+      <li class="menu-item" id="menu-visualizaciones">
+        <span class="icon"><i data-feather="bar-chart-2"></i></span>
         <span class="label">Visualizaciones</span>
       </li>
-
       <li class="menu-item">
-        <span class="icon">
-          <i data-feather="settings"></i>
-        </span>
+        <span class="icon"><i data-feather="settings"></i></span>
         <span class="label">Configuración</span>
       </li>
     </ul>
@@ -39,79 +30,34 @@
   <main id="main">
     <section class="dashboard-layout">
       <header class="header">
-        <h1>Selecciona el análisis a realizar</h1>
-        <p>Elige entre las siguientes opciones de evaluación para analizar tus datos.</p>
+        <h1>Selecciona las evaluaciones a ejecutar</h1>
+        <p>Elige una o más pruebas estadísticas que se aplicarán a tus datos.</p>
       </header>
 
-      <!-- ======== TARJETAS DE ANÁLISIS ======== -->
       <div class="analysis-grid">
-
-        <!-- CARD: Test Normalidad -->
-        <article class="analysis-card" data-analysis="normalidad">
-          <div class="card-icon"
-               onmouseenter="this.querySelector('img').src='assets/animations/normalidad_resultados.gif'"
-               onmouseleave="this.querySelector('img').src='assets/animations/normalidad_resultados-static.gif'">
-            <img src="assets/animations/normalidad_resultados-static.gif"
-                 alt="Ícono Test Normalidad" width="100" height="100">
-          </div>
-          <h2 class="card-title">Test de Normalidad</h2>
-          <p class="card-desc">Aplica Shapiro–Wilk o Anderson–Darling, según el tamaño de muestra.</p>
-        </article>
-
-        <!-- CARD: Datos Atípicos -->
-        <article class="analysis-card" data-analysis="atipicos">
-          <div class="card-icon"
-               onmouseenter="this.querySelector('img').src='assets/animations/atipicos.gif'"
-               onmouseleave="this.querySelector('img').src='assets/animations/atipicos-static.gif'">
-            <img src="assets/animations/atipicos-static.gif"
-                 alt="Ícono Datos Atípicos" width="100" height="100">
-          </div>
-          <h2 class="card-title">Datos Atípicos</h2>
-          <p class="card-desc">Evalúa valores extremos usando el Z-score.</p>
-        </article>
-
-        <!-- CARD: Veracidad -->
-        <article class="analysis-card" data-analysis="veracidad">
-          <div class="card-icon"
-               onmouseenter="this.querySelector('img').src='assets/animations/veracidad.gif'"
-               onmouseleave="this.querySelector('img').src='assets/animations/veracidad-static.gif'">
-            <img src="assets/animations/veracidad-static.gif"
-                 alt="Ícono Veracidad" width="100" height="100">
-          </div>
-          <h2 class="card-title">Veracidad</h2>
-          <p class="card-desc">Compara con rangos de aceptación definidos.</p>
-        </article>
-
-        <!-- CARD: Precisión -->
-        <article class="analysis-card" data-analysis="precision">
-          <div class="card-icon"
-               onmouseenter="this.querySelector('img').src='assets/animations/precision.gif'"
-               onmouseleave="this.querySelector('img').src='assets/animations/precision-static.gif'">
-            <img src="assets/animations/precision-static.gif"
-                 alt="Ícono Precisión" width="100" height="100">
-          </div>
-          <h2 class="card-title">Precisión</h2>
-          <p class="card-desc">Evalúa RSD frente a un valor fijado.</p>
-        </article>
-
+        <!-- Las tarjetas se insertan dinámicamente desde evaluation_select.js -->
       </div>
     </section>
   </main>
 
-  <!-- ======== SCRIPTS ======== -->
-  <script>
-    feather.replace(); // Inicializa los íconos Feather
-  </script>
-  <script src="renderer.js"></script>
-  <script src="js/evaluation_select.js" defer></script>
-</body>
-
-<!-- BOTÓN VOLVER -->
+  <!-- ======== BOTONES INFERIORES ======== -->
   <button id="go-back" class="btn-back">
-    <i data-lucide="arrow-left"></i> Volver
+    <i data-feather="arrow-left"></i> Volver
   </button>
 
-  
-</html>
+  <div class="button-group-right">
+    <button id="btn-evaluar" class="primary">
+      <i data-feather="activity"></i> Evaluar
+    </button>
+    <button id="btn-continuar" class="secondary">
+      <i data-feather="file-text"></i> Continuar
+    </button>
+  </div>
 
+  <!-- ======== SCRIPTS ======== -->
+  <script src="renderer.js"></script>
+  <script src="js/evaluation_select.js" defer></script>
+  <script>feather.replace();</script>
+</body>
+</html>
 
