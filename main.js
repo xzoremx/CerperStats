@@ -246,6 +246,26 @@ ipcMain.handle("db-insert-inputs", async (event, { session_id, tipoAnalisis, dat
   }
 });
 
+// === Obtener evaluaciones disponibles según contexto ===
+ipcMain.handle("db-get-evaluaciones", async (event, { lab_key, tipo_analisis, tipo_dato, modo_cualitativo }) => {
+  try {
+    const rows = await db.all(`
+      SELECT id, nombre_interno, titulo, categoria, descripcion
+      FROM tests_catalog
+      WHERE lab_key = ?
+        AND tipo_analisis = ?
+        AND tipo_dato = ?
+        AND (modo_cualitativo IS NULL OR modo_cualitativo = ?)
+        AND activo = 1
+      ORDER BY id ASC;
+    `, [lab_key, tipo_analisis, tipo_dato, modo_cualitativo || null]);
+
+    return { ok: true, data: rows };
+  } catch (err) {
+    console.error("[DB] Error obteniendo evaluaciones:", err);
+    return { ok: false, error: err.message };
+  }
+});
 
 
 
