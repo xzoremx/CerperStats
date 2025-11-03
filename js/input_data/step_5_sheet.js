@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         notify("Datos validados correctamente. Creando sesión...", "success");
 
         // --- Crear sesión ---
-        const usuario = sessionStorage.getItem("usuario") || "Analista_Local";
+        const usuario = sessionStorage.getItem("usuario_id");
         const sessionData = {
           lab_key: sessionStorage.getItem("labSeleccionado"),
           procedure: sessionStorage.getItem("procedimientoSeleccionado"),
@@ -1089,7 +1089,7 @@ if (btnBack) {
         localStorage.clear();
 
         notify("Reinicio completo. Volviendo al inicio...", "info");
-        setTimeout(() => window.cerper.openPage("menu.html"), 1200);
+        setTimeout(() => window.cerper.openPage("login.html"), 1200);
       } catch (err) {
         console.error("[CerperStats] Error al reiniciar:", err);
         notify("Ocurrió un error al reiniciar.", "error");

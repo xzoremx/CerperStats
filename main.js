@@ -7,7 +7,8 @@ let mainWindow;
 
 // === Lista blanca de rutas (todas las vistas autorizadas) ===
 const ROUTES = new Set([
-  // Menú principal y selección
+  // Login, menú principal y selección
+  'login.html',
   'menu.html',
   'procedure_select.html',
 
@@ -43,8 +44,7 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadFile('menu.html'); // Pantalla inicial
-  // mainWindow.webContents.openDevTools(); // ← activar solo para depurar
+  mainWindow.loadFile('login.html'); // Pantalla inicial
 }
 
 // === Inicialización de la app ===
@@ -95,6 +95,54 @@ async function initDB() {
   console.log("[DB] Conectado a cerperstats.db");
 }
 initDB();
+
+
+// === LOGIN DE USUARIO (bcryptjs) ===
+const bcrypt = require("bcryptjs");
+
+ipcMain.handle("db-login", async (event, { username, password }) => {
+  try {
+    const user = await db.get(`
+      SELECT * FROM usuarios 
+      WHERE username = ? 
+      AND activo = 1 
+      LIMIT 1;
+    `, [username]);
+
+    if (!user) {
+      return { ok: false, error: "Usuario no encontrado o inactivo." };
+    }
+
+    // --- Si el usuario no tiene hash (primeros casos locales)
+    if (!user.hash_password || user.hash_password.trim() === "") {
+      return { ok: true, user };
+    }
+
+    // --- Verificar contraseña con bcrypt
+    const isValid = await bcrypt.compare(password, user.hash_password);
+    if (!isValid) {
+      await db.run(`
+        INSERT INTO logs_sistema (usuario_id, accion, detalle)
+        VALUES ((SELECT id FROM usuarios WHERE username = ?), 'login_fallido', 'Contraseña incorrecta');
+      `, [username]);
+      return { ok: false, error: "Contraseña incorrecta." };
+    }
+
+    // --- Registrar login exitoso
+    await db.run(`
+      INSERT INTO logs_sistema (usuario_id, accion, detalle)
+      VALUES (?, 'login_exitoso', 'Inicio de sesión correcto.');
+    `, [user.id]);
+
+    return { ok: true, user };
+
+  } catch (err) {
+    console.error("[DB] Error en login:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+
 
 // === Lectura de laboratorios para el menú principal ===
 ipcMain.handle("db-get-labs", async () => {
@@ -182,7 +230,7 @@ ipcMain.handle("db-insert-session", async (event, data) => {
     const result = await db.run(`
       INSERT INTO sessions (
         lab_key, procedure, metodo, producto, ensayo, expediente, unidad,
-        tipo_analisis, tipo_dato, modo_cualitativo, parametro, usuario,
+        tipo_analisis, tipo_dato, modo_cualitativo, parametro, usuario_id,
         estado, creado_en, actualizado_en
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', datetime('now'), datetime('now'))
