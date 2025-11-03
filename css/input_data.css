@@ -286,5 +286,51 @@ h1, .page-title {
   animation: fadeSlideIn 0.4s ease forwards;
 }
 
+/* === MODAL DE CONFIRMACIÓN === */
+.modal-overlay {
+  opacity: 0;
+  animation: fadeSlideIn 0.4s ease forwards;
+  pointer-events: all;
+}
+
+.modal-overlay.closing {
+  animation: fadeOut 0.25s ease forwards;
+}
+
+.modal-btn {
+  padding: 8px 20px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(0,255,255,0.35);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(6px);
+}
+
+.modal-btn.yes {
+  color: #00ffb3;
+  background: rgba(0,255,179,0.08);
+  border-color: rgba(0,255,179,0.4);
+  box-shadow: 0 0 12px rgba(0,255,179,0.12);
+}
+
+.modal-btn.no {
+  color: #ff8080;
+  background: rgba(255,77,77,0.08);
+  border-color: rgba(255,77,77,0.35);
+  box-shadow: 0 0 12px rgba(255,77,77,0.1);
+}
+
+.modal-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(0,255,255,0.2);
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(10px); }
+}
+
 
 

@@ -267,6 +267,68 @@ ipcMain.handle("db-get-evaluaciones", async (event, { lab_key, tipo_analisis, ti
   }
 });
 
+ipcMain.handle("db-get-inputs-by-session", async (event, { session_id, tipoAnalisis }) => {
+  try {
+    let rows = [];
+    if (tipoAnalisis === "multi" || tipoAnalisis === "multianalito") {
+      rows = await db.all(`
+        SELECT analito, parametro, lectura_idx, valor
+        FROM inputs_multianalito
+        WHERE session_id = ?
+        AND valido = 1
+        ORDER BY parametro ASC, analito ASC, lectura_idx ASC;
+      `, [session_id]);
+    } else {
+      rows = await db.all(`
+        SELECT parametro, lectura_idx, valor
+        FROM inputs_monoanalito
+        WHERE session_id = ?
+        AND valido = 1
+        ORDER BY parametro ASC, lectura_idx ASC;
+      `, [session_id]);
+    }
+
+    return { ok: true, data: rows };
+  } catch (err) {
+    console.error("[DB] Error leyendo inputs por sesión:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+
+// === Limpiar inputs existentes de una sesión ===
+ipcMain.handle("db-clear-inputs", async (event, { session_id, tipoAnalisis }) => {
+  try {
+    const table =
+      (tipoAnalisis === "multi" || tipoAnalisis === "multianalito")
+        ? "inputs_multianalito"
+        : "inputs_monoanalito";
+
+    const res = await db.run(`DELETE FROM ${table} WHERE session_id = ?`, [session_id]);
+    return { ok: true, changes: res?.changes ?? 0 };
+  } catch (err) {
+    console.error("[DB] Error limpiando inputs:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+// === Cerrar sesión ===
+ipcMain.handle("db-close-session", async (event, session_id) => {
+  try {
+    await db.run(
+      `UPDATE sessions 
+       SET estado = 'cerrada', 
+           actualizado_en = CURRENT_TIMESTAMP 
+       WHERE id = ?;`,
+      [session_id]
+    );
+
+    return { ok: true };
+  } catch (err) {
+    console.error("[DB] Error cerrando sesión:", err);
+    return { ok: false, error: err.message };
+  }
+});
 
 
 

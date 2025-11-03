@@ -1,4 +1,8 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // Control de retorno y reanudación de sesión
+  const btnBack = document.getElementById("btn-go-back") || document.getElementById("go-back");
+  const sessionId = sessionStorage.getItem("sessionID");
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
   // --- Recuperar laboratorio (clave y nombre visible) ---
   const labKey =
     sessionStorage.getItem("labSeleccionado") ||
@@ -7,7 +11,21 @@ document.addEventListener("DOMContentLoaded", () => {
     sessionStorage.getItem("labNombreVisible") || labKey || "Laboratorio";
 
   const parametroRaw = sessionStorage.getItem("parametroSeleccionado") || "Parámetro";
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono"; // default: mono
+  // Marcar visualmente si hay sesión activa, pero permitir que el handler global maneje el flujo
+  if (sessionId && btnBack) {
+    btnBack.classList.add("locked");
+  }
+
+  // Bloquear selects base si hay sesión activa
+  if (sessionId) {
+    [
+      "labKey","tipoAnalisis","tipoDato","modoCualitativo",
+      "metodo","producto","ensayo","unidad","procedure","expediente"
+    ].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = true;
+    });
+  }
 
   // Convertir parámetro a minúsculas y plural coherente
   let parametro = parametroRaw.toLowerCase();
@@ -63,6 +81,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   generarTabla(tipoAnalisis);
 
+  // Cargar lecturas guardadas (si hay sesión activa)
+  if (sessionId) {
+    try {
+      const res = await window.cerper.getInputsBySession(sessionId, tipoAnalisis);
+      if (res?.ok && res.data?.length > 0) {
+        if (tipoAnalisis === "multianalito" || tipoAnalisis === "multi") {
+          rellenarTablaMulti(res.data);
+        } else {
+          rellenarTablaMono(res.data);
+        }
+        notify("Se cargaron los datos guardados de esta sesión.", "info");
+      }
+    } catch (err) {
+      console.error("[Step5] Error cargando lecturas:", err);
+      notify("Error al cargar lecturas guardadas.", "error");
+    }
+  }
+
   // --- Habilitar botón "Continuar" ---
   const continuarBtn = document.getElementById("continue-btn");
   if (continuarBtn) continuarBtn.disabled = false;
@@ -74,6 +110,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const resultado = validarEstructuraYContenido();
 
       if (resultado === true) {
+        const _existing = sessionStorage.getItem("sessionID");
+        if (_existing) {
+          notify("Actualizando lecturas en la sesión existente...", "info");
+        } else {
         notify("Datos validados correctamente. Creando sesión...", "success");
 
         // --- Crear sesión ---
@@ -104,6 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log(`[CerperStats] Nueva sesión creada con ID ${resSession.session_id}`);
         notify("Sesión creada correctamente. Guardando lecturas...", "success");
 
+        }
         // --- Guardar lecturas en inputs ---
         const res = await window.guardarDataframeTemp();
 
@@ -881,17 +922,6 @@ document.addEventListener("paste", e => {
 window.addEventListener("load", () => setTimeout(() => validarVisual(), 150));
 
 
-
-// --- Botón Volver ---
-  document.getElementById("go-back").addEventListener("click", () => {
-    if (window.cerper && window.cerper.openPage) {
-      window.cerper.openPage("input_data/step_4_k.html");
-    } else {
-      window.location.href = "step_4_k.html";
-    }
-  });
-
-
 // === Notificaciones flotantes ===
 window.notify = function (message, type = "info") {
   // Elimina notificación previa
@@ -933,4 +963,222 @@ function mostrarErroresSecuenciales(listaErrores) {
 
   mostrarSiguiente();
 }
+
+function rellenarTablaMono(datos) {
+  const table = document.getElementById("excel");
+  if (!table || !table.rows?.length) return;
+
+  const headerCells = [...table.rows[0].cells];
+  const headerMap = headerCells.reduce((acc, td, idx) => {
+    const name = (td.textContent || "").trim();
+    if (name) acc[name] = idx;
+    return acc;
+  }, {});
+
+  datos.forEach(d => {
+    const colIndex = headerMap[d.parametro];
+    if (colIndex == null) return;
+    const r = Number(d.lectura_idx);
+    const row = table.rows[r];
+    if (!row) return;
+    const cell = row.cells[colIndex];
+    if (cell) cell.textContent = (d.valor ?? "").toString();
+  });
+}
+
+function rellenarTablaMulti(datos) {
+  const table = document.getElementById("excel");
+  if (!table || !table.rows?.length) return;
+
+  const rows = [...table.rows];
+  const headerCells = [...rows[0].cells];
+
+  // 1) Setear nombres de analitos en encabezados desde los datos
+  const K = parseInt(sessionStorage.getItem("K")) || (headerCells.length - 1);
+  const analitosUnicos = [];
+  for (const d of datos) {
+    const name = (d.analito ?? "").toString().trim();
+    if (name && !analitosUnicos.includes(name)) analitosUnicos.push(name);
+    if (analitosUnicos.length >= K) break;
+  }
+  for (let i = 0; i < K; i++) {
+    const th = headerCells[i + 1]; // desde la columna 1 (índice 1) en adelante
+    if (!th) continue;
+    if (analitosUnicos[i]) th.textContent = analitosUnicos[i];
+  }
+
+  // Recalcular mapa de encabezados tras actualizar textos
+  const headerMap = [...rows[0].cells].reduce((acc, td, idx) => {
+    const name = (td.textContent || "").trim();
+    if (name) acc[name] = idx;
+    return acc;
+  }, {});
+
+  // 2) Mapear nombre del parámetro a índice inicial de su bloque de filas
+  const paramStartIndex = {};
+  for (let r = 1; r < rows.length; r++) {
+    const name = (rows[r].cells[0]?.textContent || "").trim();
+    if (name && !(name in paramStartIndex)) {
+      paramStartIndex[name] = r; // primera fila del bloque para ese parámetro
+    }
+  }
+
+  // 3) Volcar valores en sus celdas correspondientes
+  datos.forEach(d => {
+    const colIndex = headerMap[(d.analito ?? "").toString().trim()];
+    if (colIndex == null) return;
+
+    const paramName = (d.parametro ?? "").toString().trim();
+    const start = paramStartIndex[paramName];
+    if (start == null) return;
+
+    const li = Number(d.lectura_idx) || 1; // base 1
+    const row = table.rows[start + li - 1];
+    if (!row) return;
+    const cell = row.cells[colIndex];
+    if (cell) {
+      cell.textContent = (d.valor ?? "").toString();
+      togglePlaceholder(cell);
+    }
+  });
+}
+
+// --- Botón Volver ---
+const btnBack = document.getElementById("go-back") || document.getElementById("btn-go-back");
+
+if (btnBack) {
+  let backClickCount = 0;
+
+  btnBack.addEventListener("click", async (e) => {
+    e.preventDefault();
+    const sessionId = sessionStorage.getItem("sessionID");
+
+    // --- Caso 1: no hay sesión activa ---
+    if (!sessionId) {
+      window.cerper.openPage("input_data/step_4_k.html");
+      return;
+    }
+
+    // --- Caso 2: primera vez que hace clic ---
+    backClickCount++;
+    if (backClickCount === 1) {
+      notify("Solo puedes editar las lecturas en esta sesión. Presiona nuevamente para crear una nueva sesión.", "warning");
+
+      // Reinicia contador si no hace segundo clic dentro de 3s
+      setTimeout(() => { backClickCount = 0; }, 3000);
+      return;
+    }
+
+    // --- Caso 3: segundo clic: confirmar reinicio total ---
+    const confirmar = await mostrarConfirmacion(
+      "¿Reiniciar CerperStats?",
+      "Esto cerrará tu sesión actual y eliminará toda la configuración temporal. Continuar?"
+    );
+
+    if (confirmar) {
+      try {
+        const sessionId = sessionStorage.getItem("sessionID");
+
+        // Cerrar sesión en la base (si existe)
+        if (sessionId && window.cerper.closeSession) {
+          await window.cerper.closeSession(sessionId);
+        }
+
+        // Limpiar absolutamente todo (frontend)
+        sessionStorage.clear();
+        localStorage.clear();
+
+        notify("Reinicio completo. Volviendo al inicio...", "info");
+        setTimeout(() => window.cerper.openPage("menu.html"), 1200);
+      } catch (err) {
+        console.error("[CerperStats] Error al reiniciar:", err);
+        notify("Ocurrió un error al reiniciar.", "error");
+      }
+    } else {
+      notify("Se mantiene la sesión actual.", "success");
+    }
+
+    backClickCount = 0;
+  });
+}
+
+
+// --- Modal de confirmación simple ---
+async function mostrarConfirmacion(titulo, mensaje) {
+  return new Promise((resolve) => {
+    // === Fondo difuminado y bloqueo ===
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    Object.assign(overlay.style, {
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100vw",
+      height: "100vh",
+      background: "rgba(0,0,0,0.3)",
+      backdropFilter: "blur(8px)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 9998,
+      animation: "fadeSlideIn 0.4s ease forwards",
+      pointerEvents: "all",       
+      userSelect: "none",
+    });
+
+    // === Caja del modal ===
+    const modal = document.createElement("div");
+    Object.assign(modal.style, {
+      backdropFilter: "blur(12px)",
+      background: "rgba(0,255,255,0.08)",
+      border: "1.5px solid rgba(0,255,255,0.35)",
+      boxShadow: "0 0 25px rgba(0,255,255,0.15)",
+      borderRadius: "16px",
+      padding: "28px 32px",
+      width: "360px",
+      textAlign: "center",
+      color: "#00ffff",
+      fontFamily: "Segoe UI, sans-serif",
+      fontWeight: "500",
+      animation: "fadeSlideIn 0.45s ease forwards",
+    });
+
+    modal.innerHTML = `
+      <h3 style="margin:0; font-size:1.15rem; color:#00ffff;">${titulo}</h3>
+      <p style="margin:14px 0 22px; font-size:0.95rem; color:#80e4ff; line-height:1.4;">
+        ${mensaje}
+      </p>
+      <div style="display:flex; justify-content:center; gap:16px;">
+        <button id="confirm-yes" class="modal-btn yes">Sí</button>
+        <button id="confirm-no" class="modal-btn no">No</button>
+      </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // === Control de botones ===
+    const yes = modal.querySelector("#confirm-yes");
+    const no = modal.querySelector("#confirm-no");
+
+    const closeModal = (value) => {
+      overlay.classList.add("closing");
+      setTimeout(() => overlay.remove(), 250);
+      resolve(value);
+    };
+
+    yes.addEventListener("click", () => closeModal(true));
+    no.addEventListener("click", () => closeModal(false));
+
+    // Cerrar con tecla Escape
+    const escListener = (ev) => {
+      if (ev.key === "Escape") {
+        document.removeEventListener("keydown", escListener);
+        closeModal(false);
+      }
+    };
+    document.addEventListener("keydown", escListener);
+  });
+}
+
 

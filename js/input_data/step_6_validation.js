@@ -395,6 +395,13 @@ async function guardarDataframeTemp() {
         });
     }
 
+    // Limpiar datos anteriores de esta sesión antes de insertar (comportamiento de actualización)
+    const clear = await window.cerper.clearInputs(session_id, tipo);
+    if (!clear?.ok) {
+      notify(`No se pudo limpiar datos previos: ${clear?.error || 'desconocido'}`, "error");
+      return clear;
+    }
+
     const res = await window.cerper.insertInputs(session_id, tipo, datosParaInsertar);
 
     if (res.ok)

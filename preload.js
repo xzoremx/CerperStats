@@ -12,4 +12,10 @@ contextBridge.exposeInMainWorld('cerper', {
   insertSession: (data) => ipcRenderer.invoke("db-insert-session", data),
   insertInputs: (session_id, tipoAnalisis, datos) =>
     ipcRenderer.invoke("db-insert-inputs", { session_id, tipoAnalisis, datos }),
+  getInputsBySession: (session_id, tipoAnalisis) =>
+    ipcRenderer.invoke("db-get-inputs-by-session", { session_id, tipoAnalisis }),
+  clearInputs: (session_id, tipoAnalisis) =>
+    ipcRenderer.invoke("db-clear-inputs", { session_id, tipoAnalisis }),
+  closeSession: (session_id) =>
+  ipcRenderer.invoke("db-close-session", session_id),
 });
