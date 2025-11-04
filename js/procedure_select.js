@@ -3,6 +3,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   // --- Recuperar laboratorio y usuario ---
   const labKey = sessionStorage.getItem("labSeleccionado") || localStorage.getItem("labSeleccionado");
+  const defaultLab = (sessionStorage.getItem("default_lab") || "").trim();
   const labName = sessionStorage.getItem("labNombreVisible") || labKey || "Laboratorio";
   const rol = (sessionStorage.getItem("rol") || "").toLowerCase().trim();
   const usuario = sessionStorage.getItem("usuario");
@@ -29,7 +30,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Botón Sesiones (solo admin/supervisor) ---
   const sessionsBtn = document.getElementById("go-sessions");
   if (sessionsBtn) {
-    const allowed = rol === "admin" || rol === "supervisor";
+    // Admin: siempre. Supervisor: solo si el lab actual coincide con su default_lab
+    const allowed = (rol === "admin") || (rol === "supervisor" && labKey && defaultLab && labKey === defaultLab);
     if (!allowed) {
       sessionsBtn.hidden = true;
       sessionsBtn.style.display = "none";

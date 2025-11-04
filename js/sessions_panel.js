@@ -19,8 +19,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   try {
-    // Admin: ver todas (no filtra). Supervisor: filtra por su lab.
-    const labParam = (rol === "supervisor") ? labDefault : null;
+    // Admin: ver todas (no filtra).
+    // Supervisor: filtra por su default_lab (no por la selección del menú).
+    const defaultLab = sessionStorage.getItem("default_lab") || null;
+    const labParam = (rol === "supervisor") ? defaultLab : null;
     const res = await window.cerper.getSessionsByRole({ rol, labDefault: labParam });
     if (!res.ok) throw new Error(res.error);
     renderSesiones(res.data);

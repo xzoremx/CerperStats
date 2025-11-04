@@ -34,6 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("usuario_id", user.id);
       sessionStorage.setItem("rol", user.rol || "analista");
       sessionStorage.setItem("labSeleccionado", user.default_lab || "");
+      sessionStorage.setItem("default_lab", user.default_lab || "");
 
       msg.textContent = `Bienvenido, ${user.nombre_completo || user.username}`;
       msg.style.color = "#00ffb3";
