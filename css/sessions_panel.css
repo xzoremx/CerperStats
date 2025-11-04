@@ -64,6 +64,7 @@ body::after {
   -webkit-backdrop-filter: saturate(140%) blur(14px);
   border: 1px solid var(--stroke);
   box-shadow: var(--shadow);
+  position: relative; /* stacking context for overlays */
 }
 
 .panel-header {
@@ -73,6 +74,53 @@ body::after {
   gap: 16px;
   margin-bottom: clamp(16px, 2vw, 24px);
 }
+
+/* Filters bar */
+.filters {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  margin: 8px 0 18px 0;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 100; 
+}
+
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  
+}
+
+.filter-item label {
+  font-size: 12px;
+  color: var(--ink-dark, #333); 
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); 
+}
+
+.filter-select {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.3); 
+  background: rgba(255, 255, 255, 0.15); 
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 8px 10px;
+  backdrop-filter: blur(10px); 
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); 
+  transition: all 0.3s ease;
+}
+
+.filter-select:hover {
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 10px 40px 0 rgba(31, 38, 135, 0.45);
+}
+
 
 .panel-title {
   margin: 0;
@@ -124,6 +172,8 @@ body::after {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: clamp(12px, 1.8vw, 20px);
   align-items: start;
+  position: relative;
+  z-index: 1;
 }
 
 .loading {
@@ -188,3 +238,58 @@ body::after {
     align-self: flex-end;
   }
 }
+
+/* Procedure badge */
+.proc-badge {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .3px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.85);
+  background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.45));
+  color: var(--ink);
+}
+.proc-aut   { color: #6d28d9; border-color: rgba(109,40,217,.5); box-shadow: 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 9999px rgba(109,40,217,.06); }
+.proc-imp   { color: #047857; border-color: rgba(4,120,87,.5);   box-shadow: 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 9999px rgba(4,120,87,.06); }
+.proc-intra { color: #b45309; border-color: rgba(180,83,9,.5);    box-shadow: 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 9999px rgba(180,83,9,.06); }
+.proc-inter { color: #be123c; border-color: rgba(190,18,60,.5);   box-shadow: 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 9999px rgba(190,18,60,.06); }
+
+/* Custom glass select (popup) */
+.select-wrap { position: relative; min-width: 220px; }
+.select-display {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  border: 1px solid rgba(0,0,0,.08);
+  background: rgba(255,255,255,.9);
+  color: var(--ink); border-radius: 12px; padding: 9px 12px; cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0,0,0,.08); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.select-value { font-weight: 600; }
+.select-caret { opacity: .6; margin-left: 8px; border: 4px solid transparent; border-top-color: var(--ink); }
+.select-menu {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 300;
+  /* iOS 17-like light popover */
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  box-shadow: 0 18px 36px rgba(0,0,0,.16), 0 4px 12px rgba(0,0,0,.08);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  max-height: 320px; overflow-y: auto; display: none;
+  transform-origin: top center; opacity: 0; transform: translateY(-4px) scale(0.98);
+  transition: opacity .18s ease, transform .18s ease;
+}
+.select-menu.show { display: block; opacity: 1; transform: translateY(0) scale(1); }
+.select-option { 
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 14px; min-height: 44px; cursor: pointer; 
+  color: var(--ink); font-weight: 600; letter-spacing: .2px;
+}
+.select-option + .select-option { border-top: 1px solid rgba(0,0,0,.08); }
+.select-option:first-child { border-top-left-radius: 14px; border-top-right-radius: 14px; }
+.select-option:last-child  { border-bottom-left-radius: 14px; border-bottom-right-radius: 14px; }
+.select-option:hover { background: rgba(0,0,0,.04); }
+.select-option:active { background: rgba(0,0,0,.06); }
+.select-option[aria-selected="true"] { background: rgba(37,99,235,.14); color: #0b3ea8; font-weight: 700; }

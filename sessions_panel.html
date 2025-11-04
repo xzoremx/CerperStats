@@ -15,6 +15,23 @@
       </button>
     </header>
 
+    <section class="filters" id="filters-bar" aria-label="Filtros de sesiones">
+      <div class="filter-item" id="filter-lab-wrap">
+        <label for="filter-lab">Laboratorio</label>
+        <select id="filter-lab" class="filter-select"></select>
+      </div>
+      <div class="filter-item">
+        <label for="filter-proc">Procedimiento</label>
+        <select id="filter-proc" class="filter-select">
+          <option value="all">Todos</option>
+          <option value="autorizaciones">Autorizaciones</option>
+          <option value="implementaciones">Implementaciones</option>
+          <option value="intralaboratorios">Intralaboratorios</option>
+          <option value="interlaboratorios">Interlaboratorios</option>
+        </select>
+      </div>
+    </section>
+
     <section id="sessions-container" class="sessions-grid" aria-live="polite">
       <p class="loading">Cargando sesiones...</p>
     </section>

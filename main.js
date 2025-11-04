@@ -352,8 +352,7 @@ ipcMain.handle("db-get-sessions-by-role", async (event, { rol, labDefault }) => 
     if (rol === 'analista') return { ok: true, data: [] };
 
     const rows = await db.all(`
-      SELECT s.id, s.lab_key, l.nombre AS lab_nombre, s.producto, s.metodo, s.estado, s.creado_en,
-             u.username AS usuario
+      SELECT s.id, s.lab_key, l.nombre AS lab_nombre, s.producto, s.metodo, s.estado, s.creado_en, s.procedure,\n             u.username AS usuario
       FROM sessions s
       LEFT JOIN usuarios u ON s.usuario_id = u.id
       LEFT JOIN labs l ON l.lab_key = s.lab_key
@@ -367,3 +366,4 @@ ipcMain.handle("db-get-sessions-by-role", async (event, { rol, labDefault }) => 
     return { ok: false, error: err.message };
   }
 });
+

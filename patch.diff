@@ -1,0 +1,53 @@
+*** Begin Patch
+*** Update File: css/sessions_panel.css
+@@
+-/* Filters bar */
+-.filters {
+-  --dd-gap: 0px;
+-  --filters-gap: 0px;
+-  display: flex;
+-  gap: 12px;
+-  align-items: flex-end;
+-  margin: 8px 0 calc(18px + var(--filters-gap)) 0;
++/* Filters bar */
++.filters {
++  display: flex;
++  gap: 12px;
++  align-items: flex-end;
++  margin: 8px 0 18px 0;
+   background: rgba(255, 255, 255, 0.1);
+   backdrop-filter: blur(5px);
+   border-radius: 12px;
+   padding: 10px;
+   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+   position: relative;
+-  z-index: 100; 
+-  transition: margin 0.25s ease;
++  z-index: 100; 
+ }
+@@
+-.select-menu {
+-  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30;
+-  background: linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,.42));
+-  border: 1px solid rgba(255,255,255,.9); border-radius: 12px;
+-  box-shadow: 0 10px 28px rgba(0,0,0,.14), 0 4px 12px rgba(0,0,0,.08);
+-  backdrop-filter: saturate(140%) blur(14px); -webkit-backdrop-filter: saturate(140%) blur(14px);
+-  max-height: 280px; overflow-y: auto; display: none;
+-}
++.select-menu {
++  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 300;
++  /* Dark frosted glass */
++  background: linear-gradient(180deg, rgba(28,31,40,.78), rgba(28,31,40,.52));
++  border: 1px solid rgba(255,255,255,.12); border-radius: 12px;
++  box-shadow: 0 14px 32px rgba(0,0,0,.28), 0 6px 16px rgba(0,0,0,.18);
++  backdrop-filter: saturate(140%) blur(14px); -webkit-backdrop-filter: saturate(140%) blur(14px);
++  max-height: 280px; overflow-y: auto; display: none;
++}
+@@
+-.select-option { padding: 10px 12px; cursor: pointer; color: var(--ink); }
+-.select-option:hover { background: rgba(37,99,235,.08); }
+-.select-option[aria-selected="true"] { background: rgba(37,99,235,.14); font-weight: 700; }
++.select-option { padding: 10px 12px; cursor: pointer; color: #fff; }
++.select-option:hover { background: rgba(255,255,255,.08); }
++.select-option[aria-selected="true"] { background: rgba(37,99,235,.35); font-weight: 700; }
+*** End Patch

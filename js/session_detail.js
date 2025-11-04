@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("session-info").innerHTML = `
       <b>ID:</b> ${info.id} <br>
       <b>${labName}</b> <br>
+      <b>Procedimiento:</b> ${info.procedure || "-"} <br>
       <b>Metodo:</b> ${info.metodo || "-"} <br>
       <b>Producto:</b> ${info.producto || "-"} <br>
       <b>Ensayo:</b> ${info.ensayo || "-"} <br>
@@ -64,4 +65,5 @@ document.addEventListener("DOMContentLoaded", async () => {
     else window.location.href = "sessions_panel.html";
   });
 });
+
 
