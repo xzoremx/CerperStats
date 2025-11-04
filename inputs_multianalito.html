@@ -9,8 +9,13 @@
 <body>
   <main class="sheet-container" role="main">
     <header class="sheet-header">
-      <h1 class="sheet-title">Tabla de datos</h1>
-      <div class="unit-badge" id="unit-badge" title="Unidad de medida">—</div>
+      <h1 class="sheet-title">Tabla de resultados</h1>
+      <div class="sheet-actions">
+        <button id="btn-copy" class="btn-copy btn-icon" aria-label="Copiar tabla" title="Copiar tabla">
+          <i data-lucide="copy"></i>
+        </button>
+        <div class="unit-badge" id="unit-badge" title="Unidad de medida">�</div>
+      </div>
     </header>
 
     <section class="sheet-wrap">
@@ -20,13 +25,16 @@
           <tbody id="sheet-body"></tbody>
         </table>
       </div>
-      <p class="sheet-empty" id="empty-msg" hidden>No hay datos de inputs para esta sesión.</p>
+      <p class="sheet-empty" id="empty-msg" hidden>No hay datos de inputs para esta sesi�n.</p>
     </section>
 
-    <button id="btn-volver" class="btn-return">Volver al detalle</button>
+    <button id="btn-volver" class="btn-return" aria-label="Volver">
+          <i data-lucide="chevron-left"></i>
+      </button>
   </main>
 
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>document.addEventListener('DOMContentLoaded',()=>{ try{ lucide.createIcons(); }catch(e){} });</script>
   <script src="js/inputs_multianalito.js"></script>
 </body>
 </html>
-

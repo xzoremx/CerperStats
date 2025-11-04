@@ -32,8 +32,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   document.getElementById("btn-volver")?.addEventListener("click", () => {
-    if (window.cerper?.openPage) window.cerper.openPage("menu.html");
-    else window.location.href = "menu.html";
+    if (window.cerper?.openPage) window.cerper.openPage("procedure_select.html");
+    else window.location.href = "procedure_select.html";
   });
 });
 

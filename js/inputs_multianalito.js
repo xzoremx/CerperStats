@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const sessionId = sessionStorage.getItem('sessionSeleccionada');
   if (!sessionId) {
-    notify?.('No hay sesión seleccionada.', 'error');
+    notifyLocal('No hay sesión seleccionada.', 'error');
     if (window.cerper?.openPage) window.cerper.openPage('sessions_panel.html');
     else window.location.href = 'sessions_panel.html';
     return;
@@ -16,6 +16,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-volver')?.addEventListener('click', () => {
     if (window.cerper?.openPage) window.cerper.openPage('session_detail.html');
     else window.location.href = 'session_detail.html';
+  });
+
+  // Botón copiar tabla
+  document.getElementById('btn-copy')?.addEventListener('click', async () => {
+    try {
+      const tsv = tableToTSV(document.getElementById('inputs-table'));
+      await navigator.clipboard.writeText(tsv);
+      notifyLocal('Tabla copiada al portapapeles.', 'success');
+    } catch (e) {
+      console.error('[InputsMulti] Copy failed:', e);
+      notifyLocal('No se pudo copiar la tabla.', 'error');
+    }
   });
 
   try {
@@ -77,7 +89,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   } catch (err) {
     console.error('[InputsMulti] Error:', err);
-    notify?.('Error al cargar inputs.', 'error');
+    notifyLocal('Error al cargar inputs.', 'error');
   }
 });
 
+function tableToTSV(table) {
+  const rows = [];
+  const head = table.tHead?.rows[0];
+  if (head) rows.push([...head.cells].map(c => cellText(c)).join('\t'));
+  for (const tr of table.tBodies[0]?.rows || []) {
+    rows.push([...tr.cells].map(c => cellText(c)).join('\t'));
+  }
+  return rows.join('\n');
+}
+
+function cellText(cell){
+  return String(cell.textContent || '').replace(/\s+/g,' ').trim();
+}
+
+function notifyLocal(message, type='info'){
+  if (window.notify) { try { window.notify(message, type); return; } catch(_){} }
+  let wrap = document.getElementById('toast-wrap');
+  if (!wrap){ wrap = document.createElement('div'); wrap.id = 'toast-wrap'; document.body.appendChild(wrap); }
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = message;
+  wrap.appendChild(el);
+  requestAnimationFrame(()=> el.classList.add('show'));
+  setTimeout(()=>{
+    el.classList.remove('show');
+    setTimeout(()=> el.remove(), 200);
+  }, 2200);
+}

@@ -38,6 +38,7 @@ body::after  { inset: auto auto -25% -10%; background: radial-gradient(closest-s
 
 .sheet-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
 .sheet-title { margin: 0; font-size: clamp(1.25rem, 1rem + 1vw, 1.8rem); font-weight: 800; }
+.sheet-actions { display: inline-flex; align-items: center; gap: 10px; }
 .unit-badge { padding: 8px 12px; background: var(--glass-strong); border: 1px solid #fff; border-radius: 999px; color: var(--ink); font-weight: 700; box-shadow: var(--shadow); }
 
 .sheet-wrap { position: relative; }
@@ -51,8 +52,75 @@ body::after  { inset: auto auto -25% -10%; background: radial-gradient(closest-s
 
 .sheet-empty { color: var(--ink-soft); text-align: center; margin: 18px 0 6px; }
 
-.btn-return { margin-top: 14px; appearance: none; border: 1px solid #fff; background: linear-gradient(180deg, var(--glass-strong), rgba(255,255,255,.5)); padding: 10px 16px; border-radius: 999px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow); }
-.btn-return:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,.1); }
+.btn-return {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--primary-ink);
+    cursor: pointer;
+
+    border-radius: 50%;
+    padding: 9px;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-top: 5px;
+
+    transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+
+.btn-return:hover {
+    background: rgba(239, 237, 237, 0.05);
+    transform: translateY(1px);
+}
+
+.btn-return:active {
+    background: rgba(225, 224, 224, 0.1);
+    transform: translateY(2px);
+}
+
+.btn-return:focus-visible {
+    transform: none; 
+    outline: 2px solid var(--primary-ink);
+    outline-offset: 2px;
+}
+
+
+
+/* Copy button */
+.btn-copy { appearance: none; border: 1px solid #fff; background: linear-gradient(180deg, var(--glass-strong), rgba(255,255,255,.5)); padding: 8px 12px; border-radius: 999px; font-weight: 700; cursor: pointer; color: var(--ink); box-shadow: var(--shadow); }
+.btn-copy:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,.1); }
+.btn-icon { padding: 6px 8px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; }
+.btn-icon svg { width: 18px; height: 18px; display: block; }
 
 @media (max-width: 600px){ .sheet-scroll{ max-height: 65vh; } }
 
+/* Toasts (glass / frosted look) */
+#toast-wrap {
+  position: fixed; right: 20px; bottom: 20px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.toast {
+  padding: 10px 14px; border-radius: 14px; font-weight: 700; letter-spacing: .2px;
+  color: var(--ink);
+  background: linear-gradient(180deg, rgba(255,255,255,.58), rgba(255,255,255,.28));
+  border: 1px solid rgba(255,255,255,.75);
+  box-shadow: 0 10px 26px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.35);
+  backdrop-filter: saturate(140%) blur(14px);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+  opacity: 0; transform: translateY(6px);
+  transition: opacity .18s ease, transform .18s ease, box-shadow .18s ease;
+  position: relative;
+}
+.toast::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0));
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { color: #065f46; border-color: rgba(16,185,129,.55); box-shadow: 0 10px 26px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.35), inset 0 0 0 9999px rgba(16,185,129,.06); }
+.toast.error   { color: #7f1d1d; border-color: rgba(239,68,68,.55);  box-shadow: 0 10px 26px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.35), inset 0 0 0 9999px rgba(239,68,68,.06); }
+.toast.info    { color: #0b3ea8; border-color: rgba(37,99,235,.55);  box-shadow: 0 10px 26px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.35), inset 0 0 0 9999px rgba(37,99,235,.06); }

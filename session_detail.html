@@ -16,9 +16,13 @@
       <button id="btn-report">Ver Reporte</button>
     </div>
 
-    <button id="btn-volver" class="btn-return">Volver al panel</button>
+    <button id="btn-volver" class="btn-return" aria-label="Volver">
+        <i data-lucide="chevron-left"></i>
+    </button>
   </main>
-
+  
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>document.addEventListener('DOMContentLoaded',()=>{ try{ lucide.createIcons(); }catch(e){} });</script>
   <script src="js/session_detail.js"></script>
 </body>
 </html>

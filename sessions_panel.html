@@ -10,7 +10,9 @@
   <main class="panel-container" role="main">
     <header class="panel-header">
       <h1 id="panel-title" class="panel-title">Sesiones registradas</h1>
-      <button id="btn-volver" class="btn-return" aria-label="Volver al menú">Volver al menú</button>
+      <button id="btn-volver" class="btn-return" aria-label="Volver">
+          <i data-lucide="chevron-left"></i>
+      </button>
     </header>
 
     <section id="sessions-container" class="sessions-grid" aria-live="polite">
@@ -18,6 +20,8 @@
     </section>
   </main>
 
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>document.addEventListener('DOMContentLoaded',()=>{ try{ lucide.createIcons(); }catch(e){} });</script>
   <script src="js/sessions_panel.js"></script>
 </body>
 </html>
