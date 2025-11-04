@@ -2,16 +2,19 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
-
 let mainWindow;
-
 // === Lista blanca de rutas (todas las vistas autorizadas) ===
 const ROUTES = new Set([
   // Login, menú principal y selección
   'login.html',
   'menu.html',
   'procedure_select.html',
-
+  'sessions_panel.html',
+  'session_detail.html',
+  'inputs_monoanalito.html',
+  'inputs_multianalito.html',
+  'results_general.html',
+  'reports.html',
   // Flujo input_data
   'input_data/preinfo.html',
   'input_data/step_1_type.html',
@@ -19,15 +22,12 @@ const ROUTES = new Set([
   'input_data/step_3_dato.html',
   'input_data/step_4_k.html',
   'input_data/step_5_sheet.html',
-
   // Evaluación y reporte
   'evaluation_select.html',
   'postinfo.html',
-
   // Otros
   'index.html'
 ]);
-
 // === Crear ventana principal ===
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -43,32 +43,26 @@ function createWindow() {
       sandbox: false,
     },
   });
-
   mainWindow.loadFile('login.html'); // Pantalla inicial
 }
-
 // === Inicialización de la app ===
 app.whenReady().then(() => {
   app.setAppUserModelId('com.cerper.cerperstats');
   createWindow();
-
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
-
 // === Cerrar completamente al salir (excepto en macOS) ===
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
-
 // === Navegación segura controlada desde preload.js ===
 ipcMain.handle('open-page', async (_event, page) => {
   if (!ROUTES.has(page)) {
     console.warn(`[CerperStats] Ruta no permitida: ${page}`);
     return { ok: false, error: 'Ruta no permitida' };
   }
-
   try {
     await mainWindow.loadFile(page);
     console.log(`[CerperStats] Página cargada: ${page}`);
@@ -78,13 +72,9 @@ ipcMain.handle('open-page', async (_event, page) => {
     return { ok: false, error: err.message };
   }
 });
-
-
 // === Capa de base de datos ===
 const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
-
-
 // Conexión global
 let db;
 async function initDB() {
@@ -95,11 +85,8 @@ async function initDB() {
   console.log("[DB] Conectado a cerperstats.db");
 }
 initDB();
-
-
 // === LOGIN DE USUARIO (bcryptjs) ===
 const bcrypt = require("bcryptjs");
-
 ipcMain.handle("db-login", async (event, { username, password }) => {
   try {
     const user = await db.get(`
@@ -108,16 +95,13 @@ ipcMain.handle("db-login", async (event, { username, password }) => {
       AND activo = 1 
       LIMIT 1;
     `, [username]);
-
     if (!user) {
       return { ok: false, error: "Usuario no encontrado o inactivo." };
     }
-
     // --- Si el usuario no tiene hash (primeros casos locales)
     if (!user.hash_password || user.hash_password.trim() === "") {
       return { ok: true, user };
     }
-
     // --- Verificar contraseña con bcrypt
     const isValid = await bcrypt.compare(password, user.hash_password);
     if (!isValid) {
@@ -127,23 +111,17 @@ ipcMain.handle("db-login", async (event, { username, password }) => {
       `, [username]);
       return { ok: false, error: "Contraseña incorrecta." };
     }
-
     // --- Registrar login exitoso
     await db.run(`
       INSERT INTO logs_sistema (usuario_id, accion, detalle)
       VALUES (?, 'login_exitoso', 'Inicio de sesión correcto.');
     `, [user.id]);
-
     return { ok: true, user };
-
   } catch (err) {
     console.error("[DB] Error en login:", err);
     return { ok: false, error: err.message };
   }
 });
-
-
-
 // === Lectura de laboratorios para el menú principal ===
 ipcMain.handle("db-get-labs", async () => {
   try {
@@ -159,7 +137,6 @@ ipcMain.handle("db-get-labs", async () => {
     return { ok: false, error: err.message };
   }
 });
-
 // === Lectura completa de un laboratorio por clave ===
 ipcMain.handle("db-get-lab-by-key", async (event, labKey) => {
   try {
@@ -180,7 +157,6 @@ ipcMain.handle("db-get-lab-by-key", async (event, labKey) => {
       WHERE lab_key = ?
       LIMIT 1;
     `, [labKey]);
-
     if (row) {
       return { ok: true, data: row };
     } else {
@@ -191,8 +167,6 @@ ipcMain.handle("db-get-lab-by-key", async (event, labKey) => {
     return { ok: false, error: err.message };
   }
 });
-
-
 // === Lectura de módulos / configuraciones por laboratorio ===
 ipcMain.handle("db-get-lab-modes", async (_e, labKey) => {
   try {
@@ -207,8 +181,6 @@ ipcMain.handle("db-get-lab-modes", async (_e, labKey) => {
     return { ok: false, error: err.message };
   }
 });
-
-
 // === Creación de sesión activa ===
 ipcMain.handle("db-insert-session", async (event, data) => {
   try {
@@ -226,7 +198,6 @@ ipcMain.handle("db-insert-session", async (event, data) => {
       parametro,
       usuario
     } = data;
-
     const result = await db.run(`
       INSERT INTO sessions (
         lab_key, procedure, metodo, producto, ensayo, expediente, unidad,
@@ -238,18 +209,12 @@ ipcMain.handle("db-insert-session", async (event, data) => {
       lab_key, procedure, metodo, producto, ensayo, expediente, unidad,
       tipo_analisis, tipo_dato, modo_cualitativo, parametro, usuario
     ]);
-
     return { ok: true, session_id: result.lastID };
   } catch (err) {
     console.error("[DB] Error insertando sesión:", err);
     return { ok: false, error: err.message };
   }
 });
-
-
-
-
-
 // === Inserción de inputs de análisis ===
 ipcMain.handle("db-insert-inputs", async (event, { session_id, tipoAnalisis, datos }) => {
   try {
@@ -257,12 +222,10 @@ ipcMain.handle("db-insert-inputs", async (event, { session_id, tipoAnalisis, dat
       tipoAnalisis === "multi"
         ? "inputs_multianalito"
         : "inputs_monoanalito";
-
     // --- Generar placeholders dinámicos según cantidad de registros ---
     const placeholders = datos
       .map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
       .join(", ");
-
     // --- Mapear los valores exactamente según las columnas existentes ---
     const values = datos.flatMap(d => [
       session_id,         // 1
@@ -276,7 +239,6 @@ ipcMain.handle("db-insert-inputs", async (event, { session_id, tipoAnalisis, dat
       1,                  // 9 (valido)
       d.comentario        // 10
     ]);
-
     // --- Ejecutar la inserción ---
     await db.run(
       `INSERT INTO ${table} (
@@ -286,14 +248,12 @@ ipcMain.handle("db-insert-inputs", async (event, { session_id, tipoAnalisis, dat
       VALUES ${placeholders}`,
       values
     );
-
     return { ok: true };
   } catch (err) {
     console.error("[DB] Error insertando inputs:", err);
     return { ok: false, error: err.message };
   }
 });
-
 // === Obtener evaluaciones disponibles según contexto ===
 ipcMain.handle("db-get-evaluaciones", async (event, { lab_key, tipo_analisis, tipo_dato, modo_cualitativo }) => {
   try {
@@ -307,14 +267,12 @@ ipcMain.handle("db-get-evaluaciones", async (event, { lab_key, tipo_analisis, ti
         AND activo = 1
       ORDER BY id ASC;
     `, [lab_key, tipo_analisis, tipo_dato, modo_cualitativo || null]);
-
     return { ok: true, data: rows };
   } catch (err) {
     console.error("[DB] Error obteniendo evaluaciones:", err);
     return { ok: false, error: err.message };
   }
 });
-
 ipcMain.handle("db-get-inputs-by-session", async (event, { session_id, tipoAnalisis }) => {
   try {
     let rows = [];
@@ -335,15 +293,12 @@ ipcMain.handle("db-get-inputs-by-session", async (event, { session_id, tipoAnali
         ORDER BY parametro ASC, lectura_idx ASC;
       `, [session_id]);
     }
-
     return { ok: true, data: rows };
   } catch (err) {
     console.error("[DB] Error leyendo inputs por sesión:", err);
     return { ok: false, error: err.message };
   }
 });
-
-
 // === Limpiar inputs existentes de una sesión ===
 ipcMain.handle("db-clear-inputs", async (event, { session_id, tipoAnalisis }) => {
   try {
@@ -351,7 +306,6 @@ ipcMain.handle("db-clear-inputs", async (event, { session_id, tipoAnalisis }) =>
       (tipoAnalisis === "multi" || tipoAnalisis === "multianalito")
         ? "inputs_multianalito"
         : "inputs_monoanalito";
-
     const res = await db.run(`DELETE FROM ${table} WHERE session_id = ?`, [session_id]);
     return { ok: true, changes: res?.changes ?? 0 };
   } catch (err) {
@@ -359,7 +313,6 @@ ipcMain.handle("db-clear-inputs", async (event, { session_id, tipoAnalisis }) =>
     return { ok: false, error: err.message };
   }
 });
-
 // === Cerrar sesión ===
 ipcMain.handle("db-close-session", async (event, session_id) => {
   try {
@@ -370,14 +323,45 @@ ipcMain.handle("db-close-session", async (event, session_id) => {
        WHERE id = ?;`,
       [session_id]
     );
-
     return { ok: true };
   } catch (err) {
     console.error("[DB] Error cerrando sesión:", err);
     return { ok: false, error: err.message };
   }
 });
+// === INFO DETALLADA DE SESIÓN ===
+ipcMain.handle("db-get-session-info", async (event, session_id) => {
+  try {
+    const row = await db.get(`
+      SELECT s.*, u.username AS usuario
+      FROM sessions s
+      LEFT JOIN usuarios u ON s.usuario_id = u.id
+      WHERE s.id = ?;
+    `, [session_id]);
+    if (!row) return { ok: false, error: "Sesión no encontrada." };
+    return { ok: true, data: row };
+  } catch (err) {
+    console.error("[DB] Error al obtener sesión:", err);
+    return { ok: false, error: err.message };
+  }
+});
 
+ipcMain.handle("db-get-sessions-by-role", async (event, { rol, labDefault }) => {
+  try {
+    if (rol === 'analista') return { ok: true, data: [] };
 
+    const rows = await db.all(`
+      SELECT s.id, s.lab_key, s.producto, s.metodo, s.estado, s.creado_en,
+             u.username AS usuario
+      FROM sessions s
+      LEFT JOIN usuarios u ON s.usuario_id = u.id
+      WHERE (? IS NULL OR s.lab_key = ?)
+      ORDER BY s.creado_en DESC;
+    `, [labDefault || null, labDefault || null]);
 
-
+    return { ok: true, data: rows };
+  } catch (err) {
+    console.error("[DB] Error listando sesiones:", err);
+    return { ok: false, error: err.message };
+  }
+});

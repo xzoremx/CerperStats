@@ -1,0 +1,181 @@
+/*
+  CerperStats – Sessions Panel (Glassmorphism, light 4K)
+  Notes:
+  - Keeps original IDs/classes used by JS.
+  - Uses gradients + blur for a clean glass look.
+*/
+
+:root {
+  --bg-0: #eef2f7;
+  --bg-1: 255, 255, 255; /* for rgba */
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-strong: rgba(255, 255, 255, 0.7);
+  --stroke: rgba(255, 255, 255, 0.6);
+  --ink: #1e293b; /* slate-800 */
+  --ink-soft: #334155; /* slate-700 */
+  --primary: #2563eb; /* blue-600 */
+  --primary-ink: #0b3ea8;
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+}
+
+html, body {
+  height: 100%;
+}
+
+/* 4K-friendly, scalable background */
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  color: var(--ink);
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 35%, #e8eef7 100%);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Decorative soft blobs for depth on large screens */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: -20% -10% auto auto;
+  width: 60vmax;
+  height: 60vmax;
+  background: radial-gradient(closest-side, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0) 70%);
+  filter: blur(40px);
+  z-index: -2;
+  pointer-events: none;
+}
+body::after {
+  inset: auto auto -25% -10%;
+  background: radial-gradient(closest-side, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0) 70%);
+}
+
+/* Main container with glass panel */
+.panel-container {
+  max-width: 1400px;
+  margin: min(8vh, 64px) auto;
+  padding: clamp(16px, 2.5vw, 32px);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, var(--glass), rgba(var(--bg-1), 0.35));
+  backdrop-filter: saturate(140%) blur(14px);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+  border: 1px solid var(--stroke);
+  box-shadow: var(--shadow);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: clamp(16px, 2vw, 24px);
+}
+
+.panel-title {
+  margin: 0;
+  font-size: clamp(1.25rem, 1.2rem + 0.8vw, 2rem);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: var(--ink);
+}
+
+.btn-return {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: linear-gradient(180deg, var(--glass-strong), rgba(255, 255, 255, 0.5));
+  color: var(--primary-ink);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.btn-return:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+.btn-return:active {
+  transform: translateY(0);
+}
+
+.btn-return:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
+
+/* Sessions grid */
+.sessions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: clamp(12px, 1.8vw, 20px);
+  align-items: start;
+}
+
+.loading {
+  color: var(--ink-soft);
+  margin: 6vh auto;
+  text-align: center;
+}
+
+/* Session card glass style */
+.session-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.46));
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  backdrop-filter: saturate(150%) blur(12px);
+  -webkit-backdrop-filter: saturate(150%) blur(12px);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  cursor: pointer;
+}
+
+.session-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.12);
+}
+
+.session-card h3 {
+  margin: 0 0 8px 0;
+  font-size: clamp(1rem, 0.92rem + 0.4vw, 1.2rem);
+  color: var(--ink);
+}
+
+.session-card p {
+  margin: 4px 0;
+  color: var(--ink-soft);
+  line-height: 1.35;
+}
+
+.session-card b {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* Accessibility and motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Small screens */
+@media (max-width: 520px) {
+  .panel-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-return {
+    align-self: flex-end;
+  }
+}

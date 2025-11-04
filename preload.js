@@ -20,4 +20,8 @@ contextBridge.exposeInMainWorld('cerper', {
     ipcRenderer.invoke("db-clear-inputs", { session_id, tipoAnalisis }),
   closeSession: (session_id) =>
   ipcRenderer.invoke("db-close-session", session_id),
+  getSessionInfo: (session_id) =>
+  ipcRenderer.invoke("db-get-session-info", session_id),
+  getSessionsByRole: (args) =>
+  ipcRenderer.invoke("db-get-sessions-by-role", args),
 });

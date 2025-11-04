@@ -1,0 +1,156 @@
+/*
+  CerperStats – Session Detail (Glassmorphism, light 4K)
+  Matches sessions_panel glass theme while fitting detail view.
+*/
+
+:root {
+  --bg-0: #eef2f7;
+  --bg-1: 255, 255, 255; /* for rgba */
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-strong: rgba(255, 255, 255, 0.7);
+  --stroke: rgba(255, 255, 255, 0.6);
+  --ink: #1e293b; /* slate-800 */
+  --ink-soft: #334155; /* slate-700 */
+  --primary: #2563eb; /* blue-600 */
+  --primary-ink: #0b3ea8;
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+}
+
+html, body {
+  height: 100%;
+}
+
+/* 4K-friendly background matching the sessions panel */
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  color: var(--ink);
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 35%, #e8eef7 100%);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Decorative soft blobs */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: -20% -10% auto auto;
+  width: 60vmax;
+  height: 60vmax;
+  background: radial-gradient(closest-side, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0) 70%);
+  filter: blur(40px);
+  z-index: -2;
+  pointer-events: none;
+}
+body::after {
+  inset: auto auto -25% -10%;
+  background: radial-gradient(closest-side, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0) 70%);
+}
+
+/* Main glass panel */
+.detail-container {
+  max-width: 1000px;
+  margin: min(8vh, 64px) auto;
+  padding: clamp(16px, 2.5vw, 32px);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, var(--glass), rgba(var(--bg-1), 0.35));
+  backdrop-filter: saturate(140%) blur(14px);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+  border: 1px solid var(--stroke);
+  box-shadow: var(--shadow);
+}
+
+.detail-container h2 {
+  margin: 0 0 12px 0;
+  font-size: clamp(1.25rem, 1.2rem + 0.8vw, 2rem);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: var(--ink);
+}
+
+#session-info {
+  margin: 0 0 20px 0;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+/* Options block */
+.options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: clamp(12px, 1.6vw, 18px);
+  margin: 18px 0 24px 0;
+}
+
+.options button {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: linear-gradient(180deg, var(--glass-strong), rgba(255, 255, 255, 0.5));
+  color: var(--primary-ink);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.options button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.12);
+}
+
+.options button:active {
+  transform: translateY(0);
+}
+
+.options button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
+
+/* Return button */
+.btn-return {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: linear-gradient(180deg, var(--glass-strong), rgba(255, 255, 255, 0.5));
+  color: var(--primary-ink);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.btn-return:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+.btn-return:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
+
+/* Accessibility and motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Small screens */
+@media (max-width: 520px) {
+  .detail-container {
+    margin: 24px 12px;
+  }
+}

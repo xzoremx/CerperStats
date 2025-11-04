@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Sesiones | CerperStats</title>
+  <link rel="stylesheet" href="css/sessions_panel.css" />
+</head>
+<body>
+  <main class="panel-container" role="main">
+    <header class="panel-header">
+      <h1 id="panel-title" class="panel-title">Sesiones registradas</h1>
+      <button id="btn-volver" class="btn-return" aria-label="Volver al menú">Volver al menú</button>
+    </header>
+
+    <section id="sessions-container" class="sessions-grid" aria-live="polite">
+      <p class="loading">Cargando sesiones...</p>
+    </section>
+  </main>
+
+  <script src="js/sessions_panel.js"></script>
+</body>
+</html>
