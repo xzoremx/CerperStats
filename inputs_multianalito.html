@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inputs Multianalito | CerperStats</title>
+  <link rel="stylesheet" href="css/inputs_table.css" />
+</head>
+<body>
+  <main class="sheet-container" role="main">
+    <header class="sheet-header">
+      <h1 class="sheet-title">Tabla de datos</h1>
+      <div class="unit-badge" id="unit-badge" title="Unidad de medida">—</div>
+    </header>
+
+    <section class="sheet-wrap">
+      <div class="sheet-scroll">
+        <table class="sheet" id="inputs-table" aria-live="polite">
+          <thead id="sheet-head"></thead>
+          <tbody id="sheet-body"></tbody>
+        </table>
+      </div>
+      <p class="sheet-empty" id="empty-msg" hidden>No hay datos de inputs para esta sesión.</p>
+    </section>
+
+    <button id="btn-volver" class="btn-return">Volver al detalle</button>
+  </main>
+
+  <script src="js/inputs_multianalito.js"></script>
+</body>
+</html>
+
