@@ -49,8 +49,9 @@ function renderSesiones(sesiones) {
   sesiones.forEach(s => {
     const card = document.createElement("article");
     card.className = "session-card";
+    const labName = s.lab_nombre || s.lab_key || '';
     card.innerHTML = `
-      <h3>${(s.lab_key || '').toUpperCase()} | ${s.producto || "Sin producto"}</h3>
+      <h3>${labName} | ${s.producto || "Sin producto"}</h3>
       <p><b>ID:</b> ${s.id}</p>
       <p><b>Estado:</b> ${s.estado}</p>
       <p><b>Método:</b> ${s.metodo || "-"}</p>

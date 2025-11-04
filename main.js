@@ -333,9 +333,10 @@ ipcMain.handle("db-close-session", async (event, session_id) => {
 ipcMain.handle("db-get-session-info", async (event, session_id) => {
   try {
     const row = await db.get(`
-      SELECT s.*, u.username AS usuario
+      SELECT s.*, u.username AS usuario, l.nombre AS lab_nombre
       FROM sessions s
       LEFT JOIN usuarios u ON s.usuario_id = u.id
+      LEFT JOIN labs l ON l.lab_key = s.lab_key
       WHERE s.id = ?;
     `, [session_id]);
     if (!row) return { ok: false, error: "Sesión no encontrada." };
@@ -351,10 +352,11 @@ ipcMain.handle("db-get-sessions-by-role", async (event, { rol, labDefault }) => 
     if (rol === 'analista') return { ok: true, data: [] };
 
     const rows = await db.all(`
-      SELECT s.id, s.lab_key, s.producto, s.metodo, s.estado, s.creado_en,
+      SELECT s.id, s.lab_key, l.nombre AS lab_nombre, s.producto, s.metodo, s.estado, s.creado_en,
              u.username AS usuario
       FROM sessions s
       LEFT JOIN usuarios u ON s.usuario_id = u.id
+      LEFT JOIN labs l ON l.lab_key = s.lab_key
       WHERE (? IS NULL OR s.lab_key = ?)
       ORDER BY s.creado_en DESC;
     `, [labDefault || null, labDefault || null]);

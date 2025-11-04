@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const sessionId = sessionStorage.getItem("sessionSeleccionada");
   if (!sessionId) {
-    notify("No hay sesión seleccionada.", "error");
+    notify("No hay sesi�n seleccionada.", "error");
     if (window.cerper?.openPage) window.cerper.openPage("sessions_panel.html");
     else window.location.href = "sessions_panel.html";
     return;
@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const info = res.data;
     document.getElementById("session-info").innerHTML = `
       <b>ID:</b> ${info.id} <br>
-      <b>Laboratorio:</b> ${info.lab_key} <br>
+      <b>${info.lab_nombre || info.lab_key || ''}</b> <br>
       <b>Método:</b> ${info.metodo || "-"} <br>
       <b>Producto:</b> ${info.producto || "-"} <br>
       <b>Estado:</b> ${info.estado} <br>
@@ -53,4 +53,5 @@ document.addEventListener("DOMContentLoaded", async () => {
     else window.location.href = "sessions_panel.html";
   });
 });
+
 
