@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const sessionId = sessionStorage.getItem("sessionSeleccionada");
   if (!sessionId) {
-    notify("No hay sesi�n seleccionada.", "error");
+    notify("No hay sesion seleccionada.", "error");
     if (window.cerper?.openPage) window.cerper.openPage("sessions_panel.html");
     else window.location.href = "sessions_panel.html";
     return;
@@ -12,16 +12,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!res.ok) throw new Error(res.error);
 
     const info = res.data;
+    const labName = info.lab_nombre || info.lab_key || '';
+    const modoLine = (info.modo_cualitativo && String(info.modo_cualitativo).toLowerCase() !== 'null')
+      ? `<br><b>Modo cualitativo:</b> ${info.modo_cualitativo}`
+      : '';
+
     document.getElementById("session-info").innerHTML = `
       <b>ID:</b> ${info.id} <br>
-      <b>${info.lab_nombre || info.lab_key || ''}</b> <br>
-      <b>Método:</b> ${info.metodo || "-"} <br>
+      <b>${labName}</b> <br>
+      <b>Metodo:</b> ${info.metodo || "-"} <br>
       <b>Producto:</b> ${info.producto || "-"} <br>
+      <b>Ensayo:</b> ${info.ensayo || "-"} <br>
+      <b>Expediente:</b> ${info.expediente || "-"} <br>
+      <b>Unidad de medida:</b> ${info.unidad || "-"} <br>
+      <b>Estructura de analisis:</b> ${info.tipo_analisis || "-"} <br>
+      <b>Tipo de dato:</b> ${info.tipo_dato || "-"}${modoLine}
+      <br><b>Parametro:</b> ${info.parametro || "-"} <br>
       <b>Estado:</b> ${info.estado} <br>
       <b>Creado:</b> ${info.creado_en}
     `;
 
-    // Navegación según tipo de análisis
+    // Navegacion segun tipo de analisis
     const tipo = (info.tipo_analisis || "mono").toLowerCase();
     const inputsTarget = (tipo === "multi" || tipo === "multianalito")
       ? "inputs_multianalito.html"
@@ -53,5 +64,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     else window.location.href = "sessions_panel.html";
   });
 });
-
 
