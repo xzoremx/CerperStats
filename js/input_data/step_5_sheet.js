@@ -104,47 +104,60 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (continuarBtn) continuarBtn.disabled = false;
 
 
-  // --- Botón "Continuar" con validación estructural + guardado de DataFrame ---
+  // --- Botón "Continuar" con validación estructural + confirmación + guardado de DataFrame ---
   document.getElementById("continue-btn").addEventListener("click", async () => {
     try {
       const resultado = validarEstructuraYContenido();
 
       if (resultado === true) {
         const _existing = sessionStorage.getItem("sessionID");
+
         if (_existing) {
           notify("Actualizando lecturas en la sesión existente...", "info");
         } else {
-        notify("Datos validados correctamente. Creando sesión...", "success");
+          // Confirmación con modal visual
+          const conf = await mostrarConfirmacion(
+            "Confirmar creación de sesión",
+            "¿Deseas continuar y crear una nueva sesión?<br><br>" +
+            "Una vez creada, <b>no podrás cambiar la configuración</b> (método, producto, ensayo, unidad, etc.)."
+          );
 
-        // --- Crear sesión ---
-        const usuario = sessionStorage.getItem("usuario_id");
-        const sessionData = {
-          lab_key: sessionStorage.getItem("labSeleccionado"),
-          procedure: sessionStorage.getItem("procedimientoSeleccionado"),
-          metodo: sessionStorage.getItem("metodo"),
-          producto: sessionStorage.getItem("producto"),
-          ensayo: sessionStorage.getItem("ensayo"),
-          expediente: sessionStorage.getItem("expediente"),
-          unidad: sessionStorage.getItem("unidad"),
-          tipo_analisis: sessionStorage.getItem("tipoAnalisis"),
-          tipo_dato: sessionStorage.getItem("tipoDato"),
-          modo_cualitativo: sessionStorage.getItem("modoCualitativo"),
-          parametro: sessionStorage.getItem("parametroSeleccionado"),
-          usuario
-        };
+          if (!conf) {
+            notify("Creación de sesión cancelada por el usuario.", "warning");
+            return;
+          }
 
-        const resSession = await window.cerper.insertSession(sessionData);
+          notify("Datos validados correctamente. Creando sesión...", "success");
 
-        if (!resSession.ok) {
-          notify(`No se pudo crear la sesión: ${resSession.error}`, "error");
-          return;
+          // --- Crear sesión ---
+          const usuario = sessionStorage.getItem("usuario_id");
+          const sessionData = {
+            lab_key: sessionStorage.getItem("labSeleccionado"),
+            procedure: sessionStorage.getItem("procedimientoSeleccionado"),
+            metodo: sessionStorage.getItem("metodo"),
+            producto: sessionStorage.getItem("producto"),
+            ensayo: sessionStorage.getItem("ensayo"),
+            expediente: sessionStorage.getItem("expediente"),
+            unidad: sessionStorage.getItem("unidad"),
+            tipo_analisis: sessionStorage.getItem("tipoAnalisis"),
+            tipo_dato: sessionStorage.getItem("tipoDato"),
+            modo_cualitativo: sessionStorage.getItem("modoCualitativo"),
+            parametro: sessionStorage.getItem("parametroSeleccionado"),
+            usuario
+          };
+
+          const resSession = await window.cerper.insertSession(sessionData);
+
+          if (!resSession.ok) {
+            notify(`No se pudo crear la sesión: ${resSession.error}`, "error");
+            return;
+          }
+
+          sessionStorage.setItem("sessionID", resSession.session_id);
+          console.log(`[CerperStats] Nueva sesión creada con ID ${resSession.session_id}`);
+          notify("Sesión creada correctamente. Guardando lecturas...", "success");
         }
 
-        sessionStorage.setItem("sessionID", resSession.session_id);
-        console.log(`[CerperStats] Nueva sesión creada con ID ${resSession.session_id}`);
-        notify("Sesión creada correctamente. Guardando lecturas...", "success");
-
-        }
         // --- Guardar lecturas en inputs ---
         const res = await window.guardarDataframeTemp();
 
@@ -1079,14 +1092,15 @@ if (btnBack) {
       try {
         const sessionId = sessionStorage.getItem("sessionID");
 
-        // Cerrar sesión en la base (si existe)
+        // Cerrar sesión en la base
         if (sessionId && window.cerper.closeSession) {
           await window.cerper.closeSession(sessionId);
         }
 
         // Limpiar absolutamente todo (frontend)
-        sessionStorage.clear();
+        sessionStorage.clear(); 
         localStorage.clear();
+
 
         notify("Reinicio completo. Volviendo al inicio...", "info");
         setTimeout(() => window.cerper.openPage("login.html"), 1200);
@@ -1122,7 +1136,7 @@ async function mostrarConfirmacion(titulo, mensaje) {
       justifyContent: "center",
       zIndex: 9998,
       animation: "fadeSlideIn 0.4s ease forwards",
-      pointerEvents: "all",       
+      pointerEvents: "all",
       userSelect: "none",
     });
 
@@ -1149,8 +1163,14 @@ async function mostrarConfirmacion(titulo, mensaje) {
         ${mensaje}
       </p>
       <div style="display:flex; justify-content:center; gap:16px;">
-        <button id="confirm-yes" class="modal-btn yes">Sí</button>
-        <button id="confirm-no" class="modal-btn no">No</button>
+        <button id="confirm-yes" class="modal-btn yes"
+          style="padding:8px 18px; border-radius:10px; background:rgba(0,255,255,0.15); border:1px solid rgba(0,255,255,0.4); color:#00ffff; cursor:pointer;">
+          Sí
+        </button>
+        <button id="confirm-no" class="modal-btn no"
+          style="padding:8px 18px; border-radius:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.2); color:#80e4ff; cursor:pointer;">
+          No
+        </button>
       </div>
     `;
 
@@ -1180,5 +1200,8 @@ async function mostrarConfirmacion(titulo, mensaje) {
     document.addEventListener("keydown", escListener);
   });
 }
+
+
+
 
 
