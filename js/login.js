@@ -36,11 +36,26 @@ document.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("labSeleccionado", user.default_lab || "");
       sessionStorage.setItem("default_lab", user.default_lab || "");
 
+      // Resolver y guardar el nombre visible del laboratorio a partir del lab_key (default_lab)
+      try {
+        if (user.default_lab) {
+          const labRes = await window.cerper.getLabByKey(user.default_lab);
+          if (labRes?.ok && labRes.data?.nombre) {
+            sessionStorage.setItem("labNombreVisible", labRes.data.nombre);
+            // Opcional: persistir también en localStorage para flujos que usan su fallback
+            localStorage.setItem("labSeleccionado", user.default_lab);
+            localStorage.setItem("labNombreVisible", labRes.data.nombre);
+          }
+        }
+      } catch (_) {
+        // Ignorar: si falla, procedure_select usará el lab_key como fallback
+      }
+
       msg.textContent = `Bienvenido, ${user.nombre_completo || user.username}`;
       msg.style.color = "#00ffb3";
 
       setTimeout(() => {
-        window.cerper.openPage("menu.html");
+        window.cerper.openPage("procedure_select.html");
       }, 1000);
 
     } catch (err) {
