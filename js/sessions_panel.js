@@ -85,7 +85,7 @@ function renderSesiones(sesiones) {
     if (k === 'autorizaciones') return { abbr: 'AUT', cls: 'proc-aut' };
     if (k === 'implementaciones') return { abbr: 'IMP', cls: 'proc-imp' };
     if (k === 'intralaboratorios') return { abbr: 'INTRA', cls: 'proc-intra' };
-    if (k === 'interlaboratorios') return { abbr: 'INTER', cls: 'proc-inter' };
+    if (k === 'intercomparación') return { abbr: 'INTER', cls: 'proc-inter' };
     return null;
   };
 
