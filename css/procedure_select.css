@@ -67,7 +67,7 @@
     transform: translate(-50%, -50%) scale(1);
     animation: depth-float 16s ease-in-out infinite;
     will-change: transform;
-    font-size: clamp(3rem, 6vw + 7rem, 12rem);
+    font-size: clamp(3rem, 6vw + 5rem, 12rem);
     font-weight: bold;
     color: color-mix(in oklch, canvasText, canvas 10%);
   }
@@ -331,7 +331,6 @@
   transform: translateX(-50%);
   pointer-events: none;
   opacity: 0.9;              
-  max-width: 280px;           
   height: auto;
 }
 
@@ -374,8 +373,8 @@
 
 /* Override: pintar logo con el mismo degradado que .obfuscated */
 .about-logo {
-  width: 280px;
-  height: 80px;
+  width: 400px;
+  height: 120px;
   background: var(--obfuscated-paint, linear-gradient(hsl(0 0% 90%), hsl(0 0% 40%)));
   -webkit-mask: url('../assets/logos/logo.png') no-repeat center / contain;
           mask: url('../assets/logos/logo.png') no-repeat center / contain;
