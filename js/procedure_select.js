@@ -12,13 +12,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const labInfo = document.getElementById("lab-info");
 
   // --- Mostrar información del laboratorio ---
-  if (labKey) {
+  try { if (labKey) {
     labTitle.textContent = labName;
     labInfo.textContent = `Seleccione el procedimiento para esta sesión.`;
   } else {
     labTitle.textContent = "Procedimientos";
     labInfo.textContent = "Seleccione el procedimiento correspondiente al laboratorio.";
-  }
+  } } catch (e) {}
 
   // --- Volver al menú ---
   const backBtn = document.getElementById("go-menu");
@@ -51,8 +51,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // --- Selección de procedimiento ---
-  document.querySelectorAll(".procedure-card").forEach(btn => {
-    btn.addEventListener("click", async () => {
+  document.querySelectorAll(".card").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
       const proc = btn.dataset.proc;
       sessionStorage.setItem("procedimientoSeleccionado", proc);
 
