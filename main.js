@@ -255,37 +255,7 @@ ipcMain.handle("db-insert-inputs", async (event, { session_id, tipoAnalisis, dat
     return { ok: false, error: err.message };
   }
 });
-// === Obtener evaluaciones disponibles según contexto ===
-ipcMain.handle("db-get-evaluaciones", async (event, { lab_key, tipo_analisis, tipo_dato, modo_cualitativo }) => {
-  try {
-    const rows = await db.all(`
-      SELECT id, nombre_interno, titulo, categoria, descripcion, COALESCE(NULLIF(TRIM(icon_lib), ''), 'bar-chart-2') AS icon_value
-      FROM tests_catalog
-      WHERE lab_key = ?
-        AND tipo_analisis = ?
-        AND tipo_dato = ?
-        AND (modo_cualitativo IS NULL OR modo_cualitativo = ?)
-        AND activo = 1
-      ORDER BY id ASC;
-    `, [lab_key, tipo_analisis, tipo_dato, modo_cualitativo || null]);
-    return { ok: true, data: rows };
-  } catch (err) {
-    console.error("[DB] Error obteniendo evaluaciones:", err);
-    return { ok: false, error: err.message };
-  }
-});
 
-// === Ejecutar evaluaciones seleccionadas (stub mínimo) ===
-ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids }) => {
-  try {
-    console.log("[EVAL] Ejecutar evaluaciones:", { session_id, catalog_ids });
-    // TODO: implementar lógica real de evaluación y persistencia de resultados.
-    return { ok: true };
-  } catch (err) {
-    console.error("[EVAL] Error ejecutando evaluaciones:", err);
-    return { ok: false, error: err.message };
-  }
-});
 
 ipcMain.handle("db-get-inputs-by-session", async (event, { session_id, tipoAnalisis }) => {
   try {
@@ -380,3 +350,280 @@ ipcMain.handle("db-get-sessions-by-role", async (event, { rol, labDefault }) => 
     return { ok: false, error: err.message };
   }
 });
+
+
+// === Obtener evaluaciones disponibles según contexto ===
+ipcMain.handle("db-get-evaluaciones", async (event, { lab_key, tipo_analisis, tipo_dato, modo_cualitativo }) => {
+  try {
+    const rows = await db.all(`
+      SELECT id, nombre_interno, titulo, categoria, descripcion, COALESCE(NULLIF(TRIM(icon_lib), ''), 'bar-chart-2') AS icon_value
+      FROM tests_catalog
+      WHERE lab_key = ?
+        AND tipo_analisis = ?
+        AND tipo_dato = ?
+        AND (modo_cualitativo IS NULL OR modo_cualitativo = ?)
+        AND activo = 1
+      ORDER BY id ASC;
+    `, [lab_key, tipo_analisis, tipo_dato, modo_cualitativo || null]);
+    return { ok: true, data: rows };
+  } catch (err) {
+    console.error("[DB] Error obteniendo evaluaciones:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+
+// === Ejecutar evaluaciones seleccionadas (flujo con Python + guardado en results_general) ===
+ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids }) => {
+  try {
+    console.log("[EVAL] Ejecutar evaluaciones:", { session_id, catalog_ids });
+
+    // Obtener info de sesión (tipo y usuario)
+    const session = await db.get(`
+      SELECT tipo_analisis, lab_key, usuario_id
+      FROM sessions
+      WHERE id = ?;
+    `, [session_id]);
+
+    if (!session) throw new Error("Sesión no encontrada.");
+    const { tipo_analisis, usuario_id } = session;
+
+    // Obtener inputs de la sesión
+    let rows = [];
+    if (tipo_analisis === "multi" || tipo_analisis === "multianalito") {
+      rows = await db.all(`
+        SELECT analito, parametro, lectura_idx, valor,
+               unidad, tipo_dato, modo_cualitativo, comentario
+        FROM inputs_multianalito
+        WHERE session_id = ? AND valido = 1
+        ORDER BY parametro, analito, lectura_idx;
+      `, [session_id]);
+    } else {
+      rows = await db.all(`
+        SELECT analito, parametro, lectura_idx, valor,
+               unidad, tipo_dato, modo_cualitativo, comentario
+        FROM inputs_monoanalito
+        WHERE session_id = ? AND valido = 1
+        ORDER BY parametro, lectura_idx;
+      `, [session_id]);
+    }
+
+    // Obtener módulos Python (código principal y gráfico)
+    const tests = await db.all(`
+      SELECT t.id, t.nombre_interno, m.codigo_principal, m.codigo_grafico
+      FROM tests_catalog t
+      JOIN test_modules m ON m.catalog_id = t.id
+      WHERE t.id IN (${catalog_ids.map(() => "?").join(",")})
+        AND m.activo = 1;
+    `, catalog_ids);
+
+    if (!tests || tests.length === 0)
+      throw new Error("No se encontró código asociado a las evaluaciones seleccionadas.");
+
+    // Crear JSON temporal con inputs + módulos
+    const fs = require("fs");
+    const os = require("os");
+    const tempData = {
+      session_id,
+      tipo_analisis,
+      catalog_ids,
+      df_ingreso: rows,
+      tests: tests.map(t => ({
+        id: t.id,
+        nombre_interno: t.nombre_interno,
+        codigo_principal: t.codigo_principal,
+        codigo_grafico: t.codigo_grafico,
+      })),
+    };
+    const tempPath = path.join(os.tmpdir(), `eval_${session_id}.json`);
+    fs.writeFileSync(tempPath, JSON.stringify(tempData, null, 2), "utf8");
+
+    // Ejecutar proceso Python
+    const python = spawn("python", [
+      "./modules/_common/eval_runner_secure.py",
+      tempPath
+    ]);
+
+    return await new Promise((resolve) => {
+      let output = "";
+      let error = "";
+
+      python.stdout.on("data", (d) => (output += d.toString()));
+      python.stderr.on("data", (d) => (error += d.toString()));
+
+      python.on("close", async (code) => {
+        fs.unlinkSync(tempPath);
+
+        if (code === 0) {
+          try {
+            const results = JSON.parse(output.trim());
+
+            // Guardar resultados en results_general
+            for (const r of results) {
+              if (!r.ok) {
+                console.warn(`[EVAL] Falló módulo ${r.nombre}: ${r.error}`);
+                continue;
+              }
+
+              await db.run(`
+                INSERT INTO results_general
+                (session_id, catalog_id, resultado_pc, grafico_data, creado_en, usuario_id)
+                VALUES (?, ?, ?, ?, datetime('now'), ?);
+              `, [
+                session_id,
+                r.catalog_id,
+                r.resultado_pc,
+                r.grafico_data || "",
+                usuario_id
+              ]);
+            }
+
+            console.log(`[EVAL] Resultados guardados correctamente (${results.length} módulos).`);
+            resolve({ ok: true, count: results.length });
+
+          } catch (err) {
+            console.error("[EVAL] Error procesando salida Python:", err);
+            resolve({ ok: false, error: "Error procesando salida Python" });
+          }
+        } else {
+          console.error("[EVAL] Python error:", error);
+          resolve({ ok: false, error });
+        }
+      });
+    });
+
+  } catch (err) {
+    console.error("[EVAL] Error ejecutando evaluaciones:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+
+
+
+
+
+
+// === Calcular metadata de sesión ===
+ipcMain.handle("db-get-session-metadata", async (event, session_id) => {
+  try {
+    const session = await db.get(`
+      SELECT tipo_analisis, tipo_dato
+      FROM sessions
+      WHERE id = ?;
+    `, [session_id]);
+    if (!session) throw new Error("Sesión no encontrada.");
+
+    const tipo = session.tipo_analisis;
+    const tipo_dato = session.tipo_dato;
+
+    let datos = [];
+    if (tipo === "multi" || tipo === "multianalito") {
+      datos = await db.all(`
+        SELECT parametro, analito,
+               COUNT(DISTINCT lectura_idx) AS n_lecturas
+        FROM inputs_multianalito
+        WHERE session_id = ? AND valido = 1
+        GROUP BY parametro, analito;
+      `, [session_id]);
+    } else {
+      datos = await db.all(`
+        SELECT parametro,
+               COUNT(lectura_idx) AS n_lecturas
+        FROM inputs_monoanalito
+        WHERE session_id = ? AND valido = 1
+        GROUP BY parametro;
+      `, [session_id]);
+    }
+
+    // === Calcular metadata general ===
+    const parametros = [...new Set(datos.map(d => d.parametro))];
+    const analitos = [...new Set(datos.map(d => d.analito).filter(Boolean))];
+    const lecturas = datos.map(d => d.n_lecturas);
+    const minLecturas = lecturas.length ? Math.min(...lecturas) : 0;
+    const maxLecturas = lecturas.length ? Math.max(...lecturas) : 0;
+    const promLecturas = lecturas.length
+      ? lecturas.reduce((a, b) => a + b, 0) / lecturas.length
+      : 0;
+
+  
+    const metadata = {
+      session_id,
+      tipo_analisis: tipo,
+      tipo_dato,
+      n_parametros: parametros.length,
+      n_analitos: analitos.length,
+      min_lecturas: minLecturas,
+      max_lecturas: maxLecturas,
+      prom_lecturas: promLecturas,
+      cumple_normalidad: cumpleNormalidad,
+      cumple_precision: cumplePrecision,
+      cumple_veracidad: cumpleVeracidad,
+      comentarios
+    };
+
+    return { ok: true, data: metadata };
+
+  } catch (err) {
+    console.error("[DB] Error calculando metadata:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+
+// === Obtener pruebas con metadatos (usa la metadata calculada arriba) ===
+ipcMain.handle("db-get-tests-with-metadata", async (event, session_id) => {
+  try {
+    // Obtener metadata actual de la sesión
+    const metaRes = await ipcMain.handle
+      ? await globalThis.ipcMain.invoke("db-get-session-metadata", session_id)
+      : null;
+    
+    // Si no se pudo obtener metadata por invoke, hazlo manualmente
+    let meta;
+    if (!metaRes?.ok) {
+      const temp = await db.get(`
+        SELECT COUNT(DISTINCT parametro) AS n_parametros,
+               MIN(lectura_idx) AS min_lecturas
+        FROM inputs_monoanalito
+        WHERE session_id = ?;
+      `, [session_id]);
+      meta = temp || { n_parametros: 0, min_lecturas: 0, tipo_dato: "cuantitativo" };
+    } else {
+      meta = metaRes.data;
+    }
+
+    // === Evaluar pruebas contra metadata ===
+    const rows = await db.all(`
+      SELECT 
+        t.id, t.titulo, t.descripcion, t.icon_value, t.nombre_interno,
+        CASE
+          WHEN json_extract(t.requisitos_json, '$.min_lecturas') IS NOT NULL
+               AND ? < json_extract(t.requisitos_json, '$.min_lecturas')
+            THEN 0
+          WHEN json_extract(t.requisitos_json, '$.min_parametros') IS NOT NULL
+               AND ? < json_extract(t.requisitos_json, '$.min_parametros')
+            THEN 0
+          WHEN json_extract(t.requisitos_json, '$.tipo_dato') IS NOT NULL
+               AND json_extract(t.requisitos_json, '$.tipo_dato') <> ?
+            THEN 0
+          ELSE 1
+        END AS aplicable,
+        json_extract(t.requisitos_json, '$.min_lecturas') AS min_lecturas,
+        json_extract(t.requisitos_json, '$.min_parametros') AS min_parametros
+      FROM test_modules t
+      WHERE t.activo = 1;
+    `, [
+      meta.min_lecturas || 0,
+      meta.n_parametros || 0,
+      meta.tipo_dato || "cuantitativo"
+    ]);
+
+    return { ok: true, data: rows, meta };
+  } catch (err) {
+    console.error("[DB] Error en metadata unificada:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+

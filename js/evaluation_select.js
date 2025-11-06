@@ -1,3 +1,23 @@
+// === Notificaciones flotantes ===
+window.notify = function (message, type = "info") {
+  // Elimina notificación previa
+  const existing = document.querySelector(".notify");
+  if (existing) existing.remove();
+
+  // Crear elemento
+  const div = document.createElement("div");
+  div.className = `notify ${type}`;
+  div.textContent = message;
+  document.body.appendChild(div);
+
+  // Mostrar con animación
+  requestAnimationFrame(() => div.classList.add("show"));
+
+  // Ocultar y eliminar
+  setTimeout(() => div.classList.remove("show"), 2800);
+  setTimeout(() => div.remove(), 3300);
+};
+
 document.addEventListener("DOMContentLoaded", async () => {
   const contenedor = document.querySelector(".analysis-grid");
   const btnEvaluar = document.getElementById("btn-evaluar");
@@ -21,7 +41,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const tipoAnalisis = sessionStorage.getItem("tipoAnalisis");
   const tipoDato = sessionStorage.getItem("tipoDato");
   const modoCualitativo = sessionStorage.getItem("modoCualitativo");
-  const sessionId = sessionStorage.getItem("sessionId");
+  const sessionId = sessionStorage.getItem("sessionID");
 
   if (!labKey || !tipoAnalisis || !tipoDato) {
     notify("Faltan datos de sesión. Regresa al paso anterior.", "error");
@@ -44,6 +64,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  // === Obtener metadata y aplicabilidad desde la base ===
+  let meta = {};
+  let resTests;
+  try {
+    const metaRes = await window.cerper.getSessionMetadata(sessionId);
+    if (metaRes?.ok) meta = metaRes.data;
+
+    resTests = await window.cerper.getTestsWithMetadata(sessionId);
+    if (!resTests.ok) throw new Error(resTests.error || "Error al cargar pruebas.");
+  } catch (err) {
+    console.error("[EvalSelect] Error cargando metadata:", err);
+    notify("No se pudieron cargar las condiciones de elegibilidad.", "warning");
+    resTests = { data: [] };
+  }
+
+
   if (!res.ok) {
     console.error("[EvalSelect] Error:", res.error);
     notify("Error al cargar las evaluaciones del laboratorio.", "error");
@@ -63,16 +99,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const card = document.createElement("article");
     card.className = "analysis-card";
     card.dataset.catalogId = test.id;
-    // Build icon HTML from DB (icon_value)
-    // Supports:
-    //  - Feather icon names (default)
-    //  - lucide:NAME prefix if lucide is loaded
-    //  - Inline SVG if value starts with <svg
+
+    // --- Icono ---
     const rawIcon = (test.icon_value || "").trim();
     let iconHtml;
-    if (rawIcon.startsWith("<svg")) {
-      iconHtml = rawIcon; // use inline SVG as-is
-    } else if (rawIcon.startsWith("lucide:")) {
+    if (rawIcon.startsWith("<svg")) iconHtml = rawIcon;
+    else if (rawIcon.startsWith("lucide:")) {
       const name = rawIcon.split(":")[1] || "bar-chart-2";
       iconHtml = `<i data-lucide="${name}"></i>`;
     } else {
@@ -86,7 +118,22 @@ document.addEventListener("DOMContentLoaded", async () => {
       <p class="card-desc">${test.descripcion}</p>
     `;
 
+    // === Verificar si es aplicable según metadata ===
+    const testMeta = resTests.data.find(t => t.id === test.id);
+    const aplicable = testMeta ? testMeta.aplicable === 1 : true;
+
+    if (!aplicable) {
+      const overlay = document.createElement("div");
+      overlay.className = "test-overlay";
+      const minLect = testMeta?.min_lecturas ?? 0;
+      overlay.innerHTML = `<span>No aplicable: mínimo ${minLect} lecturas o condiciones no cumplidas.</span>`;
+      card.classList.add("blocked");
+      card.appendChild(overlay);
+    }
+
+    // === Selección solo si aplicable ===
     card.addEventListener("click", () => {
+      if (!aplicable) return;
       const id = test.id;
       if (seleccionadas.has(id)) {
         seleccionadas.delete(id);
@@ -99,6 +146,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     contenedor.appendChild(card);
   });
+
 
   // Render icons depending on available library
   if (window.feather && typeof window.feather.replace === "function") {
