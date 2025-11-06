@@ -5,6 +5,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnVolver = document.getElementById("go-back");
   const menuVisualizaciones = document.getElementById("menu-visualizaciones");
 
+  // --- Boton Volver ---
+  if (btnVolver) {
+    btnVolver.addEventListener("click", () => {
+      if (window.cerper && window.cerper.openPage) {
+        window.cerper.openPage("input_data/step_5_sheet.html");
+      } else {
+        window.location.href = "step_5_sheet.html";
+      }
+    });
+  }
+
   // === Obtener contexto de sesión ===
   const labKey = sessionStorage.getItem("labSeleccionado");
   const tipoAnalisis = sessionStorage.getItem("tipoAnalisis");
@@ -52,8 +63,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     const card = document.createElement("article");
     card.className = "analysis-card";
     card.dataset.catalogId = test.id;
+    // Build icon HTML from DB (icon_value)
+    // Supports:
+    //  - Feather icon names (default)
+    //  - lucide:NAME prefix if lucide is loaded
+    //  - Inline SVG if value starts with <svg
+    const rawIcon = (test.icon_value || "").trim();
+    let iconHtml;
+    if (rawIcon.startsWith("<svg")) {
+      iconHtml = rawIcon; // use inline SVG as-is
+    } else if (rawIcon.startsWith("lucide:")) {
+      const name = rawIcon.split(":")[1] || "bar-chart-2";
+      iconHtml = `<i data-lucide="${name}"></i>`;
+    } else {
+      const name = rawIcon || "bar-chart-2";
+      iconHtml = `<i data-feather="${name}"></i>`;
+    }
+
     card.innerHTML = `
-      <div class="card-icon"><i data-feather="bar-chart-2"></i></div>
+      <div class="card-icon">${iconHtml}</div>
       <h2 class="card-title">${test.titulo}</h2>
       <p class="card-desc">${test.descripcion}</p>
     `;
@@ -72,7 +100,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     contenedor.appendChild(card);
   });
 
-  feather.replace();
+  // Render icons depending on available library
+  if (window.feather && typeof window.feather.replace === "function") {
+    window.feather.replace();
+  }
+  if (window.lucide && typeof window.lucide.createIcons === "function") {
+    window.lucide.createIcons();
+  }
 
   // === Función auxiliar ===
   const bloquearBotones = (estado) => {
@@ -122,13 +156,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
-// --- Botón Volver ---
-document.getElementById("go-back").addEventListener("click", () => {
-    if (window.cerper && window.cerper.openPage) {
-        window.cerper.openPage("input_data/step_5_sheet.html");
-    } else {
-        window.location.href = "step_5_sheet.html";
-    }
-});
+
 
 

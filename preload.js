@@ -24,4 +24,6 @@ contextBridge.exposeInMainWorld('cerper', {
   ipcRenderer.invoke("db-get-session-info", session_id),
   getSessionsByRole: (args) =>
   ipcRenderer.invoke("db-get-sessions-by-role", args),
+  getEvaluaciones: (args) => ipcRenderer.invoke("db-get-evaluaciones", args),
+  runEvaluations: (args) => ipcRenderer.invoke("db-run-evaluaciones", args),
 });

@@ -24,6 +24,7 @@ const ROUTES = new Set([
   'input_data/step_5_sheet.html',
   // Evaluación y reporte
   'evaluation_select.html',
+  'pdf_config.html',
   'postinfo.html',
   // Otros
   'index.html'
@@ -258,7 +259,7 @@ ipcMain.handle("db-insert-inputs", async (event, { session_id, tipoAnalisis, dat
 ipcMain.handle("db-get-evaluaciones", async (event, { lab_key, tipo_analisis, tipo_dato, modo_cualitativo }) => {
   try {
     const rows = await db.all(`
-      SELECT id, nombre_interno, titulo, categoria, descripcion
+      SELECT id, nombre_interno, titulo, categoria, descripcion, COALESCE(NULLIF(TRIM(icon_lib), ''), 'bar-chart-2') AS icon_value
       FROM tests_catalog
       WHERE lab_key = ?
         AND tipo_analisis = ?
@@ -273,6 +274,19 @@ ipcMain.handle("db-get-evaluaciones", async (event, { lab_key, tipo_analisis, ti
     return { ok: false, error: err.message };
   }
 });
+
+// === Ejecutar evaluaciones seleccionadas (stub mínimo) ===
+ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids }) => {
+  try {
+    console.log("[EVAL] Ejecutar evaluaciones:", { session_id, catalog_ids });
+    // TODO: implementar lógica real de evaluación y persistencia de resultados.
+    return { ok: true };
+  } catch (err) {
+    console.error("[EVAL] Error ejecutando evaluaciones:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
 ipcMain.handle("db-get-inputs-by-session", async (event, { session_id, tipoAnalisis }) => {
   try {
     let rows = [];
@@ -366,4 +380,3 @@ ipcMain.handle("db-get-sessions-by-role", async (event, { rol, labDefault }) => 
     return { ok: false, error: err.message };
   }
 });
-

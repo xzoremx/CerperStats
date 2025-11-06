@@ -135,11 +135,28 @@ body {
   background: rgba(255, 255, 255, 0.05);
 }
 
+/* selected state is defined later with neon styling */
+
 .card-icon img {
   width: 90px;
   height: 90px;
   filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.25));
   margin-bottom: 16px;
+}
+
+.card-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.card-icon svg {
+  width: 72px;
+  height: 72px;
+  stroke: #ffffff;
+  opacity: 0.95;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.25));
 }
 
 .card-title {

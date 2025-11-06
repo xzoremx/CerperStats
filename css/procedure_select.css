@@ -98,7 +98,6 @@
   .gradient-border {
     width: calc(var(--width) * 1px);
     height: calc(var(--height) * 1px);
-    /* Fondo totalmente transparente para ver el texto de fondo */
     background: transparent;
     border-radius: calc(var(--radius) * 1px);
     position: relative;
@@ -123,7 +122,7 @@
       'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-weight: 500;
     font-size: clamp(1rem, 2vw, 1.25rem);
-    color: #fff;
+    color: #828080;
     text-shadow: 0 1px 8px hsl(0 0% 0% / 0.08);
   }
   .gradient-border::after {

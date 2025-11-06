@@ -5,6 +5,7 @@
   <title>CerperStats – Selección de Evaluación</title>
   <link rel="stylesheet" href="css/evaluation_select.css">
   <script src="https://unpkg.com/feather-icons"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 
 <body>
@@ -57,7 +58,10 @@
   <!-- ======== SCRIPTS ======== -->
   <script src="renderer.js"></script>
   <script src="js/evaluation_select.js" defer></script>
-  <script>feather.replace();</script>
+  <script>
+    if (window.feather) feather.replace();
+    if (window.lucide) lucide.createIcons();
+  </script>
 </body>
 </html>
 
