@@ -310,6 +310,16 @@ body {
   transition: all 0.2s ease-in-out;
 }
 
+/* === TARJETAS NO APLICABLES === */
+.analysis-card.blocked {
+  cursor: not-allowed;
+}
+.analysis-card.blocked:hover {
+  border-color: rgba(255, 77, 77, 0.85);
+  background: rgba(255, 77, 77, 0.08);
+  box-shadow: 0 0 18px rgba(255, 77, 77, 0.28);
+}
+
 /* === BOTONES DERECHA INFERIOR === */
 .button-group-right {
   position: fixed;

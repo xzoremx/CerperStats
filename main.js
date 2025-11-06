@@ -504,62 +504,70 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
 
 
 
+// === Utilitario: calcular metadata de sesión (reutilizable) ===
+async function computeSessionMeta(session_id) {
+  const session = await db.get(`
+    SELECT tipo_analisis, tipo_dato
+    FROM sessions
+    WHERE id = ?;
+  `, [session_id]);
+  if (!session) throw new Error("Sesión no encontrada.");
+
+  const tipo = session.tipo_analisis;
+  const tipo_dato = session.tipo_dato;
+
+  let datos = [];
+  if (tipo === "multi" || tipo === "multianalito") {
+    datos = await db.all(`
+      SELECT parametro, analito,
+             COUNT(DISTINCT lectura_idx) AS n_lecturas
+      FROM inputs_multianalito
+      WHERE session_id = ? AND valido = 1
+      GROUP BY parametro, analito;
+    `, [session_id]);
+  } else {
+    datos = await db.all(`
+      SELECT parametro,
+             COUNT(lectura_idx) AS n_lecturas
+      FROM inputs_monoanalito
+      WHERE session_id = ? AND valido = 1
+      GROUP BY parametro;
+    `, [session_id]);
+  }
+
+  const parametros = [...new Set(datos.map(d => d.parametro))];
+  const analitos = [...new Set(datos.map(d => d.analito).filter(Boolean))];
+  const lecturas = datos.map(d => d.n_lecturas || 0);
+  const minLecturas = lecturas.length ? Math.min(...lecturas) : 0;
+  const maxLecturas = lecturas.length ? Math.max(...lecturas) : 0;
+  const promLecturas = lecturas.length
+    ? lecturas.reduce((a, b) => a + b, 0) / lecturas.length
+    : 0;
+
+  return {
+    session_id,
+    tipo_analisis: tipo,
+    tipo_dato,
+    n_parametros: parametros.length,
+    n_analitos: analitos.length,
+    min_lecturas: minLecturas,
+    max_lecturas: maxLecturas,
+    prom_lecturas: promLecturas,
+  };
+}
+
 // === Calcular metadata de sesión ===
 ipcMain.handle("db-get-session-metadata", async (event, session_id) => {
   try {
-    const session = await db.get(`
-      SELECT tipo_analisis, tipo_dato
-      FROM sessions
-      WHERE id = ?;
-    `, [session_id]);
-    if (!session) throw new Error("Sesión no encontrada.");
+    const meta = await computeSessionMeta(session_id);
 
-    const tipo = session.tipo_analisis;
-    const tipo_dato = session.tipo_dato;
-
-    let datos = [];
-    if (tipo === "multi" || tipo === "multianalito") {
-      datos = await db.all(`
-        SELECT parametro, analito,
-               COUNT(DISTINCT lectura_idx) AS n_lecturas
-        FROM inputs_multianalito
-        WHERE session_id = ? AND valido = 1
-        GROUP BY parametro, analito;
-      `, [session_id]);
-    } else {
-      datos = await db.all(`
-        SELECT parametro,
-               COUNT(lectura_idx) AS n_lecturas
-        FROM inputs_monoanalito
-        WHERE session_id = ? AND valido = 1
-        GROUP BY parametro;
-      `, [session_id]);
-    }
-
-    // === Calcular metadata general ===
-    const parametros = [...new Set(datos.map(d => d.parametro))];
-    const analitos = [...new Set(datos.map(d => d.analito).filter(Boolean))];
-    const lecturas = datos.map(d => d.n_lecturas);
-    const minLecturas = lecturas.length ? Math.min(...lecturas) : 0;
-    const maxLecturas = lecturas.length ? Math.max(...lecturas) : 0;
-    const promLecturas = lecturas.length
-      ? lecturas.reduce((a, b) => a + b, 0) / lecturas.length
-      : 0;
-
-  
     const metadata = {
-      session_id,
-      tipo_analisis: tipo,
-      tipo_dato,
-      n_parametros: parametros.length,
-      n_analitos: analitos.length,
-      min_lecturas: minLecturas,
-      max_lecturas: maxLecturas,
-      prom_lecturas: promLecturas,
-      cumple_normalidad: cumpleNormalidad,
-      cumple_precision: cumplePrecision,
-      cumple_veracidad: cumpleVeracidad,
-      comentarios
+      ...meta,
+      // Campos opcionales por ahora sin determinar
+      cumple_normalidad: null,
+      cumple_precision: null,
+      cumple_veracidad: null,
+      comentarios: null,
     };
 
     return { ok: true, data: metadata };
@@ -574,29 +582,13 @@ ipcMain.handle("db-get-session-metadata", async (event, session_id) => {
 // === Obtener pruebas con metadatos (usa la metadata calculada arriba) ===
 ipcMain.handle("db-get-tests-with-metadata", async (event, session_id) => {
   try {
-    // Obtener metadata actual de la sesión
-    const metaRes = await ipcMain.handle
-      ? await globalThis.ipcMain.invoke("db-get-session-metadata", session_id)
-      : null;
-    
-    // Si no se pudo obtener metadata por invoke, hazlo manualmente
-    let meta;
-    if (!metaRes?.ok) {
-      const temp = await db.get(`
-        SELECT COUNT(DISTINCT parametro) AS n_parametros,
-               MIN(lectura_idx) AS min_lecturas
-        FROM inputs_monoanalito
-        WHERE session_id = ?;
-      `, [session_id]);
-      meta = temp || { n_parametros: 0, min_lecturas: 0, tipo_dato: "cuantitativo" };
-    } else {
-      meta = metaRes.data;
-    }
+    // Usar la misma fuente de verdad para metadata
+    const meta = await computeSessionMeta(session_id);
 
     // === Evaluar pruebas contra metadata ===
     const rows = await db.all(`
       SELECT 
-        t.id, t.titulo, t.descripcion, t.icon_value, t.nombre_interno,
+        t.catalog_id AS id,
         CASE
           WHEN json_extract(t.requisitos_json, '$.min_lecturas') IS NOT NULL
                AND ? < json_extract(t.requisitos_json, '$.min_lecturas')
@@ -610,7 +602,8 @@ ipcMain.handle("db-get-tests-with-metadata", async (event, session_id) => {
           ELSE 1
         END AS aplicable,
         json_extract(t.requisitos_json, '$.min_lecturas') AS min_lecturas,
-        json_extract(t.requisitos_json, '$.min_parametros') AS min_parametros
+        json_extract(t.requisitos_json, '$.min_parametros') AS min_parametros,
+        json_extract(t.requisitos_json, '$.mensaje_no_aplicable') AS mensaje_no_aplicable
       FROM test_modules t
       WHERE t.activo = 1;
     `, [

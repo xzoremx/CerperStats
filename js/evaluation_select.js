@@ -123,17 +123,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     const aplicable = testMeta ? testMeta.aplicable === 1 : true;
 
     if (!aplicable) {
-      const overlay = document.createElement("div");
-      overlay.className = "test-overlay";
-      const minLect = testMeta?.min_lecturas ?? 0;
-      overlay.innerHTML = `<span>No aplicable: mínimo ${minLect} lecturas o condiciones no cumplidas.</span>`;
       card.classList.add("blocked");
-      card.appendChild(overlay);
     }
 
     // === Selección solo si aplicable ===
     card.addEventListener("click", () => {
-      if (!aplicable) return;
+      if (!aplicable) {
+        const customMsg = testMeta?.mensaje_no_aplicable;
+        notify(customMsg || "No aplicable, condiciones no cumplidas para ejecutar esta prueba", "warning");
+        return;
+      }
       const id = test.id;
       if (seleccionadas.has(id)) {
         seleccionadas.delete(id);
