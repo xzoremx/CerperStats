@@ -313,6 +313,29 @@ ipcMain.handle("db-close-session", async (event, session_id) => {
     return { ok: false, error: err.message };
   }
 });
+
+// === Eliminar sesión y sus inputs (rollback completo) ===
+ipcMain.handle("db-delete-session-deep", async (event, session_id) => {
+  try {
+    await db.exec("BEGIN");
+    const rMono = await db.run(`DELETE FROM inputs_monoanalito WHERE session_id = ?;`, [session_id]);
+    const rMulti = await db.run(`DELETE FROM inputs_multianalito WHERE session_id = ?;`, [session_id]);
+    const rSess = await db.run(`DELETE FROM sessions WHERE id = ?;`, [session_id]);
+    await db.exec("COMMIT");
+    return {
+      ok: true,
+      deleted: {
+        inputs_monoanalito: rMono?.changes ?? 0,
+        inputs_multianalito: rMulti?.changes ?? 0,
+        sessions: rSess?.changes ?? 0,
+      },
+    };
+  } catch (err) {
+    try { await db.exec("ROLLBACK"); } catch (_) {}
+    console.error("[DB] Error eliminando sesión profundamente:", err);
+    return { ok: false, error: err.message };
+  }
+});
 // === INFO DETALLADA DE SESIÓN ===
 ipcMain.handle("db-get-session-info", async (event, session_id) => {
   try {

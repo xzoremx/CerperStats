@@ -30,4 +30,6 @@ contextBridge.exposeInMainWorld('cerper', {
   getTestsWithMetadata: (session_id) =>
   ipcRenderer.invoke("db-get-tests-with-metadata", session_id),
   runEvaluations: (args) => ipcRenderer.invoke("db-run-evaluaciones", args),
+  deleteSessionDeep: (session_id) =>
+    ipcRenderer.invoke("db-delete-session-deep", session_id),
 });

@@ -118,8 +118,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           // Confirmación con modal visual
           const conf = await mostrarConfirmacion(
             "Confirmar creación de sesión",
-            "¿Deseas continuar y crear una nueva sesión?<br><br>" +
-            "Una vez creada, <b>no podrás cambiar la configuración</b> (método, producto, ensayo, unidad, etc.)."
+            "¿Deseas continuar y crear la sesión?<br>Se guardarán las lecturas ingresadas."
           );
 
           if (!conf) {
@@ -1075,7 +1074,7 @@ if (btnBack) {
     // --- Caso 2: primera vez que hace clic ---
     backClickCount++;
     if (backClickCount === 1) {
-      notify("Solo puedes editar las lecturas en esta sesión. Presiona nuevamente para crear una nueva sesión.", "warning");
+      notify("Si regresa, se perderán las lecturas. Presione de nuevo para volver.", "warning");
 
       // Reinicia contador si no hace segundo clic dentro de 3s
       setTimeout(() => { backClickCount = 0; }, 3000);
@@ -1084,26 +1083,52 @@ if (btnBack) {
 
     // --- Caso 3: segundo clic: confirmar reinicio total ---
     const confirmar = await mostrarConfirmacion(
-      "¿Reiniciar CerperStats?",
-      "Esto cerrará tu sesión actual y eliminará toda la configuración temporal. Continuar?"
+      "¿Reiniciar proceso?",
+      "Esto eliminará todas las lecturas ingresadas. ¿Desea continuar?"
     );
 
     if (confirmar) {
       try {
         const sessionId = sessionStorage.getItem("sessionID");
 
-        // Cerrar sesión en la base
-        if (sessionId && window.cerper.closeSession) {
+        // Eliminar sesión y sus inputs (rollback total)
+        if (sessionId && window.cerper?.deleteSessionDeep) {
+          const delRes = await window.cerper.deleteSessionDeep(sessionId);
+          if (!delRes?.ok) {
+            console.warn("[Step5] No se pudo eliminar completamente la sesión:", delRes?.error);
+          }
+        } else if (sessionId && window.cerper?.closeSession) {
+          // Fallback mínimo: solo cerrar sesión si no existe deleteSessionDeep
           await window.cerper.closeSession(sessionId);
         }
 
-        // Limpiar absolutamente todo (frontend)
-        sessionStorage.clear(); 
-        localStorage.clear();
+        // Preservar datos de pasos previos (preinfo + decisiones previas)
+        const keepKeys = [
+          // Preinfo
+          "metodo", "producto", "ensayo", "expediente", "unidad",
+          // Contexto de laboratorio
+          "labSeleccionado", "labNombreVisible", "procedimientoSeleccionado",
+          // Selecciones de flujo previas
+          "tipoAnalisis", "tipoDato", "modoCualitativo",
+          "parametroSeleccionado", "K", "lecturasPorParametro",
+          // Sesión de usuario (no cerrar login)
+          "usuario", "usuario_id", "rol", "default_lab"
+        ];
+        const saved = {};
+        keepKeys.forEach(k => {
+          const v = sessionStorage.getItem(k);
+          if (v !== null) saved[k] = v;
+        });
 
+        // Limpiar storage de la sesión actual
+        sessionStorage.clear();
+        // No limpiamos localStorage para mantener preferencias/placeholder
 
-        notify("Reinicio completo. Volviendo al inicio...", "info");
-        setTimeout(() => window.cerper.openPage("login.html"), 1200);
+        // Restaurar claves preservadas
+        Object.entries(saved).forEach(([k, v]) => sessionStorage.setItem(k, v));
+
+        notify("Volviendo al paso anterior...", "info");
+        setTimeout(() => window.cerper.openPage("input_data/step_4_k.html"), 900);
       } catch (err) {
         console.error("[CerperStats] Error al reiniciar:", err);
         notify("Ocurrió un error al reiniciar.", "error");
