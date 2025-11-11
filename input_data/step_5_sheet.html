@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://unpkg.com data:; connect-src 'self';" />
   <title>Ingreso de Lecturas - CerperStats</title>
   <link rel="stylesheet" href="../css/input_data.css" />
   <link rel="stylesheet" href="../css/sheet.css" />
@@ -42,6 +43,7 @@
   </button>
 
   <!-- ICONOS Y SCRIPTS -->
+  <script src="../js/auth_guard.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="../js/input_data/step_6_validation.js"></script>
   <script src="../js/input_data/step_5_sheet.js"></script>

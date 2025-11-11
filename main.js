@@ -3,6 +3,8 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 let mainWindow;
+// Estado de autenticación en memoria (fuente de verdad)
+let currentUser = null;
 // === Lista blanca de rutas (todas las vistas autorizadas) ===
 const ROUTES = new Set([
   // Login, menú principal y selección
@@ -42,6 +44,9 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      enableRemoteModule: false,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
     },
   });
   mainWindow.loadFile('login.html'); // Pantalla inicial
@@ -58,6 +63,11 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
+
+// Cierre limpio de conexiones
+app.on('before-quit', async () => {
+  try { await pool?.end(); } catch (_) {}
+});
 // === Navegación segura controlada desde preload.js ===
 ipcMain.handle('open-page', async (_event, page) => {
   if (!ROUTES.has(page)) {
@@ -73,17 +83,41 @@ ipcMain.handle('open-page', async (_event, page) => {
     return { ok: false, error: err.message };
   }
 });
-// === Capa de base de datos ===
-const sqlite3 = require("sqlite3");
-const { open } = require("sqlite");
-// Conexión global
+// === Capa de base de datos (PostgreSQL) ===
+require('dotenv').config();
+const { Pool } = require('pg');
+
+let pool;
 let db;
 async function initDB() {
-  db = await open({
-    filename: "./database/cerperstats.db",
-    driver: sqlite3.Database
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    host: process.env.PGHOST,
+    port: process.env.PGPORT ? Number(process.env.PGPORT) : undefined,
+    user: process.env.PGUSER,
+    password: process.env.PGPASSWORD,
+    database: process.env.PGDATABASE,
+    ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: false } : undefined,
+    application_name: 'cerperstats'
   });
-  console.log("[DB] Conectado a cerperstats.db");
+  db = {
+    async get(text, params = []) {
+      const { rows } = await pool.query(text, params);
+      return rows[0] || null;
+    },
+    async all(text, params = []) {
+      const { rows } = await pool.query(text, params);
+      return rows;
+    },
+    async run(text, params = []) {
+      const res = await pool.query(text, params);
+      return {
+        changes: typeof res.rowCount === 'number' ? res.rowCount : 0,
+        lastID: res.rows && res.rows[0] ? (res.rows[0].id ?? res.rows[0].lastid ?? null) : null,
+      };
+    }
+  };
+  console.log("[DB] Conectado a PostgreSQL");
 }
 initDB();
 // === LOGIN DE USUARIO (bcryptjs) ===
@@ -92,7 +126,7 @@ ipcMain.handle("db-login", async (event, { username, password }) => {
   try {
     const user = await db.get(`
       SELECT * FROM usuarios 
-      WHERE username = ? 
+      WHERE username = $1 
       AND activo = 1 
       LIMIT 1;
     `, [username]);
@@ -108,20 +142,39 @@ ipcMain.handle("db-login", async (event, { username, password }) => {
     if (!isValid) {
       await db.run(`
         INSERT INTO logs_sistema (usuario_id, accion, detalle)
-        VALUES ((SELECT id FROM usuarios WHERE username = ?), 'login_fallido', 'Contraseña incorrecta');
+        VALUES ((SELECT id FROM usuarios WHERE username = $1), 'login_fallido', 'Contraseña incorrecta');
       `, [username]);
       return { ok: false, error: "Contraseña incorrecta." };
     }
     // --- Registrar login exitoso
     await db.run(`
       INSERT INTO logs_sistema (usuario_id, accion, detalle)
-      VALUES (?, 'login_exitoso', 'Inicio de sesión correcto.');
+      VALUES ($1, 'login_exitoso', 'Inicio de sesión correcto.');
     `, [user.id]);
-    return { ok: true, user };
+    // Guardar usuario autenticado en memoria (mínimo necesario)
+    currentUser = {
+      id: user.id,
+      username: user.username,
+      rol: user.rol,
+      default_lab: user.default_lab,
+      nombre_completo: user.nombre_completo || null,
+    };
+    return { ok: true, user: currentUser };
   } catch (err) {
     console.error("[DB] Error en login:", err);
     return { ok: false, error: err.message };
   }
+});
+
+// === Autenticación: obtener usuario actual ===
+ipcMain.handle("auth-get-current-user", async () => {
+  return { ok: true, user: currentUser };
+});
+
+// === Autenticación: logout ===
+ipcMain.handle("auth-logout", async () => {
+  currentUser = null;
+  return { ok: true };
 });
 // === Lectura de laboratorios para el menú principal ===
 ipcMain.handle("db-get-labs", async () => {
@@ -155,7 +208,7 @@ ipcMain.handle("db-get-lab-by-key", async (event, labKey) => {
         color,
         activo
       FROM labs
-      WHERE lab_key = ?
+      WHERE lab_key = $1
       LIMIT 1;
     `, [labKey]);
     if (row) {
@@ -174,7 +227,7 @@ ipcMain.handle("db-get-lab-modes", async (_e, labKey) => {
     const rows = await db.all(`
       SELECT tipo_dato, modo_cualitativo, valores_permitidos
       FROM lab_data_modes
-      WHERE lab_key = ? AND activo = 1
+      WHERE lab_key = $1 AND activo = 1
       ORDER BY id ASC;
     `, [labKey]);
     return { ok: true, data: rows };
@@ -205,7 +258,8 @@ ipcMain.handle("db-insert-session", async (event, data) => {
         tipo_analisis, tipo_dato, modo_cualitativo, parametro, usuario_id,
         estado, creado_en, actualizado_en
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', datetime('now'), datetime('now'))
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'activo', NOW(), NOW())
+      RETURNING id;
     `, [
       lab_key, procedure, metodo, producto, ensayo, expediente, unidad,
       tipo_analisis, tipo_dato, modo_cualitativo, parametro, usuario
@@ -223,10 +277,15 @@ ipcMain.handle("db-insert-inputs", async (event, { session_id, tipoAnalisis, dat
       tipoAnalisis === "multi"
         ? "inputs_multianalito"
         : "inputs_monoanalito";
-    // --- Generar placeholders dinámicos según cantidad de registros ---
+    // --- Generar placeholders dinámicos según cantidad de registros (Postgres $1..$n) ---
+    const COLS_PER_ROW = 10;
     const placeholders = datos
-      .map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-      .join(", ");
+      .map((_, idx) => {
+        const base = idx * COLS_PER_ROW;
+        const cols = Array.from({ length: COLS_PER_ROW }, (_, j) => `$${base + j + 1}`).join(', ');
+        return `(${cols})`;
+      })
+      .join(', ');
     // --- Mapear los valores exactamente según las columnas existentes ---
     const values = datos.flatMap(d => [
       session_id,         // 1
@@ -256,7 +315,7 @@ ipcMain.handle("db-insert-inputs", async (event, { session_id, tipoAnalisis, dat
   }
 });
 
-
+// === Obtener inputs de la sesión ===
 ipcMain.handle("db-get-inputs-by-session", async (event, { session_id, tipoAnalisis }) => {
   try {
     let rows = [];
@@ -264,7 +323,7 @@ ipcMain.handle("db-get-inputs-by-session", async (event, { session_id, tipoAnali
       rows = await db.all(`
         SELECT analito, parametro, lectura_idx, valor
         FROM inputs_multianalito
-        WHERE session_id = ?
+        WHERE session_id = $1
         AND valido = 1
         ORDER BY parametro ASC, analito ASC, lectura_idx ASC;
       `, [session_id]);
@@ -272,7 +331,7 @@ ipcMain.handle("db-get-inputs-by-session", async (event, { session_id, tipoAnali
       rows = await db.all(`
         SELECT parametro, lectura_idx, valor
         FROM inputs_monoanalito
-        WHERE session_id = ?
+        WHERE session_id = $1
         AND valido = 1
         ORDER BY parametro ASC, lectura_idx ASC;
       `, [session_id]);
@@ -290,7 +349,7 @@ ipcMain.handle("db-clear-inputs", async (event, { session_id, tipoAnalisis }) =>
       (tipoAnalisis === "multi" || tipoAnalisis === "multianalito")
         ? "inputs_multianalito"
         : "inputs_monoanalito";
-    const res = await db.run(`DELETE FROM ${table} WHERE session_id = ?`, [session_id]);
+    const res = await db.run(`DELETE FROM ${table} WHERE session_id = $1`, [session_id]);
     return { ok: true, changes: res?.changes ?? 0 };
   } catch (err) {
     console.error("[DB] Error limpiando inputs:", err);
@@ -304,7 +363,7 @@ ipcMain.handle("db-close-session", async (event, session_id) => {
       `UPDATE sessions 
        SET estado = 'cerrada', 
            actualizado_en = CURRENT_TIMESTAMP 
-       WHERE id = ?;`,
+       WHERE id = $1;`,
       [session_id]
     );
     return { ok: true };
@@ -316,24 +375,27 @@ ipcMain.handle("db-close-session", async (event, session_id) => {
 
 // === Eliminar sesión y sus inputs (rollback completo) ===
 ipcMain.handle("db-delete-session-deep", async (event, session_id) => {
+  const client = await pool.connect();
   try {
-    await db.exec("BEGIN");
-    const rMono = await db.run(`DELETE FROM inputs_monoanalito WHERE session_id = ?;`, [session_id]);
-    const rMulti = await db.run(`DELETE FROM inputs_multianalito WHERE session_id = ?;`, [session_id]);
-    const rSess = await db.run(`DELETE FROM sessions WHERE id = ?;`, [session_id]);
-    await db.exec("COMMIT");
+    await client.query('BEGIN');
+    const rMono = await client.query(`DELETE FROM inputs_monoanalito WHERE session_id = $1;`, [session_id]);
+    const rMulti = await client.query(`DELETE FROM inputs_multianalito WHERE session_id = $1;`, [session_id]);
+    const rSess = await client.query(`DELETE FROM sessions WHERE id = $1;`, [session_id]);
+    await client.query('COMMIT');
     return {
       ok: true,
       deleted: {
-        inputs_monoanalito: rMono?.changes ?? 0,
-        inputs_multianalito: rMulti?.changes ?? 0,
-        sessions: rSess?.changes ?? 0,
+        inputs_monoanalito: rMono?.rowCount ?? 0,
+        inputs_multianalito: rMulti?.rowCount ?? 0,
+        sessions: rSess?.rowCount ?? 0,
       },
     };
   } catch (err) {
-    try { await db.exec("ROLLBACK"); } catch (_) {}
+    try { await client.query('ROLLBACK'); } catch (_) {}
     console.error("[DB] Error eliminando sesión profundamente:", err);
     return { ok: false, error: err.message };
+  } finally {
+    client.release();
   }
 });
 // === INFO DETALLADA DE SESIÓN ===
@@ -344,7 +406,7 @@ ipcMain.handle("db-get-session-info", async (event, session_id) => {
       FROM sessions s
       LEFT JOIN usuarios u ON s.usuario_id = u.id
       LEFT JOIN labs l ON l.lab_key = s.lab_key
-      WHERE s.id = ?;
+      WHERE s.id = $1;
     `, [session_id]);
     if (!row) return { ok: false, error: "Sesión no encontrada." };
     return { ok: true, data: row };
@@ -359,11 +421,11 @@ ipcMain.handle("db-get-sessions-by-role", async (event, { rol, labDefault }) => 
     if (rol === 'analista') return { ok: true, data: [] };
 
     const rows = await db.all(`
-      SELECT s.id, s.lab_key, l.nombre AS lab_nombre, s.producto, s.metodo, s.estado, s.creado_en, s.procedure,\n             u.username AS usuario
+      SELECT s.id, s.lab_key, l.nombre AS lab_nombre, s.producto, s.metodo, s.estado, s.creado_en, s."procedure",\n             u.username AS usuario
       FROM sessions s
       LEFT JOIN usuarios u ON s.usuario_id = u.id
       LEFT JOIN labs l ON l.lab_key = s.lab_key
-      WHERE (? IS NULL OR s.lab_key = ?)
+      WHERE ($1 IS NULL OR s.lab_key = $2)
       ORDER BY s.creado_en DESC;
     `, [labDefault || null, labDefault || null]);
 
@@ -381,10 +443,10 @@ ipcMain.handle("db-get-evaluaciones", async (event, { lab_key, tipo_analisis, ti
     const rows = await db.all(`
       SELECT id, nombre_interno, titulo, categoria, descripcion, COALESCE(NULLIF(TRIM(icon_lib), ''), 'bar-chart-2') AS icon_value
       FROM tests_catalog
-      WHERE lab_key = ?
-        AND tipo_analisis = ?
-        AND tipo_dato = ?
-        AND (modo_cualitativo IS NULL OR modo_cualitativo = ?)
+      WHERE lab_key = $1
+        AND tipo_analisis = $2
+        AND tipo_dato = $3
+        AND (modo_cualitativo IS NULL OR modo_cualitativo = $4)
         AND activo = 1
       ORDER BY id ASC;
     `, [lab_key, tipo_analisis, tipo_dato, modo_cualitativo || null]);
@@ -405,7 +467,7 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
     const session = await db.get(`
       SELECT tipo_analisis, lab_key, usuario_id
       FROM sessions
-      WHERE id = ?;
+      WHERE id = $1;
     `, [session_id]);
 
     if (!session) throw new Error("Sesión no encontrada.");
@@ -418,7 +480,7 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
         SELECT analito, parametro, lectura_idx, valor,
                unidad, tipo_dato, modo_cualitativo, comentario
         FROM inputs_multianalito
-        WHERE session_id = ? AND valido = 1
+        WHERE session_id = $1 AND valido = 1
         ORDER BY parametro, analito, lectura_idx;
       `, [session_id]);
     } else {
@@ -426,7 +488,7 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
         SELECT analito, parametro, lectura_idx, valor,
                unidad, tipo_dato, modo_cualitativo, comentario
         FROM inputs_monoanalito
-        WHERE session_id = ? AND valido = 1
+        WHERE session_id = $1 AND valido = 1
         ORDER BY parametro, lectura_idx;
       `, [session_id]);
     }
@@ -436,36 +498,111 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
       SELECT t.id, t.nombre_interno, m.codigo_principal, m.codigo_grafico
       FROM tests_catalog t
       JOIN test_modules m ON m.catalog_id = t.id
-      WHERE t.id IN (${catalog_ids.map(() => "?").join(",")})
+      WHERE t.id IN (${catalog_ids.map((_, i) => `$${i + 1}`).join(",")})
         AND m.activo = 1;
     `, catalog_ids);
 
     if (!tests || tests.length === 0)
       throw new Error("No se encontró código asociado a las evaluaciones seleccionadas.");
 
-    // Crear JSON temporal con inputs + módulos
+    // Verificar confianza de módulos (hash allowlist + firma ECDSA)
     const fs = require("fs");
+    const crypto = require("crypto");
     const os = require("os");
+    const trustPath = path.join(__dirname, 'modules', '_common', 'trusted_tests.json');
+    const sigPath = path.join(__dirname, 'modules', '_common', 'tests_signatures.json');
+    const pubPath = path.join(__dirname, 'modules', '_common', 'tests_public_key.json');
+    let trusted = {};
+    try { trusted = JSON.parse(fs.readFileSync(trustPath, 'utf8')); } catch (_) { trusted = {}; }
+    let signatures = {};
+    try { signatures = JSON.parse(fs.readFileSync(sigPath, 'utf8')); } catch (_) { signatures = {}; }
+    let publicKey;
+    try {
+      const pubSpec = JSON.parse(fs.readFileSync(pubPath, 'utf8'));
+      if (pubSpec && pubSpec.spki_base64) {
+        const spki = Buffer.from(pubSpec.spki_base64, 'base64');
+        publicKey = crypto.createPublicKey({ key: spki, format: 'der', type: 'spki' });
+      }
+    } catch (_) { publicKey = undefined; }
+
+    const hashModule = (principal, grafico) => {
+      const data = (principal || '') + '\n---\n' + (grafico || '');
+      return crypto.createHash('sha256').update(data, 'utf8').digest('hex');
+    };
+
+    const verified = [];
+    for (const t of tests) {
+      const h = hashModule(t.codigo_principal, t.codigo_grafico);
+      const hashOk = trusted[String(t.id)] === h || trusted[t.nombre_interno] === h;
+      let sigOk = false;
+      try {
+        const canonical = JSON.stringify({ principal: t.codigo_principal || '', grafico: t.codigo_grafico || '' });
+        const sigB64 = signatures[String(t.id)] || signatures[t.nombre_interno];
+        if (sigB64 && publicKey) {
+          const sigBuf = Buffer.from(sigB64, 'base64');
+          sigOk = crypto.verify('sha256', Buffer.from(canonical, 'utf8'), publicKey, sigBuf);
+        }
+      } catch (_) { sigOk = false; }
+      if (hashOk && sigOk) {
+        verified.push(t);
+      } else {
+        const motivo = !hashOk ? 'hash_mismatch' : 'signature_invalid_or_missing';
+        console.warn(`[SEC] Módulo omitido id=${t.id} (${t.nombre_interno}) - ${motivo}`);
+        try {
+          await db.run(`
+            INSERT INTO logs_sistema (usuario_id, accion, detalle)
+            VALUES ($1, 'modulo_omitido', $2);
+          `, [usuario_id || null, `id=${t.id} nombre=${t.nombre_interno} motivo=${motivo}`]);
+        } catch (_) {}
+      }
+    }
+
+    if (verified.length === 0) {
+      throw new Error("Ningún módulo verificado para ejecutar. Revise modules/_common/trusted_tests.json.");
+    }
+
+    // Crear JSON temporal con inputs + módulos verificados
     const tempData = {
       session_id,
       tipo_analisis,
       catalog_ids,
       df_ingreso: rows,
-      tests: tests.map(t => ({
+      tests: verified.map(t => ({
         id: t.id,
         nombre_interno: t.nombre_interno,
         codigo_principal: t.codigo_principal,
         codigo_grafico: t.codigo_grafico,
       })),
     };
-    const tempPath = path.join(os.tmpdir(), `eval_${session_id}.json`);
+    // Carpeta aislada como cwd del proceso Python
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cerper_eval_'));
+    const tempPath = path.join(tempDir, `eval_${session_id}.json`);
     fs.writeFileSync(tempPath, JSON.stringify(tempData, null, 2), "utf8");
 
-    // Ejecutar proceso Python
-    const python = spawn("python", [
-      "./modules/_common/eval_runner_secure.py",
-      tempPath
-    ]);
+    // Ejecutar proceso Python con mayor aislamiento
+    const PY_TIMEOUT_MS = 20000;
+    const python = spawn(
+      "python",
+      [
+        "-I", // modo aislado: ignora variables de entorno del usuario y sys.path externos
+        "-B", // no escribir .pyc
+        "./modules/_common/eval_runner_secure.py",
+        tempPath,
+      ],
+      {
+        cwd: tempDir,
+        env: {
+          PYTHONIOENCODING: "utf-8",
+          PYTHONUNBUFFERED: "1",
+          HTTP_PROXY: "",
+          HTTPS_PROXY: "",
+          NO_PROXY: "*",
+          PATH: process.env.SystemRoot ? path.join(process.env.SystemRoot, 'System32') : '',
+          SystemRoot: process.env.SystemRoot || undefined,
+        },
+        windowsHide: true,
+      }
+    );
 
     return await new Promise((resolve) => {
       let output = "";
@@ -474,8 +611,14 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
       python.stdout.on("data", (d) => (output += d.toString()));
       python.stderr.on("data", (d) => (error += d.toString()));
 
+      const killTimer = setTimeout(() => {
+        try { python.kill(); } catch (_) {}
+      }, PY_TIMEOUT_MS);
+
       python.on("close", async (code) => {
-        fs.unlinkSync(tempPath);
+        clearTimeout(killTimer);
+        try { fs.unlinkSync(tempPath); } catch (_) {}
+        try { fs.rmdirSync(tempDir); } catch (_) {}
 
         if (code === 0) {
           try {
@@ -491,7 +634,7 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
               await db.run(`
                 INSERT INTO results_general
                 (session_id, catalog_id, resultado_pc, grafico_data, creado_en, usuario_id)
-                VALUES (?, ?, ?, ?, datetime('now'), ?);
+                VALUES ($1, $2, $3, $4, NOW(), $5);
               `, [
                 session_id,
                 r.catalog_id,
@@ -499,6 +642,12 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
                 r.grafico_data || "",
                 usuario_id
               ]);
+              try {
+                await db.run(`
+                  INSERT INTO logs_sistema (usuario_id, accion, detalle)
+                  VALUES ($1, 'modulo_ejecutado', $2);
+                `, [usuario_id || null, `catalog_id=${r.catalog_id}`]);
+              } catch (_) {}
             }
 
             console.log(`[EVAL] Resultados guardados correctamente (${results.length} módulos).`);
@@ -509,7 +658,7 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
             resolve({ ok: false, error: "Error procesando salida Python" });
           }
         } else {
-          console.error("[EVAL] Python error:", error);
+          console.error("[EVAL] Python error:", error || `Proceso finalizado con código ${code}`);
           resolve({ ok: false, error });
         }
       });
@@ -532,7 +681,7 @@ async function computeSessionMeta(session_id) {
   const session = await db.get(`
     SELECT tipo_analisis, tipo_dato
     FROM sessions
-    WHERE id = ?;
+    WHERE id = $1;
   `, [session_id]);
   if (!session) throw new Error("Sesión no encontrada.");
 
@@ -545,7 +694,7 @@ async function computeSessionMeta(session_id) {
       SELECT parametro, analito,
              COUNT(DISTINCT lectura_idx) AS n_lecturas
       FROM inputs_multianalito
-      WHERE session_id = ? AND valido = 1
+      WHERE session_id = $1 AND valido = 1
       GROUP BY parametro, analito;
     `, [session_id]);
   } else {
@@ -553,7 +702,7 @@ async function computeSessionMeta(session_id) {
       SELECT parametro,
              COUNT(lectura_idx) AS n_lecturas
       FROM inputs_monoanalito
-      WHERE session_id = ? AND valido = 1
+      WHERE session_id = $1 AND valido = 1
       GROUP BY parametro;
     `, [session_id]);
   }
@@ -613,20 +762,17 @@ ipcMain.handle("db-get-tests-with-metadata", async (event, session_id) => {
       SELECT 
         t.catalog_id AS id,
         CASE
-          WHEN json_extract(t.requisitos_json, '$.min_lecturas') IS NOT NULL
-               AND ? < json_extract(t.requisitos_json, '$.min_lecturas')
-            THEN 0
-          WHEN json_extract(t.requisitos_json, '$.min_parametros') IS NOT NULL
-               AND ? < json_extract(t.requisitos_json, '$.min_parametros')
-            THEN 0
-          WHEN json_extract(t.requisitos_json, '$.tipo_dato') IS NOT NULL
-               AND json_extract(t.requisitos_json, '$.tipo_dato') <> ?
-            THEN 0
+          WHEN (t.requisitos_json->>'min_lecturas') IS NOT NULL
+               AND $1 < (t.requisitos_json->>'min_lecturas')::int THEN 0
+          WHEN (t.requisitos_json->>'min_parametros') IS NOT NULL
+               AND $2 < (t.requisitos_json->>'min_parametros')::int THEN 0
+          WHEN (t.requisitos_json->>'tipo_dato') IS NOT NULL
+               AND (t.requisitos_json->>'tipo_dato') <> $3 THEN 0
           ELSE 1
         END AS aplicable,
-        json_extract(t.requisitos_json, '$.min_lecturas') AS min_lecturas,
-        json_extract(t.requisitos_json, '$.min_parametros') AS min_parametros,
-        json_extract(t.requisitos_json, '$.mensaje_no_aplicable') AS mensaje_no_aplicable
+        (t.requisitos_json->>'min_lecturas')::int AS min_lecturas,
+        (t.requisitos_json->>'min_parametros')::int AS min_parametros,
+        (t.requisitos_json->>'mensaje_no_aplicable') AS mensaje_no_aplicable
       FROM test_modules t
       WHERE t.activo = 1;
     `, [

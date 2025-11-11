@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://unpkg.com data:; connect-src 'self';">
   <title>CerperStats – Selección de Evaluación</title>
   <link rel="stylesheet" href="css/evaluation_select.css">
   <script src="https://unpkg.com/feather-icons"></script>
@@ -56,6 +57,8 @@
   </div>
 
   <!-- ======== SCRIPTS ======== -->
+  <script src="js/auth_guard.js"></script>
+  <script src="js/security/icon_safety.js"></script>
   <script src="renderer.js"></script>
   <script src="js/evaluation_select.js" defer></script>
   <script>

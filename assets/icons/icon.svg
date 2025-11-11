@@ -1,0 +1,67 @@
+<svg viewBox="0 0 200 200" width="260" height="260" role="img" aria-label="Átomo animado">
+  <defs>
+    <!-- Gradiente para el núcleo -->
+    <radialGradient id="coreGrad" cx="50%" cy="50%" r="60%">
+      <stop offset="0%"  stop-color="#00E5FF"/>
+      <stop offset="60%" stop-color="#4C7CF3"/>
+      <stop offset="100%" stop-color="#8A2BE2"/>
+    </radialGradient>
+    <!-- Gradiente para las órbitas -->
+    <linearGradient id="orbitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"  stop-color="#FF6B6B"/>
+      <stop offset="50%" stop-color="#FFD166"/>
+      <stop offset="100%" stop-color="#06D6A0"/>
+    </linearGradient>
+    <!-- Glow -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.8" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Núcleo -->
+  <circle cx="100" cy="100" r="20" fill="url(#coreGrad)" filter="url(#glow)">
+    <animate attributeName="r" values="18;22;18" dur="2.5s" repeatCount="indefinite" keyTimes="0;0.5;1" calcMode="spline" keySplines=".4 0 .2 1;.4 0 .2 1"/>
+  </circle>
+
+  <!-- Tres órbitas inclinadas -->
+  <g stroke="url(#orbitGrad)" fill="none" stroke-width="2.5" opacity="0.9">
+    <ellipse cx="100" cy="100" rx="65" ry="28" transform="rotate(25 100 100)"/>
+    <ellipse cx="100" cy="100" rx="65" ry="28" transform="rotate(-25 100 100)"/>
+    <ellipse cx="100" cy="100" rx="65" ry="28" transform="rotate(90 100 100)"/>
+  </g>
+
+  <!-- Partículas orbitando (tres diferentes fases y colores) -->
+  <g>
+    <!-- P1 -->
+    <circle r="5" fill="#FF6B6B" filter="url(#glow)">
+      <animateMotion dur="6s" repeatCount="indefinite" rotate="auto">
+        <mpath xlink:href="#p1"/>
+      </animateMotion>
+    </circle>
+    <!-- P2 -->
+    <circle r="4.5" fill="#FFD166" filter="url(#glow)">
+      <animateMotion dur="5.2s" repeatCount="indefinite" rotate="auto" keyPoints="0;1" keyTimes="0;1">
+        <mpath xlink:href="#p2"/>
+      </animateMotion>
+    </circle>
+    <!-- P3 -->
+    <circle r="4.5" fill="#06D6A0" filter="url(#glow)">
+      <animateMotion dur="4.5s" repeatCount="indefinite" rotate="auto">
+        <mpath xlink:href="#p3"/>
+      </animateMotion>
+    </circle>
+  </g>
+
+  <!-- Paths invisibles de referencia de órbitas -->
+  <path id="p1" d="M35,100 a65,28 25 1,1 130,0 a65,28 25 1,1 -130,0" fill="none"/>
+  <path id="p2" d="M35,100 a65,28 -25 1,1 130,0 a65,28 -25 1,1 -130,0" fill="none"/>
+  <path id="p3" d="M35,100 a65,65 0 1,1 130,0 a65,65 0 1,1 -130,0" fill="none"/>
+
+  <!-- Rotación lenta de todo el conjunto de órbitas -->
+  <g>
+    <animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 100 100" to="360 100 100" dur="24s" repeatCount="indefinite"/>
+  </g>
+</svg>

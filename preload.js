@@ -1,4 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
+const fs = require('fs');
+const path = require('path');
 
 contextBridge.exposeInMainWorld('cerper', {
   openPage: (page) => ipcRenderer.invoke('open-page', page),
@@ -32,4 +34,28 @@ contextBridge.exposeInMainWorld('cerper', {
   runEvaluations: (args) => ipcRenderer.invoke("db-run-evaluaciones", args),
   deleteSessionDeep: (session_id) =>
     ipcRenderer.invoke("db-delete-session-deep", session_id),
+  getCurrentUser: () => ipcRenderer.invoke("auth-get-current-user"),
+  logout: () => ipcRenderer.invoke("auth-logout"),
+});
+
+// Exponer configuración de iconos (leer archivos locales de forma segura)
+contextBridge.exposeInMainWorld('iconConfig', {
+  getTrustedIcons: () => {
+    try {
+      const p = path.join(__dirname, 'js', 'security', 'trusted_icons.json');
+      const raw = fs.readFileSync(p, 'utf8');
+      return JSON.parse(raw);
+    } catch (_) {
+      return {};
+    }
+  },
+  getIconPublicKey: () => {
+    try {
+      const p = path.join(__dirname, 'js', 'security', 'icon_public_key.json');
+      const raw = fs.readFileSync(p, 'utf8');
+      return JSON.parse(raw);
+    } catch (_) {
+      return {};
+    }
+  }
 });

@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://unpkg.com data:; connect-src 'self';" />
   <title>Laboratorios - CerperStats</title>
   <link rel="stylesheet" href="css/menu.css" />
   
@@ -91,6 +92,7 @@
   </div>
 
   <!-- Scripts -->
+  <script src="js/auth_guard.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script type="module" src="js/menu.js"></script>
   <script>

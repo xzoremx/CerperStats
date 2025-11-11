@@ -1102,30 +1102,13 @@ if (btnBack) {
           await window.cerper.closeSession(sessionId);
         }
 
-        // Preservar datos de pasos previos (preinfo + decisiones previas)
-        const keepKeys = [
-          // Preinfo
-          "metodo", "producto", "ensayo", "expediente", "unidad",
-          // Contexto de laboratorio
-          "labSeleccionado", "labNombreVisible", "procedimientoSeleccionado",
-          // Selecciones de flujo previas
-          "tipoAnalisis", "tipoDato", "modoCualitativo",
-          "parametroSeleccionado", "K", "lecturasPorParametro",
-          // Sesión de usuario (no cerrar login)
-          "usuario", "usuario_id", "rol", "default_lab"
+        // Eliminar solo claves del wizard/sesión actual (no tocar login)
+        const removeKeys = [
+          "sessionID",
+          "monoAnalitoDatos",
+          "multiAnalitoDatos",
         ];
-        const saved = {};
-        keepKeys.forEach(k => {
-          const v = sessionStorage.getItem(k);
-          if (v !== null) saved[k] = v;
-        });
-
-        // Limpiar storage de la sesión actual
-        sessionStorage.clear();
-        // No limpiamos localStorage para mantener preferencias/placeholder
-
-        // Restaurar claves preservadas
-        Object.entries(saved).forEach(([k, v]) => sessionStorage.setItem(k, v));
+        removeKeys.forEach(k => sessionStorage.removeItem(k));
 
         notify("Volviendo al paso anterior...", "info");
         setTimeout(() => window.cerper.openPage("input_data/step_4_k.html"), 900);

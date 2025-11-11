@@ -2,6 +2,7 @@
 <html lang="es" data-theme="light">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://unpkg.com data:; connect-src 'self';" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Procedimiento - CerperStats</title>
     <link rel="stylesheet" href="css/procedure_select.css">
@@ -23,6 +24,7 @@
       <i data-lucide="list"></i> Sesiones
     </button>
 
+    <script src="js/auth_guard.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="js/procedure_select.js"></script>
     <script>

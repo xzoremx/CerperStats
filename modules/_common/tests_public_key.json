@@ -1,0 +1,4 @@
+{
+  "note": "Replace spki_base64 with your ECDSA P-256 public key (SPKI base64)",
+  "spki_base64": ""
+}

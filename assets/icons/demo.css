@@ -1,0 +1,3 @@
+svg{width:64px;height:64px}
+#spinner{transform-origin:50px 50px;animation:rot 2s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
