@@ -21,3 +21,6 @@ Thumbs.db
 
 # Security
 icon_signing_private.pem
+
+# Postgresql credentials
+.env
