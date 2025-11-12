@@ -51,6 +51,7 @@ function createWindow() {
   });
   mainWindow.loadFile('login.html'); // Pantalla inicial
 }
+
 // === Inicialización de la app ===
 app.whenReady().then(() => {
   app.setAppUserModelId('com.cerper.cerperstats');
@@ -83,6 +84,8 @@ ipcMain.handle('open-page', async (_event, page) => {
     return { ok: false, error: err.message };
   }
 });
+
+
 // === Capa de base de datos (PostgreSQL) ===
 require('dotenv').config();
 const { Pool } = require('pg');
@@ -134,6 +137,7 @@ async function initDB() {
   };
 }
 initDB();
+
 // === LOGIN DE USUARIO (bcryptjs) ===
 const bcrypt = require("bcryptjs");
 ipcMain.handle("db-login", async (event, { username, password }) => {
@@ -439,9 +443,9 @@ ipcMain.handle("db-get-sessions-by-role", async (event, { rol, labDefault }) => 
       FROM sessions s
       LEFT JOIN usuarios u ON s.usuario_id = u.id
       LEFT JOIN labs l ON l.lab_key = s.lab_key
-      WHERE ($1 IS NULL OR s.lab_key = $2)
+      WHERE ($1::text IS NULL OR s.lab_key = $1::text)
       ORDER BY s.creado_en DESC;
-    `, [labDefault || null, labDefault || null]);
+    `, [labDefault ?? null]);
 
     return { ok: true, data: rows };
   } catch (err) {
