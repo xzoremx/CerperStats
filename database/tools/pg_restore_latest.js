@@ -7,11 +7,12 @@
  * - Uses safe defaults: --clean --if-exists --no-owner --no-privileges
  *
  * Usage examples:
- *   node database/tools/pg_restore_latest.js --tag test
+ *   node database/tools/pg_restore_latest.js --tag 
  *   node database/tools/pg_restore_latest.js --file database/db_snapshots/20250101_101010__prod.dump
  *   node database/tools/pg_restore_latest.js --dsn postgresql://user:pass@127.0.0.1:5432/cerperstats
  *   node database/tools/pg_restore_latest.js --help
  */
+
 require('dotenv').config();
 const cp = require('child_process');
 const fs = require('fs');

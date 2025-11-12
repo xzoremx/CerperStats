@@ -6,10 +6,11 @@
  * - Writes metadata.json (timestamp, tag, git commit, conn info)
  *
  * Usage examples:
- *   PGPASSWORD=secret node database/tools/pg_snapshot.js --host 127.0.0.1 --port 5432 --db cerperstats --user cerper_app --tag pre-migration
+ *   node database/tools/pg_snapshot.js --tag 
  *   node database/tools/pg_snapshot.js --dsn postgresql://cerper_app:secret@127.0.0.1:5432/cerperstats --tag fix-icons
  *   node database/tools/pg_snapshot.js --help
  */
+
 require("dotenv").config();
 const cp = require('child_process');
 const fs = require('fs');
