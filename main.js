@@ -90,16 +90,31 @@ const { Pool } = require('pg');
 let pool;
 let db;
 async function initDB() {
-  pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    host: process.env.PGHOST,
-    port: process.env.PGPORT ? Number(process.env.PGPORT) : undefined,
-    user: process.env.PGUSER,
-    password: process.env.PGPASSWORD,
-    database: process.env.PGDATABASE,
-    ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: false } : undefined,
-    application_name: 'cerperstats'
-  });
+  const cfg = {};
+  const url = (process.env.DATABASE_URL || '').trim();
+  if (url) {
+    cfg.connectionString = url;
+  } else {
+    if (process.env.PGHOST) cfg.host = process.env.PGHOST;
+    if (process.env.PGPORT) cfg.port = Number(process.env.PGPORT);
+    if (process.env.PGUSER) cfg.user = process.env.PGUSER;
+    if (process.env.PGPASSWORD) cfg.password = process.env.PGPASSWORD;
+    if (process.env.PGDATABASE) cfg.database = process.env.PGDATABASE;
+  }
+  if (process.env.PGSSLMODE === 'require') cfg.ssl = { rejectUnauthorized: false };
+  cfg.application_name = 'cerperstats';
+
+  pool = new Pool(cfg);
+  // Ping inicial para detectar errores de credenciales y confirmar destino
+  try {
+    const r = await pool.query("SELECT current_user, current_database() AS db, inet_server_addr()::text AS host, inet_server_port() AS port");
+    const row = r.rows && r.rows[0];
+    console.log(`[DB] Conectado a PostgreSQL host=${row?.host || 'local'} port=${row?.port || ''} db=${row?.db} user=${row?.current_user}`);
+  } catch (err) {
+    console.error('[DB] Error conectando a PostgreSQL:', err.message);
+    throw err;
+  }
+
   db = {
     async get(text, params = []) {
       const { rows } = await pool.query(text, params);
@@ -117,7 +132,6 @@ async function initDB() {
       };
     }
   };
-  console.log("[DB] Conectado a PostgreSQL");
 }
 initDB();
 // === LOGIN DE USUARIO (bcryptjs) ===
@@ -127,7 +141,7 @@ ipcMain.handle("db-login", async (event, { username, password }) => {
     const user = await db.get(`
       SELECT * FROM usuarios 
       WHERE username = $1 
-      AND activo = 1 
+      AND activo = true 
       LIMIT 1;
     `, [username]);
     if (!user) {
@@ -182,7 +196,7 @@ ipcMain.handle("db-get-labs", async () => {
     const rows = await db.all(`
       SELECT lab_key AS key, nombre AS name, descripcion AS role, color
       FROM labs
-      WHERE activo = 1
+      WHERE activo = true
       ORDER BY id ASC;
     `);
     return { ok: true, data: rows };
@@ -227,7 +241,7 @@ ipcMain.handle("db-get-lab-modes", async (_e, labKey) => {
     const rows = await db.all(`
       SELECT tipo_dato, modo_cualitativo, valores_permitidos
       FROM lab_data_modes
-      WHERE lab_key = $1 AND activo = 1
+      WHERE lab_key = $1 AND activo = true
       ORDER BY id ASC;
     `, [labKey]);
     return { ok: true, data: rows };
@@ -296,7 +310,7 @@ ipcMain.handle("db-insert-inputs", async (event, { session_id, tipoAnalisis, dat
       d.unidad,           // 6
       d.tipo_dato,        // 7
       d.modo_cualitativo, // 8
-      1,                  // 9 (valido)
+      true,               // 9 (valido)
       d.comentario        // 10
     ]);
     // --- Ejecutar la inserción ---
@@ -324,7 +338,7 @@ ipcMain.handle("db-get-inputs-by-session", async (event, { session_id, tipoAnali
         SELECT analito, parametro, lectura_idx, valor
         FROM inputs_multianalito
         WHERE session_id = $1
-        AND valido = 1
+        AND valido = true
         ORDER BY parametro ASC, analito ASC, lectura_idx ASC;
       `, [session_id]);
     } else {
@@ -332,7 +346,7 @@ ipcMain.handle("db-get-inputs-by-session", async (event, { session_id, tipoAnali
         SELECT parametro, lectura_idx, valor
         FROM inputs_monoanalito
         WHERE session_id = $1
-        AND valido = 1
+        AND valido = true
         ORDER BY parametro ASC, lectura_idx ASC;
       `, [session_id]);
     }
@@ -447,7 +461,7 @@ ipcMain.handle("db-get-evaluaciones", async (event, { lab_key, tipo_analisis, ti
         AND tipo_analisis = $2
         AND tipo_dato = $3
         AND (modo_cualitativo IS NULL OR modo_cualitativo = $4)
-        AND activo = 1
+        AND activo = true
       ORDER BY id ASC;
     `, [lab_key, tipo_analisis, tipo_dato, modo_cualitativo || null]);
     return { ok: true, data: rows };
@@ -480,7 +494,7 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
         SELECT analito, parametro, lectura_idx, valor,
                unidad, tipo_dato, modo_cualitativo, comentario
         FROM inputs_multianalito
-        WHERE session_id = $1 AND valido = 1
+        WHERE session_id = $1 AND valido = true
         ORDER BY parametro, analito, lectura_idx;
       `, [session_id]);
     } else {
@@ -488,7 +502,7 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
         SELECT analito, parametro, lectura_idx, valor,
                unidad, tipo_dato, modo_cualitativo, comentario
         FROM inputs_monoanalito
-        WHERE session_id = $1 AND valido = 1
+        WHERE session_id = $1 AND valido = true
         ORDER BY parametro, lectura_idx;
       `, [session_id]);
     }
@@ -499,7 +513,7 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
       FROM tests_catalog t
       JOIN test_modules m ON m.catalog_id = t.id
       WHERE t.id IN (${catalog_ids.map((_, i) => `$${i + 1}`).join(",")})
-        AND m.activo = 1;
+        AND m.activo = true;
     `, catalog_ids);
 
     if (!tests || tests.length === 0)
@@ -694,7 +708,7 @@ async function computeSessionMeta(session_id) {
       SELECT parametro, analito,
              COUNT(DISTINCT lectura_idx) AS n_lecturas
       FROM inputs_multianalito
-      WHERE session_id = $1 AND valido = 1
+      WHERE session_id = $1 AND valido = true
       GROUP BY parametro, analito;
     `, [session_id]);
   } else {
@@ -702,7 +716,7 @@ async function computeSessionMeta(session_id) {
       SELECT parametro,
              COUNT(lectura_idx) AS n_lecturas
       FROM inputs_monoanalito
-      WHERE session_id = $1 AND valido = 1
+      WHERE session_id = $1 AND valido = true
       GROUP BY parametro;
     `, [session_id]);
   }
@@ -774,7 +788,7 @@ ipcMain.handle("db-get-tests-with-metadata", async (event, session_id) => {
         (t.requisitos_json->>'min_parametros')::int AS min_parametros,
         (t.requisitos_json->>'mensaje_no_aplicable') AS mensaje_no_aplicable
       FROM test_modules t
-      WHERE t.activo = 1;
+      WHERE t.activo = true;
     `, [
       meta.min_lecturas || 0,
       meta.n_parametros || 0,
