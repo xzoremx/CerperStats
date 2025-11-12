@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict XNkaQTWR8LwtXLs91NL6ij3Pxo9rhqRIXGIEhEgWNTyt06Me0UZmRu0eMRUAwHQ
+\restrict Jgk4zQYPgTlkC7nZT24rvajWlngkhxZhJD28qQKR9hKg7JNFheCicBmdyX6y2HJ
 
 -- Dumped from database version 18.0
 -- Dumped by pg_dump version 18.0
@@ -1530,5 +1530,5 @@ GRANT SELECT ON TABLE public.tests_catalog_icons_approved TO app_reader;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict XNkaQTWR8LwtXLs91NL6ij3Pxo9rhqRIXGIEhEgWNTyt06Me0UZmRu0eMRUAwHQ
+\unrestrict Jgk4zQYPgTlkC7nZT24rvajWlngkhxZhJD28qQKR9hKg7JNFheCicBmdyX6y2HJ
 

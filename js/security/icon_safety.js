@@ -202,8 +202,13 @@
         return true;
       }
       if (!raw.startsWith('<svg') && !raw.startsWith('signed:')) {
-        const name = raw || 'bar-chart-2';
-        el.innerHTML = `<i data-feather="${name}"></i>`;
+        // Force lucide default when not explicitly lucide:
+        if (raw.startsWith('lucide:')) {
+          const name = raw.split(':')[1] || 'bar-chart-2';
+          el.innerHTML = `<i data-lucide="${name}"></i>`;
+        } else {
+          el.innerHTML = `<i data-lucide="bar-chart-2"></i>`;
+        }
         return true;
       }
 

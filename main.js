@@ -416,6 +416,8 @@ ipcMain.handle("db-delete-session-deep", async (event, session_id) => {
     client.release();
   }
 });
+
+
 // === INFO DETALLADA DE SESIÓN ===
 ipcMain.handle("db-get-session-info", async (event, session_id) => {
   try {
@@ -459,7 +461,7 @@ ipcMain.handle("db-get-sessions-by-role", async (event, { rol, labDefault }) => 
 ipcMain.handle("db-get-evaluaciones", async (event, { lab_key, tipo_analisis, tipo_dato, modo_cualitativo }) => {
   try {
     const rows = await db.all(`
-      SELECT id, nombre_interno, titulo, categoria, descripcion, COALESCE(NULLIF(TRIM(icon_lib), ''), 'bar-chart-2') AS icon_value
+      SELECT id, nombre_interno, titulo, categoria, descripcion, COALESCE(NULLIF(TRIM(icon_lib), ''), 'lucide:bar-chart-2') AS icon_value
       FROM tests_catalog
       WHERE lab_key = $1
         AND tipo_analisis = $2
