@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "generated_at": "manual",
+  "entries": [
+    {
+      "id": null,
+      "nombre_interno": null,
+      "module_asset": "python/normalidad/main.py",
+      "graph_asset": "python/normalidad/graph.py",
+      "sha256_module": "",
+      "sha256_graph": ""
+    }
+  ]
+}
+

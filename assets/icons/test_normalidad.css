@@ -1,0 +1,13 @@
+                                         icon_css                                          
+-------------------------------------------------------------------------------------------
+ /* Usa currentColor, sin URLs externas */                                                +
+ svg { width: 24px; height: 24px; color: #10b981; }                                       +
+ #icon-normalidad path {                                                                  +
+   stroke-dasharray: 18;                                                                  +
+   stroke-dashoffset: 18;                                                                 +
+   animation: draw 800ms ease-out forwards, glow 1.2s ease-in-out 1.2s infinite alternate;+
+ }                                                                                        +
+ @keyframes draw { to { stroke-dashoffset: 0; } }                                         +
+ @keyframes glow { from { opacity: .8 } to { opacity: 1 } }
+(1 fila)
+

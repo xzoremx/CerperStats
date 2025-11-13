@@ -83,7 +83,7 @@ ipcMain.handle('open-page', async (_event, page) => {
     console.error(`[CerperStats] Error al cargar ${page}:`, err);
     return { ok: false, error: err.message };
   }
-});
+  });
 
 
 // === Capa de base de datos (PostgreSQL) ===
@@ -461,16 +461,37 @@ ipcMain.handle("db-get-sessions-by-role", async (event, { rol, labDefault }) => 
 ipcMain.handle("db-get-evaluaciones", async (event, { lab_key, tipo_analisis, tipo_dato, modo_cualitativo }) => {
   try {
     const rows = await db.all(`
-      SELECT id, nombre_interno, titulo, categoria, descripcion, COALESCE(NULLIF(TRIM(icon_lib), ''), 'lucide:bar-chart-2') AS icon_value
-      FROM tests_catalog
-      WHERE lab_key = $1
-        AND tipo_analisis = $2
-        AND tipo_dato = $3
-        AND (modo_cualitativo IS NULL OR modo_cualitativo = $4)
-        AND activo = true
-      ORDER BY id ASC;
+      SELECT 
+        t.id, t.nombre_interno, t.titulo, t.categoria, t.descripcion,
+        -- Solo permitimos lucide. Sanitizamos el nombre dejando [a-z0-9-]
+        CASE
+          WHEN t.icon_lib IS NOT NULL AND btrim(t.icon_lib) <> '' THEN
+            'lucide:' || NULLIF(
+              regexp_replace(
+                regexp_replace(lower(btrim(t.icon_lib)), '^lucide:', ''),
+                '[^a-z0-9\-]', '', 'g'
+              )
+            , '')
+          ELSE NULL
+        END AS icon_lib_sanitized
+      FROM tests_catalog t
+      WHERE t.lab_key = $1
+        AND t.tipo_analisis = $2
+        AND t.tipo_dato = $3
+        AND (t.modo_cualitativo IS NULL OR t.modo_cualitativo = $4)
+        AND t.activo = true
+      ORDER BY t.id ASC;
     `, [lab_key, tipo_analisis, tipo_dato, modo_cualitativo || null]);
-    return { ok: true, data: rows };
+
+    // Mapear a un icon_value seguro (solo lucide), con fallback
+    const safe = rows.map(r => {
+      let icon_value = r.icon_lib_sanitized && r.icon_lib_sanitized.startsWith('lucide:')
+        ? r.icon_lib_sanitized
+        : 'lucide:bar-chart-2';
+      return { ...r, icon_value };
+    });
+
+    return { ok: true, data: safe };
   } catch (err) {
     console.error("[DB] Error obteniendo evaluaciones:", err);
     return { ok: false, error: err.message };
@@ -513,72 +534,101 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
       `, [session_id]);
     }
 
-    // Obtener módulos Python (código principal y gráfico)
-    const tests = await db.all(`
-      SELECT t.id, t.nombre_interno, m.codigo_principal, m.codigo_grafico
+    // Obtener módulos Python por asset (ruta relativa empaquetada)
+    const testsRaw = await db.all(`
+      SELECT t.id, t.nombre_interno, m.module_asset, m.graph_asset
       FROM tests_catalog t
       JOIN test_modules m ON m.catalog_id = t.id
       WHERE t.id IN (${catalog_ids.map((_, i) => `$${i + 1}`).join(",")})
         AND m.activo = true;
     `, catalog_ids);
 
-    if (!tests || tests.length === 0)
+    if (!testsRaw || testsRaw.length === 0)
       throw new Error("No se encontró código asociado a las evaluaciones seleccionadas.");
-
-    // Verificar confianza de módulos (hash allowlist + firma ECDSA)
     const fs = require("fs");
-    const crypto = require("crypto");
     const os = require("os");
-    const trustPath = path.join(__dirname, 'modules', '_common', 'trusted_tests.json');
-    const sigPath = path.join(__dirname, 'modules', '_common', 'tests_signatures.json');
-    const pubPath = path.join(__dirname, 'modules', '_common', 'tests_public_key.json');
-    let trusted = {};
-    try { trusted = JSON.parse(fs.readFileSync(trustPath, 'utf8')); } catch (_) { trusted = {}; }
-    let signatures = {};
-    try { signatures = JSON.parse(fs.readFileSync(sigPath, 'utf8')); } catch (_) { signatures = {}; }
-    let publicKey;
-    try {
-      const pubSpec = JSON.parse(fs.readFileSync(pubPath, 'utf8'));
-      if (pubSpec && pubSpec.spki_base64) {
-        const spki = Buffer.from(pubSpec.spki_base64, 'base64');
-        publicKey = crypto.createPublicKey({ key: spki, format: 'der', type: 'spki' });
-      }
-    } catch (_) { publicKey = undefined; }
+    const crypto = require("crypto");
+    const baseModules = path.resolve(path.join(__dirname, 'modules'));
 
-    const hashModule = (principal, grafico) => {
-      const data = (principal || '') + '\n---\n' + (grafico || '');
-      return crypto.createHash('sha256').update(data, 'utf8').digest('hex');
+    let manifest = { entries: [] };
+    try {
+      const mfPath = path.join(baseModules, '_common', 'modules_manifest.json');
+      const raw = fs.readFileSync(mfPath, 'utf8');
+      manifest = JSON.parse(raw);
+    } catch (e) {
+      console.warn('[Modules] No se pudo cargar modules_manifest.json; no se verificará hash de assets.');
+      manifest = { entries: [] };
+    }
+    const toPosix = (p) => String(p || '').replace(/\\/g, '/');
+    const idxByAsset = new Map(
+      (manifest.entries || []).map(e => [toPosix(e.module_asset || ''), e])
+    );
+
+    const sanitizeRel = (rel) => {
+      const r = String(rel || '').trim();
+      if (!r) return '';
+      if (!/^[a-z0-9_\-\/\.]+$/i.test(r)) return '';
+      const full = path.resolve(path.join(baseModules, r));
+      if (!full.startsWith(baseModules)) return '';
+      return { full, relPosix: toPosix(rel) };
     };
+    const readUtf8 = (full) => {
+      try { return fs.readFileSync(full, 'utf8'); } catch (_) { return ''; }
+    };
+    const sha256Hex = (buf) => crypto.createHash('sha256').update(buf, 'utf8').digest('hex');
 
     const verified = [];
-    for (const t of tests) {
-      const h = hashModule(t.codigo_principal, t.codigo_grafico);
-      const hashOk = trusted[String(t.id)] === h || trusted[t.nombre_interno] === h;
-      let sigOk = false;
-      try {
-        const canonical = JSON.stringify({ principal: t.codigo_principal || '', grafico: t.codigo_grafico || '' });
-        const sigB64 = signatures[String(t.id)] || signatures[t.nombre_interno];
-        if (sigB64 && publicKey) {
-          const sigBuf = Buffer.from(sigB64, 'base64');
-          sigOk = crypto.verify('sha256', Buffer.from(canonical, 'utf8'), publicKey, sigBuf);
-        }
-      } catch (_) { sigOk = false; }
-      if (hashOk && sigOk) {
-        verified.push(t);
-      } else {
-        const motivo = !hashOk ? 'hash_mismatch' : 'signature_invalid_or_missing';
-        console.warn(`[SEC] Módulo omitido id=${t.id} (${t.nombre_interno}) - ${motivo}`);
-        try {
-          await db.run(`
-            INSERT INTO logs_sistema (usuario_id, accion, detalle)
-            VALUES ($1, 'modulo_omitido', $2);
-          `, [usuario_id || null, `id=${t.id} nombre=${t.nombre_interno} motivo=${motivo}`]);
-        } catch (_) {}
+    for (const t of testsRaw) {
+      const modPath = sanitizeRel(t.module_asset);
+      if (!modPath) {
+        console.warn(`[Modules] Ruta inválida para módulo id=${t.id} (${t.nombre_interno}): ${t.module_asset}`);
+        continue;
       }
+      const mf = idxByAsset.get(modPath.relPosix);
+      if (!mf) {
+        console.warn(`[Modules] module_asset no listado en manifest: ${modPath.relPosix}`);
+        continue;
+      }
+      if (mf.id && String(mf.id) !== String(t.id)) {
+        console.warn(`[Modules] ID no coincide con manifest para ${modPath.relPosix} (mf.id=${mf.id} != ${t.id})`);
+        continue;
+      }
+      if (mf.nombre_interno && mf.nombre_interno !== t.nombre_interno) {
+        console.warn(`[Modules] nombre_interno no coincide con manifest para ${modPath.relPosix}`);
+        continue;
+      }
+      const principal = readUtf8(modPath.full);
+      if (!principal) {
+        console.warn(`[Modules] No se pudo leer archivo de módulo: ${modPath.full}`);
+        continue;
+      }
+      if (mf.sha256_module) {
+        const h = sha256Hex(principal);
+        if (h !== String(mf.sha256_module)) {
+          console.warn(`[Modules] Hash mismatch para ${modPath.relPosix}. esperado=${mf.sha256_module} obtuvo=${h}`);
+          continue;
+        }
+      }
+      let grafico = '';
+      if (t.graph_asset) {
+        const grPath = sanitizeRel(t.graph_asset);
+        if (!grPath) {
+          console.warn(`[Modules] graph_asset inválido para id=${t.id} (${t.nombre_interno}): ${t.graph_asset}`);
+          continue;
+        }
+        grafico = readUtf8(grPath.full);
+        if (mf.sha256_graph) {
+          const hg = sha256Hex(grafico);
+          if (hg !== String(mf.sha256_graph)) {
+            console.warn(`[Modules] Hash mismatch graph para ${grPath.relPosix}. esperado=${mf.sha256_graph} obtuvo=${hg}`);
+            continue;
+          }
+        }
+      }
+      verified.push({ id: t.id, nombre_interno: t.nombre_interno, codigo_principal: principal, codigo_grafico: grafico });
     }
-
     if (verified.length === 0) {
-      throw new Error("Ningún módulo verificado para ejecutar. Revise modules/_common/trusted_tests.json.");
+      throw new Error("No se pudo cargar ningún módulo desde assets. Verifique module_asset/graph_asset y el manifiesto.");
     }
 
     // Crear JSON temporal con inputs + módulos verificados
@@ -587,12 +637,7 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
       tipo_analisis,
       catalog_ids,
       df_ingreso: rows,
-      tests: verified.map(t => ({
-        id: t.id,
-        nombre_interno: t.nombre_interno,
-        codigo_principal: t.codigo_principal,
-        codigo_grafico: t.codigo_grafico,
-      })),
+      tests: verified.map(t => ({ id: t.id, nombre_interno: t.nombre_interno, codigo_principal: t.codigo_principal, codigo_grafico: t.codigo_grafico })),
     };
     // Carpeta aislada como cwd del proceso Python
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cerper_eval_'));

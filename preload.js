@@ -40,22 +40,7 @@ contextBridge.exposeInMainWorld('cerper', {
 
 // Exponer configuración de iconos (leer archivos locales de forma segura)
 contextBridge.exposeInMainWorld('iconConfig', {
-  getTrustedIcons: () => {
-    try {
-      const p = path.join(__dirname, 'js', 'security', 'trusted_icons.json');
-      const raw = fs.readFileSync(p, 'utf8');
-      return JSON.parse(raw);
-    } catch (_) {
-      return {};
-    }
-  },
-  getIconPublicKey: () => {
-    try {
-      const p = path.join(__dirname, 'js', 'security', 'icon_public_key.json');
-      const raw = fs.readFileSync(p, 'utf8');
-      return JSON.parse(raw);
-    } catch (_) {
-      return {};
-    }
-  }
+  // Lucide-only mode: no trusted list nor public key required
+  getTrustedIcons: async () => ({}),
+  getIconPublicKey: () => ({})
 });
