@@ -59,10 +59,15 @@ function main(){
   for (const [dir, rec] of byDir.entries()){
     if (!rec.main) continue;
     const entry = {
+      // catalog-level identifier (tests_catalog.id)
       id: (mapping[dir] && mapping[dir].id) || null,
+      // module-level identifier (test_modules.id)
+      module_id: (mapping[dir] && mapping[dir].module_id) || null,
       nombre_interno: (mapping[dir] && mapping[dir].nombre_interno) || null,
+      version: (mapping[dir] && mapping[dir].version) || null,
       module_asset: rec.main,
       graph_asset: rec.graph || null,
+      runtime: (mapping[dir] && mapping[dir].runtime) || null,
       sha256_module: '',
       sha256_graph: ''
     };
@@ -78,4 +83,3 @@ function main(){
 }
 
 if (require.main === module) main();
-

@@ -461,7 +461,7 @@ ipcMain.handle("db-get-sessions-by-role", async (event, { rol, labDefault }) => 
 ipcMain.handle("db-get-evaluaciones", async (event, { lab_key, tipo_analisis, tipo_dato, modo_cualitativo }) => {
   try {
     const rows = await db.all(`
-      SELECT 
+      SELECT DISTINCT
         t.id, t.nombre_interno, t.titulo, t.categoria, t.descripcion,
         -- Solo permitimos lucide. Sanitizamos el nombre dejando [a-z0-9-]
         CASE
@@ -475,11 +475,11 @@ ipcMain.handle("db-get-evaluaciones", async (event, { lab_key, tipo_analisis, ti
           ELSE NULL
         END AS icon_lib_sanitized
       FROM tests_catalog t
+      JOIN test_modules m ON m.catalog_id = t.id AND m.activo = true
       WHERE t.lab_key = $1
         AND t.tipo_analisis = $2
         AND t.tipo_dato = $3
         AND (t.modo_cualitativo IS NULL OR t.modo_cualitativo = $4)
-        AND t.activo = true
       ORDER BY t.id ASC;
     `, [lab_key, tipo_analisis, tipo_dato, modo_cualitativo || null]);
 
@@ -517,118 +517,70 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
     // Obtener inputs de la sesión
     let rows = [];
     if (tipo_analisis === "multi" || tipo_analisis === "multianalito") {
+      // Multianalito: enviar solo analito, parametro, lectura_idx, valor
       rows = await db.all(`
-        SELECT analito, parametro, lectura_idx, valor,
-               unidad, tipo_dato, modo_cualitativo, comentario
+        SELECT analito, parametro, lectura_idx, valor
         FROM inputs_multianalito
         WHERE session_id = $1 AND valido = true
         ORDER BY parametro, analito, lectura_idx;
       `, [session_id]);
     } else {
+      // Monoanalito: enviar solo parametro, lectura_idx, valor
       rows = await db.all(`
-        SELECT analito, parametro, lectura_idx, valor,
-               unidad, tipo_dato, modo_cualitativo, comentario
+        SELECT parametro, lectura_idx, valor
         FROM inputs_monoanalito
         WHERE session_id = $1 AND valido = true
         ORDER BY parametro, lectura_idx;
       `, [session_id]);
     }
 
-    // Obtener módulos Python por asset (ruta relativa empaquetada)
+    // Resolver módulos por versión actual (test_modules.id = module_id)
     const testsRaw = await db.all(`
-      SELECT t.id, t.nombre_interno, m.module_asset, m.graph_asset
+      SELECT t.id AS catalog_id,
+             t.nombre_interno,
+             m.module_id,
+             m.version
       FROM tests_catalog t
-      JOIN test_modules m ON m.catalog_id = t.id
-      WHERE t.id IN (${catalog_ids.map((_, i) => `$${i + 1}`).join(",")})
-        AND m.activo = true;
+      JOIN LATERAL (
+        SELECT m2.id AS module_id, m2.version
+        FROM test_modules m2
+        WHERE m2.catalog_id = t.id AND m2.activo = true
+        ORDER BY COALESCE(m2.fecha_publicacion, m2.id) DESC
+        LIMIT 1
+      ) m ON true
+      WHERE t.id IN (${catalog_ids.map((_, i) => `$${i + 1}`).join(",")});
     `, catalog_ids);
 
     if (!testsRaw || testsRaw.length === 0)
       throw new Error("No se encontró código asociado a las evaluaciones seleccionadas.");
-    const fs = require("fs");
-    const os = require("os");
-    const crypto = require("crypto");
+    // Cargar manifest para validar existencia de module_id
+    const fs = require('fs');
     const baseModules = path.resolve(path.join(__dirname, 'modules'));
-
     let manifest = { entries: [] };
     try {
       const mfPath = path.join(baseModules, '_common', 'modules_manifest.json');
       const raw = fs.readFileSync(mfPath, 'utf8');
       manifest = JSON.parse(raw);
-    } catch (e) {
-      console.warn('[Modules] No se pudo cargar modules_manifest.json; no se verificará hash de assets.');
-      manifest = { entries: [] };
-    }
-    const toPosix = (p) => String(p || '').replace(/\\/g, '/');
-    const idxByAsset = new Map(
-      (manifest.entries || []).map(e => [toPosix(e.module_asset || ''), e])
-    );
-
-    const sanitizeRel = (rel) => {
-      const r = String(rel || '').trim();
-      if (!r) return '';
-      if (!/^[a-z0-9_\-\/\.]+$/i.test(r)) return '';
-      const full = path.resolve(path.join(baseModules, r));
-      if (!full.startsWith(baseModules)) return '';
-      return { full, relPosix: toPosix(rel) };
-    };
-    const readUtf8 = (full) => {
-      try { return fs.readFileSync(full, 'utf8'); } catch (_) { return ''; }
-    };
-    const sha256Hex = (buf) => crypto.createHash('sha256').update(buf, 'utf8').digest('hex');
+    } catch (_) { manifest = { entries: [] }; }
+    const byModuleId = new Map((manifest.entries || []).filter(e => e && e.module_id != null).map(e => [String(e.module_id), e]));
 
     const verified = [];
     for (const t of testsRaw) {
-      const modPath = sanitizeRel(t.module_asset);
-      if (!modPath) {
-        console.warn(`[Modules] Ruta inválida para módulo id=${t.id} (${t.nombre_interno}): ${t.module_asset}`);
-        continue;
-      }
-      const mf = idxByAsset.get(modPath.relPosix);
+      const mf = byModuleId.get(String(t.module_id));
       if (!mf) {
-        console.warn(`[Modules] module_asset no listado en manifest: ${modPath.relPosix}`);
+        console.warn(`[Modules] No hay entrada en manifest para module_id=${t.module_id} (catalog_id=${t.catalog_id})`);
         continue;
       }
-      if (mf.id && String(mf.id) !== String(t.id)) {
-        console.warn(`[Modules] ID no coincide con manifest para ${modPath.relPosix} (mf.id=${mf.id} != ${t.id})`);
-        continue;
-      }
-      if (mf.nombre_interno && mf.nombre_interno !== t.nombre_interno) {
-        console.warn(`[Modules] nombre_interno no coincide con manifest para ${modPath.relPosix}`);
-        continue;
-      }
-      const principal = readUtf8(modPath.full);
-      if (!principal) {
-        console.warn(`[Modules] No se pudo leer archivo de módulo: ${modPath.full}`);
-        continue;
-      }
-      if (mf.sha256_module) {
-        const h = sha256Hex(principal);
-        if (h !== String(mf.sha256_module)) {
-          console.warn(`[Modules] Hash mismatch para ${modPath.relPosix}. esperado=${mf.sha256_module} obtuvo=${h}`);
-          continue;
-        }
-      }
-      let grafico = '';
-      if (t.graph_asset) {
-        const grPath = sanitizeRel(t.graph_asset);
-        if (!grPath) {
-          console.warn(`[Modules] graph_asset inválido para id=${t.id} (${t.nombre_interno}): ${t.graph_asset}`);
-          continue;
-        }
-        grafico = readUtf8(grPath.full);
-        if (mf.sha256_graph) {
-          const hg = sha256Hex(grafico);
-          if (hg !== String(mf.sha256_graph)) {
-            console.warn(`[Modules] Hash mismatch graph para ${grPath.relPosix}. esperado=${mf.sha256_graph} obtuvo=${hg}`);
-            continue;
-          }
-        }
-      }
-      verified.push({ id: t.id, nombre_interno: t.nombre_interno, codigo_principal: principal, codigo_grafico: grafico });
+      verified.push({
+        module_id: t.module_id,
+        catalog_id: t.catalog_id,
+        nombre_interno: t.nombre_interno,
+        version: t.version,
+        runtime: mf.runtime || null
+      });
     }
     if (verified.length === 0) {
-      throw new Error("No se pudo cargar ningún módulo desde assets. Verifique module_asset/graph_asset y el manifiesto.");
+      throw new Error("No se pudo resolver ningún módulo en el manifest por module_id.");
     }
 
     // Crear JSON temporal con inputs + módulos verificados
@@ -637,37 +589,65 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
       tipo_analisis,
       catalog_ids,
       df_ingreso: rows,
-      tests: verified.map(t => ({ id: t.id, nombre_interno: t.nombre_interno, codigo_principal: t.codigo_principal, codigo_grafico: t.codigo_grafico })),
+      tests: verified.map(t => ({ module_id: t.module_id, catalog_id: t.catalog_id, nombre_interno: t.nombre_interno, version: t.version, runtime: t.runtime || null })),
     };
     // Carpeta aislada como cwd del proceso Python
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cerper_eval_'));
     const tempPath = path.join(tempDir, `eval_${session_id}.json`);
     fs.writeFileSync(tempPath, JSON.stringify(tempData, null, 2), "utf8");
 
-    // Ejecutar proceso Python con mayor aislamiento
+    // Ejecutar proceso Python (Docker opcional)
     const PY_TIMEOUT_MS = 20000;
-    const python = spawn(
-      "python",
-      [
-        "-I", // modo aislado: ignora variables de entorno del usuario y sys.path externos
-        "-B", // no escribir .pyc
-        "./modules/_common/eval_runner_secure.py",
-        tempPath,
-      ],
-      {
-        cwd: tempDir,
-        env: {
-          PYTHONIOENCODING: "utf-8",
-          PYTHONUNBUFFERED: "1",
-          HTTP_PROXY: "",
-          HTTPS_PROXY: "",
-          NO_PROXY: "*",
-          PATH: process.env.SystemRoot ? path.join(process.env.SystemRoot, 'System32') : '',
-          SystemRoot: process.env.SystemRoot || undefined,
-        },
-        windowsHide: true,
+    const useDocker = process.env.CERPER_USE_DOCKER === '1' || !!process.env.CERPER_DOCKER_IMAGE;
+    let python;
+    if (useDocker) {
+      const image = process.env.CERPER_DOCKER_IMAGE || 'cerper-eval:latest';
+      const dockerArgs = [
+        'run','--rm',
+        '--network','none',
+        '--cpus','1',
+        '--memory','512m',
+        '--pids-limit','128',
+        '--read-only',
+        // Montar carpeta de trabajo temporal en modo solo-lectura (protege el JSON de entrada)
+        '-v', `${tempDir}:/work:ro`,
+        '-w', '/work',
+        '-e','PYTHONIOENCODING=utf-8',
+        '-e','PYTHONUNBUFFERED=1',
+        image,
+        'python','-I','-B','/app/modules/_common/eval_runner_secure.py',
+        path.join('/work', path.basename(tempPath))
+      ];
+      // Solo monta los módulos del host si se solicita explícitamente (no recomendado en producción)
+      if (process.env.CERPER_DOCKER_MOUNT_MODULES === '1') {
+        dockerArgs.splice(10, 0, '-v', `${baseModules}:/app/modules:ro`);
       }
-    );
+      console.log('[EVAL] Ejecutando en Docker:', image);
+      python = spawn('docker', dockerArgs, { windowsHide: true });
+    } else {
+      python = spawn(
+        'python',
+        [
+          '-I', // modo aislado: ignora variables de entorno del usuario y sys.path externos
+          '-B', // no escribir .pyc
+          './modules/_common/eval_runner_secure.py',
+          tempPath,
+        ],
+        {
+          cwd: tempDir,
+          env: {
+            PYTHONIOENCODING: 'utf-8',
+            PYTHONUNBUFFERED: '1',
+            HTTP_PROXY: '',
+            HTTPS_PROXY: '',
+            NO_PROXY: '*',
+            PATH: process.env.SystemRoot ? path.join(process.env.SystemRoot, 'System32') : '',
+            SystemRoot: process.env.SystemRoot || undefined,
+          },
+          windowsHide: true,
+        }
+      );
+    }
 
     return await new Promise((resolve) => {
       let output = "";

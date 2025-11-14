@@ -1,0 +1,30 @@
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONIOENCODING=utf-8 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+
+# Librerías científicas preinstaladas (ajusta versiones según necesidad)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        libatlas-base-dev \
+        gfortran \
+    && rm -rf /var/lib/apt/lists/* \
+ && pip install --no-cache-dir \
+        numpy \
+        pandas \
+        scipy \
+        statsmodels \
+ && useradd -m -u 10001 -s /usr/sbin/nologin appuser
+
+WORKDIR /app
+USER 10001:10001
+
+# Los módulos y el JSON temporal se montan por volumen en tiempo de ejecución
+# Ejemplo de ejecución:
+# docker run --rm --network none --cpus 1 --memory 512m --pids-limit 128 \
+#   -v "C:\\path\\to\\modules:/app/modules:ro" \
+#   -v "C:\\path\\to\\temp:/work:rw" -w /work \
+#   cerper-eval:latest python -I -B /app/modules/_common/eval_runner_secure.py /work/eval.json
+
