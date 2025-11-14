@@ -1,0 +1,9 @@
+{
+  "python/normalidad": {
+    "id": 1,
+    "module_id": 1,
+    "nombre_interno": "normalidad",
+    "version": "1.0.0",
+    "runtime": "stats"
+  }
+}

@@ -1,6 +1,7 @@
 // main.js
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const os = require('os');
 const { spawn } = require('child_process');
 let mainWindow;
 // Estado de autenticación en memoria (fuente de verdad)
@@ -545,7 +546,7 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
         SELECT m2.id AS module_id, m2.version
         FROM test_modules m2
         WHERE m2.catalog_id = t.id AND m2.activo = true
-        ORDER BY COALESCE(m2.fecha_publicacion, m2.id) DESC
+        ORDER BY m2.fecha_publicacion DESC NULLS LAST, m2.id DESC
         LIMIT 1
       ) m ON true
       WHERE t.id IN (${catalog_ids.map((_, i) => `$${i + 1}`).join(",")});
@@ -598,7 +599,7 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
 
     // Ejecutar proceso Python (Docker opcional)
     const PY_TIMEOUT_MS = 20000;
-    const useDocker = process.env.CERPER_USE_DOCKER === '1' || !!process.env.CERPER_DOCKER_IMAGE;
+    const useDocker = true;
     let python;
     if (useDocker) {
       const image = process.env.CERPER_DOCKER_IMAGE || 'cerper-eval:latest';
@@ -619,31 +620,38 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
         path.join('/work', path.basename(tempPath))
       ];
       // Solo monta los módulos del host si se solicita explícitamente (no recomendado en producción)
-      if (process.env.CERPER_DOCKER_MOUNT_MODULES === '1') {
+      if (true) {
         dockerArgs.splice(10, 0, '-v', `${baseModules}:/app/modules:ro`);
       }
       console.log('[EVAL] Ejecutando en Docker:', image);
       python = spawn('docker', dockerArgs, { windowsHide: true });
     } else {
+      const baseModules = path.resolve(path.join(__dirname, 'modules'));
+      const runnerPath = path.join(baseModules, '_common', 'main.py');
+      const pythonExe = (process.env.CERPER_PYTHON_EXE || 'python').trim();
+      const isPyLauncher = /(^|[\\/])py(\.exe)?$/i.test(pythonExe);
+      const envVars = {
+        ...process.env,
+        PYTHONIOENCODING: 'utf-8',
+        PYTHONUNBUFFERED: '1',
+        HTTP_PROXY: '',
+        HTTPS_PROXY: '',
+        NO_PROXY: '*',
+      };
+      const args = [];
+      if (isPyLauncher) args.push('-3');
+      args.push(
+        '-I', // modo aislado: ignora variables de entorno del usuario y sys.path externos
+        '-B', // no escribir .pyc
+        runnerPath,
+        tempPath,
+      );
       python = spawn(
-        'python',
-        [
-          '-I', // modo aislado: ignora variables de entorno del usuario y sys.path externos
-          '-B', // no escribir .pyc
-          './modules/_common/main.py',
-          tempPath,
-        ],
+        pythonExe,
+        args,
         {
           cwd: tempDir,
-          env: {
-            PYTHONIOENCODING: 'utf-8',
-            PYTHONUNBUFFERED: '1',
-            HTTP_PROXY: '',
-            HTTPS_PROXY: '',
-            NO_PROXY: '*',
-            PATH: process.env.SystemRoot ? path.join(process.env.SystemRoot, 'System32') : '',
-            SystemRoot: process.env.SystemRoot || undefined,
-          },
+          env: envVars,
           windowsHide: true,
         }
       );
@@ -667,7 +675,11 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
 
         if (code === 0) {
           try {
-            const results = JSON.parse(output.trim());
+            const payload = JSON.parse(output.trim());
+            const results = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.results) ? payload.results : []);
+            if (!Array.isArray(results)) {
+              throw new Error('Salida Python inválida: results no es un arreglo');
+            }
 
             // Guardar resultados en results_general
             for (const r of results) {

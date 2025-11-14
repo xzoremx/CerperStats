@@ -25,7 +25,14 @@ function sha256Hex(s){ return crypto.createHash('sha256').update(s, 'utf8').dige
 function walk(dir){
   const out = [];
   for (const e of fs.readdirSync(dir, { withFileTypes: true })){
-    if (e.name === '_common') continue;
+    // Excluir carpetas no relevantes / entornos
+    if (
+      e.name === '_common' ||
+      e.name === 'vendor' ||
+      e.name === 'node_modules' ||
+      e.name === 'venv' ||
+      e.name.startsWith('.') // .env, .venv, etc.
+    ) continue;
     const p = path.join(dir, e.name);
     if (e.isDirectory()) out.push(...walk(p));
     else out.push(p);
@@ -45,10 +52,20 @@ function main(){
   }
   const files = walk(modulesDir);
   const entries = [];
-  // Heurística: cada carpeta con main.py se considera un módulo; si hay graph.py lo añadimos
+  // HeurÃ­stica: cada carpeta con module.py se considera un mÃ³dulo; si hay graph.py lo aÃ±adimos
   const byDir = new Map();
   for (const f of files){
     const rel = path.relative(modulesDir, f).replace(/\\/g,'/');
+    // Filtrar rutas vendorizadas/entornos y limitar a python/
+    if (
+      rel.startsWith('_common/') ||
+      rel.startsWith('vendor/') ||
+      rel.startsWith('.env/') ||
+      rel.includes('/site-packages/') ||
+      rel.includes('/dist-packages/') ||
+      rel.includes('/Lib/site-packages/')
+    ) continue;
+    if (!rel.startsWith('python/')) continue;
     const base = path.dirname(rel);
     const name = path.basename(rel);
     if (!byDir.has(base)) byDir.set(base, {});
@@ -66,13 +83,13 @@ function main(){
       nombre_interno: (mapping[dir] && mapping[dir].nombre_interno) || null,
       version: (mapping[dir] && mapping[dir].version) || null,
       module_asset: rec.main,
-      // Nuevo nombre preferido para el script de gráfico
+      // Nuevo nombre preferido para el script de grÃ¡fico
       script_grafico: rec.graph || null,
       // Campo legacy para compatibilidad
       graph_asset: rec.graph || null,
       runtime: (mapping[dir] && mapping[dir].runtime) || null,
       sha256_module: '',
-      // Nuevo nombre preferido para el hash del script de gráfico
+      // Nuevo nombre preferido para el hash del script de grÃ¡fico
       sha256_script_grafico: '',
       // Campo legacy
       sha256_graph: ''
@@ -94,3 +111,4 @@ function main(){
 }
 
 if (require.main === module) main();
+
