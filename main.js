@@ -597,11 +597,10 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
     const tempPath = path.join(tempDir, `eval_${session_id}.json`);
     fs.writeFileSync(tempPath, JSON.stringify(tempData, null, 2), "utf8");
 
-    // Ejecutar proceso Python (Docker opcional)
+    // Ejecutar proceso Python (Docker-only)
     const PY_TIMEOUT_MS = 20000;
-    const useDocker = true;
     let python;
-    if (useDocker) {
+    {
       const image = process.env.CERPER_DOCKER_IMAGE || 'cerper-eval:latest';
       const dockerArgs = [
         'run','--rm',
@@ -625,36 +624,6 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
       }
       console.log('[EVAL] Ejecutando en Docker:', image);
       python = spawn('docker', dockerArgs, { windowsHide: true });
-    } else {
-      const baseModules = path.resolve(path.join(__dirname, 'modules'));
-      const runnerPath = path.join(baseModules, '_common', 'main.py');
-      const pythonExe = (process.env.CERPER_PYTHON_EXE || 'python').trim();
-      const isPyLauncher = /(^|[\\/])py(\.exe)?$/i.test(pythonExe);
-      const envVars = {
-        ...process.env,
-        PYTHONIOENCODING: 'utf-8',
-        PYTHONUNBUFFERED: '1',
-        HTTP_PROXY: '',
-        HTTPS_PROXY: '',
-        NO_PROXY: '*',
-      };
-      const args = [];
-      if (isPyLauncher) args.push('-3');
-      args.push(
-        '-I', // modo aislado: ignora variables de entorno del usuario y sys.path externos
-        '-B', // no escribir .pyc
-        runnerPath,
-        tempPath,
-      );
-      python = spawn(
-        pythonExe,
-        args,
-        {
-          cwd: tempDir,
-          env: envVars,
-          windowsHide: true,
-        }
-      );
     }
 
     return await new Promise((resolve) => {
