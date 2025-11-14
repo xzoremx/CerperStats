@@ -25,3 +25,6 @@ icon_signing_private.pem
 # Postgresql credentials
 .env
    
+#Libraries
+modules/.env/
+modules/_common/vendor/

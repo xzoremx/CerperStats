@@ -75,6 +75,63 @@ def detect_env_site_packages(modules_root: Path):
     return sp_paths
 
 
+def detect_vendor_site_packages(modules_common: Path, platform_tag: str, runtime: str | None):
+    """
+    Detecta rutas de "site-packages" dentro de vendor según el SO/arquitectura.
+
+    Estructuras soportadas (en orden de prioridad):
+      - vendor/<runtime>/<os_bucket>/site-packages
+      - vendor/<runtime>/<platform_tag>/site-packages
+      - vendor/<os_bucket>/site-packages
+      - vendor/<platform_tag>/site-packages
+    Fallbacks (si no existe subcarpeta site-packages):
+      - vendor/<runtime>/<os_bucket>
+      - vendor/<runtime>/<platform_tag>
+      - vendor/<os_bucket>
+      - vendor/<platform_tag>
+
+    Donde os_bucket ∈ {windows, linux, mac}. También se admite vendor/linux_mac
+    como bucket genérico para Linux y Mac.
+    """
+    vendor_root = modules_common / "vendor"
+    if not vendor_root.is_dir():
+        return []
+
+    # Mapear platform_tag a bucket general
+    pt = (platform_tag or "").lower()
+    if pt.startswith("win"):
+        os_bucket = "windows"
+    elif pt.startswith("mac") or pt == "darwin":
+        os_bucket = "mac"
+    else:
+        os_bucket = "linux"
+
+    buckets = [os_bucket, platform_tag]
+    # Bucket combinado opcional linux_mac
+    if os_bucket in ("linux", "mac"):
+        buckets.insert(0, "linux_mac")
+
+    candidate_dirs = []
+
+    def add_if_dir(p: Path):
+        if p.is_dir():
+            candidate_dirs.append(p)
+
+    # Con site-packages explícito
+    for b in buckets:
+        if runtime:
+            add_if_dir(vendor_root / runtime / b / "site-packages")
+        add_if_dir(vendor_root / b / "site-packages")
+
+    # Fallback sin site-packages
+    for b in buckets:
+        if runtime:
+            add_if_dir(vendor_root / runtime / b)
+        add_if_dir(vendor_root / b)
+
+    return candidate_dirs
+
+
 # ==========================
 # Plataforma / vendor
 # ==========================
@@ -438,12 +495,23 @@ def run_single_module(
         if "site-packages" not in str(p) and "dist-packages" not in str(p)
     ]
 
-    # 1) Prioridad máxima: site-packages del entorno .env
-    env_sp = detect_env_site_packages(modules_root_resolved)
-    for p in reversed(env_sp):
-        new_sys_path.insert(0, str(p))
+    # 1) Prioridad: vendor/<platform>/site-packages si existe
+    vendor_sp = detect_vendor_site_packages(
+        modules_common=modules_common,
+        platform_tag=platform_tag,
+        runtime=runtime,
+    )
 
-    # 2) No usar vendor: sólo .env/site-packages y stdlib baseline
+    if vendor_sp:
+        for p in reversed(vendor_sp):
+            new_sys_path.insert(0, str(p))
+        log_err(f"[EVAL] Usando vendor site-packages: {vendor_sp[0]}")
+    else:
+        # 2) Fallback: site-packages del entorno .env
+        env_sp = detect_env_site_packages(modules_root_resolved)
+        for p in reversed(env_sp):
+            new_sys_path.insert(0, str(p))
+        log_err("[EVAL] vendor no encontrado; usando .env site-packages")
 
     # Aplicar sys.path definitivo
     sys.path = new_sys_path
