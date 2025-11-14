@@ -432,21 +432,18 @@ def run_single_module(
     # --- ENTORNO CONTROLADO PARA EL MÓDULO ---
     modules_root_resolved = modules_root.resolve()
 
-    # Reset sys.path to baseline (limpia)
-    new_sys_path = list(baseline_sys_path)
+    # Reset sys.path a baseline sin otros site/dist-packages
+    new_sys_path = [
+        p for p in baseline_sys_path
+        if "site-packages" not in str(p) and "dist-packages" not in str(p)
+    ]
 
     # 1) Prioridad máxima: site-packages del entorno .env
     env_sp = detect_env_site_packages(modules_root_resolved)
     for p in reversed(env_sp):
         new_sys_path.insert(0, str(p))
 
-    # 2) vendor (si lo usas)
-    new_sys_path = make_sys_path_with_vendor(
-     baseline_sys_path=new_sys_path,
-     modules_common=modules_common,
-     runtime=test.get("runtime") or manifest_entry.get("runtime"),
-     platform_tag=platform_tag,
-    )
+    # 2) No usar vendor: sólo .env/site-packages y stdlib baseline
 
     # Aplicar sys.path definitivo
     sys.path = new_sys_path
