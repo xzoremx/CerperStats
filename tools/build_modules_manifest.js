@@ -66,13 +66,24 @@ function main(){
       nombre_interno: (mapping[dir] && mapping[dir].nombre_interno) || null,
       version: (mapping[dir] && mapping[dir].version) || null,
       module_asset: rec.main,
+      // Nuevo nombre preferido para el script de gráfico
+      script_grafico: rec.graph || null,
+      // Campo legacy para compatibilidad
       graph_asset: rec.graph || null,
       runtime: (mapping[dir] && mapping[dir].runtime) || null,
       sha256_module: '',
+      // Nuevo nombre preferido para el hash del script de gráfico
+      sha256_script_grafico: '',
+      // Campo legacy
       sha256_graph: ''
     };
     try { entry.sha256_module = sha256Hex(fs.readFileSync(path.join(modulesDir, rec.main), 'utf8')); } catch(_) {}
-    if (rec.graph){ try { entry.sha256_graph = sha256Hex(fs.readFileSync(path.join(modulesDir, rec.graph), 'utf8')); } catch(_) {}
+    if (rec.graph){
+      try {
+        const ghex = sha256Hex(fs.readFileSync(path.join(modulesDir, rec.graph), 'utf8'));
+        entry.sha256_script_grafico = ghex;
+        entry.sha256_graph = ghex; // legacy
+      } catch(_) {}
     }
     entries.push(entry);
   }

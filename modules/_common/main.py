@@ -526,17 +526,8 @@ def run_single_module(
         with redirect_stdout(stdout_buffer):
             module_ns = runpy.run_path(str(mod_path), init_globals=local_vars)
 
-        # grafico_data opcional
+        # grafico_data: sólo se rellena si existe script_grafico (ver más abajo)
         grafico_data = ""
-        if "grafico_data" in module_ns and module_ns["grafico_data"] is not None:
-            g = module_ns["grafico_data"]
-            if isinstance(g, str):
-                grafico_data = g
-            else:
-                try:
-                    grafico_data = json.dumps(g, ensure_ascii=False)
-                except TypeError:
-                    grafico_data = str(g)
 
         # Resultado principal: SOLO DataFrame (df_resultado). Ignorar stdout.
         df_res = module_ns.get("df_resultado")
@@ -550,6 +541,100 @@ def run_single_module(
                 "nombre": nombre,
                 "error": "El módulo no produjo df_resultado (DataFrame)",
             }
+
+        # Ejecutar script gráfico si está definido (script_grafico o graph_asset)
+        script_grafico = manifest_entry.get("script_grafico") or manifest_entry.get("graph_asset")
+        if script_grafico:
+            # 1) Validar ruta segura
+            if not is_safe_rel_path(script_grafico):
+                log_err(f"[EVAL] Ruta de gráfico inválida: {script_grafico}")
+                return {
+                    "ok": False,
+                    "module_id": module_id,
+                    "catalog_id": catalog_id,
+                    "nombre": nombre,
+                    "error": f"Ruta de gráfico inválida: {script_grafico}",
+                }
+
+            # 2) Resolver y asegurar que esté dentro de modules/
+            graph_path = (modules_root / script_grafico).resolve()
+            if not graph_path.is_file():
+                log_err(f"[EVAL] Archivo de gráfico no encontrado: {graph_path}")
+                return {
+                    "ok": False,
+                    "module_id": module_id,
+                    "catalog_id": catalog_id,
+                    "nombre": nombre,
+                    "error": f"Archivo de gráfico no encontrado: {graph_path}",
+                }
+            if not str(graph_path).startswith(str(modules_root.resolve())):
+                log_err(f"[EVAL] Ruta de gráfico fuera de la carpeta 'modules': {graph_path}")
+                return {
+                    "ok": False,
+                    "module_id": module_id,
+                    "catalog_id": catalog_id,
+                    "nombre": nombre,
+                    "error": "Ruta de gráfico fuera de la carpeta 'modules'",
+                }
+
+            # 3) Verificar SHA-256 del gráfico si está presente en el manifest
+            graph_hash_actual = compute_sha256_text(graph_path).lower()
+            mf_graph_hash = (
+                manifest_entry.get("sha256_script_grafico")
+                or manifest_entry.get("sha256_graph")
+            )
+            if mf_graph_hash and str(mf_graph_hash).lower() != graph_hash_actual:
+                log_err(
+                    f"[EVAL] Hash mismatch (manifest) para gráfico {graph_path}. Esperado={mf_graph_hash} Actual={graph_hash_actual}"
+                )
+                return {
+                    "ok": False,
+                    "module_id": module_id,
+                    "catalog_id": catalog_id,
+                    "nombre": nombre,
+                    "error": "Verificación SHA-256 del gráfico contra manifest fallida",
+                }
+
+            # Warnings si el payload trae hash opcional (nuevos o legacy)
+            for key in ("hash_script_grafico", "sha256_script_grafico", "hash_graph", "sha256_graph"):
+                if test.get(key) and str(test[key]).lower() != graph_hash_actual:
+                    log_err(
+                        f"[EVAL] Aviso: hash de gráfico en payload no coincide (ignorado). Payload={test.get(key)} Actual={graph_hash_actual}"
+                    )
+
+            # 4) Ejecutar el gráfico con contexto controlado
+            vars_grafico = {
+                "pd": pd,
+                "np": np,
+                "math": math,
+                "statistics": statistics,
+                "df_ingreso": df_ingreso,
+                "df_raw": df_raw,
+                "df_resultado": df_res,
+                "resultado_pc": resultado_pc,
+            }
+            try:
+                graph_ns = runpy.run_path(str(graph_path), init_globals=vars_grafico)
+                g = graph_ns.get("grafico_data")
+                if g is None:
+                    grafico_data = ""
+                elif isinstance(g, str):
+                    grafico_data = g
+                else:
+                    try:
+                        grafico_data = json.dumps(g, ensure_ascii=False)
+                    except TypeError:
+                        grafico_data = str(g)
+            except Exception as ge:
+                log_err(f"[EVAL] Error ejecutando gráfico para {nombre}: {ge}")
+                traceback.print_exc(file=sys.stderr)
+                return {
+                    "ok": False,
+                    "module_id": module_id,
+                    "catalog_id": catalog_id,
+                    "nombre": nombre,
+                    "error": f"Error ejecutando gráfico: {ge}",
+                }
 
         # Validar grafico_data si existe (base64)
         if grafico_data:
