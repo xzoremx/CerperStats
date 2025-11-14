@@ -27,6 +27,10 @@ from copy import deepcopy
 from contextlib import redirect_stdout
 from pathlib import Path
 import platform as _platform
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
 
 # --- Dependencias opcionales ---
 try:
@@ -232,7 +236,7 @@ def is_valid_base64_payload(value: str) -> bool:
 # ==========================
 # Preparación del DataFrame de ingreso
 # ==========================
-def prepare_input_dataframe(df_raw: "pd.DataFrame", tipo_analisis: str) -> "pd.DataFrame":
+def prepare_input_dataframe(df_raw: "DataFrame", tipo_analisis: str) -> "DataFrame":
     """Construye el DataFrame que consumen los módulos a partir de df_ingreso_raw.
 
     - Monoanalito: columnas = parámetros; filas = lectura_idx; valores = valor
@@ -327,7 +331,7 @@ def run_single_module(
     manifest_entry: dict,
     modules_root: Path,
     modules_common: Path,
-    df_base: "pd.DataFrame",
+    df_base: "DataFrame",
     baseline_sys_path,
     platform_tag: str,
 ) -> dict:
