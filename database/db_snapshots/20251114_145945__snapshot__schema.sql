@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Jgk4zQYPgTlkC7nZT24rvajWlngkhxZhJD28qQKR9hKg7JNFheCicBmdyX6y2HJ
+\restrict 86lpg7f7ZJTTwPHFeOqsH7UjdqqP1J4fnv0SJ84EHtlIJeu6oYPnWr2HgwOntnM
 
 -- Dumped from database version 18.0
 -- Dumped by pg_dump version 18.0
@@ -130,161 +130,84 @@ $$;
 ALTER FUNCTION public.actualizar_timestamp_usuarios() OWNER TO postgres;
 
 --
--- Name: calcular_hash_test_modules(); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: normalize_icon_lib(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.calcular_hash_test_modules() RETURNS trigger
+CREATE FUNCTION public.normalize_icon_lib() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
+    AS $_$
 BEGIN
-  NEW.code_hash :=
-    encode(
-      digest(
-        coalesce(NEW.codigo_principal, '') ||
-        coalesce(NEW.codigo_grafico, ''),
-        'sha256'
-      ),
-      'hex'
+  IF NEW.icon_lib IS NULL OR btrim(NEW.icon_lib) = '' OR NEW.icon_lib ~* '^\s*<svg' THEN
+    NEW.icon_lib := 'lucide:bar-chart-2';
+  ELSIF NEW.icon_lib ~* '^\s*lucide:' THEN
+    NEW.icon_lib := 'lucide:' || regexp_replace(
+      regexp_replace(lower(substring(NEW.icon_lib from '^\s*lucide:(.*)$')), '\s+', '', 'g'),
+      '[^a-z0-9-]', '', 'g'
     );
+    IF NEW.icon_lib = 'lucide:' THEN
+      NEW.icon_lib := 'lucide:bar-chart-2';
+    END IF;
+  ELSE
+    NEW.icon_lib := 'lucide:bar-chart-2';
+  END IF;
   RETURN NEW;
+END $_$;
+
+
+ALTER FUNCTION public.normalize_icon_lib() OWNER TO postgres;
+
+--
+-- Name: set_updated_at(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.set_updated_at() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$ BEGIN NEW.actualizado_en := NOW(); RETURN NEW; END $$;
+
+
+ALTER FUNCTION public.set_updated_at() OWNER TO postgres;
+
+--
+-- Name: test_module_increment_exec(integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.test_module_increment_exec(p_catalog_id integer) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  UPDATE public.test_modules
+     SET exec_count = exec_count + 1,
+         last_executed_at = NOW()
+   WHERE catalog_id = p_catalog_id
+     AND activo = TRUE;
 END;
 $$;
 
 
-ALTER FUNCTION public.calcular_hash_test_modules() OWNER TO postgres;
+ALTER FUNCTION public.test_module_increment_exec(p_catalog_id integer) OWNER TO postgres;
 
 --
--- Name: calcular_hash_tests_catalog(); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: test_modules_increment_exec(integer[]); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.calcular_hash_tests_catalog() RETURNS trigger
+CREATE FUNCTION public.test_modules_increment_exec(p_catalog_ids integer[]) RETURNS void
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  NEW.icon_hash :=
-    encode(
-      digest(
-        coalesce(NEW.icon_svg, '') ||
-        coalesce(NEW.icon_css, '') ||
-        coalesce(NEW.icon_js, ''),
-        'sha256'
-      ),
-      'hex'
-    );
-  RETURN NEW;
+  UPDATE public.test_modules
+     SET exec_count = exec_count + 1,
+         last_executed_at = NOW()
+   WHERE catalog_id = ANY (p_catalog_ids)
+     AND activo = TRUE;
 END;
 $$;
 
 
-ALTER FUNCTION public.calcular_hash_tests_catalog() OWNER TO postgres;
-
---
--- Name: forbid_update_signed_columns_tc(); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.forbid_update_signed_columns_tc() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  IF (OLD.icon_hash IS DISTINCT FROM NEW.icon_hash)
-     OR (OLD.icon_sig  IS DISTINCT FROM NEW.icon_sig) THEN
-    RAISE EXCEPTION 'Campos firmados son inmutables (tests_catalog)';
-  END IF;
-  RETURN NEW;
-END $$;
-
-
-ALTER FUNCTION public.forbid_update_signed_columns_tc() OWNER TO postgres;
-
---
--- Name: forbid_update_signed_columns_tm(); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.forbid_update_signed_columns_tm() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  IF (OLD.code_hash IS DISTINCT FROM NEW.code_hash)
-     OR (OLD.code_sig  IS DISTINCT FROM NEW.code_sig) THEN
-    RAISE EXCEPTION 'Campos firmados son inmutables (test_modules)';
-  END IF;
-  RETURN NEW;
-END $$;
-
-
-ALTER FUNCTION public.forbid_update_signed_columns_tm() OWNER TO postgres;
-
---
--- Name: limpiar_hash_si_revocado_tc(); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.limpiar_hash_si_revocado_tc() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  IF NEW.icon_revoked = TRUE THEN
-    NEW.icon_hash := NULL;
-    NEW.icon_sig  := NULL;
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-
-ALTER FUNCTION public.limpiar_hash_si_revocado_tc() OWNER TO postgres;
-
---
--- Name: limpiar_hash_si_revocado_tm(); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.limpiar_hash_si_revocado_tm() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  IF NEW.revoked = TRUE THEN
-    NEW.code_hash := NULL;
-    NEW.code_sig  := NULL;
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-
-ALTER FUNCTION public.limpiar_hash_si_revocado_tm() OWNER TO postgres;
+ALTER FUNCTION public.test_modules_increment_exec(p_catalog_ids integer[]) OWNER TO postgres;
 
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
-
---
--- Name: allowed_icon_hashes; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.allowed_icon_hashes (
-    hash character(64) NOT NULL,
-    active boolean DEFAULT true,
-    revoked boolean DEFAULT false,
-    note text,
-    created_at timestamp with time zone DEFAULT now()
-);
-
-
-ALTER TABLE public.allowed_icon_hashes OWNER TO postgres;
-
---
--- Name: allowed_module_hashes; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.allowed_module_hashes (
-    hash character(64) NOT NULL,
-    active boolean DEFAULT true,
-    revoked boolean DEFAULT false,
-    note text,
-    created_at timestamp with time zone DEFAULT now()
-);
-
-
-ALTER TABLE public.allowed_module_hashes OWNER TO postgres;
 
 --
 -- Name: inputs_monoanalito; Type: TABLE; Schema: public; Owner: postgres
@@ -645,6 +568,19 @@ ALTER SEQUENCE public.results_general_id_seq OWNED BY public.results_general.id;
 
 
 --
+-- Name: session_selected_tests; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.session_selected_tests (
+    session_id integer NOT NULL,
+    catalog_id integer NOT NULL,
+    selected_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.session_selected_tests OWNER TO postgres;
+
+--
 -- Name: sessions; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -701,63 +637,21 @@ CREATE TABLE public.test_modules (
     id integer NOT NULL,
     catalog_id integer NOT NULL,
     version text DEFAULT 'v1.0'::text,
-    lenguaje text DEFAULT 'python'::text,
-    seguridad text DEFAULT 'sandbox'::text,
-    parametros_json jsonb,
-    metricas_json jsonb,
-    codigo_principal text,
-    codigo_dependencias text,
-    doc_tecnica text,
+    parametros_json jsonb DEFAULT '{}'::jsonb NOT NULL,
+    metricas_json jsonb DEFAULT '{}'::jsonb NOT NULL,
     autor text DEFAULT 'zorem'::text,
     fecha_publicacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     obsoleto_en timestamp without time zone,
     activo boolean DEFAULT true,
-    codigo_grafico text,
-    requisitos_json jsonb DEFAULT '{}'::jsonb,
-    code_hash character(64),
-    code_sig text,
-    active boolean DEFAULT false,
-    revoked boolean DEFAULT false,
-    published_at timestamp with time zone DEFAULT now(),
-    published_by integer,
-    CONSTRAINT tm_active_requires_sig_hash CHECK (((active = false) OR ((code_hash IS NOT NULL) AND (code_sig IS NOT NULL))))
+    requisitos_json jsonb DEFAULT '{}'::jsonb NOT NULL,
+    selected boolean DEFAULT false NOT NULL,
+    exec_count integer DEFAULT 0 NOT NULL,
+    last_executed_at timestamp with time zone,
+    CONSTRAINT chk_test_modules_exec_count_nonneg CHECK ((exec_count >= 0))
 );
 
 
 ALTER TABLE public.test_modules OWNER TO postgres;
-
---
--- Name: test_modules_approved; Type: VIEW; Schema: public; Owner: postgres
---
-
-CREATE VIEW public.test_modules_approved AS
- SELECT id,
-    catalog_id,
-    version,
-    lenguaje,
-    seguridad,
-    parametros_json,
-    metricas_json,
-    codigo_principal,
-    codigo_dependencias,
-    doc_tecnica,
-    autor,
-    fecha_publicacion,
-    obsoleto_en,
-    activo,
-    codigo_grafico,
-    requisitos_json,
-    code_hash,
-    code_sig,
-    active,
-    revoked,
-    published_at,
-    published_by
-   FROM public.test_modules
-  WHERE ((active = true) AND (revoked = false));
-
-
-ALTER VIEW public.test_modules_approved OWNER TO postgres;
 
 --
 -- Name: test_modules_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -795,40 +689,14 @@ CREATE TABLE public.tests_catalog (
     titulo text,
     categoria text,
     descripcion text,
-    version_actual text DEFAULT '1.0'::text,
-    activo boolean DEFAULT true,
-    creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    icon_lib text DEFAULT 'bar-chart-2'::text,
-    icon_svg text,
-    icon_css text,
-    icon_js text,
-    icon_sig text,
-    icon_hash character(64),
-    icon_active boolean DEFAULT false,
-    icon_revoked boolean DEFAULT false,
-    CONSTRAINT icon_active_requires_sig_hash CHECK (((icon_active = false) OR ((icon_hash IS NOT NULL) AND (icon_sig IS NOT NULL))))
+    creado_en timestamp without time zone DEFAULT now() NOT NULL,
+    actualizado_en timestamp without time zone DEFAULT now() NOT NULL,
+    icon_lib text DEFAULT 'lucide:bar-chart-2'::text NOT NULL,
+    CONSTRAINT icon_lib_lucide_only CHECK (((icon_lib ~ '^[a-z]*:?lucide:[a-z0-9][a-z0-9-]*$'::text) OR (icon_lib ~ '^lucide:[a-z0-9][a-z0-9-]*$'::text)))
 );
 
 
 ALTER TABLE public.tests_catalog OWNER TO postgres;
-
---
--- Name: tests_catalog_icons_approved; Type: VIEW; Schema: public; Owner: postgres
---
-
-CREATE VIEW public.tests_catalog_icons_approved AS
- SELECT id,
-    icon_svg,
-    icon_css,
-    icon_js,
-    icon_sig,
-    icon_hash
-   FROM public.tests_catalog
-  WHERE ((icon_active = true) AND (icon_revoked = false));
-
-
-ALTER VIEW public.tests_catalog_icons_approved OWNER TO postgres;
 
 --
 -- Name: tests_catalog_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -952,22 +820,6 @@ ALTER TABLE ONLY public.usuarios ALTER COLUMN id SET DEFAULT nextval('public.usu
 
 
 --
--- Name: allowed_icon_hashes allowed_icon_hashes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.allowed_icon_hashes
-    ADD CONSTRAINT allowed_icon_hashes_pkey PRIMARY KEY (hash);
-
-
---
--- Name: allowed_module_hashes allowed_module_hashes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.allowed_module_hashes
-    ADD CONSTRAINT allowed_module_hashes_pkey PRIMARY KEY (hash);
-
-
---
 -- Name: inputs_monoanalito inputs_monoanalito_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1040,6 +892,14 @@ ALTER TABLE ONLY public.results_general
 
 
 --
+-- Name: session_selected_tests session_selected_tests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.session_selected_tests
+    ADD CONSTRAINT session_selected_tests_pkey PRIMARY KEY (session_id, catalog_id);
+
+
+--
 -- Name: sessions sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1064,11 +924,27 @@ ALTER TABLE ONLY public.tests_catalog
 
 
 --
+-- Name: test_modules uq_test_modules_catalog_version; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.test_modules
+    ADD CONSTRAINT uq_test_modules_catalog_version UNIQUE (catalog_id, version);
+
+
+--
 -- Name: tests_catalog uq_test_nombre; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.tests_catalog
     ADD CONSTRAINT uq_test_nombre UNIQUE (lab_key, nombre_interno);
+
+
+--
+-- Name: tests_catalog uq_tests_catalog_lab_nombre; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tests_catalog
+    ADD CONSTRAINT uq_tests_catalog_lab_nombre UNIQUE (lab_key, nombre_interno);
 
 
 --
@@ -1200,24 +1076,45 @@ CREATE INDEX idx_rtl_session ON public.reports_tests_link USING btree (session_i
 
 
 --
--- Name: idx_test_modules_active; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_test_modules_activo; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_test_modules_active ON public.test_modules USING btree (active) WHERE (active = true);
-
-
---
--- Name: idx_test_modules_hash; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_test_modules_hash ON public.test_modules USING btree (code_hash);
+CREATE INDEX idx_test_modules_activo ON public.test_modules USING btree (activo) WHERE (activo = true);
 
 
 --
--- Name: idx_tests_catalog_icon_hash; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_test_modules_catalog; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_tests_catalog_icon_hash ON public.tests_catalog USING btree (icon_hash);
+CREATE INDEX idx_test_modules_catalog ON public.test_modules USING btree (catalog_id);
+
+
+--
+-- Name: idx_test_modules_selected; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_test_modules_selected ON public.test_modules USING btree (selected);
+
+
+--
+-- Name: idx_tests_catalog_lab; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_tests_catalog_lab ON public.tests_catalog USING btree (lab_key, tipo_analisis, tipo_dato);
+
+
+--
+-- Name: idx_tests_catalog_nombre; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_tests_catalog_nombre ON public.tests_catalog USING btree (nombre_interno);
+
+
+--
+-- Name: uq_tm_one_active_per_test; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX uq_tm_one_active_per_test ON public.test_modules USING btree (catalog_id) WHERE (activo = true);
 
 
 --
@@ -1236,34 +1133,6 @@ CREATE OR REPLACE VIEW public.reports_with_tests AS
      LEFT JOIN public.reports_tests_link rtl ON ((r.id = rtl.report_id)))
      LEFT JOIN public.tests_catalog c ON ((rtl.catalog_id = c.id)))
   GROUP BY r.id;
-
-
---
--- Name: test_modules tr_auto_hash_test_modules; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER tr_auto_hash_test_modules BEFORE INSERT OR UPDATE ON public.test_modules FOR EACH ROW EXECUTE FUNCTION public.calcular_hash_test_modules();
-
-
---
--- Name: tests_catalog tr_auto_hash_tests_catalog; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER tr_auto_hash_tests_catalog BEFORE INSERT OR UPDATE ON public.tests_catalog FOR EACH ROW EXECUTE FUNCTION public.calcular_hash_tests_catalog();
-
-
---
--- Name: tests_catalog tr_clear_hash_if_revoked_tc; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER tr_clear_hash_if_revoked_tc BEFORE UPDATE ON public.tests_catalog FOR EACH ROW EXECUTE FUNCTION public.limpiar_hash_si_revocado_tc();
-
-
---
--- Name: test_modules tr_clear_hash_if_revoked_tm; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER tr_clear_hash_if_revoked_tm BEFORE UPDATE ON public.test_modules FOR EACH ROW EXECUTE FUNCTION public.limpiar_hash_si_revocado_tm();
 
 
 --
@@ -1288,13 +1157,6 @@ CREATE TRIGGER tr_update_sessions BEFORE UPDATE ON public.sessions FOR EACH ROW 
 
 
 --
--- Name: test_modules tr_update_test_modules; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER tr_update_test_modules BEFORE UPDATE ON public.test_modules FOR EACH ROW EXECUTE FUNCTION public.actualizar_fecha_publicacion();
-
-
---
 -- Name: tests_catalog tr_update_tests_catalog; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -1309,17 +1171,17 @@ CREATE TRIGGER tr_update_usuarios BEFORE UPDATE ON public.usuarios FOR EACH ROW 
 
 
 --
--- Name: tests_catalog trg_forbid_update_signed_tc; Type: TRIGGER; Schema: public; Owner: postgres
+-- Name: tests_catalog trg_normalize_icon_lib; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
-CREATE TRIGGER trg_forbid_update_signed_tc BEFORE UPDATE ON public.tests_catalog FOR EACH ROW EXECUTE FUNCTION public.forbid_update_signed_columns_tc();
+CREATE TRIGGER trg_normalize_icon_lib BEFORE INSERT OR UPDATE OF icon_lib ON public.tests_catalog FOR EACH ROW EXECUTE FUNCTION public.normalize_icon_lib();
 
 
 --
--- Name: test_modules trg_forbid_update_signed_tm; Type: TRIGGER; Schema: public; Owner: postgres
+-- Name: tests_catalog trg_tests_catalog_updated; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
-CREATE TRIGGER trg_forbid_update_signed_tm BEFORE UPDATE ON public.test_modules FOR EACH ROW EXECUTE FUNCTION public.forbid_update_signed_columns_tm();
+CREATE TRIGGER trg_tests_catalog_updated BEFORE UPDATE ON public.tests_catalog FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
 --
@@ -1475,6 +1337,14 @@ ALTER TABLE ONLY public.tests_catalog
 
 
 --
+-- Name: test_modules fk_test_modules_catalog; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.test_modules
+    ADD CONSTRAINT fk_test_modules_catalog FOREIGN KEY (catalog_id) REFERENCES public.tests_catalog(id) ON DELETE CASCADE;
+
+
+--
 -- Name: usuarios fk_usuario_lab; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1483,52 +1353,24 @@ ALTER TABLE ONLY public.usuarios
 
 
 --
--- Name: TABLE allowed_icon_hashes; Type: ACL; Schema: public; Owner: postgres
+-- Name: session_selected_tests session_selected_tests_catalog_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-GRANT SELECT ON TABLE public.allowed_icon_hashes TO app_reader;
-
-
---
--- Name: TABLE allowed_module_hashes; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT ON TABLE public.allowed_module_hashes TO app_reader;
+ALTER TABLE ONLY public.session_selected_tests
+    ADD CONSTRAINT session_selected_tests_catalog_id_fkey FOREIGN KEY (catalog_id) REFERENCES public.tests_catalog(id) ON DELETE CASCADE;
 
 
 --
--- Name: TABLE test_modules; Type: ACL; Schema: public; Owner: postgres
+-- Name: session_selected_tests session_selected_tests_session_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-GRANT SELECT ON TABLE public.test_modules TO app_reader;
-GRANT INSERT ON TABLE public.test_modules TO publisher;
-
-
---
--- Name: TABLE test_modules_approved; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT ON TABLE public.test_modules_approved TO app_reader;
-
-
---
--- Name: TABLE tests_catalog; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT ON TABLE public.tests_catalog TO app_reader;
-GRANT INSERT ON TABLE public.tests_catalog TO publisher;
-
-
---
--- Name: TABLE tests_catalog_icons_approved; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT ON TABLE public.tests_catalog_icons_approved TO app_reader;
+ALTER TABLE ONLY public.session_selected_tests
+    ADD CONSTRAINT session_selected_tests_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.sessions(id) ON DELETE CASCADE;
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Jgk4zQYPgTlkC7nZT24rvajWlngkhxZhJD28qQKR9hKg7JNFheCicBmdyX6y2HJ
+\unrestrict 86lpg7f7ZJTTwPHFeOqsH7UjdqqP1J4fnv0SJ84EHtlIJeu6oYPnWr2HgwOntnM
 
