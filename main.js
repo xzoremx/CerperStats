@@ -615,7 +615,7 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
         '-e','PYTHONIOENCODING=utf-8',
         '-e','PYTHONUNBUFFERED=1',
         image,
-        'python','-I','-B','/app/modules/_common/eval_runner_secure.py',
+        'python','-I','-B','/app/modules/_common/main.py',
         path.join('/work', path.basename(tempPath))
       ];
       // Solo monta los módulos del host si se solicita explícitamente (no recomendado en producción)
@@ -630,7 +630,7 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
         [
           '-I', // modo aislado: ignora variables de entorno del usuario y sys.path externos
           '-B', // no escribir .pyc
-          './modules/_common/eval_runner_secure.py',
+          './modules/_common/main.py',
           tempPath,
         ],
         {

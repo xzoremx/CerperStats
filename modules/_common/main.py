@@ -455,34 +455,22 @@ def run_single_module(
             "error": "Ruta de módulo fuera de la carpeta 'modules'",
         }
 
-    # Verificación de SHA-256
-    expected_hashes = []
-
-    # Desde payload
-    for key in ("hash_module", "sha256_module"):
-        if test.get(key):
-            expected_hashes.append(str(test[key]).lower())
-
-    # Desde manifest
+    # Verificación de SHA-256 (manifest manda; payload opcional)
+    actual_hash = compute_sha256_text(mod_path).lower()
     mf_hash = manifest_entry.get("sha256_module")
-    if mf_hash:
-        expected_hashes.append(str(mf_hash).lower())
-
-    if expected_hashes:
-        actual_hash = compute_sha256_text(mod_path).lower()
-        for h in expected_hashes:
-            if h != actual_hash:
-                log_err(
-                    f"[EVAL] Hash mismatch para {mod_path}. "
-                    f"Esperado={h} Actual={actual_hash}"
-                )
-                return {
-                    "ok": False,
-                    "module_id": module_id,
-                    "catalog_id": catalog_id,
-                    "nombre": nombre,
-                    "error": "Verificación SHA-256 fallida para el módulo",
-                }
+    if mf_hash and str(mf_hash).lower() != actual_hash:
+        log_err(f"[EVAL] Hash mismatch (manifest) para {mod_path}. Esperado={mf_hash} Actual={actual_hash}")
+        return {
+            "ok": False,
+            "module_id": module_id,
+            "catalog_id": catalog_id,
+            "nombre": nombre,
+            "error": "Verificación SHA-256 contra manifest fallida",
+        }
+    # Si viene hash en el payload y no coincide, advertimos pero no bloqueamos
+    for key in ("hash_module", "sha256_module"):
+        if test.get(key) and str(test[key]).lower() != actual_hash:
+            log_err(f"[EVAL] Aviso: hash de payload no coincide (ignorado). Payload={test.get(key)} Actual={actual_hash}")
 
     # Preparar entorno de import (vendor)
     runtime = test.get("runtime") or manifest_entry.get("runtime")
@@ -538,8 +526,6 @@ def run_single_module(
         with redirect_stdout(stdout_buffer):
             module_ns = runpy.run_path(str(mod_path), init_globals=local_vars)
 
-        stdout_content = stdout_buffer.getvalue().strip()
-
         # grafico_data opcional
         grafico_data = ""
         if "grafico_data" in module_ns and module_ns["grafico_data"] is not None:
@@ -552,28 +538,18 @@ def run_single_module(
                 except TypeError:
                     grafico_data = str(g)
 
-        # Resultado principal
-        if stdout_content:
-            ok_norm, norm_json, norm_err = normalize_stdout_records(stdout_content)
-            if not ok_norm:
-                return {
-                    "ok": False,
-                    "catalog_id": catalog_id,
-                    "nombre": nombre,
-                    "error": f"Salida stdout inválida: {norm_err}",
-                }
-            resultado_pc = norm_json
+        # Resultado principal: SOLO DataFrame (df_resultado). Ignorar stdout.
+        df_res = module_ns.get("df_resultado")
+        if df_res is not None and isinstance(df_res, pd.DataFrame):
+            resultado_pc = df_res.to_json(orient="records", force_ascii=False)
         else:
-            df_res = module_ns.get("df_resultado")
-            if df_res is not None and isinstance(df_res, pd.DataFrame):
-                resultado_pc = df_res.to_json(orient="records", force_ascii=False)
-            else:
-                return {
-                    "ok": False,
-                    "catalog_id": catalog_id,
-                    "nombre": nombre,
-                    "error": "El módulo no produjo salida (stdout) ni df_resultado",
-                }
+            return {
+                "ok": False,
+                "module_id": module_id,
+                "catalog_id": catalog_id,
+                "nombre": nombre,
+                "error": "El módulo no produjo df_resultado (DataFrame)",
+            }
 
         # Validar grafico_data si existe (base64)
         if grafico_data:
