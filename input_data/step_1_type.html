@@ -10,7 +10,7 @@
 <body>
   <header class="header">
     <img src="../assets/logos/cerper_logo.png" alt="CERPER" class="logo" />
-    <!-- 🔹 El título ahora se completa dinámicamente -->
+    <!-- El título ahora se completa dinámicamente -->
     <h1 id="lab-title">Modo de estructura de datos</h1>
     <p class="subtitle">Seleccione el tipo de estructura de datos</p>
   </header>
@@ -39,12 +39,12 @@
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
 
-      // 🔹 Recuperar los datos del laboratorio y procedimiento
+      // Recuperar los datos del laboratorio y procedimiento
       const labKey = sessionStorage.getItem("labSeleccionado") || localStorage.getItem("labSeleccionado");
       const labName = sessionStorage.getItem("labNombreVisible") || labKey;
       const proc = sessionStorage.getItem("procedimientoSeleccionado") || localStorage.getItem("procedimientoSeleccionado");
 
-      // 🔹 Actualizar el título
+      // Actualizar el título
       const labTitle = document.getElementById("lab-title");
       if (labTitle) {
         labTitle.textContent = `${labName} - ${proc}`;
