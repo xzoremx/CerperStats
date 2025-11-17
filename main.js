@@ -500,7 +500,7 @@ ipcMain.handle("db-get-evaluaciones", async (event, { lab_key, tipo_analisis, ti
 });
 
 
-// === Ejecutar evaluaciones seleccionadas (flujo con Python + guardado en results_general) ===
+// === Ejecutar evaluaciones seleccionadas (flujo HTTP remoto + guardado en results_general) ===
 ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids }) => {
   try {
     console.log("[EVAL] Ejecutar evaluaciones:", { session_id, catalog_ids });
@@ -554,6 +554,7 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
 
     if (!testsRaw || testsRaw.length === 0)
       throw new Error("No se encontró código asociado a las evaluaciones seleccionadas.");
+
     // Cargar manifest para validar existencia de module_id
     const fs = require('fs');
     const baseModules = path.resolve(path.join(__dirname, 'modules'));
@@ -563,7 +564,10 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
       const raw = fs.readFileSync(mfPath, 'utf8');
       manifest = JSON.parse(raw);
     } catch (_) { manifest = { entries: [] }; }
-    const byModuleId = new Map((manifest.entries || []).filter(e => e && e.module_id != null).map(e => [String(e.module_id), e]));
+    const byModuleId = new Map((manifest.entries || [])
+      .filter(e => e && e.module_id != null)
+      .map(e => [String(e.module_id), e])
+    );
 
     const verified = [];
     for (const t of testsRaw) {
@@ -580,125 +584,103 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
         runtime: mf.runtime || null
       });
     }
+
     if (verified.length === 0) {
       throw new Error("No se pudo resolver ningún módulo en el manifest por module_id.");
     }
 
-    // Crear JSON temporal con inputs + módulos verificados
+    // -------------------------------------------------------------------------
+    // -------------------- NUEVA IMPLEMENTACIÓN (HTTP REMOTO) -----------------
+    // -------------------------------------------------------------------------
+
+    // Payload para el servicio remoto de evaluaciones
     const tempData = {
       session_id,
       tipo_analisis,
       catalog_ids,
       df_ingreso: rows,
-      tests: verified.map(t => ({ module_id: t.module_id, catalog_id: t.catalog_id, nombre_interno: t.nombre_interno, version: t.version, runtime: t.runtime || null })),
+      tests: verified.map(t => ({
+        module_id: t.module_id,
+        catalog_id: t.catalog_id,
+        nombre_interno: t.nombre_interno,
+        version: t.version,
+        runtime: t.runtime || null,
+      })),
     };
-    // Carpeta aislada como cwd del proceso Python
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cerper_eval_'));
-    const tempPath = path.join(tempDir, `eval_${session_id}.json`);
-    fs.writeFileSync(tempPath, JSON.stringify(tempData, null, 2), "utf8");
 
-    // Ejecutar proceso Python (Docker-only)
-    const PY_TIMEOUT_MS = 20000;
-    let python;
-    {
-      const image = process.env.CERPER_DOCKER_IMAGE || 'cerper-eval:latest';
-      const dockerArgs = [
-        'run','--rm',
-        '--network','none',
-        '--cpus','1',
-        '--memory','512m',
-        '--pids-limit','128',
-        '--read-only',
-        // Montar carpeta de trabajo temporal en modo solo-lectura (protege el JSON de entrada)
-        '-v', `${tempDir}:/work:ro`,
-        '-w', '/work',
-        '-e','PYTHONIOENCODING=utf-8',
-        '-e','PYTHONUNBUFFERED=1',
-        image,
-        'python','-I','-B','/app/modules/_common/main.py',
-        path.join('/work', path.basename(tempPath))
-      ];
-      // Solo monta los módulos del host si se solicita explícitamente (no recomendado en producción)
-      if (true) {
-        dockerArgs.splice(10, 0, '-v', `${baseModules}:/app/modules:ro`);
+    const evalUrl = process.env.CERPER_EVAL_URL || "http://localhost:8000/run-eval";
+    const apiKey = process.env.CERPER_EVAL_API_KEY || "";
+
+    let payload;
+    try {
+      console.log("[EVAL] Llamando servicio remoto:", evalUrl);
+      const res = await fetch(evalUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(apiKey ? { "X-API-Key": apiKey } : {}),
+        },
+        body: JSON.stringify(tempData),
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`HTTP ${res.status} ${res.statusText} ${text}`);
       }
-      console.log('[EVAL] Ejecutando en Docker:', image);
-      python = spawn('docker', dockerArgs, { windowsHide: true });
+      payload = await res.json();
+    } catch (err) {
+      console.error("[EVAL] Error llamando servicio remoto:", err);
+      return { ok: false, error: String(err.message || err) };
     }
 
-    return await new Promise((resolve) => {
-      let output = "";
-      let error = "";
+    try {
+      const results = Array.isArray(payload)
+        ? payload
+        : (payload && Array.isArray(payload.results) ? payload.results : []);
+      if (!Array.isArray(results)) {
+        throw new Error("Salida evaluator inválida: results no es un arreglo");
+      }
 
-      python.stdout.on("data", (d) => (output += d.toString()));
-      python.stderr.on("data", (d) => (error += d.toString()));
-
-      const killTimer = setTimeout(() => {
-        try { python.kill(); } catch (_) {}
-      }, PY_TIMEOUT_MS);
-
-      python.on("close", async (code) => {
-        clearTimeout(killTimer);
-        try { fs.unlinkSync(tempPath); } catch (_) {}
-        try { fs.rmdirSync(tempDir); } catch (_) {}
-
-        if (code === 0) {
-          try {
-            const payload = JSON.parse(output.trim());
-            const results = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.results) ? payload.results : []);
-            if (!Array.isArray(results)) {
-              throw new Error('Salida Python inválida: results no es un arreglo');
-            }
-
-            // Guardar resultados en results_general
-            for (const r of results) {
-              if (!r.ok) {
-                console.warn(`[EVAL] Falló módulo ${r.nombre}: ${r.error}`);
-                continue;
-              }
-
-              await db.run(`
-                INSERT INTO results_general
-                (session_id, catalog_id, resultado_pc, grafico_data, creado_en, usuario_id)
-                VALUES ($1, $2, $3, $4, NOW(), $5);
-              `, [
-                session_id,
-                r.catalog_id,
-                r.resultado_pc,
-                r.grafico_data || "",
-                usuario_id
-              ]);
-              try {
-                await db.run(`
-                  INSERT INTO logs_sistema (usuario_id, accion, detalle)
-                  VALUES ($1, 'modulo_ejecutado', $2);
-                `, [usuario_id || null, `catalog_id=${r.catalog_id}`]);
-              } catch (_) {}
-            }
-
-            console.log(`[EVAL] Resultados guardados correctamente (${results.length} módulos).`);
-            resolve({ ok: true, count: results.length });
-
-          } catch (err) {
-            console.error("[EVAL] Error procesando salida Python:", err);
-            resolve({ ok: false, error: "Error procesando salida Python" });
-          }
-        } else {
-          console.error("[EVAL] Python error:", error || `Proceso finalizado con código ${code}`);
-          resolve({ ok: false, error });
+      // Guardar resultados en results_general
+      for (const r of results) {
+        if (!r.ok) {
+          console.warn(`[EVAL] Falló módulo ${r.nombre}: ${r.error}`);
+          continue;
         }
-      });
-    });
+
+        await db.run(`
+          INSERT INTO results_general
+          (session_id, catalog_id, resultado_pc, grafico_data, creado_en, usuario_id)
+          VALUES ($1, $2, $3, $4, NOW(), $5);
+        `, [
+          session_id,
+          r.catalog_id,
+          r.resultado_pc,
+          r.grafico_data || "",
+          usuario_id
+        ]);
+        try {
+          await db.run(`
+            INSERT INTO logs_sistema (usuario_id, accion, detalle)
+            VALUES ($1, 'modulo_ejecutado', $2);
+          `, [usuario_id || null, `catalog_id=${r.catalog_id}`]);
+        } catch (_) {}
+      }
+
+      console.log(`[EVAL] Resultados guardados correctamente (${results.length} módulos).`);
+      return { ok: true, count: results.length };
+
+    } catch (err) {
+      console.error("[EVAL] Error procesando salida evaluator:", err);
+      return { ok: false, error: "Error procesando salida evaluator" };
+    }
+
+    // -------------------------------------------------------------------------
 
   } catch (err) {
     console.error("[EVAL] Error ejecutando evaluaciones:", err);
     return { ok: false, error: err.message };
   }
 });
-
-
-
-
 
 
 
