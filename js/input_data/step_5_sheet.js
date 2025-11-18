@@ -1111,7 +1111,7 @@ if (btnBack) {
         removeKeys.forEach(k => sessionStorage.removeItem(k));
 
         notify("Volviendo al paso anterior...", "info");
-        setTimeout(() => window.cerper.openPage("input_data/step_4_k.html"), 900);
+        setTimeout(() => window.cerper.openPage("procedure_select.html"), 900);
       } catch (err) {
         console.error("[CerperStats] Error al reiniciar:", err);
         notify("Ocurrió un error al reiniciar.", "error");

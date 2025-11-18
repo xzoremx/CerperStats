@@ -1,19 +1,19 @@
 {
   "version": 1,
-  "generated_at": "2025-11-14T22:36:54.431Z",
+  "generated_at": "2025-11-18T16:50:59.414Z",
   "entries": [
     {
       "id": 1,
       "module_id": 1,
       "nombre_interno": "normalidad",
       "version": "1.0.0",
-      "module_asset": "python/normalidad/main.py",
-      "script_grafico": "python/normalidad/graph.py",
-      "graph_asset": "python/normalidad/graph.py",
+      "module_asset": "python/1/principal.py",
+      "script_grafico": "python/1/graph.py",
+      "graph_asset": "python/1/graph.py",
       "runtime": "stats",
-      "sha256_module": "697692cf0142a57df19ffc8f1eb8680330e5c774584bfb91cef579b4d7fb7bbf",
-      "sha256_script_grafico": "a06c91f28220f946cd4bbaea33a6bb1f53e93b85d4bffd2a91c768a9ba5bd7db",
-      "sha256_graph": "a06c91f28220f946cd4bbaea33a6bb1f53e93b85d4bffd2a91c768a9ba5bd7db"
+      "sha256_module": "1e98154db30c652e368906ed36ed23394f7daf14327fd9ce346156ffbb94eb86",
+      "sha256_script_grafico": "8cb9e3149e80aad4eafab7b6ab8eb026b477da9cd10fa31cb9ba119d35251b8f",
+      "sha256_graph": "8cb9e3149e80aad4eafab7b6ab8eb026b477da9cd10fa31cb9ba119d35251b8f"
     }
   ]
 }

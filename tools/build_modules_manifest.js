@@ -70,7 +70,7 @@ function main(){
     const name = path.basename(rel);
     if (!byDir.has(base)) byDir.set(base, {});
     const rec = byDir.get(base);
-    if (name.toLowerCase() === 'main.py') rec.main = rel;
+    if (name.toLowerCase() === 'principal.py') rec.main = rel;
     if (name.toLowerCase() === 'graph.py') rec.graph = rel;
   }
   for (const [dir, rec] of byDir.entries()){

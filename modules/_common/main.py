@@ -53,24 +53,43 @@ def log_err(msg: str) -> None:
 
 def detect_env_site_packages(modules_root: Path):
     """
-    Detecta site-packages dentro del entorno .env/
+    Detecta site-packages dentro de un entorno .env/ cercano.
     Compatible con Windows, Linux y Mac.
+
+    Busca en:
+      - modules_root/.env
+      - modules_root.parent/.env      (caso: proyecto/.env y modules/ como subcarpeta)
     """
-    sp_paths = []
+    sp_paths: list[Path] = []
+    seen: set[str] = set()
 
-    # Windows: .env/Lib/site-packages
-    win_sp = modules_root / ".env" / "Lib" / "site-packages"
-    if win_sp.is_dir():
-        sp_paths.append(win_sp)
+    def add_path(p: Path) -> None:
+        rp = str(p.resolve())
+        if p.is_dir() and rp not in seen:
+            seen.add(rp)
+            sp_paths.append(p)
 
-    # Linux/Mac: .env/lib/python3.x/site-packages
-    unix_lib = modules_root / ".env" / "lib"
-    if unix_lib.is_dir():
-        for sub in unix_lib.iterdir():
-            if sub.is_dir() and sub.name.startswith("python"):
-                sp = sub / "site-packages"
-                if sp.is_dir():
-                    sp_paths.append(sp)
+    # Candidatos de raíz de entorno virtual
+    env_roots = [
+        modules_root / ".env",
+        modules_root.parent / ".env",
+    ]
+
+    for env_root in env_roots:
+        if not env_root.is_dir():
+            continue
+
+        # Windows: .env/Lib/site-packages
+        win_sp = env_root / "Lib" / "site-packages"
+        add_path(win_sp)
+
+        # Linux/Mac: .env/lib/python3.x/site-packages
+        unix_lib = env_root / "lib"
+        if unix_lib.is_dir():
+            for sub in unix_lib.iterdir():
+                if sub.is_dir() and sub.name.startswith("python"):
+                    sp = sub / "site-packages"
+                    add_path(sp)
 
     return sp_paths
 
