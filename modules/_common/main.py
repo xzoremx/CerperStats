@@ -520,8 +520,8 @@ def run_single_module(
             new_sys_path.insert(0, str(p))
         log_err("[EVAL] vendor no encontrado; usando .env site-packages")
 
-    # Aplicar sys.path definitivo
-    sys.path = new_sys_path
+    # Aplicar sys.path definitivo: usar configuración original del intérprete
+    sys.path = list(baseline_sys_path)
 
 
     # Preparar locals para runpy

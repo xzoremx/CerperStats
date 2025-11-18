@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2025-11-18T16:50:59.414Z",
+  "generated_at": "2025-11-18T20:42:48.437Z",
   "entries": [
     {
       "id": 1,
@@ -12,8 +12,8 @@
       "graph_asset": "python/1/graph.py",
       "runtime": "stats",
       "sha256_module": "1e98154db30c652e368906ed36ed23394f7daf14327fd9ce346156ffbb94eb86",
-      "sha256_script_grafico": "8cb9e3149e80aad4eafab7b6ab8eb026b477da9cd10fa31cb9ba119d35251b8f",
-      "sha256_graph": "8cb9e3149e80aad4eafab7b6ab8eb026b477da9cd10fa31cb9ba119d35251b8f"
+      "sha256_script_grafico": "761a9f8157c45b288622e9d12cb71f517b57820db86f51924f75aa2e7b5654cb",
+      "sha256_graph": "761a9f8157c45b288622e9d12cb71f517b57820db86f51924f75aa2e7b5654cb"
     }
   ]
 }

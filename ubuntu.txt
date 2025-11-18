@@ -1,0 +1,65 @@
+Rutas importantes en Ubuntu
+
+Proyecto / runner:
+~/cerper-eval
+~/cerper-eval/modules/_common/main.py
+~/cerper-eval/modules/_common/modules_manifest.json
+Entorno virtual Python:
+~/cerper-eval/.env
+~/cerper-eval/.env/bin/python
+~/cerper-eval/.env/bin/pip
+Módulos de evaluación:
+~/cerper-eval/modules/python/<module_id>/main.py
+~/cerper-eval/modules/python/<module_id>/graph.py
+Servicio systemd
+
+Unit file:
+/etc/systemd/system/cerper-eval.service
+Configuración clave dentro del unit:
+WorkingDirectory=/home/ubuntu/cerper-eval
+ExecStart=/home/ubuntu/cerper-eval/.env/bin/python /home/ubuntu/cerper-eval/eval_service.py
+Environment="CERPER_EVAL_HOST=0.0.0.0"
+Environment="CERPER_EVAL_PORT=8000"
+Environment="CERPER_EVAL_API_KEY=PristonXzoreX105"
+Comandos útiles en la consola SSH (Ubuntu)
+
+Entrar al proyecto y activar venv:
+cd ~/cerper-eval
+source .env/bin/activate
+Instalar / actualizar librerías científicas:
+pip install --upgrade pip
+pip install numpy pandas scipy statsmodels
+Comprobar que el venv tiene SciPy y statsmodels:
+~/cerper-eval/.env/bin/python -c "import scipy, statsmodels; print('ok')"
+Ver módulos Python:
+cd ~/cerper-eval/modules/python
+ls
+ls -R
+cd ~/cerper-eval/modules/python/1
+ls
+Gestionar el servicio:
+sudo systemctl daemon-reload
+sudo systemctl enable cerper-eval.service
+sudo systemctl restart cerper-eval.service
+sudo systemctl status cerper-eval.service
+journalctl -u cerper-eval.service -f
+Comandos útiles desde Windows (PowerShell)
+
+Regenerar manifest:
+cd "C:\Users\renat\Desktop\Proyectos Electron\CerperStats"
+node tools/build_modules_manifest.js `
+  --modules modules `
+  --out modules/_common/modules_manifest.json `
+  --map modules/_common/modules_map.json
+Copiar manifest a Ubuntu:
+scp -i "$env:USERPROFILE\.ssh\LightsailDefaultKey-us-east-1.pem" `
+  "modules\_common\modules_manifest.json" `
+  ubuntu@34.205.174.87:~/cerper-eval/modules/_common/modules_manifest.json
+Copiar un módulo Python concreto (ej. module_id = 1):
+scp -i "$env:USERPROFILE\.ssh\LightsailDefaultKey-us-east-1.pem" `
+  -r "modules\python\1" `
+  ubuntu@34.205.174.87:~/cerper-eval/modules/python/
+Copiar el runner actualizado:
+scp -i "$env:USERPROFILE\.ssh\LightsailDefaultKey-us-east-1.pem" `
+  "modules\_common\main.py" `
+  ubuntu@34.205.174.87:~/cerper-eval/modules/_common/main.py
