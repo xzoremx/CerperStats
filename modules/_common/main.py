@@ -26,13 +26,14 @@ import traceback
 from copy import deepcopy
 from contextlib import redirect_stdout
 from pathlib import Path
-import platform as _platform
 from typing import TYPE_CHECKING
 
+
+
+# --- Dependencias opcionales ---
 if TYPE_CHECKING:
     from pandas import DataFrame
 
-# --- Dependencias opcionales ---
 try:
     import pandas as pd
 except ImportError:  # pragma: no cover
@@ -51,132 +52,7 @@ def log_err(msg: str) -> None:
     print(msg, file=sys.stderr, flush=True)
 
 
-def detect_env_site_packages(modules_root: Path):
-    """
-    Detecta site-packages dentro de un entorno .env/ cercano.
-    Compatible con Windows, Linux y Mac.
 
-    Busca en:
-      - modules_root/.env
-      - modules_root.parent/.env      (caso: proyecto/.env y modules/ como subcarpeta)
-    """
-    sp_paths: list[Path] = []
-    seen: set[str] = set()
-
-    def add_path(p: Path) -> None:
-        rp = str(p.resolve())
-        if p.is_dir() and rp not in seen:
-            seen.add(rp)
-            sp_paths.append(p)
-
-    # Candidatos de raíz de entorno virtual
-    env_roots = [
-        modules_root / ".env",
-        modules_root.parent / ".env",
-    ]
-
-    for env_root in env_roots:
-        if not env_root.is_dir():
-            continue
-
-        # Windows: .env/Lib/site-packages
-        win_sp = env_root / "Lib" / "site-packages"
-        add_path(win_sp)
-
-        # Linux/Mac: .env/lib/python3.x/site-packages
-        unix_lib = env_root / "lib"
-        if unix_lib.is_dir():
-            for sub in unix_lib.iterdir():
-                if sub.is_dir() and sub.name.startswith("python"):
-                    sp = sub / "site-packages"
-                    add_path(sp)
-
-    return sp_paths
-
-
-def detect_vendor_site_packages(modules_common: Path, platform_tag: str, runtime: str | None):
-    """
-    Detecta rutas de "site-packages" dentro de vendor según el SO/arquitectura.
-
-    Estructuras soportadas (en orden de prioridad):
-      - vendor/<runtime>/<os_bucket>/site-packages
-      - vendor/<runtime>/<platform_tag>/site-packages
-      - vendor/<os_bucket>/site-packages
-      - vendor/<platform_tag>/site-packages
-    Fallbacks (si no existe subcarpeta site-packages):
-      - vendor/<runtime>/<os_bucket>
-      - vendor/<runtime>/<platform_tag>
-      - vendor/<os_bucket>
-      - vendor/<platform_tag>
-
-    Donde os_bucket ∈ {windows, linux, mac}. También se admite vendor/linux_mac
-    como bucket genérico para Linux y Mac.
-    """
-    vendor_root = modules_common / "vendor"
-    if not vendor_root.is_dir():
-        return []
-
-    # Mapear platform_tag a bucket general
-    pt = (platform_tag or "").lower()
-    if pt.startswith("win"):
-        os_bucket = "windows"
-    elif pt.startswith("mac") or pt == "darwin":
-        os_bucket = "mac"
-    else:
-        os_bucket = "linux"
-
-    buckets = [os_bucket, platform_tag]
-    # Bucket combinado opcional linux_mac
-    if os_bucket in ("linux", "mac"):
-        buckets.insert(0, "linux_mac")
-
-    candidate_dirs = []
-
-    def add_if_dir(p: Path):
-        if p.is_dir():
-            candidate_dirs.append(p)
-
-    # Con site-packages explícito
-    for b in buckets:
-        if runtime:
-            add_if_dir(vendor_root / runtime / b / "site-packages")
-        add_if_dir(vendor_root / b / "site-packages")
-
-    # Fallback sin site-packages
-    for b in buckets:
-        if runtime:
-            add_if_dir(vendor_root / runtime / b)
-        add_if_dir(vendor_root / b)
-
-    return candidate_dirs
-
-
-# ==========================
-# Plataforma / vendor
-# ==========================
-def detect_platform_tag() -> str:
-    sys_plat = sys.platform.lower()
-    machine = _platform.machine().lower()
-
-    if sys_plat.startswith("win"):
-        if machine in ("amd64", "x86_64"):
-            return "win_amd64"
-        if "arm" in machine:
-            return "win_arm64"
-        return "win32"
-
-    if sys_plat == "darwin":
-        if "arm" in machine or "aarch64" in machine:
-            return "mac_arm64"
-        return "mac_x86_64"
-
-    # Linux u otros tipo Unix
-    if machine in ("x86_64", "amd64"):
-        return "linux_x86_64"
-    if machine in ("aarch64", "arm64"):
-        return "linux_aarch64"
-    # Fallback genérico
-    return f"linux_{machine or 'unknown'}"
 
 
 # ==========================
@@ -371,32 +247,7 @@ def prepare_input_dataframe(df_raw: "DataFrame", tipo_analisis: str) -> "DataFra
         return df
 
 
-# ==========================
-# Vendor sys.path handling
-# ==========================
-def make_sys_path_with_vendor(baseline_sys_path, modules_common: Path, runtime: str | None, platform_tag: str):
-    """
-    Construir un sys.path para el módulo:
 
-    - baseline limpio
-    - vendor por runtime+platform, luego sólo platform, luego vendor raíz.
-    """
-    vendor_root = modules_common / "vendor"
-    candidates = []
-
-    if runtime:
-        candidates.append(vendor_root / runtime / platform_tag)
-    candidates.append(vendor_root / platform_tag)
-    candidates.append(vendor_root)
-
-    new_sys_path = list(baseline_sys_path)
-
-    # Insertar al inicio en orden de prioridad
-    for path in reversed(candidates):
-        if path.is_dir():
-            new_sys_path.insert(0, str(path))
-
-    return new_sys_path
 
 
 # ==========================
@@ -408,8 +259,7 @@ def run_single_module(
     modules_root: Path,
     modules_common: Path,
     df_base: "DataFrame",
-    baseline_sys_path,
-    platform_tag: str,
+   
 ) -> dict:
     """
     Ejecuta un módulo específico y devuelve el resultado en el formato requerido.
@@ -491,38 +341,7 @@ def run_single_module(
         if test.get(key) and str(test[key]).lower() != actual_hash:
             log_err(f"[EVAL] Aviso: hash de payload no coincide (ignorado). Payload={test.get(key)} Actual={actual_hash}")
 
-    # Preparar entorno de import (vendor)
-    runtime = test.get("runtime") or manifest_entry.get("runtime")
-    # --- ENTORNO CONTROLADO PARA EL MÓDULO ---
-    modules_root_resolved = modules_root.resolve()
-
-    # Reset sys.path a baseline sin otros site/dist-packages
-    new_sys_path = [
-        p for p in baseline_sys_path
-        if "site-packages" not in str(p) and "dist-packages" not in str(p)
-    ]
-
-    # 1) Prioridad: vendor/<platform>/site-packages si existe
-    vendor_sp = detect_vendor_site_packages(
-        modules_common=modules_common,
-        platform_tag=platform_tag,
-        runtime=runtime,
-    )
-
-    if vendor_sp:
-        for p in reversed(vendor_sp):
-            new_sys_path.insert(0, str(p))
-        log_err(f"[EVAL] Usando vendor site-packages: {vendor_sp[0]}")
-    else:
-        # 2) Fallback: site-packages del entorno .env
-        env_sp = detect_env_site_packages(modules_root_resolved)
-        for p in reversed(env_sp):
-            new_sys_path.insert(0, str(p))
-        log_err("[EVAL] vendor no encontrado; usando .env site-packages")
-
-    # Aplicar sys.path definitivo: usar configuración original del intérprete
-    sys.path = list(baseline_sys_path)
-
+    
 
     # Preparar locals para runpy
     if pd is None:
@@ -760,8 +579,6 @@ def main(argv=None) -> int:
         traceback.print_exc(file=sys.stderr)
         return 1
 
-    baseline_sys_path = list(sys.path)
-    platform_tag = detect_platform_tag()
 
     results = []
     for test in tests:
@@ -775,8 +592,6 @@ def main(argv=None) -> int:
             modules_root=modules_root,
             modules_common=modules_common,
             df_base=df_base,
-            baseline_sys_path=baseline_sys_path,
-            platform_tag=platform_tag,
         )
         results.append(res)
 
