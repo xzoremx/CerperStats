@@ -12,8 +12,11 @@
     "electron": "^32.0.0"
   },
   "dependencies": {
+    "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
     "lucide": "^0.545.0",
     "pg": "^8.16.3",
     "sqlite": "^5.1.1",

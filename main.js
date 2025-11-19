@@ -608,18 +608,24 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
       })),
     };
 
-    const evalUrl = process.env.CERPER_EVAL_URL || "http://localhost:8000/run-eval";
+    const evalUrl =
+      process.env.CERPER_PROXY_URL ||
+      process.env.CERPER_EVAL_URL ||
+      "http://localhost:8000/run-eval";
+    const proxyToken = process.env.CERPER_PROXY_TOKEN || "";
     const apiKey = process.env.CERPER_EVAL_API_KEY || "";
 
     let payload;
     try {
       console.log("[EVAL] Llamando servicio remoto:", evalUrl);
+      const headers = {
+        "Content-Type": "application/json",
+        ...(proxyToken ? { Authorization: `Bearer ${proxyToken}` } : {}),
+        ...(apiKey ? { "X-API-Key": apiKey } : {}),
+      };
       const res = await fetch(evalUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(apiKey ? { "X-API-Key": apiKey } : {}),
-        },
+        headers,
         body: JSON.stringify(tempData),
       });
       if (!res.ok) {
