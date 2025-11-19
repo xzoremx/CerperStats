@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const pool = require('./db');
 
 const SECRET_PATH = path.resolve(__dirname, '../secrets/token_secret.txt');
 const SECRET = fs.readFileSync(SECRET_PATH, 'utf8').trim();
@@ -22,6 +23,17 @@ function verifyToken(req, res, next) {
     return res.status(401).json({ error: 'invalid_token' });
   }
 }
+
+app.get('/labs', verifyToken, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT lab_key, nombre, descripcion, color FROM labs WHERE activo = true ORDER BY id'
+    );
+    res.json({ ok: true, data: rows });
+  } catch (err) {
+    res.status(500).json({ error: 'db_error', details: err.message });
+  }
+});
 
 app.post('/run-eval', verifyToken, (req, res) => {
   const payload = req.body;
