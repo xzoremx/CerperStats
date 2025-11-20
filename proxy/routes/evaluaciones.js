@@ -81,6 +81,15 @@ router.post('/run', async (req, res) => {
     const tipo_analisis = session.tipo_analisis;
     const usuario_id = session.usuario_id;
 
+    // Auditoría de selección de catálogos en la sesión
+    await pool.query(
+      `INSERT INTO session_selected_tests (session_id, catalog_id, selected_at)
+       SELECT $1, cid, NOW()
+       FROM UNNEST($2::int[]) AS cid
+       ON CONFLICT (session_id, catalog_id) DO NOTHING`,
+      [session_id, catalog_ids]
+    );
+
     let dfIngreso = [];
     if (tipo_analisis === 'multi' || tipo_analisis === 'multianalito') {
       const { rows } = await pool.query(

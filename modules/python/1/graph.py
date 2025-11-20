@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# modules/python/1/graph.py
 
 """
 Histograma de normalidad (monoanalito).

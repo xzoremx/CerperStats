@@ -1,9 +1,6 @@
 {
-  "python/1": {
-    "id": 1,
-    "module_id": 1,
-    "nombre_interno": "normalidad",
-    "version": "1.0.0",
-    "runtime": "stats"
-  }
+  "python/1": { "id": 1, "module_id": 1, "nombre_interno": "normalidad", "version": "1.0.0", "runtime": "stats" },
+  "python/2": { "id": 2, "module_id": 2, "nombre_interno": "homogeneidad_varianzas", "version": "1.0.0", "runtime": "stats" },
+  "python/3": { "id": 3, "module_id": 3, "nombre_interno": "tendencia_central", "version": "1.0.0", "runtime": "stats" }
 }
+

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2025-11-19T14:35:46.373Z",
+  "generated_at": "2025-11-20T21:46:11.763Z",
   "entries": [
     {
       "id": 1,
@@ -11,9 +11,35 @@
       "script_grafico": "python/1/graph.py",
       "graph_asset": "python/1/graph.py",
       "runtime": "stats",
-      "sha256_module": "1e98154db30c652e368906ed36ed23394f7daf14327fd9ce346156ffbb94eb86",
-      "sha256_script_grafico": "3a35f5afe4f3f5f41b96d9be519a153691ef94b9c0264b0d9e2dc313cf9d586e",
-      "sha256_graph": "3a35f5afe4f3f5f41b96d9be519a153691ef94b9c0264b0d9e2dc313cf9d586e"
+      "sha256_module": "ee569ff0402ea8ab1c9cfc92b2dc9ce936a94a79beafd36f5160b0c3298b2fa6",
+      "sha256_script_grafico": "5fea0d6c357c500bb2c631a644223242b48516d8cb48c381cf77b8b00f6952b9",
+      "sha256_graph": "5fea0d6c357c500bb2c631a644223242b48516d8cb48c381cf77b8b00f6952b9"
+    },
+    {
+      "id": 2,
+      "module_id": 2,
+      "nombre_interno": "homogeneidad_varianzas",
+      "version": "1.0.0",
+      "module_asset": "python/2/principal.py",
+      "script_grafico": "python/2/graph.py",
+      "graph_asset": "python/2/graph.py",
+      "runtime": "stats",
+      "sha256_module": "4a58749b5962f298fcb15b9a686d242e0be54313af8be4f08ab26e7c2e8f613e",
+      "sha256_script_grafico": "37f6c9c313246932b8503bd5caab4e6e566c0d0d3803ba76bd7cfa46f2af500d",
+      "sha256_graph": "37f6c9c313246932b8503bd5caab4e6e566c0d0d3803ba76bd7cfa46f2af500d"
+    },
+    {
+      "id": 3,
+      "module_id": 3,
+      "nombre_interno": "tendencia_central",
+      "version": "1.0.0",
+      "module_asset": "python/3/principal.py",
+      "script_grafico": "python/3/graph.py",
+      "graph_asset": "python/3/graph.py",
+      "runtime": "stats",
+      "sha256_module": "dab8c686e2d19cc19bf811f60852b73870d0522d3dcb6bf2ebbd6af58bafbc55",
+      "sha256_script_grafico": "40f405d4b3172472b6c9cb50f9b9d4be4fcd80855ef750e703a3877a2eaf5314",
+      "sha256_graph": "40f405d4b3172472b6c9cb50f9b9d4be4fcd80855ef750e703a3877a2eaf5314"
     }
   ]
 }
