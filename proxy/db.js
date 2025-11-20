@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const { Pool } = require('pg');
 
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.env.local') });
 
 const certPath = path.resolve('/etc/postgresql/certs/server.crt');
 

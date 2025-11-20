@@ -1,16 +1,25 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
-const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const pool = require('./db');
+const labsRouter = require('./routes/labs');
+const inputsRouter = require('./routes/inputs');
+const sessionsRouter = require('./routes/sessions');
+const evaluacionesRouter = require('./routes/evaluaciones');
+const authRouter = require('./routes/auth');
+const runEvaluator = require('./lib/runEvaluator');
 
 const SECRET_PATH = path.resolve(__dirname, '../secrets/token_secret.txt');
 const SECRET = fs.readFileSync(SECRET_PATH, 'utf8').trim();
 
 const app = express();
 app.use(bodyParser.json({ limit: '2mb' }));
+app.use('/auth', authRouter);
+app.use('/labs', verifyToken, labsRouter);
+app.use('/inputs', verifyToken, inputsRouter);
+app.use('/sessions', verifyToken, sessionsRouter);
+app.use('/evaluaciones', verifyToken, evaluacionesRouter);
 
 function verifyToken(req, res, next) {
   const header = req.headers.authorization || '';
@@ -24,50 +33,20 @@ function verifyToken(req, res, next) {
   }
 }
 
-app.get('/labs', verifyToken, async (req, res) => {
-  try {
-    const { rows } = await pool.query(
-      'SELECT lab_key, nombre, descripcion, color FROM labs WHERE activo = true ORDER BY id'
-    );
-    res.json({ ok: true, data: rows });
-  } catch (err) {
-    res.status(500).json({ error: 'db_error', details: err.message });
-  }
-});
-
-app.post('/run-eval', verifyToken, (req, res) => {
+app.post('/run-eval', verifyToken, async (req, res) => {
   const payload = req.body;
   if (!payload || !payload.session_id) {
     return res.status(400).json({ error: 'invalid_payload' });
   }
-
-  const tmpDir = fs.mkdtempSync('/tmp/eval_');
-  const tmpPath = path.join(tmpDir, `eval_${Date.now()}.json`);
-  fs.writeFileSync(tmpPath, JSON.stringify(payload), 'utf8');
-
-  const runner = spawn('../.env/bin/python', [
-    '../modules/_common/main.py',
-    tmpPath,
-  ], { cwd: process.cwd() });
-
-  let stdout = '';
-  let stderr = '';
-  runner.stdout.on('data', (chunk) => { stdout += chunk; });
-  runner.stderr.on('data', (chunk) => { stderr += chunk; });
-
-  runner.on('close', (code) => {
-    fs.unlinkSync(tmpPath);
-    fs.rmdirSync(tmpDir);
-    if (code !== 0) {
-      return res.status(500).json({ error: 'runner_error', details: stderr });
-    }
-    try {
-      const json = JSON.parse(stdout);
-      return res.json(json);
-    } catch (err) {
-      return res.status(500).json({ error: 'invalid_runner_output', details: stdout });
-    }
-  });
+  try {
+    const json = await runEvaluator(payload);
+    return res.json(json);
+  } catch (err) {
+    return res.status(500).json({
+      error: err?.type || 'runner_error',
+      details: err?.details || err?.message || 'runner_error',
+    });
+  }
 });
 
 const PORT = process.env.CERPER_PROXY_PORT || 4000;
