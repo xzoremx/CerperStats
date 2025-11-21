@@ -6,6 +6,16 @@ const snapshotPorNivel = {};
 window.snapshotPorNivel = snapshotPorNivel;
 let snapshotBase = null;
 
+function setNivelesCount(val) {
+  niveles = Math.max(1, Number(val) || 1);
+  sessionStorage.setItem("niveles", niveles);
+  localStorage.setItem("niveles", niveles);
+  if (paginaActual > niveles) paginaActual = niveles;
+  const display = document.getElementById("nivel-display");
+  if (display) display.textContent = String(niveles);
+  actualizarBadge();
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   // Control de retorno y reanudación de sesión
   const btnBack = document.getElementById("btn-go-back") || document.getElementById("go-back");
