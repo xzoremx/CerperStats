@@ -1235,7 +1235,7 @@ function crearUINivelYPagina() {
     position: "absolute",
     left: "50%",
     transform: "translateX(-50%)",
-    top: "10px",
+    top: "4px",
 
     padding: "10px 15px",
     background:
@@ -1267,51 +1267,73 @@ function crearUINivelYPagina() {
     ">
       Niveles
     </span>
-    <input id="nivel-input" type="number" min="1" step="1" value="${niveles}"
-      style="
-        width:90px;
-        padding:8px 5px;
-        border-radius:14px;
-        border:1px solid rgba(255,255,255,0.75);
-        background: rgba(255,255,255,0.55);
-        color:#7d7a7a;
+    <div style="
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background: linear-gradient(
+        135deg,
+        rgba(255,255,255,0.32),
+        rgba(255,255,255,0.14)
+      );
+      padding: 6px 10px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,0.65);
+      box-shadow:
+        0 8px 22px rgba(0,0,0,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.55);
+    ">
+      <button id="nivel-dec" aria-label="Disminuir nivel" style="
+        width:32px;height:32px;
+        background: transparent;
+        color:#e4e4e4;
+        cursor:pointer;
+        font-size:20px;
+        line-height:0;
+        border:none;
         outline:none;
+        box-shadow:none;
+        -webkit-appearance:none;
+        appearance:none;
+      ">−</button>
+      <div id="nivel-display" style="
+        min-width:64px;
         text-align:center;
-        font-family:-apple-system, BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;
-        font-size:15px;
-        font-weight:500;
-        box-shadow:
-          0 0 0 1px rgba(255,255,255,0.4),
-          inset 0 1px 0 rgba(255,255,255,0.7),
-          0 10px 25px rgba(0,0,0,0.20);
-        transition: all .22s ease;
-      "
-      aria-label="Cantidad de niveles"
-    />
+        color:#f4f4f8;
+        font-size:16px;
+        font-weight:700;
+        letter-spacing:0.4px;
+      ">${niveles}</div>
+      <button id="nivel-inc" aria-label="Aumentar nivel" style="
+        width:32px;height:32px;
+        background: transparent;
+        color:#e4e4e4;
+        cursor:pointer;
+        font-size:20px;
+        line-height:0;
+        border:none;
+        outline:none;
+        box-shadow:none;
+        -webkit-appearance:none;
+        appearance:none;
+      ">+</button>
+    </div>
   `;
   container.appendChild(glass);
 
-  const inputNivel = glass.querySelector("#nivel-input");
+  const display = glass.querySelector("#nivel-display");
+  const dec = glass.querySelector("#nivel-dec");
+  const inc = glass.querySelector("#nivel-inc");
   const setNiveles = (val) => {
-    const n = Math.max(1, parseInt(val) || 1);
-    niveles = n;
+    niveles = Math.max(1, val);
+    display.textContent = niveles;
     sessionStorage.setItem("niveles", niveles);
     if (paginaActual > niveles) paginaActual = niveles;
     actualizarBadge();
     restaurarPagina(paginaActual);
   };
-  inputNivel.addEventListener("change", (e) => setNiveles(e.target.value));
-  inputNivel.addEventListener("blur", (e) => setNiveles(e.target.value));
-  inputNivel.addEventListener("focus", () => {
-    inputNivel.style.background = "rgba(255,255,255,0.85)";
-    inputNivel.style.boxShadow =
-      "0 0 0 1px rgba(120,190,255,0.9), 0 14px 30px rgba(0,0,0,0.30)";
-  });
-  inputNivel.addEventListener("blur", () => {
-    inputNivel.style.background = "rgba(255,255,255,0.55)";
-    inputNivel.style.boxShadow =
-      "0 0 0 1px rgba(255,255,255,0.4), inset 0 1px 0 rgba(255,255,255,0.7), 0 10px 25px rgba(0,0,0,0.20)";
-  });
+  dec.addEventListener("click", () => setNiveles(niveles - 1));
+  inc.addEventListener("click", () => setNiveles(niveles + 1));
 
   // Badge glassy para página actual
   const badge = document.createElement("div");
