@@ -124,3 +124,4 @@ body::after  { inset: auto auto -25% -10%; background: radial-gradient(closest-s
 .toast.success { color: #065f46; border-color: rgba(16,185,129,.55); box-shadow: 0 10px 26px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.35), inset 0 0 0 9999px rgba(16,185,129,.06); }
 .toast.error   { color: #7f1d1d; border-color: rgba(239,68,68,.55);  box-shadow: 0 10px 26px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.35), inset 0 0 0 9999px rgba(239,68,68,.06); }
 .toast.info    { color: #0b3ea8; border-color: rgba(37,99,235,.55);  box-shadow: 0 10px 26px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.35), inset 0 0 0 9999px rgba(37,99,235,.06); }
+

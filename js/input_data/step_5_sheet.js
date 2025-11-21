@@ -1,8 +1,16 @@
+// Estado global de niveles/páginas para Step 5
+let niveles = 1;
+let paginaActual = 1;
+const snapshotPorNivel = {};
+let snapshotBase = null;
+
 document.addEventListener("DOMContentLoaded", async () => {
   // Control de retorno y reanudación de sesión
   const btnBack = document.getElementById("btn-go-back") || document.getElementById("go-back");
   const sessionId = sessionStorage.getItem("sessionID");
   const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
+  niveles = Math.max(1, parseInt(sessionStorage.getItem("niveles")) || 1);
+  paginaActual = 1;
   // --- Recuperar laboratorio (clave y nombre visible) ---
   const labKey =
     sessionStorage.getItem("labSeleccionado") ||
@@ -80,6 +88,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     tipoAnalisis === "mono" ? "Modo: Un solo analito" : "Modo: Multianalito";
 
   generarTabla(tipoAnalisis);
+  snapshotBase = crearSnapshotBase();
+  crearUINivelYPagina();
+  restaurarPagina(paginaActual);
 
   // Cargar lecturas guardadas (si hay sesión activa)
   if (sessionId) {
@@ -107,6 +118,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // --- Botón "Continuar" con validación estructural + confirmación + guardado de DataFrame ---
   document.getElementById("continue-btn").addEventListener("click", async () => {
     try {
+      guardarSnapshot(paginaActual);
       const resultado = validarEstructuraYContenido();
 
       if (resultado === true) {
@@ -1211,5 +1223,202 @@ async function mostrarConfirmacion(titulo, mensaje) {
 
 
 
+// === UI flotante para niveles y navegación de páginas ===
+function crearUINivelYPagina() {
+  const container = document.querySelector("main.container") || document.body;
+  container.style.position = "relative";
 
+  // Control glassy para elegir número de niveles
+  const glass = document.createElement("div");
+  glass.id = "nivel-glass-input";
+  Object.assign(glass.style, {
+    position: "absolute",
+    left: "50%",
+    transform: "translateX(-50%)",
+    top: "10px",
+
+    padding: "10px 15px",
+    background:
+      "linear-gradient(135deg, rgba(255,255,255,0.38), rgba(255,255,255,0.18))",
+    border: "1px solid rgba(255,255,255,0.70)",
+    borderRadius: "18px",
+    boxShadow: "0 18px 40px rgba(0,0,0,0.35)",
+    backdropFilter: "blur(60px) saturate(180%)",
+    WebkitBackdropFilter: "blur(18px) saturate(180%)",
+
+    color: "#1a100fff",
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    zIndex: 30,
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif",
+    fontWeight: "600",
+    fontSize: "14px",
+  });
+
+  glass.innerHTML = `
+    <span style="
+      font-weight:700;
+      font-size:15px;
+      letter-spacing:0.3px;
+      color:#f0f0f0;
+      font-family:-apple-system, BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;
+    ">
+      Niveles
+    </span>
+    <input id="nivel-input" type="number" min="1" step="1" value="${niveles}"
+      style="
+        width:90px;
+        padding:8px 5px;
+        border-radius:14px;
+        border:1px solid rgba(255,255,255,0.75);
+        background: rgba(255,255,255,0.55);
+        color:#7d7a7a;
+        outline:none;
+        text-align:center;
+        font-family:-apple-system, BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;
+        font-size:15px;
+        font-weight:500;
+        box-shadow:
+          0 0 0 1px rgba(255,255,255,0.4),
+          inset 0 1px 0 rgba(255,255,255,0.7),
+          0 10px 25px rgba(0,0,0,0.20);
+        transition: all .22s ease;
+      "
+      aria-label="Cantidad de niveles"
+    />
+  `;
+  container.appendChild(glass);
+
+  const inputNivel = glass.querySelector("#nivel-input");
+  const setNiveles = (val) => {
+    const n = Math.max(1, parseInt(val) || 1);
+    niveles = n;
+    sessionStorage.setItem("niveles", niveles);
+    if (paginaActual > niveles) paginaActual = niveles;
+    actualizarBadge();
+    restaurarPagina(paginaActual);
+  };
+  inputNivel.addEventListener("change", (e) => setNiveles(e.target.value));
+  inputNivel.addEventListener("blur", (e) => setNiveles(e.target.value));
+  inputNivel.addEventListener("focus", () => {
+    inputNivel.style.background = "rgba(255,255,255,0.85)";
+    inputNivel.style.boxShadow =
+      "0 0 0 1px rgba(120,190,255,0.9), 0 14px 30px rgba(0,0,0,0.30)";
+  });
+  inputNivel.addEventListener("blur", () => {
+    inputNivel.style.background = "rgba(255,255,255,0.55)";
+    inputNivel.style.boxShadow =
+      "0 0 0 1px rgba(255,255,255,0.4), inset 0 1px 0 rgba(255,255,255,0.7), 0 10px 25px rgba(0,0,0,0.20)";
+  });
+
+  // Badge glassy para página actual
+  const badge = document.createElement("div");
+  badge.id = "badge-pagina";
+  badge.textContent = `pág. ${paginaActual}/${niveles}`;
+  Object.assign(badge.style, {
+    position: "absolute",
+    right: "20px",
+    top: "25px",
+    padding: "9px 14px",
+    background:
+      "linear-gradient(135deg, rgba(255, 255, 255, 0.11), rgba(255,255,255,0.16))",
+    color: "#b6b6beff",
+    borderRadius: "14px",
+    cursor: "pointer",
+    zIndex: 30,
+    boxShadow: "0 14px 30px rgba(0,0,0,0.35)",
+    userSelect: "none",
+    border: "1px solid rgba(255,255,255,0.65)",
+    WebkitBackdropFilter: "blur(14px) saturate(180%)",
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif",
+    fontSize: "13px",
+    fontWeight: "700",
+    letterSpacing: "0.25px",
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    transition: "all .22s ease",
+  });
+
+  badge.addEventListener("mouseenter", () => {
+    badge.style.background =
+      "linear-gradient(135deg, rgba(255,255,255,0.46), rgba(255,255,255,0.24))";
+    badge.style.boxShadow = "0 18px 38px rgba(0,0,0,0.40)";
+    badge.style.transform = "translateY(-1px)";
+  });
+  badge.addEventListener("mouseleave", () => {
+    badge.style.background =
+      "linear-gradient(135deg, rgba(255,255,255,0.32), rgba(255,255,255,0.16))";
+    badge.style.boxShadow = "0 14px 30px rgba(0,0,0,0.35)";
+    badge.style.transform = "translateY(0)";
+  });
+
+  badge.onclick = () => irANivel((paginaActual % niveles) + 1);
+  container.appendChild(badge);
+}
+
+function actualizarBadge() {
+  const badge = document.getElementById("badge-pagina");
+  if (badge) badge.textContent = `pág. ${paginaActual}/${niveles}`;
+}
+
+// === Snapshots por nivel ===
+function crearSnapshotBase() {
+  const table = document.getElementById("excel");
+  if (!table) return null;
+  return [...table.rows].map((r, ri) =>
+    [...r.cells].map((td) => (ri === 0 ? td.textContent : ""))
+  );
+}
+
+function guardarSnapshot(nivel) {
+  const table = document.getElementById("excel");
+  if (!table) return;
+  const snap = [...table.rows].map((r) =>
+    [...r.cells].map((td) => td.textContent)
+  );
+  snapshotPorNivel[nivel] = snap;
+}
+
+function restaurarPagina(nivel) {
+  const table = document.getElementById("excel");
+  if (!table) return;
+  generarTabla(sessionStorage.getItem("tipoAnalisis") || "mono");
+
+  const snap = snapshotPorNivel[nivel];
+  const headerFallback = snapshotPorNivel[paginaActual]?.[0] || snapshotBase?.[0];
+
+  if (snap) {
+    [...table.rows].forEach((r, ri) => {
+      [...r.cells].forEach((td, ci) => {
+        td.textContent = snap[ri]?.[ci] ?? "";
+        togglePlaceholder(td);
+      });
+    });
+  } else {
+    [...table.rows[0].cells].forEach((td, ci) => {
+      td.textContent = headerFallback?.[ci] ?? td.textContent;
+    });
+    for (let r = 1; r < table.rows.length; r++) {
+      for (let c = 0; c < table.rows[r].cells.length; c++) {
+        const td = table.rows[r].cells[c];
+        td.textContent = "";
+        togglePlaceholder(td);
+      }
+    }
+  }
+
+  paginaActual = nivel;
+  actualizarBadge();
+}
+
+function irANivel(nivel) {
+  guardarSnapshot(paginaActual);
+  const target = ((nivel - 1 + niveles) % niveles) + 1;
+  restaurarPagina(target);
+  validarVisual();
+}
 
