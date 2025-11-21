@@ -2,6 +2,8 @@
 let niveles = 1;
 let paginaActual = 1;
 const snapshotPorNivel = {};
+// Exponer referencia para validación multi-nivel
+window.snapshotPorNivel = snapshotPorNivel;
 let snapshotBase = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -9,7 +11,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnBack = document.getElementById("btn-go-back") || document.getElementById("go-back");
   const sessionId = sessionStorage.getItem("sessionID");
   const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
-  niveles = Math.max(1, parseInt(sessionStorage.getItem("niveles")) || 1);
+  const storedNiveles = parseInt(sessionStorage.getItem("niveles") || localStorage.getItem("niveles") || "1");
+  niveles = Math.max(1, storedNiveles || 1);
   paginaActual = 1;
   // --- Recuperar laboratorio (clave y nombre visible) ---
   const labKey =
@@ -374,6 +377,9 @@ function moveCaretToEnd(td) {
 // --- Navegación con flechas ---
 function activarNavegacion() {
   const table = document.getElementById("excel");
+  if (!table) return;
+  if (table.dataset.navAttached === "1") return; // evitar listeners duplicados al regenerar
+  table.dataset.navAttached = "1";
 
   table.addEventListener("keydown", function (e) {
     const cell = document.activeElement;
@@ -1328,6 +1334,7 @@ function crearUINivelYPagina() {
     niveles = Math.max(1, val);
     display.textContent = niveles;
     sessionStorage.setItem("niveles", niveles);
+    localStorage.setItem("niveles", niveles);
     if (paginaActual > niveles) paginaActual = niveles;
     actualizarBadge();
     restaurarPagina(paginaActual);
@@ -1403,15 +1410,18 @@ function guardarSnapshot(nivel) {
     [...r.cells].map((td) => td.textContent)
   );
   snapshotPorNivel[nivel] = snap;
+  window.snapshotPorNivel = snapshotPorNivel;
 }
 
 function restaurarPagina(nivel) {
   const table = document.getElementById("excel");
   if (!table) return;
-  generarTabla(sessionStorage.getItem("tipoAnalisis") || "mono");
+  const tipoActual = sessionStorage.getItem("tipoAnalisis") || "mono";
+  const esMulti = (tipoActual === "multi" || tipoActual === "multianalito");
+  generarTabla(tipoActual);
 
   const snap = snapshotPorNivel[nivel];
-  const headerFallback = snapshotPorNivel[paginaActual]?.[0] || snapshotBase?.[0];
+  const headerFallback = snapshotBase?.[0];
 
   if (snap) {
     [...table.rows].forEach((r, ri) => {
@@ -1427,6 +1437,11 @@ function restaurarPagina(nivel) {
     for (let r = 1; r < table.rows.length; r++) {
       for (let c = 0; c < table.rows[r].cells.length; c++) {
         const td = table.rows[r].cells[c];
+        if (esMulti && c === 0) {
+          // Mantener la etiqueta fija generada (Analista/Parámetro X)
+          togglePlaceholder(td);
+          continue;
+        }
         td.textContent = "";
         togglePlaceholder(td);
       }
@@ -1435,12 +1450,12 @@ function restaurarPagina(nivel) {
 
   paginaActual = nivel;
   actualizarBadge();
+  validarVisual();
 }
 
 function irANivel(nivel) {
   guardarSnapshot(paginaActual);
   const target = ((nivel - 1 + niveles) % niveles) + 1;
   restaurarPagina(target);
-  validarVisual();
 }
 

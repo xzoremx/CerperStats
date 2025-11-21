@@ -15,7 +15,7 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'invalid_payload' });
   }
   const table = resolveInputTable(tipoAnalisis);
-  const COLS_PER_ROW = 10;
+  const COLS_PER_ROW = 11; // agrega nivel
   try {
     const placeholders = datos
       .map((_, index) => {
@@ -28,6 +28,7 @@ router.post('/', async (req, res) => {
       session_id,
       row.analito ?? null,
       row.parametro ?? null,
+      row.nivel ?? 1,
       row.lectura_idx ?? null,
       row.valor ?? null,
       row.unidad ?? null,
@@ -39,7 +40,7 @@ router.post('/', async (req, res) => {
 
     await pool.query(
       `INSERT INTO ${table} (
-        session_id, analito, parametro, lectura_idx, valor,
+        session_id, analito, parametro, nivel, lectura_idx, valor,
         unidad, tipo_dato, modo_cualitativo, valido, comentario
       )
       VALUES ${placeholders}`,
@@ -62,14 +63,14 @@ router.get('/:sessionId', async (req, res) => {
   try {
     const rows = await pool.query(
       tipoAnalisis === 'multi' || tipoAnalisis === 'multianalito'
-        ? `SELECT analito, parametro, lectura_idx, valor
+        ? `SELECT analito, parametro, nivel, lectura_idx, valor
            FROM inputs_multianalito
            WHERE session_id = $1 AND valido = true
-           ORDER BY parametro ASC, analito ASC, lectura_idx ASC`
-        : `SELECT parametro, lectura_idx, valor
+           ORDER BY parametro ASC, analito ASC, nivel ASC, lectura_idx ASC`
+        : `SELECT parametro, analito, nivel, lectura_idx, valor
            FROM inputs_monoanalito
            WHERE session_id = $1 AND valido = true
-           ORDER BY parametro ASC, lectura_idx ASC`,
+           ORDER BY parametro ASC, nivel ASC, lectura_idx ASC`,
       [session_id]
     );
     res.json({ ok: true, data: rows.rows });

@@ -327,9 +327,306 @@ function buildMultiAnalitoData(rows, K, lecturas, encabezados) {
   return { tipo: "multi", encabezados, parametros, datosPorParametro };
 }
 
+// === Validaciones redefinidas para soporte multi-nivel (cuando hay paginación de niveles) ===
+function validarMono(rows, errores, ctx = {}) {
+  const K = parseInt(sessionStorage.getItem("K")) || 1;
+  const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
+  const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
+  const valoresStr = sessionStorage.getItem("valoresPermitidos");
+  const permitidos = valoresStr ? JSON.parse(valoresStr) : null;
+  const nivel = ctx.nivel || 1;
+
+  // --- Validar encabezados ---
+  const headers = [...rows[0].cells];
+  const nombres = headers.slice(0, K).map(td => td.textContent.trim());
+  const duplicados = nombres.filter((v, i, a) => v && a.indexOf(v) !== i);
+  if (duplicados.length > 0)
+    errores.push(`Encabezados duplicados: ${[...new Set(duplicados)].join(", ")}`);
+
+  headers.forEach((td, i) => {
+    const valor = td.textContent.trim();
+    const tieneDatos = rows.slice(1).some(r => (r.cells[i]?.textContent.trim() || "") !== "");
+    if (i >= K && valor !== "")
+      errores.push(`Encabezado fuera de rango (columna ${i + 1}) no debe contener texto.`);
+    else if (!valor && tieneDatos)
+      errores.push(`Encabezado vacío con datos debajo (columna ${i + 1})`);
+  });
+
+  // --- Validar lecturas numéricas o cualitativas según tipo ---
+  for (let c = 0; c < K; c++) {
+    const nombre = headers[c].textContent.trim() || `Columna ${c + 1}`;
+    const filasEsperadas = lecturas[c] || lecturas[0] || 1;
+    let lecturasValidas = 0;
+
+    for (let r = 1; r < rows.length; r++) {
+      const td = rows[r].cells[c];
+      if (!td) continue;
+      const valor = td.textContent.trim();
+      if (!valor) continue;
+
+      const num = parseFloat(valor.replace(",", "."));
+      const dentroRango = r <= filasEsperadas;
+
+      if (!dentroRango) {
+        errores.push(`Dato fuera de rango en fila ${r + 1}, columna ${c + 1} (${nombre})`);
+        continue;
+      }
+
+      if (tipoDato === "cuantitativo") {
+        if (isNaN(num) || num <= 0)
+          errores.push(`Valor inválido en fila ${r + 1}, columna ${c + 1} (${nombre}). Debe ser > 0`);
+        else
+          lecturasValidas++;
+      } else if (tipoDato === "cualitativo") {
+        const esEntero = Number.isInteger(num);
+        if (!permitidos) {
+          errores.push(`No hay valores permitidos definidos para el modo cualitativo.`);
+          return;
+        }
+        if (!esEntero || !permitidos.includes(num))
+          errores.push(`Valor inválido en fila ${r + 1}, columna ${c + 1} (${nombre}). Permitidos: ${permitidos.join(", ")}`);
+        else
+          lecturasValidas++;
+      }
+    }
+
+    if (lecturasValidas < filasEsperadas)
+      errores.push(`Faltan lecturas en ${nombre}: ${lecturasValidas}/${filasEsperadas}`);
+  }
+
+  // --- Validar columnas extra con datos ---
+  for (let c = K; c < headers.length; c++) {
+    const hayDatos = rows.slice(1).some(r => (r.cells[c]?.textContent.trim() || "") !== "");
+    if (hayDatos)
+      errores.push(`Columna adicional (columna ${c + 1}) con datos no permitidos.`);
+  }
+
+  if (errores.length === 0) {
+    return buildMonoAnalitoData(rows, K, lecturas, nivel);
+  }
+}
+
+function validarMulti(rows, errores, ctx = {}) {
+  const K = parseInt(sessionStorage.getItem("K")) || 1;
+  const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
+  const nivel = ctx.nivel || 1;
+
+  // Encabezados
+  const encabezados = checkEncabezadosMulti(rows, errores);
+  if (errores.length > 0) return;
+
+  // Bloques de datos
+  checkBloquesMulti(rows, K, lecturas, encabezados, errores);
+
+  // Filas fuera de rango
+  checkFilasFueraDeRangoMulti(rows, K, lecturas, errores);
+
+  if (errores.length === 0) {
+    return buildMultiAnalitoData(rows, K, lecturas, encabezados, nivel);
+  }
+}
+
+// --- Estructuras con nivel incluido ---
+function buildMonoAnalitoData(rows, K, lecturas, nivel = 1) {
+  const columnas = [...rows[0].cells].slice(0, K).map(td => td.textContent.trim());
+  const registros = [];
+
+  columnas.forEach((col, c) => {
+    const filasEsperadas = lecturas[c] || lecturas[0] || 1;
+
+    for (let r = 1; r <= filasEsperadas && r < rows.length; r++) {
+      const valor = rows[r].cells[c]?.textContent.trim();
+      if (!valor) continue;
+      const num = parseFloat(valor.replace(",", "."));
+      if (!isNaN(num)) {
+        registros.push({
+          parametro: col,
+          analito: "Analito",
+          nivel,
+          lectura_idx: r,
+          valor: num
+        });
+      }
+    }
+  });
+
+  return {
+    tipo: "mono",
+    columnas,
+    lecturasPorColumna: lecturas,
+    registros
+  };
+}
+
+function buildMultiAnalitoData(rows, K, lecturas, encabezados, nivel = 1) {
+  let filaActual = 1;
+  const registros = [];
+
+  for (let a = 0; a < K; a++) {
+    const parametro = rows[filaActual]?.cells[0]?.textContent.trim() || `Parámetro ${a + 1}`;
+    const lecturasActuales = lecturas[a] || lecturas[0] || 1;
+
+    for (let li = 1; li <= lecturasActuales; li++) {
+      const tr = rows[filaActual + li - 1];
+      if (!tr) continue;
+      encabezados.forEach((h, idx) => {
+        const val = tr.cells[idx + 1]?.textContent.trim();
+        if (!val) return;
+        const num = parseFloat(val.replace(",", "."));
+        if (!isNaN(num)) {
+          registros.push({
+            parametro,
+            analito: h,
+            nivel,
+            lectura_idx: li,
+            valor: num
+          });
+        }
+      });
+    }
+
+    filaActual += lecturasActuales;
+  }
+
+  return { tipo: "multi", encabezados, lecturas, registros };
+}
+
+// === Versión multi-nivel de validación (redefine para usar snapshots/páginas) ===
+function validarEstructuraYContenido(opts = {}) {
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
+  const nivelesCount =
+    opts.niveles ||
+    (typeof window.niveles === "number" ? window.niveles : parseInt(sessionStorage.getItem("niveles")) || 1);
+
+  const erroresTotales = [];
+  const registros = [];
+  const meta = {};
+
+  // Backup de snapshots para no corromper otras páginas durante la validación
+  const snapshotRef = (typeof window.snapshotPorNivel === "object" && window.snapshotPorNivel) ? window.snapshotPorNivel : null;
+  const snapshotBackup = snapshotRef ? JSON.parse(JSON.stringify(snapshotRef)) : null;
+
+  const paginaOriginal = typeof window.paginaActual === "number" ? window.paginaActual : 1;
+  if (typeof window.guardarSnapshot === "function") window.guardarSnapshot(paginaOriginal);
+
+  for (let nivel = 1; nivel <= nivelesCount; nivel++) {
+    if (typeof window.restaurarPagina === "function") window.restaurarPagina(nivel);
+
+    const table = document.getElementById("excel");
+    if (!table) return { errores: ["No se encontró la tabla de datos."] };
+
+    const rows = [...table.rows];
+    const errores = [];
+
+    if (tipoAnalisis === "multi") {
+      const res = validarMulti(rows, errores, { nivel });
+      if (!errores.length && res?.registros) {
+        registros.push(...res.registros);
+        meta.encabezados = res.encabezados;
+        meta.lecturas = res.lecturas;
+      }
+    } else if (tipoAnalisis === "mono") {
+      const res = validarMono(rows, errores, { nivel });
+      if (!errores.length && res?.registros) {
+        registros.push(...res.registros);
+        meta.columnas = res.columnas;
+        meta.lecturas = res.lecturas;
+      }
+    } else {
+      errores.push("Tipo de análisis no reconocido.");
+    }
+
+    if (errores.length) erroresTotales.push(...errores.map(e => `[Nivel ${nivel}] ${e}`));
+  }
+
+  if (typeof window.restaurarPagina === "function") window.restaurarPagina(paginaOriginal);
+
+  if (snapshotRef && snapshotBackup) {
+    Object.keys(snapshotRef).forEach(k => delete snapshotRef[k]);
+    Object.entries(snapshotBackup).forEach(([k, v]) => {
+      snapshotRef[k] = v;
+    });
+  }
+
+  if (erroresTotales.length > 0) {
+    console.error("Errores detectados:", erroresTotales);
+    return { errores: erroresTotales };
+  }
+
+  const payload = { tipo: tipoAnalisis, niveles: nivelesCount, registros, ...meta };
+  const key = tipoAnalisis === "multi" ? "multiAnalitoDatos" : "monoAnalitoDatos";
+  sessionStorage.setItem(key, JSON.stringify(payload));
+  notify("Datos validados correctamente en todos los niveles.", "success");
+  return true;
+}
+
 // --- Exponer funciones al contexto global ---
 window.validarEstructuraYContenido = validarEstructuraYContenido;
 window.guardarDataframeTemp = guardarDataframeTemp;
+
+// --- Validación alternativa usando snapshots por nivel (evita tocar el DOM y mezclar páginas) ---
+function validarEstructuraYContenidoSnapshots(opts = {}) {
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
+  const nivelesCount =
+    opts.niveles ||
+    (typeof window.niveles === "number" ? window.niveles : parseInt(sessionStorage.getItem("niveles")) || 1);
+
+  const erroresTotales = [];
+  const registros = [];
+  const meta = {};
+  const snapshotRef =
+    (typeof window.snapshotPorNivel === "object" && window.snapshotPorNivel)
+      ? window.snapshotPorNivel
+      : null;
+
+  for (let nivel = 1; nivel <= nivelesCount; nivel++) {
+    const snap = snapshotRef && snapshotRef[nivel];
+    if (!snap || !snap.length) {
+      erroresTotales.push(`[Nivel ${nivel}] No hay datos para validar.`);
+      continue;
+    }
+    const rows = snapshotToRows(snap);
+    const errores = [];
+
+    if (tipoAnalisis === "multi") {
+      const res = validarMulti(rows, errores, { nivel });
+      if (!errores.length && res?.registros) {
+        registros.push(...res.registros);
+        meta.encabezados = res.encabezados;
+        meta.lecturas = res.lecturas;
+      }
+    } else {
+      const res = validarMono(rows, errores, { nivel });
+      if (!errores.length && res?.registros) {
+        registros.push(...res.registros);
+        meta.columnas = res.columnas;
+        meta.lecturas = res.lecturas;
+      }
+    }
+
+    if (errores.length) erroresTotales.push(...errores.map(e => `[Nivel ${nivel}] ${e}`));
+  }
+
+  if (erroresTotales.length > 0) {
+    console.error("Errores detectados:", erroresTotales);
+    return { errores: erroresTotales };
+  }
+
+  const payload = { tipo: tipoAnalisis, niveles: nivelesCount, registros, ...meta };
+  const key = tipoAnalisis === "multi" ? "multiAnalitoDatos" : "monoAnalitoDatos";
+  sessionStorage.setItem(key, JSON.stringify(payload));
+  notify("Datos validados correctamente en todos los niveles.", "success");
+  return true;
+}
+
+function snapshotToRows(snap) {
+  return snap.map(row => ({
+    cells: row.map(val => ({ textContent: val ?? "", style: {} }))
+  }));
+}
+
+// Reasignar export a la versión que usa snapshots para evitar mezcla entre páginas
+window.validarEstructuraYContenido = validarEstructuraYContenidoSnapshots;
 
 
 // === Guardado de DataFrame temporal ===
@@ -340,23 +637,61 @@ async function guardarDataframeTemp() {
     const key = (tipo === "multi") ? "multiAnalitoDatos" : "monoAnalitoDatos";
     const jsonStr = sessionStorage.getItem(key);
     const dataObj = JSON.parse(jsonStr);
+    const registros = dataObj.registros || [];
 
     const datosParaInsertar = [];
+    const unidad = sessionStorage.getItem("unidad") || null;
+    const modo_cualitativo = sessionStorage.getItem("modoCualitativo") || null;
+    const tipo_dato = sessionStorage.getItem("tipoDato") || "cuantitativo";
+    const comentario = sessionStorage.getItem("comentario") || "Conforme";
 
-    if (tipo === "mono") {
-        const unidad = sessionStorage.getItem("unidad") || null;
-        const modo_cualitativo = sessionStorage.getItem("modoCualitativo") || null;
-        const tipo_dato = sessionStorage.getItem("tipoDato") || "cuantitativo";
-        const comentario = sessionStorage.getItem("comentario") || "Conforme";
+    if (registros.length > 0) {
+      registros.forEach(r => {
+        datosParaInsertar.push({
+          session_id,
+          parametro: r.parametro,
+          analito: r.analito ?? "Analito",
+          nivel: r.nivel || 1,
+          lectura_idx: r.lectura_idx,
+          valor: r.valor,
+          unidad,
+          tipo_dato,
+          modo_cualitativo,
+          valido: 1,
+          comentario,
+        });
+      });
+    } else if (tipo === "mono") {
+      // Fallback para estructura antigua (sin niveles)
+      dataObj.columnas.forEach((parametro) => {
+        const lects = dataObj.lecturas[parametro] || [];
+        lects.forEach((v, idx) => {
+          datosParaInsertar.push({
+            session_id,
+            analito: "Analito",
+            parametro,
+            nivel: 1,
+            lectura_idx: idx + 1,
+            valor: v,
+            unidad,
+            tipo_dato,
+            modo_cualitativo,
+            valido: 1,
+            comentario,
+          });
+        });
+      });
+    } else if (tipo === "multi") {
+      dataObj.datosPorParametro.forEach(bloque => {
+        const parametro = bloque.parametro;
 
-
-        dataObj.columnas.forEach((parametro) => {
-          const lects = dataObj.lecturas[parametro] || [];
+        for (const [analito, lects] of Object.entries(bloque.lecturas)) {
           lects.forEach((v, idx) => {
             datosParaInsertar.push({
               session_id,
-              analito: "Analito", // valor fijo
-              parametro,           // nombre real de la columna
+              analito,
+              parametro,
+              nivel: 1,
               lectura_idx: idx + 1,
               valor: v,
               unidad,
@@ -366,33 +701,8 @@ async function guardarDataframeTemp() {
               comentario,
             });
           });
-        });
-    } else if (tipo === "multi") {
-        const unidad = sessionStorage.getItem("unidad") || null;
-        const modo_cualitativo = sessionStorage.getItem("modoCualitativo") || null;
-        const tipo_dato = sessionStorage.getItem("tipoDato") || "cuantitativo";
-        const comentario = sessionStorage.getItem("comentario") || "Conforme";
-
-        dataObj.datosPorParametro.forEach(bloque => {
-          const parametro = bloque.parametro;
-
-          for (const [analito, lects] of Object.entries(bloque.lecturas)) {
-            lects.forEach((v, idx) => {
-              datosParaInsertar.push({
-                session_id,
-                analito,
-                parametro,
-                lectura_idx: idx + 1,
-                valor: v,
-                unidad,
-                tipo_dato,
-                modo_cualitativo,
-                valido: 1,
-                comentario,              
-              });
-            });
-          }
-        });
+        }
+      });
     }
 
     // Limpiar datos anteriores de esta sesión antes de insertar (comportamiento de actualización)
