@@ -27,8 +27,6 @@ contextBridge.exposeInMainWorld('cerper', {
   getSessionsByRole: (args) =>
   ipcRenderer.invoke("db-get-sessions-by-role", args),
   getEvaluaciones: (args) => ipcRenderer.invoke("db-get-evaluaciones", args),
-  getSessionMetadata: (session_id) =>
-  ipcRenderer.invoke("db-get-session-metadata", session_id),
   getTestsWithMetadata: (session_id) =>
   ipcRenderer.invoke("db-get-tests-with-metadata", session_id),
   runEvaluations: (args) => ipcRenderer.invoke("db-run-evaluaciones", args),

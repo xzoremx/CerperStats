@@ -44,13 +44,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // === Obtener metadata y aplicabilidad desde la base ===
-  let meta = {};
+  // === Obtener aplicabilidad desde la base ===
   let resTests;
   try {
-    const metaRes = await window.cerper.getSessionMetadata(sessionId);
-    if (metaRes?.ok) meta = metaRes.data;
-
     resTests = await window.cerper.getTestsWithMetadata(sessionId);
     if (!resTests.ok) throw new Error(resTests.error || "Error al cargar pruebas.");
   } catch (err) {

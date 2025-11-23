@@ -140,30 +140,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:sessionId/metadata', async (req, res) => {
-  const sessionId = Number(req.params.sessionId);
-  if (!sessionId) {
-    return res.status(400).json({ ok: false, error: 'invalid_session_id' });
-  }
-  try {
-    const meta = await computeSessionMeta(sessionId);
-    const metadata = {
-      ...meta,
-      cumple_normalidad: null,
-      cumple_precision: null,
-      cumple_veracidad: null,
-      comentarios: null,
-    };
-    res.json({ ok: true, data: metadata });
-  } catch (err) {
-    if (err.statusCode === 404) {
-      return res.status(404).json({ ok: false, error: 'session_not_found' });
-    }
-    console.error('[API] Error calculando metadata de sesión', err);
-    res.status(500).json({ ok: false, error: 'db_error' });
-  }
-});
-
 router.get('/:sessionId/tests-metadata', async (req, res) => {
   const sessionId = Number(req.params.sessionId);
   if (!sessionId) {

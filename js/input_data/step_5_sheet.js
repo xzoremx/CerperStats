@@ -1,5 +1,6 @@
 // Estado global de niveles/páginas para Step 5
 let niveles = 1;
+window.niveles = niveles;
 let paginaActual = 1;
 const snapshotPorNivel = {};
 // Exponer referencia para validación multi-nivel
@@ -8,8 +9,7 @@ let snapshotBase = null;
 
 function setNivelesCount(val) {
   niveles = Math.max(1, Number(val) || 1);
-  sessionStorage.setItem("niveles", niveles);
-  localStorage.setItem("niveles", niveles);
+  window.niveles = niveles;
   if (paginaActual > niveles) paginaActual = niveles;
   const display = document.getElementById("nivel-display");
   if (display) display.textContent = String(niveles);
@@ -21,8 +21,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnBack = document.getElementById("btn-go-back") || document.getElementById("go-back");
   const sessionId = sessionStorage.getItem("sessionID");
   const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
-  const storedNiveles = parseInt(sessionStorage.getItem("niveles") || localStorage.getItem("niveles") || "1");
-  niveles = Math.max(1, storedNiveles || 1);
+  sessionStorage.removeItem("niveles");
+  localStorage.removeItem("niveles");
+  niveles = 1;
+  window.niveles = niveles;
   paginaActual = 1;
   // --- Recuperar laboratorio (clave y nombre visible) ---
   const labKey =
@@ -115,6 +117,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         } else {
           rellenarTablaMono(res.data);
         }
+        sincronizarNivelesDesdeDatos(res.data);
         notify("Se cargaron los datos guardados de esta sesión.", "info");
       }
     } catch (err) {
@@ -1004,6 +1007,19 @@ function mostrarErroresSecuenciales(listaErrores) {
   mostrarSiguiente();
 }
 
+function sincronizarNivelesDesdeDatos(datos) {
+  if (!Array.isArray(datos) || !datos.length) return;
+  const maxNivel = Math.max(...datos.map(d => Number(d.nivel) || 1), 1);
+  const nuevo = Math.max(1, maxNivel);
+  if (nuevo === niveles) return;
+  niveles = nuevo;
+  window.niveles = nuevo;
+  if (paginaActual > niveles) paginaActual = niveles;
+  const display = document.getElementById("nivel-display");
+  if (display) display.textContent = String(niveles);
+  actualizarBadge();
+}
+
 function rellenarTablaMono(datos) {
   const table = document.getElementById("excel");
   if (!table || !table.rows?.length) return;
@@ -1342,9 +1358,8 @@ function crearUINivelYPagina() {
   const inc = glass.querySelector("#nivel-inc");
   const setNiveles = (val) => {
     niveles = Math.max(1, val);
-    display.textContent = niveles;
-    sessionStorage.setItem("niveles", niveles);
-    localStorage.setItem("niveles", niveles);
+    window.niveles = niveles;
+    display.textContent = String(niveles);
     if (paginaActual > niveles) paginaActual = niveles;
     actualizarBadge();
     restaurarPagina(paginaActual);

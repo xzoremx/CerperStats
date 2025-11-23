@@ -312,18 +312,6 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
 
 
 
-// === Calcular metadata de sesión ===
-ipcMain.handle("db-get-session-metadata", async (event, session_id) => {
-  try {
-    const payload = await proxyFetch(`/sessions/${session_id}/metadata`);
-    return { ok: true, data: payload.data };
-  } catch (err) {
-    console.error("[PROXY] Error calculando metadata:", err);
-    return { ok: false, error: err.message };
-  }
-});
-
-
 // === Obtener pruebas con metadatos (usa la metadata calculada arriba) ===
 ipcMain.handle("db-get-tests-with-metadata", async (event, session_id) => {
   try {
