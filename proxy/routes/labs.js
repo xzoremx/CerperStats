@@ -5,7 +5,7 @@ const pool = require('../db');
 router.get('/', async (_req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT lab_key, nombre, descripcion, color
+      `SELECT lab_key, nombre, descripcion, color, icon_lucide
        FROM labs
        WHERE activo = true
        ORDER BY id`
@@ -32,6 +32,7 @@ router.get('/:labKey', async (req, res) => {
          unidad_default,
          expediente_demo,
          color,
+         icon_lucide,
          activo
        FROM labs
        WHERE lab_key = $1

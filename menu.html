@@ -5,95 +5,31 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://unpkg.com data:; connect-src 'self';" />
   <title>Laboratorios - CerperStats</title>
   <link rel="stylesheet" href="css/menu.css" />
-  
-
 </head>
 
 <body>
   <img src="assets/logos/logo.png" alt="CerperStats" class="about-logo" />
 
   <div class="carousel-container">
-    <button class="nav-arrow left">‹</button>
+    <button class="nav-arrow left">&#8249;</button>
 
     <div class="carousel-track">
-      <!-- Cada tarjeta representa un laboratorio -->
-      <div class="card" data-index="0" data-lab="Cromatografía de Gases" data-route="procedure_select.html">
-        <div class="lab-icon"><i data-lucide="flask-conical"></i></div>
-        <h2>Cromatografía de Gases</h2>
-      </div>
-
-      <div class="card" data-index="1" data-lab="Cromatografía Líquida" data-route="procedure_select.html">
-        <div class="lab-icon"><i data-lucide="droplet"></i></div>
-        <h2>Cromatografía Líquida</h2>
-      </div>
-
-      <div class="card" data-index="2" data-lab="Físico Químico Alimentos" data-route="procedure_select.html">
-        <div class="lab-icon"><i data-lucide="apple"></i></div>
-        <h2>FQ Alimentos</h2>
-      </div>
-
-      <div class="card" data-index="3" data-lab="Agrícola" data-route="procedure_select.html">
-        <div class="lab-icon"><i data-lucide="leaf"></i></div>
-        <h2>Agrícola</h2>
-      </div>
-
-      <div class="card" data-index="4" data-lab="Microbiología" data-route="procedure_select.html">
-        <div class="lab-icon"><i data-lucide="bug"></i></div>
-        <h2>Microbiología</h2>
-      </div>
-
-      <div class="card" data-index="5" data-lab="Ambiental" data-route="procedure_select.html">
-        <div class="lab-icon"><i data-lucide="globe-2"></i></div>
-        <h2>Ambiental</h2>
-      </div>
-
-      <div class="card" data-index="6" data-lab="Biología Molecular" data-route="procedure_select.html">
-        <div class="lab-icon"><i data-lucide="dna"></i></div>
-        <h2>Biología Molecular</h2>
-      </div>
-
-      <div class="card" data-index="7" data-lab="Metales" data-route="procedure_select.html">
-        <div class="lab-icon"><i data-lucide="scale"></i></div>
-        <h2>Metales</h2>
-      </div>
-
-      <div class="card" data-index="8" data-lab="Físico Sensorial" data-route="procedure_select.html">
-        <div class="lab-icon"><i data-lucide="waves"></i></div>
-        <h2>Sensorial</h2>
-      </div>
-
-      <div class="card" data-index="9" data-lab="Hidrobiología" data-route="procedure_select.html">
-        <div class="lab-icon"><i data-lucide="fish"></i></div>
-        <h2>Hidrobiología</h2>
-      </div>
+      <!-- Tarjetas generadas dinámicamente desde la base de datos -->
     </div>
 
-    <button class="nav-arrow right">›</button>
+    <button class="nav-arrow right">&#8250;</button>
   </div>
 
-  <!-- Texto que cambia con el carrusel -->
   <div class="member-info">
-    <h2 class="member-name">Cromatografía de Gases</h2>
-    <p class="member-role">Análisis instrumental avanzado</p>
+    <h2 class="member-name">Selecciona un laboratorio</h2>
+    <p class="member-role"></p>
   </div>
 
-  <!-- Indicadores -->
-  <div class="dots">
-    <div class="dot active" data-index="0"></div>
-    <div class="dot" data-index="1"></div>
-    <div class="dot" data-index="2"></div>
-    <div class="dot" data-index="3"></div>
-    <div class="dot" data-index="4"></div>
-    <div class="dot" data-index="5"></div>
-    <div class="dot" data-index="6"></div>
-    <div class="dot" data-index="7"></div>
-    <div class="dot" data-index="8"></div>
-    <div class="dot" data-index="9"></div>
-  </div>
+  <div class="dots"></div>
 
-  <!-- Scripts -->
   <script src="js/auth_guard.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/security/icon_safety.js"></script>
   <script type="module" src="js/menu.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
