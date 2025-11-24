@@ -8,12 +8,16 @@ window.snapshotPorNivel = snapshotPorNivel;
 let snapshotBase = null;
 
 function setNivelesCount(val) {
+  if (typeof guardarSnapshot === "function") {
+    guardarSnapshot(paginaActual);
+  }
   niveles = Math.max(1, Number(val) || 1);
   window.niveles = niveles;
   if (paginaActual > niveles) paginaActual = niveles;
   const display = document.getElementById("nivel-display");
   if (display) display.textContent = String(niveles);
   actualizarBadge();
+  restaurarPagina(paginaActual);
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -1357,10 +1361,17 @@ function crearUINivelYPagina() {
   const dec = glass.querySelector("#nivel-dec");
   const inc = glass.querySelector("#nivel-inc");
   const setNiveles = (val) => {
+    if (typeof guardarSnapshot === "function") {
+      guardarSnapshot(paginaActual);
+    }
     niveles = Math.max(1, val);
     window.niveles = niveles;
     display.textContent = String(niveles);
     if (paginaActual > niveles) paginaActual = niveles;
+    // Limpiar snapshots de niveles superiores si se reduce el total
+    Object.keys(snapshotPorNivel).forEach((k) => {
+      if (Number(k) > niveles) delete snapshotPorNivel[k];
+    });
     actualizarBadge();
     restaurarPagina(paginaActual);
   };
