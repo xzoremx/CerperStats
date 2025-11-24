@@ -1,40 +1,346 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://unpkg.com data:; connect-src 'self';" />
-  <title>Laboratorios - CerperStats</title>
-  <link rel="stylesheet" href="css/menu.css" />
-</head>
-
-<body>
-  <img src="assets/logos/logo.png" alt="CerperStats" class="about-logo" />
-
-  <div class="carousel-container">
-    <button class="nav-arrow left">&#8249;</button>
-
-    <div class="carousel-track">
-      <!-- Tarjetas generadas dinámicamente desde la base de datos -->
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CerperStats Menu</title>
+<!-- Inter font -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script><link id="all-fonts-link-font-geist" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-geist">.font-geist { font-family: 'Geist', sans-serif !important; }</style><link id="all-fonts-link-font-roboto" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-roboto">.font-roboto { font-family: 'Roboto', sans-serif !important; }</style><link id="all-fonts-link-font-montserrat" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-montserrat">.font-montserrat { font-family: 'Montserrat', sans-serif !important; }</style><link id="all-fonts-link-font-poppins" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-poppins">.font-poppins { font-family: 'Poppins', sans-serif !important; }</style><link id="all-fonts-link-font-playfair" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;900&amp;display=swap"><style id="all-fonts-style-font-playfair">.font-playfair { font-family: 'Playfair Display', serif !important; }</style><link id="all-fonts-link-font-instrument-serif" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:wght@400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-instrument-serif">.font-instrument-serif { font-family: 'Instrument Serif', serif !important; }</style><link id="all-fonts-link-font-merriweather" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&amp;display=swap"><style id="all-fonts-style-font-merriweather">.font-merriweather { font-family: 'Merriweather', serif !important; }</style><link id="all-fonts-link-font-bricolage" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-bricolage">.font-bricolage { font-family: 'Bricolage Grotesque', sans-serif !important; }</style><link id="all-fonts-link-font-jakarta" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-jakarta">.font-jakarta { font-family: 'Plus Jakarta Sans', sans-serif !important; }</style><link id="all-fonts-link-font-manrope" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-manrope">.font-manrope { font-family: 'Manrope', sans-serif !important; }</style><link id="all-fonts-link-font-space-grotesk" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-space-grotesk">.font-space-grotesk { font-family: 'Space Grotesk', sans-serif !important; }</style><link id="all-fonts-link-font-work-sans" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-work-sans">.font-work-sans { font-family: 'Work Sans', sans-serif !important; }</style><link id="all-fonts-link-font-pt-serif" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&amp;display=swap"><style id="all-fonts-style-font-pt-serif">.font-pt-serif { font-family: 'PT Serif', serif !important; }</style><link id="all-fonts-link-font-geist-mono" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-geist-mono">.font-geist-mono { font-family: 'Geist Mono', monospace !important; }</style><link id="all-fonts-link-font-space-mono" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&amp;display=swap"><style id="all-fonts-style-font-space-mono">.font-space-mono { font-family: 'Space Mono', monospace !important; }</style><link id="all-fonts-link-font-quicksand" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-quicksand">.font-quicksand { font-family: 'Quicksand', sans-serif !important; }</style><link id="all-fonts-link-font-nunito" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-nunito">.font-nunito { font-family: 'Nunito', sans-serif !important; }</style></head>
+  <body class="bg-black text-neutral-200 antialiased" style="font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji;"><div class="spline-container fixed top-0 w-full h-screen -z-10" data-alpha-mask="80" style="mask-image: linear-gradient(to bottom, transparent, black 0%, black 80%, transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 0%, black 80%, transparent)"><iframe src="https://my.spline.design/3dgradient-AcpgG6LxFkpnJSoowRHPfcbO" frameborder="0" width="100%" height="100%"></iframe></div>
+    <!-- Background layers -->
+    <div class="fixed inset-0 -z-10">
+      <!-- subtle dots -->
+      <div class="absolute inset-0 opacity-[0.35] bg-[radial-gradient(#101010_1px,transparent_1px)] [background-size:16px_16px]"></div>
+      <!-- grid lines -->
+      <div class="absolute inset-0 opacity-[0.22] bg-[linear-gradient(to_right,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:120px_1px,1px_120px]"></div>
+      <!-- vignette -->
+      <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60"></div>
     </div>
 
-    <button class="nav-arrow right">&#8250;</button>
+    <!-- Header -->
+    <header class="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-xs sm:text-sm tracking-tight text-neutral-300">LOCAL/ <span id="localTime" class="tabular-nums">01:45:41</span></span>
+        </div>
+        <div class="hidden sm:flex items-center gap-2 text-neutral-400">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="grip-horizontal" class="lucide lucide-grip-horizontal w-4 h-4"><circle cx="12" cy="9" r="1"></circle><circle cx="19" cy="9" r="1"></circle><circle cx="5" cy="9" r="1"></circle><circle cx="12" cy="15" r="1"></circle><circle cx="19" cy="15" r="1"></circle><circle cx="5" cy="15" r="1"></circle></svg>
+        </div>
+        <a href="#contact" class="group inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium tracking-tight text-white bg-white/5 hover:bg-white/10 ring-1 ring-white/10">
+          <span>Suporte</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="send" class="lucide lucide-send w-4 h-4 transition-transform group-hover:translate-x-0.5"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"></path><path d="m21.854 2.147-10.94 10.939"></path></svg>
+ </a>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="relative mt-10 sm:mt-16">
+        <h1 class="leading-none tracking-tight text-white select-none">
+          <span class="block text-[14vw] md:text-[9vw] xl:text-[7vw] 2xl:text-[5vw] font-extrabold" style="overflow: hidden;">
+            <span style="display:inline-block;animation:letterSlideIn 0.8s ease-out forwards;animation-delay:0s;transform:translateY(-100%);opacity:0;clip-path:inset(0 0 100% 0);">C</span>
+            <span style="display:inline-block;animation:letterSlideIn 0.8s ease-out forwards;animation-delay:0.1s;transform:translateY(-100%);opacity:0;clip-path:inset(0 0 100% 0);">E</span>
+            <span style="display:inline-block;animation:letterSlideIn 0.8s ease-out forwards;animation-delay:0.2s;transform:translateY(-100%);opacity:0;clip-path:inset(0 0 100% 0);">R</span>
+            <span style="display:inline-block;animation:letterSlideIn 0.8s ease-out forwards;animation-delay:0.3s;transform:translateY(-100%);opacity:0;clip-path:inset(0 0 100% 0);">P</span>
+            <span style="display:inline-block;animation:letterSlideIn 0.8s ease-out forwards;animation-delay:0.4s;transform:translateY(-100%);opacity:0;clip-path:inset(0 0 100% 0);">E</span>
+            <span style="display:inline-block;animation:letterSlideIn 0.8s ease-out forwards;animation-delay:0.5s;transform:translateY(-100%);opacity:0;clip-path:inset(0 0 100% 0);">R</span>
+            <span style="display:inline-block;animation:letterSlideIn 0.8s ease-out forwards;animation-delay:0.6s;transform:translateY(-100%);opacity:0;clip-path:inset(0 0 100% 0);">S</span>
+            <span style="display:inline-block;animation:letterSlideIn 0.8s ease-out forwards;animation-delay:0.7s;transform:translateY(-100%);opacity:0;clip-path:inset(0 0 100% 0);">T</span>
+            <span style="display:inline-block;animation:letterSlideIn 0.8s ease-out forwards;animation-delay:0.8s;transform:translateY(-100%);opacity:0;clip-path:inset(0 0 100% 0);">A</span>
+            <span style="display:inline-block;animation:letterSlideIn 0.8s ease-out forwards;animation-delay:0.9s;transform:translateY(-100%);opacity:0;clip-path:inset(0 0 100% 0);">T</span>
+            <span style="display:inline-block;animation:letterSlideIn 0.8s ease-out forwards;animation-delay:1.0s;transform:translateY(-100%);opacity:0;clip-path:inset(0 0 100% 0);">S</span>
+
+            <style>
+              @keyframes letterSlideIn {
+                0% {
+                  transform: translateY(-100%);
+                  opacity: 0;
+                  clip-path: inset(0 0 100% 0);
+                }
+                50% {
+                  opacity: 0.5;
+                  clip-path: inset(0 0 50% 0);
+                }
+                100% {
+                  transform: translateY(0);
+                  opacity: 1;
+                  clip-path: inset(0 0 0% 0);
+                }
+              }
+            </style>
+          </span>
+        </h1>
+
+
+        <!-- Info row -->
+        <div class="mt-6 sm:mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+          <div class="border-t border-white/10 pt-5">
+            <div class="flex items-start gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="map-pin" class="lucide lucide-map-pin w-5 h-5 text-emerald-400 mt-0.5"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              <div>
+                <p class="text-sm font-medium tracking-tight text-white/90">La Perla, Callao</p>
+                <p class="text-xs text-neutral-400 mt-1">Costa Peruana • UTC-05:00</p>
+              </div>
+            </div>
+          </div>
+          <div class="border-t border-white/10 pt-5">
+            <div class="flex items-start gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="globe-2" class="lucide lucide-globe-2 w-5 h-5 text-cyan-400 mt-0.5"><path d="M21.54 15H17a2 2 0 0 0-2 2v4.54"></path><path d="M7 3.34V5a3 3 0 0 0 3 3a2 2 0 0 1 2 2c0 1.1.9 2 2 2a2 2 0 0 0 2-2c0-1.1.9-2 2-2h3.17"></path><path d="M11 21.95V18a2 2 0 0 0-2-2a2 2 0 0 1-2-2v-1a2 2 0 0 0-2-2H2.05"></path><circle cx="12" cy="12" r="10"></circle></svg>
+              <div>
+                <p class="text-sm font-medium tracking-tight text-white/90">Disponible las 24h</p>
+                <p class="text-xs text-neutral-400 mt-1">Todos los días de la semana</p>
+              </div>
+            </div>
+          </div>
+          <div class="border-t border-white/10 pt-5">
+            <div class="flex items-start gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="cpu" class="lucide lucide-cpu w-5 h-5 text-indigo-400 mt-0.5"><path d="M12 20v2"></path><path d="M12 2v2"></path><path d="M17 20v2"></path><path d="M17 2v2"></path><path d="M2 12h2"></path><path d="M2 17h2"></path><path d="M2 7h2"></path><path d="M20 12h2"></path><path d="M20 17h2"></path><path d="M20 7h2"></path><path d="M7 20v2"></path><path d="M7 2v2"></path><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="8" y="8" width="8" height="8" rx="1"></rect></svg>
+              <div>
+                <p class="text-sm font-medium tracking-tight text-white/90">Área de Estadística y Procesos</p>
+                <p class="text-xs text-neutral-400 mt-1">Iniciativa de desarrollo de aplicaciones</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature image -->
+        <div class="mt-10 sm:mt-14">
+          <div class="relative overflow-hidden rounded-2xl ring-1 ring-white/10 bg-white/5">
+            <div class="absolute inset-0 bg-gradient-to-tr from-red-500/30 via-transparent to-transparent mix-blend-screen pointer-events-none"></div>
+            <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/66564ff6-2e5b-480a-8c1a-049f0289552a_1600w.jpg" alt="Portrait with bold red lighting" class="sm:h-[60vh] w-full h-[52vh] object-cover" loading="eager">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Showcase -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 mt-14 sm:mt-20">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl sm:text-2xl tracking-tight font-semibold text-white">Laboratorios CERPER</h2>
+      </div>
+      <div id="labsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-5 gap-x-5 gap-y-5"></div>
+    </section><section id="about" class="max-w-7xl mx-auto px-4 sm:px-6 mt-14 sm:mt-20">
+  <div class="rounded-2xl ring-1 ring-white/10 overflow-hidden bg-white/5">
+    <div class="flex items-end justify-between p-6 border-b border-white/10">
+      <h2 class="text-2xl sm:text-3xl tracking-tight font-semibold text-white">Dashboard</h2>
+      <p class="hidden sm:block text-xs text-neutral-400">Resumen general</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-12">
+      <!-- Name -->
+      <div class="p-6 md:col-span-3 border-b md:border-b-0 md:border-r border-white/10">
+        <p class="text-sm text-neutral-400">App de Evaluación Estadística</p>
+        <p class="mt-1 text-lg font-medium tracking-tight text-white">CerperStats</p>
+        <div class="mt-4 flex items-center gap-2 text-xs text-neutral-400">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="map-pin" class="lucide lucide-map-pin w-4 h-4"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          <span class="">La Perla, Callao • Remote-friendly</span>
+        </div>
+      </div>
+
+      <!-- Portrait (row-span-2) -->
+      <div class="relative md:col-span-6 md:row-span-2 border-b md:border-b-0 md:border-r border-white/10">
+        <div class="relative aspect-[16/10] md:aspect-[9/10] lg:aspect-[16/10]">
+          <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/86667667-122a-46f3-98a9-2089ebc67625_1600w.jpg" alt="Portrait side profile with dramatic lighting" class="w-full h-full object-cover absolute top-0 right-0 bottom-0 left-0">
+          <div class="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent pointer-events-none"></div>
+
+          <!-- Overlay stats (desktop) -->
+          <div class="hidden md:block absolute inset-0 pointer-events-none">
+            <div class="absolute top-5 right-5 rounded-xl bg-black/45 ring-1 ring-white/10 backdrop-blur-sm p-4">
+              <div class="text-2xl lg:text-3xl font-semibold tracking-tight text-white">50+</div>
+              <p class="text-[11px] text-neutral-300 mt-0.5">Informes generados</p>
+            </div>
+            <div class="absolute bottom-5 left-5 rounded-xl bg-black/45 ring-1 ring-white/10 backdrop-blur-sm p-4">
+              <div class="text-2xl lg:text-3xl font-semibold tracking-tight text-white">10+</div>
+              <p class="text-[11px] text-neutral-300 mt-0.5">Pruebas estadísticas</p>
+            </div>
+            <div class="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-xl bg-black/45 ring-1 ring-white/10 backdrop-blur-sm p-4">
+              <div class="text-2xl lg:text-3xl font-semibold tracking-tight text-white">3</div>
+              <p class="text-[11px] text-neutral-300 mt-0.5">Plantillas de informes base</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right stat (top) -->
+      <div class="p-6 md:col-span-3 border-b md:border-b-0">
+        <div class="text-3xl font-semibold tracking-tight text-white">10</div>
+        <p class="text-xs text-neutral-400 mt-1">Laboratorios</p>
+      </div>
+
+      <!-- Bio (bottom-left) -->
+      <div class="p-6 md:col-span-3 border-t md:border-t border-white/10 md:border-r">
+        <p class="text-sm text-neutral-300 leading-relaxed">
+          Aplicación desarrollada en Electron + HTML + JavaScript para la gestión, validación y análisis estadístico de datos experimentales generados por los laboratorios de CERPER
+        </p>
+      </div>
+
+      <!-- Right stat (bottom) -->
+      <div class="p-6 md:col-span-3 border-t border-white/10">
+        <div class="text-3xl font-semibold tracking-tight text-white">30+</div>
+        <p class="text-xs text-neutral-400 mt-1">Usuarios</p>
+      </div>
+    </div>
   </div>
+</section><section id="services" class="max-w-7xl mx-auto px-4 sm:px-6 mt-14 sm:mt-20">
+  <div class="ring-1 ring-white/10 overflow-hidden bg-white/5 rounded-2xl">
+    <div class="flex items-end justify-between p-6 border-b border-white/10">
+      <h2 class="text-2xl sm:text-3xl tracking-tight font-semibold text-white">Funcionalidades</h2>
+    </div>
 
-  <div class="member-info">
-    <h2 class="member-name">Selecciona un laboratorio</h2>
-    <p class="member-role"></p>
+    <!-- Row 1 -->
+    <div class="p-6 sm:p-8 border-b border-white/10">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        <div class="md:col-span-1">
+          <div class="text-3xl sm:text-4xl font-medium tracking-tight text-white/70 tabular-nums">1</div>
+        </div>
+        <div class="md:col-span-8">
+          <ul class="space-y-2">
+            <li class="flex items-start gap-2 text-sm text-neutral-300">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" class="lucide lucide-check w-3.5 h-3.5 mt-0.5 text-emerald-400"><path d="M20 6 9 17l-5-5"></path></svg>
+              <span>Evaluación de normalidad, homogeneidad de varianzas y Tendencia central</span>
+            </li>
+            <li class="flex items-start gap-2 text-sm text-neutral-300">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" class="lucide lucide-check w-3.5 h-3.5 mt-0.5 text-emerald-400"><path d="M20 6 9 17l-5-5"></path></svg>
+              <span>En mas de 1 nivel de concentración</span>
+            </li>
+            <li class="flex items-start gap-2 text-sm text-neutral-300">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" class="lucide lucide-check w-3.5 h-3.5 mt-0.5 text-emerald-400"><path d="M20 6 9 17l-5-5"></path></svg>
+              <span>Soporte para datos monoanalito y multianalito</span>
+            </li>
+          </ul>
+
+          <div class="mt-4 flex items-center gap-3">
+            <div class="aspect-[4/3] w-24 sm:w-28 rounded-md overflow-hidden ring-1 ring-white/10">
+              <img src="assets/images/menu/1_1.png" alt="TratamientoResultados_1" class="w-full h-full object-cover">
+            </div>
+            <div class="aspect-[4/3] w-24 sm:w-28 rounded-md overflow-hidden ring-1 ring-white/10">
+              <img src="assets/images/menu/1_2.png" alt="TratamientoResultados_2" class="w-full h-full object-cover">
+            </div>
+              <div class="aspect-[4/3] w-24 sm:w-28 rounded-md overflow-hidden ring-1 ring-white/10">
+              <img src="assets/images/menu/1_3.png" alt="TratamientoResultados_3" class="w-full h-full object-cover">
+            </div>
+          </div>
+        </div>
+        <div class="md:col-span-3 md:text-right">
+          <h3 class="text-lg sm:text-xl tracking-tight font-semibold text-white">Tratamiento de Resultados</h3>
+          <p class="text-xs text-neutral-400 mt-1">Análisis estadístico central</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="p-6 sm:p-8 border-b border-white/10">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        <div class="md:col-span-1">
+          <div class="text-3xl sm:text-4xl font-medium tracking-tight text-white/70 tabular-nums">2</div>
+        </div>
+        <div class="md:col-span-8">
+          <ul class="space-y-2">
+            <li class="flex items-start gap-2 text-sm text-neutral-300">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" class="lucide lucide-check w-3.5 h-3.5 mt-0.5 text-emerald-400"><path d="M20 6 9 17l-5-5"></path></svg>
+              <span>Trazabilidad completa de cálculos, parámetros y versiones</span>
+            </li>
+            <li class="flex items-start gap-2 text-sm text-neutral-300">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" class="lucide lucide-check w-3.5 h-3.5 mt-0.5 text-emerald-400"><path d="M20 6 9 17l-5-5"></path></svg>
+              <span>Resultados listos para integrarse a reportes y plantillas corporativas</span>
+            </li>
+          </ul>
+
+          <div class="mt-4 flex items-center gap-3">
+            <div class="aspect-[16/10] w-28 sm:w-32 rounded-md overflow-hidden ring-1 ring-white/10">
+              <img src="assets/images/menu/2_1.png" alt="GestionTrazabilidad_1" class="w-full h-full object-cover grayscale">
+            </div>
+            <div class="aspect-[16/10] w-28 sm:w-32 rounded-md overflow-hidden ring-1 ring-white/10">
+              <img src="assets/images/menu/2_2.png" alt="GestionTrazabilidad_2" class="w-full h-full object-cover grayscale">
+            </div>
+          </div>
+        </div>
+        <div class="md:col-span-3 md:text-right">
+          <h3 class="text-lg sm:text-xl tracking-tight font-semibold text-white">Gestión y Trazabilidad</h3>
+          <p class="text-xs text-neutral-400 mt-1">Sesiones, versiones y auditoría de resultados</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3 -->
+    <div class="p-6 sm:p-8">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        <div class="md:col-span-1">
+          <div class="text-3xl sm:text-4xl font-medium tracking-tight text-white/70 tabular-nums">3</div>
+        </div>
+        <div class="md:col-span-8">
+          <ul class="space-y-2">
+            <li class="flex items-start gap-2 text-sm text-neutral-300">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" class="lucide lucide-check w-3.5 h-3.5 mt-0.5 text-emerald-400"><path d="M20 6 9 17l-5-5"></path></svg>
+              <span>Integración con motor estadístico en Python sobre servidor seguro</span>
+            </li>
+            <li class="flex items-start gap-2 text-sm text-neutral-300">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" class="lucide lucide-check w-3.5 h-3.5 mt-0.5 text-emerald-400"><path d="M20 6 9 17l-5-5"></path></svg>
+              <span>Exportación de resultados en formatos listos para PDF / reportes finales</span>
+            </li>
+          </ul>
+
+          <div class="mt-4 flex items-center gap-3">
+            <div class="aspect-[16/10] w-32 sm:w-40 rounded-md overflow-hidden ring-1 ring-white/10">
+              <img src="assets/images/menu/3_1.png" alt="Automatizacion_1" class="w-full h-full object-cover">
+            </div>
+            <div class="aspect-[16/10] w-32 sm:w-40 rounded-md overflow-hidden ring-1 ring-white/10">
+              <img src="assets/images/menu/3_2.png" alt="Automatizacion_2" class="w-full h-full object-cover">
+            </div>
+          </div>
+        </div>
+        <div class="md:col-span-3 md:text-right">
+          <h3 class="text-lg sm:text-xl tracking-tight font-semibold text-white">Automatización y Experiencia</h3>
+          <p class="text-xs text-neutral-400 mt-1">Flujo guiado, motor Python disponible las 24h</p>
+        </div>
+      </div>
+    </div>
   </div>
+</section>
 
-  <div class="dots"></div>
+    <!-- Footer -->
+    <footer id="contact" class="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24 mb-10">
+      <div class="rounded-2xl p-6 sm:p-8 ring-1 ring-white/10 bg-white/5">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div>
+            <p class="text-sm text-neutral-400">Abierto para colaboraciones</p>
+            <h3 class="mt-1 text-xl sm:text-2xl tracking-tight font-semibold text-white">Inf. de contacto</h3>
+          </div>
+          <div class="flex items-center gap-3">
+            <a href="mailto:renato.huamani@pucp.edu.pe" class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium tracking-tight text-white bg-white/10 hover:bg-white/20">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="mail" class="lucide lucide-mail w-4 h-4"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"></path><rect x="2" y="4" width="20" height="16" rx="2"></rect></svg>
+              <span>renato.huamani@pucp.edu.pe</span>
+            </a>
+            <a href="https://api.whatsapp.com/send?phone=51938897752" class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium tracking-tight text-white bg-emerald-500/90 hover:bg-emerald-500">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="message-square" class="lucide lucide-message-square w-4 h-4"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"></path></svg>
+              <span>WhatsApp</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <p class="mt-6 text-xs text-neutral-500">©<span id="year">2025</span> zorem</p>
+    </footer>
 
-  <script src="js/auth_guard.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="js/security/icon_safety.js"></script>
-  <script type="module" src="js/menu.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      lucide.createIcons();
-    });
-  </script>
-</body>
-</html>
+    <!-- Scripts -->
+    <script src="js/security/icon_safety.js"></script>
+    <script src="js/menu.js"></script>
+    <script>
+      const timeEl = document.getElementById('localTime');
+      function updateClock() {
+        const d = new Date();
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        const ss = String(d.getSeconds()).padStart(2, '0');
+        if (timeEl) timeEl.textContent = `${hh}:${mm}:${ss}`;
+      }
+      updateClock();
+      setInterval(updateClock, 1000);
+      const yearEl = document.getElementById('year');
+      if (yearEl) yearEl.textContent = new Date().getFullYear();
+    </script>
+  
+</body></html>

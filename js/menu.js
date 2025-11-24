@@ -1,187 +1,84 @@
-// --- variables de laboratorios ---
-let labs = [];
-let labColors = [];
-let cards = [];
-let dots = [];
+// Generador dinámico de cards de laboratorios para menu-test.html
+const gridEl = document.getElementById("labsGrid");
 
-// --- Elementos del carrusel ---
-const track = document.querySelector(".carousel-track");
-const dotsContainer = document.querySelector(".dots");
-const memberName = document.querySelector(".member-name");
-const memberRole = document.querySelector(".member-role");
-const leftArrow = document.querySelector(".nav-arrow.left");
-const rightArrow = document.querySelector(".nav-arrow.right");
-
-let currentIndex = 0;
-let isAnimating = false;
-
-// --- Cargar laboratorios desde la base de datos (vía preload / main.js) ---
-async function loadLabsFromDB() {
-  try {
-    const rows = await window.cerper.getLabs();
-
-    if (!rows || !Array.isArray(rows) || !rows.length) {
-      throw new Error("No se encontraron laboratorios en la base de datos.");
-    }
-
-    labs = rows.map((l) => ({
-      key: l.lab_key,
-      name: l.nombre,
-      role: l.descripcion || l.nombre || "",
-      icon: l.icon_lucide || l.icono || null,
-    }));
-
-    labColors = rows.map((l) => l.color || "#00ffff");
-
-    console.log(`[CerperStats] Laboratorios cargados (${labs.length})`);
-    await renderLabs();
-  } catch (err) {
-    console.error("[CerperStats] Error al cargar laboratorios:", err);
-    labs = [];
-    labColors = [];
-    await renderLabs();
-  }
+function labImageSrc(lab, idx) {
+  const key = lab.lab_key || lab.key || `lab-${idx}`;
+  return `assets/images/labs/${key}.png`;
 }
 
-async function renderLabs() {
-  if (!track || !dotsContainer) return;
-  track.innerHTML = "";
-  dotsContainer.innerHTML = "";
-  cards = [];
-  dots = [];
+function buildLabCard(lab, idx) {
+  const card = document.createElement("article");
+  card.className =
+    "group rounded-xl overflow-hidden ring-1 ring-white/10 bg-white/5 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:ring-white/20";
+  card.dataset.labKey = lab.lab_key || lab.key || "";
 
-  if (!labs.length) {
-    const empty = document.createElement("div");
-    empty.className = "card center";
-    empty.innerHTML = `
-      <div class="lab-icon"><i data-lucide="alert-triangle"></i></div>
-      <h2>Sin laboratorios</h2>
-      <p style="opacity:0.75;font-size:0.9rem;">Contacte al administrador.</p>
-    `;
-    track.appendChild(empty);
-    cards.push(empty);
-    if (window.lucide?.createIcons) window.lucide.createIcons();
-    return;
+  const color = lab.color || "#22d3ee";
+  const imgSrc = labImageSrc(lab, idx);
+  const nombre = lab.nombre || lab.name || lab.lab_key || "Laboratorio";
+  const descripcion = lab.descripcion || "Laboratorio activo";
+  const iconName = lab.icon_lucide || lab.icono || lab.icon || "flask-conical";
+
+  card.innerHTML = `
+    <div class="relative aspect-[16/10] overflow-hidden">
+      <img src="${imgSrc}" alt="${nombre}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" onerror="this.onerror=null;this.src='assets/images/labs/placeholder.png';" />
+      <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-transparent"></div>
+      <div class="absolute top-3 left-3 inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium text-white backdrop-blur-md" style="background:${color}1a;border:1px solid ${color}33;">
+        <span class="inline-flex items-center justify-center" data-icon-slot></span>
+      </div>
+    </div>
+    <div class="p-5 bg-transparent">
+      <h3 class="text-base font-semibold tracking-tight text-white drop-shadow-md" title="${nombre}">
+        ${nombre}
+      </h3>
+      <p class="mt-1.5 text-sm leading-relaxed text-neutral-200/90 font-medium line-clamp-2">
+        ${descripcion}
+      </p>
+    </div>
+  `;
+
+  const iconSlot = card.querySelector("[data-icon-slot]");
+  if (iconSlot && window.IconSafety?.attachIcon) {
+    window.IconSafety.attachIcon(iconSlot, iconName).then((ok) => {
+      if (!ok) iconSlot.innerHTML = '<i data-lucide="flask-conical"></i>';
+      if (window.lucide?.createIcons) window.lucide.createIcons({ icons: [iconSlot] });
+    });
   }
 
-  for (let i = 0; i < labs.length; i++) {
-    const lab = labs[i];
-    const card = document.createElement("div");
-    card.className = "card";
-    card.dataset.index = String(i);
-    card.dataset.lab = lab.name || lab.key;
-    card.dataset.route = "procedure_select.html";
-
-    const iconSlot = document.createElement("div");
-    iconSlot.className = "lab-icon";
-    const iconName = lab.icon || "bar-chart-2";
-    let ok = false;
-    if (window.IconSafety && typeof window.IconSafety.attachIcon === "function") {
-      ok = await window.IconSafety.attachIcon(iconSlot, iconName);
+  card.addEventListener("click", () => {
+    const key = lab.lab_key || lab.key;
+    if (!key) return;
+    sessionStorage.setItem("labSeleccionado", key);
+    sessionStorage.setItem("labNombreVisible", nombre);
+    localStorage.setItem("labSeleccionado", key);
+    localStorage.setItem("labNombreVisible", nombre);
+    if (window.cerper?.openPage) {
+      window.cerper.openPage("procedure_select.html");
     } else {
-      const safe = String(iconName || "").toLowerCase().replace(/[^a-z0-9\-]/g, "") || "bar-chart-2";
-      iconSlot.innerHTML = `<i data-lucide="${safe}"></i>`;
-      ok = true;
+      window.location.href = "procedure_select.html";
     }
-    if (!ok) {
-      iconSlot.innerHTML = `<i data-lucide="bar-chart-2"></i>`;
-    }
-
-    const title = document.createElement("h2");
-    title.textContent = lab.name || lab.key;
-
-    card.appendChild(iconSlot);
-    card.appendChild(title);
-
-    track.appendChild(card);
-    cards.push(card);
-
-    const dot = document.createElement("div");
-    dot.className = "dot" + (i === 0 ? " active" : "");
-    dot.dataset.index = String(i);
-    dotsContainer.appendChild(dot);
-    dots.push(dot);
-  }
-
-  if (window.lucide?.createIcons) window.lucide.createIcons();
-
-  cards.forEach((card, i) => card.addEventListener("click", () => handleCardClick(i)));
-  dots.forEach((dot, i) => dot.addEventListener("click", () => updateCarousel(i)));
-
-  updateCarousel(Math.min(currentIndex, cards.length - 1));
-}
-
-// --- Actualiza posición y texto ---
-function updateCarousel(newIndex) {
-  if (isAnimating || !cards.length) return;
-  isAnimating = true;
-
-  currentIndex = (newIndex + cards.length) % cards.length;
-
-  cards.forEach((card, i) => {
-    const offset = (i - currentIndex + cards.length) % cards.length;
-    card.classList.remove("center", "left-1", "left-2", "right-1", "right-2", "hidden");
-
-    if (offset === 0) card.classList.add("center");
-    else if (offset === 1) card.classList.add("right-1");
-    else if (offset === 2) card.classList.add("right-2");
-    else if (offset === cards.length - 1) card.classList.add("left-1");
-    else if (offset === cards.length - 2) card.classList.add("left-2");
-    else card.classList.add("hidden");
   });
 
-  dots.forEach((dot, i) => dot.classList.toggle("active", i === currentIndex));
-
-  memberName.style.opacity = "0";
-  memberRole.style.opacity = "0";
-
-  setTimeout(() => {
-    const color = labColors[currentIndex] || "#00ffff";
-    memberName.textContent = labs[currentIndex]?.name || "Laboratorio";
-    memberRole.textContent = labs[currentIndex]?.role || "";
-    memberName.style.color = color;
-    memberName.style.textShadow = `0 0 1px ${color}, 0 0 2px ${color}`;
-    memberName.style.opacity = "1";
-    memberRole.style.opacity = "1";
-  }, 300);
-
-  setTimeout(() => (isAnimating = false), 800);
+  return card;
 }
 
-function handleCardClick(i) {
-  updateCarousel(i);
-  const selectedLab = labs[i];
-  if (!selectedLab) return;
-
-  sessionStorage.setItem("labSeleccionado", selectedLab.key);
-  sessionStorage.setItem("labNombreVisible", selectedLab.name);
-  localStorage.setItem("labSeleccionado", selectedLab.key);
-  localStorage.setItem("labNombreVisible", selectedLab.name);
-
-  if (window.cerper && typeof window.cerper.openPage === "function") {
-    window.cerper.openPage("procedure_select.html");
-  } else {
-    window.location.href = "procedure_select.html";
+async function loadLabs() {
+  if (!gridEl) return;
+  gridEl.innerHTML = `<p class="text-sm text-neutral-300">Cargando laboratorios...</p>`;
+  try {
+    const rows = await window.cerper.getLabs();
+    if (!rows || !rows.length) {
+      gridEl.innerHTML = `<p class="text-sm text-neutral-400">No hay laboratorios activos.</p>`;
+      return;
+    }
+    gridEl.innerHTML = "";
+    rows.forEach((lab, idx) => {
+      gridEl.appendChild(buildLabCard(lab, idx));
+    });
+    if (window.lucide?.createIcons) window.lucide.createIcons();
+  } catch (err) {
+    console.error("[Menu] Error cargando labs", err);
+    gridEl.innerHTML = `<p class="text-sm text-red-300">No se pudieron cargar los laboratorios.</p>`;
   }
 }
 
-// --- Navegación lateral / teclado / swipe ---
-if (leftArrow) leftArrow.addEventListener("click", () => updateCarousel(currentIndex - 1));
-if (rightArrow) rightArrow.addEventListener("click", () => updateCarousel(currentIndex + 1));
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "ArrowLeft") updateCarousel(currentIndex - 1);
-  else if (e.key === "ArrowRight") updateCarousel(currentIndex + 1);
-});
-
-let touchStartX = 0;
-document.addEventListener("touchstart", (e) => (touchStartX = e.changedTouches[0].screenX));
-document.addEventListener("touchend", (e) => {
-  const diff = touchStartX - e.changedTouches[0].screenX;
-  if (Math.abs(diff) > 50) updateCarousel(currentIndex + (diff > 0 ? 1 : -1));
-});
-
-// --- Inicialización del carrusel ---
-document.addEventListener("DOMContentLoaded", async () => {
-  await loadLabsFromDB();
-});
+document.addEventListener("DOMContentLoaded", loadLabs);
