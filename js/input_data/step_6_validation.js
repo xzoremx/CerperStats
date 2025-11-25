@@ -501,6 +501,7 @@ function validarEstructuraYContenido(opts = {}) {
   const erroresTotales = [];
   const registros = [];
   const meta = {};
+  let expectedHeaders = null;
 
   // Backup de snapshots para no corromper otras páginas durante la validación
   const snapshotRef = (typeof window.snapshotPorNivel === "object" && window.snapshotPorNivel) ? window.snapshotPorNivel : null;
@@ -521,6 +522,19 @@ function validarEstructuraYContenido(opts = {}) {
     if (tipoAnalisis === "multi") {
       const res = validarMulti(rows, errores, { nivel });
       if (!errores.length && res?.registros) {
+        if (!expectedHeaders) {
+          expectedHeaders = res.encabezados ? [...res.encabezados] : null;
+        } else if (expectedHeaders && res.encabezados) {
+          const sameLength = expectedHeaders.length === res.encabezados.length;
+          const sameOrder = sameLength && expectedHeaders.every((h, idx) => h === res.encabezados[idx]);
+          if (!sameLength || !sameOrder) {
+            errores.push("Los analitos/encabezados no coinciden con el nivel 1.");
+          }
+        }
+        if (errores.length) {
+          erroresTotales.push(...errores.map(e => `[Nivel ${nivel}] ${e}`));
+          continue;
+        }
         registros.push(...res.registros);
         meta.encabezados = res.encabezados;
         meta.lecturas = res.lecturas;
@@ -578,6 +592,7 @@ function validarEstructuraYContenidoSnapshots(opts = {}) {
     (typeof window.snapshotPorNivel === "object" && window.snapshotPorNivel)
       ? window.snapshotPorNivel
       : null;
+  let expectedHeaders = null;
 
   for (let nivel = 1; nivel <= nivelesCount; nivel++) {
     const snap = snapshotRef && snapshotRef[nivel];
@@ -591,6 +606,19 @@ function validarEstructuraYContenidoSnapshots(opts = {}) {
     if (tipoAnalisis === "multi") {
       const res = validarMulti(rows, errores, { nivel });
       if (!errores.length && res?.registros) {
+        if (!expectedHeaders) {
+          expectedHeaders = res.encabezados ? [...res.encabezados] : null;
+        } else if (expectedHeaders && res.encabezados) {
+          const sameLength = expectedHeaders.length === res.encabezados.length;
+          const sameOrder = sameLength && expectedHeaders.every((h, idx) => h === res.encabezados[idx]);
+          if (!sameLength || !sameOrder) {
+            errores.push("Los analitos/encabezados no coinciden con el nivel 1.");
+          }
+        }
+        if (errores.length) {
+          erroresTotales.push(...errores.map(e => `[Nivel ${nivel}] ${e}`));
+          continue;
+        }
         registros.push(...res.registros);
         meta.encabezados = res.encabezados;
         meta.lecturas = res.lecturas;
