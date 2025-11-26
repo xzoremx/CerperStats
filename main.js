@@ -17,7 +17,7 @@ const ROUTES = new Set([
   'results_general.html',
   'reports.html',
   // Flujo input_data
-  'input_data/preinfo.html',
+  'input_data/input_data.html',
   'input_data/step_1_type.html',
   'input_data/step_2_parametro.html',
   'input_data/step_3_dato.html',
@@ -322,5 +322,4 @@ ipcMain.handle("db-get-tests-with-metadata", async (event, session_id) => {
     return { ok: false, error: err.message };
   }
 });
-
 

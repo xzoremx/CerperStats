@@ -1,6 +1,6 @@
 ﻿<html lang="en"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Template</title>
+<title>Input Data</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
@@ -111,21 +111,21 @@ transform: translateY(0);
           Registro de datos
         </div>
         <div class="flex items-center gap-4">
-          <img src="assets/logos/procedures/autorizaciones.png" alt="Logotipo de Autorizaciones" class="w-14 h-14 object-contain rounded-lg bg-white/5 p-2 border border-white/10 shadow-lg">
-          <h1 class="md:text-8xl bg-clip-text text-4xl text-transparent tracking-tight bg-gradient-to-r from-white via-white to-gray-300 mb-3 font-space-grotesk font-light">Autorización</h1>
+          <img id="header-logo" src="../assets/logos/procedures/autorizaciones.png" alt="Logotipo de Autorizaciones" class="w-14 h-14 object-contain rounded-lg bg-white/5 p-2 border border-white/10 shadow-lg">
+          <h1 id="header-title" class="md:text-8xl bg-clip-text text-4xl text-transparent tracking-tight bg-gradient-to-r from-white via-white to-gray-300 mb-3 font-space-grotesk font-light">Autorizacion</h1>
         </div>
         <div class="flex items-center gap-5 text-sm text-gray-400 mb-4">
           <div class="flex items-center gap-1 font-geist">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><path d="M16 3.128a4 4 0 0 1 0 7.744"></path><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><circle cx="9" cy="7" r="4"></circle></svg>
-            Laboratorio de Cromatografí­a de Gases
+            <span id="lab-subtitle">Laboratorio</span>
           </div>
         </div>
       </div>
       
       <div class="lg:max-w-sm mt-4 lg:mt-0 lg:ml-8">
         <div class="glass-divider mb-4 lg:hidden"></div>
-        <p class="text-sm leading-relaxed text-gray-300 backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-white/10 font-geist">
-          Este procedimiento implica verificar la coherencia entre las mediciones de los distintos operadores, asegurando que cumplan con los criterios de aceptación estadísticos (como repetibilidad y reproducibilidad) y normativos establecidos.
+        <p id="procedure-description" class="text-sm leading-relaxed text-gray-300 backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-white/10 font-geist">
+          Este procedimiento implica verificar la coherencia entre las mediciones de los distintos operadores, asegurando que cumplan con los criterios de aceptacion estadisticos (como repetibilidad y reproducibilidad) y normativos establecidos.
         </p>
       </div>
     </div>
@@ -138,42 +138,42 @@ transform: translateY(0);
         <div class="relative text-left md:col-span-2">
           <div class="inline-flex items-center gap-2 mb-3 backdrop-blur-sm bg-white/5 rounded-lg py-2 px-3 border border-white/10 font-geist">
             <i data-lucide="book-open" class="w-4 h-4 text-blue-400"></i>
-            Método
+            Metodo
           </div>
-          <input type="text" placeholder="Ingresa el método" class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner">
+          <input id="metodo" type="text" placeholder="Ingresa el metodo" class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner">
         </div>
         <div class="relative text-left md:col-span-2">
           <div class="inline-flex items-center gap-2 mb-3 backdrop-blur-sm bg-white/5 rounded-lg py-2 px-3 border border-white/10 font-geist">
             <i data-lucide="package" class="w-4 h-4 text-purple-400"></i>
             Producto
           </div>
-          <input type="text" placeholder="Ingresa el producto" class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner">
+          <input id="producto" type="text" placeholder="Ingresa el producto" class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner">
         </div>
         <div class="relative text-left md:col-span-2">
           <div class="inline-flex items-center gap-2 mb-3 backdrop-blur-sm bg-white/5 rounded-lg py-2 px-3 border border-white/10 font-geist">
             <i data-lucide="microscope" class="w-4 h-4 text-green-400"></i>
             Ensayo
           </div>
-          <input type="text" placeholder="Ingresa el ensayo" class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner">
+          <input id="ensayo" type="text" placeholder="Ingresa el ensayo" class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner">
         </div>
         <div class="relative text-left">
           <div class="inline-flex items-center gap-2 mb-3 backdrop-blur-sm bg-white/5 rounded-lg py-2 px-3 border border-white/10 font-geist">
             <i data-lucide="folder-open" class="w-4 h-4 text-yellow-400"></i>
             Expediente
           </div>
-          <input type="text" placeholder="Ingresa el expediente" class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner">
+          <input id="expediente" type="text" placeholder="Ingresa el expediente" class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner">
         </div>
         <div class="relative text-left">
           <div class="inline-flex items-center gap-2 mb-3 backdrop-blur-sm bg-white/5 rounded-lg py-2 px-3 border border-white/10 font-geist">
             <i data-lucide="ruler" class="w-4 h-4 text-accent-500"></i>
             Unidad de Medida
           </div>
-          <input type="text" placeholder="Ingresa la unidad de medida" class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner">
+          <input id="unidad" type="text" placeholder="Ingresa la unidad de medida" class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner">
         </div>
       </div>
 
     <!-- Step_1_type -->
-    <div class="flex flex-wrap gap-6 mt-12 pt-6 border-t border-white/10">
+    <div id="step1-section" class="flex flex-wrap gap-6 mt-12 pt-6 border-t border-white/10">
       <div class="w-full glass-card rounded-xl border border-white/10 p-6">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
           <div>
@@ -203,7 +203,7 @@ transform: translateY(0);
     </div>
 
     <!-- step_2_parametro -->
-    <div class="flex flex-wrap gap-6 mt-12 pt-6 border-t border-white/10">
+    <div id="step2-section" class="flex flex-wrap gap-6 mt-12 pt-6 border-t border-white/10">
       <div class="w-full glass-card rounded-xl border border-white/10 p-6">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
           <div>
@@ -244,7 +244,7 @@ transform: translateY(0);
 
     <!-- Button Continue -->
     <div class="flex flex-wrap justify-center gap-6 mt-12 pt-6 border-t border-white/10">
-        <div class="bar bar-accent h-10 rounded-full px-6 py-2 font-geist w-fit cursor-pointer">
+        <div id="btn-siguiente" class="bar bar-accent h-10 rounded-full px-6 py-2 font-geist w-fit cursor-pointer">
             Continuar
         </div>
     </div>
@@ -275,6 +275,7 @@ transform: translateY(0);
   </section>
 </main>
 
+<script type="module" src="../js/input_data/preinfo.js"></script>
 <script>
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();

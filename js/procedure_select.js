@@ -104,12 +104,32 @@ function setLabInfo(session) {
   }
 }
 
-async function handleProcedureSelection(proc) {
+let PROCEDURE_DICT = {};
+
+async function loadProcedureDictionary() {
+  try {
+    const res = await fetch("config/procedure_descriptions.json", { cache: "no-cache" });
+    if (res.ok) {
+      PROCEDURE_DICT = await res.json();
+    }
+  } catch (err) {
+    console.warn("[CerperStats] No se pudo cargar procedure_descriptions.json:", err);
+  }
+}
+
+async function handleProcedureSelection(procedure) {
+  const proc = procedure?.proc || procedure?.id || "";
+  const dictKey = (procedure?.id || proc || "").toLowerCase();
+  const meta = PROCEDURE_DICT[dictKey] || {};
+
   sessionStorage.setItem("procedimientoSeleccionado", proc);
+  sessionStorage.setItem("procedimientoImagen", meta.image || procedure?.image || "");
+  sessionStorage.setItem("procedimientoTitulo", meta.title || procedure?.title || proc);
+  sessionStorage.setItem("procedimientoDescripcion", meta.description || "");
   if (window.cerper?.openPage) {
-    await window.cerper.openPage("input_data/preinfo.html");
+    await window.cerper.openPage("input_data/input_data.html");
   } else {
-    window.location.href = "input_data/preinfo.html";
+    window.location.href = "input_data/input_data.html";
   }
 }
 
@@ -151,13 +171,13 @@ function createCard(procedure) {
 
   article.addEventListener("click", (event) => {
     event.preventDefault();
-    handleProcedureSelection(procedure.proc);
+    handleProcedureSelection(procedure);
   });
 
   article.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      handleProcedureSelection(procedure.proc);
+      handleProcedureSelection(procedure);
     }
   });
 
@@ -233,6 +253,7 @@ function initIcons() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  loadProcedureDictionary();
   applyConfig();
   const session = getSessionData();
   setLabInfo(session);

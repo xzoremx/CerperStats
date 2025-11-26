@@ -28,9 +28,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Volver a preinfo
   goMenu.addEventListener("click", () => {
     if (window.cerper && window.cerper.openPage) {
-      window.cerper.openPage("input_data/preinfo.html");
+      window.cerper.openPage("input_data/input_data.html");
     } else {
-      window.location.href = "preinfo.html"; 
+      window.location.href = "input_data.html"; 
     }
   });
 
