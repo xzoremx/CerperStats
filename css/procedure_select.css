@@ -273,36 +273,20 @@ article.card:active {
 .btn-sessions {
   position: fixed;
   bottom: 25px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #aaa9a9;
-  padding: 0.7rem 1.5rem;
-  border-radius: 12px;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  border-radius: 9999px;
   cursor: pointer;
-  font-weight: 500;
-  letter-spacing: 0.3px;
-  font-size: 0.95rem;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2),
-              0 0 15px rgba(255, 255, 255, 0.05) inset;
-  transition: all 0.3s ease-in-out;
   z-index: 10;
 }
 
 .btn-back { left: 25px; }
 .btn-sessions { right: 25px; }
-
-.btn-back:hover,
-.btn-sessions:hover {
-  background-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3),
-              0 0 20px rgba(255, 255, 255, 0.1) inset;
-  transform: translateY(-3px) scale(1.02);
-}
 
 
 
@@ -331,56 +315,76 @@ article.card:active {
   filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.35));
 }
 
-/* Pill buttons for menu/sessions */
-.pill-btn {
-  all: unset;
+/* Spinning border button for menu/sessions */
+.ring-btn {
   position: fixed;
   bottom: 25px;
   min-width: 120px;
-  padding: 12px 17px;
-  border-radius: 12px;
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  padding: 1px;
+  border-radius: 9999px;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
+  background: transparent;
   text-decoration: none;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-  background: radial-gradient(ellipse at bottom, rgba(71, 81, 92, 1) 0%, rgba(0, 0, 0, 1) 100%);
-  transition: transform 1s cubic-bezier(0.15, 0.83, 0.66, 1), color 1s cubic-bezier(0.15, 0.83, 0.66, 1), box-shadow 1s cubic-bezier(0.15, 0.83, 0.66, 1);
+  cursor: pointer;
+  isolation: isolate;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
 
-.pill-btn .btn-label {
+.ring-btn:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+}
+
+.ring-spin {
+  position: absolute;
+  inset: -1000%;
+  background: conic-gradient(from 90deg at 50% 50%, #333 0%, #fff 50%, #333 100%);
+  animation: spin-ring 3s linear infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.ring-btn:hover .ring-spin {
+  opacity: 1;
+}
+
+.btn-content {
   position: relative;
   z-index: 1;
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.25rem;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  background-color: #0a0a0a;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  transition: background-color 0.2s ease-out, color 0.2s ease-out;
+  white-space: nowrap;
 }
 
-.pill-btn .btn-underline {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  height: 1px;
-  width: 70%;
-  transform: translateX(-50%);
-  opacity: 0.2;
-  transition: opacity 1s cubic-bezier(0.15, 0.83, 0.66, 1);
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 50%, rgba(255, 255, 255, 0) 100%);
+.ring-btn:hover .btn-content {
+  background-color: #171717;
 }
 
-.pill-btn:hover {
-  transform: translateY(-3px) scale(1.05);
-  color: #ffffff;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16), 0 10px 30px rgba(0, 0, 0, 0.35);
+@keyframes spin-ring {
+  to { transform: rotate(360deg); }
 }
 
-.pill-btn:hover .btn-underline {
-  opacity: 0.8;
+.btn-back.ring-btn {
+  left: 25px;
 }
 
-.btn-back.pill-btn { left: 25px; }
-.btn-sessions.pill-btn { right: 25px; }
+.btn-sessions.ring-btn {
+  right: 25px;
+}
+
+
