@@ -118,12 +118,15 @@ async function loadProcedureDictionary() {
 }
 
 async function handleProcedureSelection(procedure) {
+  await loadProcedureDictionary();
   const proc = procedure?.proc || procedure?.id || "";
   const dictKey = (procedure?.id || proc || "").toLowerCase();
   const meta = PROCEDURE_DICT[dictKey] || {};
 
+  const imagePath = meta.image || procedure?.image || "assets/logos/procedures/autorizaciones.png";
+
   sessionStorage.setItem("procedimientoSeleccionado", proc);
-  sessionStorage.setItem("procedimientoImagen", meta.image || procedure?.image || "");
+  sessionStorage.setItem("procedimientoImagen", imagePath);
   sessionStorage.setItem("procedimientoTitulo", meta.title || procedure?.title || proc);
   sessionStorage.setItem("procedimientoDescripcion", meta.description || "");
   if (window.cerper?.openPage) {

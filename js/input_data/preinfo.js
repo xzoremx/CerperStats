@@ -19,6 +19,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   const labSubtitle = document.getElementById("lab-subtitle");
   const procedureDescription = document.getElementById("procedure-description");
 
+  const normalizeAssetPath = (src) => {
+    if (!src) return "";
+    if (/^https?:/i.test(src) || src.startsWith("data:")) return src;
+    if (src.startsWith("../")) return src;
+    return `../${src.replace(/^\//, "")}`;
+  };
+
   const labKey = sessionStorage.getItem("labSeleccionado") || localStorage.getItem("labSeleccionado");
   const labName = sessionStorage.getItem("labNombreVisible") || labKey || "Laboratorio";
   const proc = sessionStorage.getItem("procedimientoSeleccionado") || localStorage.getItem("procedimientoSeleccionado") || "Procedimiento";
@@ -31,7 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (headerTitle && storedTitle) headerTitle.textContent = storedTitle;
   if (procedureDescription && storedDesc) procedureDescription.textContent = storedDesc;
   if (headerLogo && storedImg) {
-    headerLogo.src = storedImg;
+    headerLogo.src = normalizeAssetPath(storedImg);
     headerLogo.alt = `Logotipo de ${storedTitle}`;
   }
 
