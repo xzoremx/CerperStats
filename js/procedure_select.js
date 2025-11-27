@@ -25,7 +25,7 @@ const PROCEDURES = [
     id: "implementaciones",
     title: "Implementaciones",
     proc: "Implementaciones",
-    image: "assets/logos/procedures/Implementaciones.png",
+    image: "assets/logos/procedures/implementaciones.png",
   },
   {
     id: "intralaboratorios",
@@ -37,7 +37,7 @@ const PROCEDURES = [
     id: "intercomparacion",
     title: "Intercomparacion",
     proc: "Intercomparacion",
-    image: "assets/logos/procedures/Intercomparacion.png",
+    image: "assets/logos/procedures/intercomparacion.png",
   },
 ];
 
