@@ -1,5 +1,5 @@
 // main.js
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, nativeImage } = require('electron');
 const path = require('path');
 let mainWindow;
 // Estado de autenticación en memoria (fuente de verdad)
@@ -30,6 +30,9 @@ const ROUTES = new Set([
   // Otros
   'index.html'
 ]);
+const APP_ICON_PATH = path.join(__dirname, 'assets', 'icons', 'app.ico');
+const appIcon = nativeImage.createFromPath(APP_ICON_PATH);
+const browserIcon = appIcon.isEmpty() ? APP_ICON_PATH : appIcon;
 // === Crear ventana principal ===
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -37,7 +40,7 @@ function createWindow() {
     height: 800,
     minWidth: 1100,
     minHeight: 700,
-    icon: path.join(__dirname, 'assets', 'logos', 'cerper_logo.png'),
+    icon: browserIcon,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -48,12 +51,25 @@ function createWindow() {
       allowRunningInsecureContent: false,
     },
   });
+  Menu.setApplicationMenu(null);
   mainWindow.loadFile('login.html'); // Pantalla inicial
 }
 
 // === Inicialización de la app ===
 app.whenReady().then(() => {
   app.setAppUserModelId('com.cerper.cerperstats');
+  if (process.platform === 'win32') {
+    app.setUserTasks([
+      {
+        program: process.execPath,
+        arguments: '',
+        iconPath: APP_ICON_PATH,
+        iconIndex: 0,
+        title: 'Abrir CerperStats',
+        description: 'Abrir CerperStats',
+      },
+    ]);
+  }
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -322,4 +338,3 @@ ipcMain.handle("db-get-tests-with-metadata", async (event, session_id) => {
     return { ok: false, error: err.message };
   }
 });
-
