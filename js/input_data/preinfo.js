@@ -42,28 +42,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     headerLogo.alt = `Logotipo de ${storedTitle}`;
   }
 
-  // Cargar configuracion del laboratorio para placeholders
-  try {
-    const res = await window.cerper.getLabByKey(labKey);
-    if (res?.ok && res.data) {
-      const lab = res.data;
-      const placeholders = {
-        metodo: lab.metodo_default || "",
-        producto: lab.producto_default || "",
-        ensayo: lab.ensayo_default || "",
-        expediente: lab.expediente_demo || "",
-        unidad: lab.unidad_default || "",
-      };
-      Object.entries(placeholders).forEach(([id, text]) => {
-        const input = document.getElementById(id);
-        if (input && text) input.placeholder = text;
-      });
-      console.log(`[CerperStats] Placeholders cargados desde BD para ${labKey}:`, placeholders);
-    } else {
-      console.warn(`[CerperStats] No se encontro configuracion para labKey: ${labKey}`);
-    }
-  } catch (err) {
-    console.error("[CerperStats] Error cargando configuracion del laboratorio:", err);
+  const shouldLoadLabConfig = labKey && window.cerper?.getLabByKey;
+  if (shouldLoadLabConfig) {
+    (async () => {
+      try {
+        const res = await window.cerper.getLabByKey(labKey);
+        if (res?.ok && res.data) {
+          const lab = res.data;
+          const placeholders = {
+            metodo: lab.metodo_default || "",
+            producto: lab.producto_default || "",
+            ensayo: lab.ensayo_default || "",
+            expediente: lab.expediente_demo || "",
+            unidad: lab.unidad_default || "",
+          };
+          Object.entries(placeholders).forEach(([id, text]) => {
+            const input = document.getElementById(id);
+            if (input && text) input.placeholder = text;
+          });
+          console.log(`[CerperStats] Placeholders cargados desde BD para ${labKey}:`, placeholders);
+        } else {
+          console.warn(`[CerperStats] No se encontro configuracion para labKey: ${labKey}`);
+        }
+      } catch (err) {
+        console.error("[CerperStats] Error cargando configuracion del laboratorio:", err);
+      }
+    })();
+  } else {
+    console.log("[CerperStats] Saltando fetch de lab al no estar en Electron o faltar labKey");
   }
 
   if (btnSiguiente) {
