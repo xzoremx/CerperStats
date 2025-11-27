@@ -19,25 +19,25 @@ const PROCEDURES = [
     id: "autorizaciones",
     title: "Autorizaciones",
     proc: "Autorizaciones",
-    image: "assets/logos/procedures/autorizaciones.png",
+    image: "assets/logos/procedures/autorizaciones.webp",
   },
   {
     id: "implementaciones",
     title: "Implementaciones",
     proc: "Implementaciones",
-    image: "assets/logos/procedures/implementaciones.png",
+    image: "assets/logos/procedures/implementaciones.webp",
   },
   {
     id: "intralaboratorios",
     title: "Intralaboratorios",
     proc: "Intralaboratorios",
-    image: "assets/logos/procedures/intralaboratorios.png",
+    image: "assets/logos/procedures/intralaboratorios.webp",
   },
   {
     id: "intercomparacion",
     title: "Intercomparacion",
     proc: "Intercomparacion",
-    image: "assets/logos/procedures/intercomparacion.png",
+    image: "assets/logos/procedures/intercomparacion.webp",
   },
 ];
 
@@ -124,7 +124,7 @@ async function handleProcedureSelection(procedure) {
   const dictKey = (procedure?.id || proc || "").toLowerCase();
   const meta = PROCEDURE_DICT[dictKey] || {};
 
-  const imagePath = meta.image || procedure?.image || "assets/logos/procedures/autorizaciones.png";
+  const imagePath = meta.image || procedure?.image || "assets/logos/procedures/autorizaciones.webp";
 
   sessionStorage.setItem("procedimientoSeleccionado", proc);
   sessionStorage.setItem("procedimientoImagen", imagePath);
