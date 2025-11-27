@@ -1158,10 +1158,10 @@ if (btnBack) {
         ];
         removeKeys.forEach(k => sessionStorage.removeItem(k));
 
-        notify("Volviendo al paso anterior...", "info");
-        setTimeout(() => window.cerper.openPage("procedure_select.html"), 900);
-      } catch (err) {
-        console.error("[CerperStats] Error al reiniciar:", err);
+          notify("Volviendo al paso anterior...", "info");
+          window.cerper.openPage("procedure_select.html");
+        } catch (err) {
+          console.error("[CerperStats] Error al reiniciar:", err);
         notify("Ocurrió un error al reiniciar.", "error");
       }
     } else {

@@ -54,9 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
       msg.textContent = `Bienvenido, ${user.nombre_completo || user.username}`;
       msg.style.color = "#00ffb3";
 
-      setTimeout(() => {
-        window.cerper.openPage("procedure_select.html");
-      }, 1000);
+      window.cerper.openPage("procedure_select.html");
 
     } catch (err) {
       console.error("[Login] Error:", err);

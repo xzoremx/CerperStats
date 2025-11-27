@@ -44,6 +44,7 @@ const PROCEDURES = [
 const root = document.documentElement;
 const cardsGrid = document.getElementById("cards-grid");
 const blurNode = document.querySelector("#blur feGaussianBlur");
+const lucideScript = document.getElementById("lucide-cdn");
 
 function applyConfig() {
   const themeClass = CONFIG.theme === "light" ? "light" : "dark";
@@ -252,10 +253,21 @@ function wireNavigationButtons(session) {
 function initIcons() {
   if (window.lucide?.createIcons) {
     window.lucide.createIcons();
+    return;
   }
+
+  lucideScript?.addEventListener(
+    "load",
+    () => {
+      if (window.lucide?.createIcons) {
+        window.lucide.createIcons();
+      }
+    },
+    { once: true },
+  );
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+function initPage() {
   loadProcedureDictionary();
   applyConfig();
   const session = getSessionData();
@@ -264,4 +276,10 @@ document.addEventListener("DOMContentLoaded", () => {
   attachPointerTracking();
   wireNavigationButtons(session);
   initIcons();
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initPage, { once: true });
+} else {
+  initPage();
+}
