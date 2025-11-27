@@ -45,6 +45,8 @@ const root = document.documentElement;
 const cardsGrid = document.getElementById("cards-grid");
 const blurNode = document.querySelector("#blur feGaussianBlur");
 const lucideScript = document.getElementById("lucide-cdn");
+const glowLayer = document.querySelector(".glow-bg");
+let glowPaused = false;
 
 function applyConfig() {
   const themeClass = CONFIG.theme === "light" ? "light" : "dark";
@@ -266,6 +268,18 @@ function initIcons() {
     { once: true },
   );
 }
+
+function toggleGlowAnimation() {
+  glowPaused = !glowPaused;
+  glowLayer?.classList.toggle("glow-paused", glowPaused);
+}
+
+document.addEventListener("keydown", (event) => {
+  if (event.key?.toLowerCase() === "p") {
+    event.preventDefault();
+    toggleGlowAnimation();
+  }
+});
 
 function initPage() {
   loadProcedureDictionary();
