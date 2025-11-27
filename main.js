@@ -53,6 +53,22 @@ function createWindow() {
   });
   Menu.setApplicationMenu(null);
   mainWindow.loadFile('login.html'); // Pantalla inicial
+
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown') return;
+    const isCmdOrCtrl = input.control || input.meta;
+    if (!isCmdOrCtrl) return;
+    const key = String(input.key || '').toLowerCase();
+
+    if (key === 'r') {
+      event.preventDefault();
+      if (input.shift) mainWindow.webContents.reloadIgnoringCache();
+      else mainWindow.webContents.reload();
+    } else if (key === 'i' && input.shift) {
+      event.preventDefault();
+      mainWindow.webContents.toggleDevTools();
+    }
+  });
 }
 
 // === Inicialización de la app ===
