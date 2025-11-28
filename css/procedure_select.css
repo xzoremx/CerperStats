@@ -35,7 +35,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: #050507;
+  background: #050507 url("../assets/images/procedure/background.jpg") center / cover no-repeat fixed;
   color: #f4f4f5;
   font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   display: flex;
@@ -45,16 +45,6 @@ body {
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-#procedure-aurora {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 1.5;
 }
 
 .app {
@@ -121,12 +111,69 @@ svg {
 
 /* Header */
 .card-header {
-  padding: 40px 24px 24px;
+  padding: 40px 24px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   background: #0f0f11;
+}
+
+.card-hero {
+  position: relative;
+  width: calc(100% + 48px);
+  height: 160px;
+  margin: -40px -24px 0;
+  align-self: stretch;
+  border-radius: 22px 22px 18px 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #0c0c0f;
+  isolation: isolate;
+}
+
+.card-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(16, 185, 129, 0.2), transparent 55%),
+    radial-gradient(circle at 80% 0%, rgba(59, 130, 246, 0.15), transparent 45%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.card-hero-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.card-hero-title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.1;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.hero-subtitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(244, 244, 245, 0.9);
+}
+
+.hero-divider {
+  width: 48px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(244, 244, 245, 0.1), rgba(244, 244, 245, 0.6), rgba(244, 244, 245, 0.1));
 }
 
 .card-header .logo {
@@ -162,7 +209,7 @@ svg {
 
 /* Cards grid */
 .cards-grid {
-  padding: 16px 16px 24px;
+  padding: 30px 16px 24px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
@@ -317,10 +364,7 @@ article.card:active {
   pointer-events: none;
 }
 /* Header CERPER brand inside the card */
-.card-header .logo.brand-logo {
-  width: 240px;
-  height: 80px;
-  margin-bottom: 16px;
+.brand-logo {
   background: linear-gradient(115deg, #f7f7f7 0%, #d6d6d6 35%, #9a9a9a 80%, #5f5f5f 100%);
   -webkit-mask: url('../assets/logos/logo.png') no-repeat center / contain;
           mask: url('../assets/logos/logo.png') no-repeat center / contain;
@@ -328,6 +372,12 @@ article.card:active {
   box-shadow: none;
   display: block;
   filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.35));
+}
+
+.card-header .logo.brand-logo {
+  width: 240px;
+  height: 80px;
+  margin-bottom: 16px;
 }
 
 /* Spinning border button for menu/sessions */

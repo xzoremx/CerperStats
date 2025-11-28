@@ -21,7 +21,8 @@ const cardsGrid = document.getElementById("cards-grid");
 const blurNode = document.querySelector("#blur feGaussianBlur");
 const lucideScript = document.getElementById("lucide-cdn");
 const glowLayer = document.querySelector(".glow-bg");
-let glowPaused = false;
+let glowPaused = true;
+glowLayer?.classList.add("glow-paused");
 
 function applyConfig() {
   const themeClass = CONFIG.theme === "light" ? "light" : "dark";
@@ -70,15 +71,22 @@ function getSessionData() {
 function setLabInfo(session) {
   const labTitle = document.getElementById("lab-title");
   const labInfo = document.getElementById("lab-info");
+  const heroTitle = document.getElementById("hero-lab-title");
 
-  if (!labTitle && !labInfo) return;
+  if (heroTitle) {
+    heroTitle.textContent = session.labName || "Laboratorio";
+  }
+
+  if (labTitle) {
+    labTitle.textContent = "Selecciona el tipo de procedimiento";
+  }
+
+  if (!labInfo) return;
 
   if (session.labKey) {
-    if (labTitle) labTitle.textContent = session.labName;
-    if (labInfo) labInfo.textContent = "Seleccione el procedimiento para esta sesion.";
+    labInfo.textContent = "Seleccione el procedimiento para esta sesion.";
   } else {
-    if (labTitle) labTitle.textContent = "Procedimientos";
-    if (labInfo) labInfo.textContent = "Seleccione el procedimiento correspondiente al laboratorio.";
+    labInfo.textContent = "Seleccione el procedimiento correspondiente al laboratorio.";
   }
 }
 
