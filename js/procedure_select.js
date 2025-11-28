@@ -14,32 +14,7 @@ const CONFIG = {
   exclude: false,
 };
 
-const PROCEDURES = [
-  {
-    id: "autorizaciones",
-    title: "Autorizaciones",
-    proc: "Autorizaciones",
-    image: "assets/logos/procedures/autorizaciones.webp",
-  },
-  {
-    id: "implementaciones",
-    title: "Implementaciones",
-    proc: "Implementaciones",
-    image: "assets/logos/procedures/implementaciones.webp",
-  },
-  {
-    id: "intralaboratorios",
-    title: "Intralaboratorios",
-    proc: "Intralaboratorios",
-    image: "assets/logos/procedures/intralaboratorios.webp",
-  },
-  {
-    id: "intercomparacion",
-    title: "Intercomparacion",
-    proc: "Intercomparacion",
-    image: "assets/logos/procedures/intercomparacion.webp",
-  },
-];
+const PROCEDURES = ["autorizaciones", "implementaciones", "intralaboratorios", "intercomparacion"];
 
 const root = document.documentElement;
 const cardsGrid = document.getElementById("cards-grid");
@@ -109,7 +84,30 @@ function setLabInfo(session) {
 
 let PROCEDURE_DICT = {};
 
+function formatProcedureTitle(id = "") {
+  if (!id) return "Procedimiento";
+  return id
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+}
+
+function getProcedureMeta(id) {
+  const dictKey = (id || "").toLowerCase();
+  const meta = PROCEDURE_DICT[dictKey] || {};
+  const title = meta.title || formatProcedureTitle(dictKey);
+  const fallbackImageId = dictKey || "autorizaciones";
+  return {
+    id: dictKey,
+    title,
+    description: meta.description || "",
+    image: meta.image || `assets/logos/procedures/${fallbackImageId}.webp`,
+  };
+}
+
 async function loadProcedureDictionary() {
+  if (Object.keys(PROCEDURE_DICT).length) return PROCEDURE_DICT;
   try {
     const res = await fetch("config/procedure_descriptions.json", { cache: "no-cache" });
     if (res.ok) {
@@ -118,19 +116,17 @@ async function loadProcedureDictionary() {
   } catch (err) {
     console.warn("[CerperStats] No se pudo cargar procedure_descriptions.json:", err);
   }
+  return PROCEDURE_DICT;
 }
 
-async function handleProcedureSelection(procedure) {
+async function handleProcedureSelection(procedureId) {
   await loadProcedureDictionary();
-  const proc = procedure?.proc || procedure?.id || "";
-  const dictKey = (procedure?.id || proc || "").toLowerCase();
-  const meta = PROCEDURE_DICT[dictKey] || {};
-
-  const imagePath = meta.image || procedure?.image || "assets/logos/procedures/autorizaciones.webp";
+  const meta = getProcedureMeta(procedureId);
+  const proc = meta.title || procedureId || "";
 
   sessionStorage.setItem("procedimientoSeleccionado", proc);
-  sessionStorage.setItem("procedimientoImagen", imagePath);
-  sessionStorage.setItem("procedimientoTitulo", meta.title || procedure?.title || proc);
+  sessionStorage.setItem("procedimientoImagen", meta.image);
+  sessionStorage.setItem("procedimientoTitulo", meta.title || proc);
   sessionStorage.setItem("procedimientoDescripcion", meta.description || "");
   if (window.cerper?.openPage) {
     await window.cerper.openPage("input_data/input_data.html");
@@ -139,14 +135,15 @@ async function handleProcedureSelection(procedure) {
   }
 }
 
-function createCard(procedure) {
+function createCard(procedureId) {
+  const meta = getProcedureMeta(procedureId);
   const article = document.createElement("article");
   article.className = "card";
-  article.dataset.id = procedure.id;
-  article.dataset.proc = procedure.proc;
+  article.dataset.id = meta.id;
+  article.dataset.proc = meta.title;
   article.tabIndex = 0;
   article.setAttribute("role", "button");
-  article.setAttribute("aria-label", procedure.title);
+  article.setAttribute("aria-label", meta.title);
 
   const border = document.createElement("div");
   border.className = "border-backdrop";
@@ -161,29 +158,29 @@ function createCard(procedure) {
   content.appendChild(imgContainer);
 
   const glowImg = document.createElement("img");
-  glowImg.src = procedure.image;
+  glowImg.src = meta.image;
   glowImg.alt = "";
   imgContainer.appendChild(glowImg);
 
   const icon = document.createElement("img");
   icon.className = "icon-foreground";
-  icon.src = procedure.image;
-  icon.alt = procedure.title;
+  icon.src = meta.image;
+  icon.alt = meta.title;
   content.appendChild(icon);
 
   const title = document.createElement("h2");
-  title.textContent = procedure.title;
+  title.textContent = meta.title;
   content.appendChild(title);
 
   article.addEventListener("click", (event) => {
     event.preventDefault();
-    handleProcedureSelection(procedure);
+    handleProcedureSelection(meta.id);
   });
 
   article.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      handleProcedureSelection(procedure);
+      handleProcedureSelection(meta.id);
     }
   });
 
@@ -193,8 +190,8 @@ function createCard(procedure) {
 function renderCards() {
   if (!cardsGrid) return;
   cardsGrid.innerHTML = "";
-  PROCEDURES.forEach((procedure) => {
-    cardsGrid.appendChild(createCard(procedure));
+  PROCEDURES.forEach((procedureId) => {
+    cardsGrid.appendChild(createCard(procedureId));
   });
 }
 
@@ -281,8 +278,8 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-function initPage() {
-  loadProcedureDictionary();
+async function initPage() {
+  await loadProcedureDictionary();
   applyConfig();
   const session = getSessionData();
   setLabInfo(session);
