@@ -1,5 +1,7 @@
 (function () {
-  let vantaEffect = null;
+  let vantaHero = null;
+  let vantaBackground = null;
+  let syncFrame = null;
   const MAX_RETRIES = 20;
   const RETRY_DELAY = 200;
   const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
@@ -17,18 +19,22 @@
   ];
 
   function destroyVanta() {
-    if (vantaEffect?.destroy) {
-      vantaEffect.destroy();
+    [vantaHero, vantaBackground].forEach((effect) => {
+      try {
+        effect?.destroy?.();
+      } catch (_) {}
+    });
+    vantaHero = null;
+    vantaBackground = null;
+    if (syncFrame) {
+      cancelAnimationFrame(syncFrame);
+      syncFrame = null;
     }
-    vantaEffect = null;
   }
 
-  function initVanta() {
-    if (prefersReducedMotion) return;
-    const target = document.getElementById("procedure-hero");
-    if (!target || vantaEffect || !window.VANTA?.NET || !window.THREE) return;
-
-    vantaEffect = window.VANTA.NET({
+  function createEffect(target, overrides = {}) {
+    if (!target || !window.VANTA?.NET || !window.THREE) return null;
+    const baseOptions = {
       el: target,
       THREE: window.THREE,
       mouseControls: true,
@@ -44,11 +50,57 @@
       maxDistance: 14.0,
       spacing: 26.0,
       showDots: true,
-    });
+    };
+    return window.VANTA.NET({ ...baseOptions, ...overrides });
+  }
+
+  function syncPointerToAll() {
+    if (syncFrame) return;
+    const loop = () => {
+      if (vantaHero && vantaBackground) {
+        vantaBackground.mouseX = vantaHero.mouseX;
+        vantaBackground.mouseY = vantaHero.mouseY;
+      }
+      syncFrame = requestAnimationFrame(loop);
+    };
+    syncFrame = requestAnimationFrame(loop);
+  }
+
+  function initVanta() {
+    if (prefersReducedMotion) return;
+    const heroTarget = document.getElementById("procedure-hero");
+    const backgroundTarget = document.getElementById("vanta-bg");
+    if (!window.VANTA?.NET || !window.THREE) return;
+
+    if (!vantaBackground && backgroundTarget) {
+      vantaBackground = createEffect(backgroundTarget, {
+        mouseControls: true,
+        touchControls: true,
+        backgroundColor: 0x0a0a0d,
+        color: 0xf4f4f5,
+        points: 5.5,
+        maxDistance: 18.0,
+        spacing: 28.0,
+        showDots: true,
+        minHeight: window.innerHeight,
+        minWidth: window.innerWidth,
+      });
+    }
+
+    if (!vantaHero && heroTarget) {
+      vantaHero = createEffect(heroTarget, {
+        backgroundColor: 0x0f0f11,
+        mouseControls: true,
+        touchControls: true,
+        color: 0xf4f4f5,
+      });
+    }
+
+    syncPointerToAll();
   }
 
   function attemptInit(attempt = 0) {
-    if (vantaEffect || attempt > MAX_RETRIES) return;
+    if ((vantaHero && vantaBackground) || attempt > MAX_RETRIES) return;
     if (window.VANTA?.NET && window.THREE) {
       initVanta();
       return;
@@ -118,7 +170,8 @@
 
   window.addEventListener("resize", () => {
     try {
-      vantaEffect?.resize?.();
+      vantaHero?.resize?.();
+      vantaBackground?.resize?.();
     } catch (err) {
       console.warn("[CerperStats] No se pudo reajustar Vanta NET:", err);
     }
