@@ -137,11 +137,12 @@ async function handleProcedureSelection(procedureId) {
   sessionStorage.setItem("procedimientoTitulo", meta.title || proc);
   sessionStorage.setItem("procedimientoDescripcion", meta.description || "");
   window.procLoader?.show?.("Preparando entrada de datos...");
-  if (window.cerper?.openPage) {
-    await window.cerper.openPage("input_data/input_data.html");
-  } else {
-    window.location.href = "input_data/input_data.html";
-  }
+  const navigate = () => {
+    if (window.cerper?.openPage) window.cerper.openPage("input_data/input_data.html");
+    else window.location.href = "input_data/input_data.html";
+  };
+  requestAnimationFrame(navigate);
+
 }
 
 function createCard(procedureId) {
@@ -232,9 +233,12 @@ function attachPointerTracking() {
 function wireNavigationButtons(session) {
   const backBtn = document.getElementById("go-menu");
   backBtn?.addEventListener("click", () => {
-    window.procLoader?.show?.("Abriendo menú...");
-    if (window.cerper?.openPage) window.cerper.openPage("menu.html");
-    else window.location.href = "menu.html";
+    window.procLoader?.show?.("Abriendo menu...");
+    const navigate = () => {
+      if (window.cerper?.openPage) window.cerper.openPage("menu.html");
+      else window.location.href = "menu.html";
+    };
+    requestAnimationFrame(navigate); 
   });
 
   const sessionsBtn = document.getElementById("go-sessions");
@@ -250,14 +254,13 @@ function wireNavigationButtons(session) {
   }
 
   sessionsBtn.addEventListener("click", () => {
-    if (!session.usuario) {
-      if (window.cerper?.openPage) window.cerper.openPage("login.html");
-      else window.location.href = "login.html";
-      return;
-    }
+    if (!session.usuario) { console.warn("No user session found"); return; }
     window.procLoader?.show?.("Abriendo sesiones...");
-    if (window.cerper?.openPage) window.cerper.openPage("sessions_panel.html");
-    else window.location.href = "sessions_panel.html";
+    const navigate = () => {
+      if (window.cerper?.openPage) window.cerper.openPage("sessions_panel.html");
+      else window.location.href = "sessions_panel.html";
+    };
+    requestAnimationFrame(navigate);
   });
 }
 

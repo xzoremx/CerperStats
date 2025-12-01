@@ -13,7 +13,7 @@
         inset: 0;
         display: grid;
         place-items: center;
-        background: rgba(5, 5, 7, 0.82);
+        background: rgba(5, 5, 7, 0.94);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         z-index: 5000;
