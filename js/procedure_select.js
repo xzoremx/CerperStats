@@ -136,6 +136,7 @@ async function handleProcedureSelection(procedureId) {
   sessionStorage.setItem("procedimientoImagen", meta.image);
   sessionStorage.setItem("procedimientoTitulo", meta.title || proc);
   sessionStorage.setItem("procedimientoDescripcion", meta.description || "");
+  window.procLoader?.show?.("Preparando entrada de datos...");
   if (window.cerper?.openPage) {
     await window.cerper.openPage("input_data/input_data.html");
   } else {

@@ -3,9 +3,6 @@
   const OVERLAY_ID = "procedure-loader";
   const STYLE_ID = "procedure-loader-style";
 
-  // Inyecta estilos apenas cargue el script
-  ensureStyle();
-
   function ensureStyle() {
     if (document.getElementById(STYLE_ID)) return;
     const style = document.createElement("style");
@@ -96,6 +93,9 @@
 
   window.procLoader = { show, hide };
 
-  // Si el overlay ya existe en el HTML, asegúrate de que tenga los estilos aplicados.
+  // Si el overlay ya existe en el HTML, asegurate de que tenga los estilos aplicados.
   ensureOverlay();
+
+  // Oculta cuando Vanta avisa que está listo.
+  window.addEventListener("vanta-ready", () => hide(), { once: true });
 })();
