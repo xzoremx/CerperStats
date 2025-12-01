@@ -225,11 +225,13 @@ function attachPointerTracking() {
   };
 
   document.addEventListener("pointermove", handlePointerMove);
+  return () => document.removeEventListener("pointermove", handlePointerMove);
 }
 
 function wireNavigationButtons(session) {
   const backBtn = document.getElementById("go-menu");
   backBtn?.addEventListener("click", () => {
+    window.procLoader?.show?.("Abriendo menú...");
     if (window.cerper?.openPage) window.cerper.openPage("menu.html");
     else window.location.href = "menu.html";
   });
@@ -252,6 +254,7 @@ function wireNavigationButtons(session) {
       else window.location.href = "login.html";
       return;
     }
+    window.procLoader?.show?.("Abriendo sesiones...");
     if (window.cerper?.openPage) window.cerper.openPage("sessions_panel.html");
     else window.location.href = "sessions_panel.html";
   });
@@ -287,14 +290,37 @@ document.addEventListener("keydown", (event) => {
 });
 
 async function initPage() {
+  window.procLoader?.show?.("Preparando procedimientos...");
   await loadProcedureDictionary();
   applyConfig();
   const session = getSessionData();
   setLabInfo(session);
   renderCards();
-  attachPointerTracking();
+  const detachPointer = attachPointerTracking();
   wireNavigationButtons(session);
   initIcons();
+
+  let loadingCleared = false;
+  const clearLoading = () => {
+    if (loadingCleared) return;
+    loadingCleared = true;
+    window.procLoader?.hide?.();
+  };
+
+  const handleVantaReady = () => {
+    window.removeEventListener("vanta-ready", handleVantaReady);
+    clearLoading();
+  };
+
+  window.addEventListener("vanta-ready", handleVantaReady, { once: true });
+  setTimeout(clearLoading, 1500);
+
+  if (window.router?.registerCleanup) {
+    window.router.registerCleanup(() => {
+      detachPointer?.();
+      window.removeEventListener("vanta-ready", handleVantaReady);
+    });
+  }
 }
 
 if (document.readyState === "loading") {

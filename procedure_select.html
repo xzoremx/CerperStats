@@ -15,12 +15,18 @@
 
   <link rel="stylesheet" href="css/procedure_select.css" />
   </head>
-  <body>
-    <div id="vanta-bg" aria-hidden="true"></div>
-    <svg class="hidden-svg" aria-hidden="true">
-      <defs>
-        <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="15"></feGaussianBlur>
+<body>
+    <div id="procedure-loader" class="visible">
+      <div class="loader-box">
+        <div class="dots" aria-hidden="true"><span></span><span></span><span></span></div>
+        <p class="loader-text" style="margin:0;">Preparando procedimientos...</p>
+      </div>
+    </div>
+  <div id="vanta-bg" aria-hidden="true"></div>
+  <svg class="hidden-svg" aria-hidden="true">
+    <defs>
+      <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="15"></feGaussianBlur>
         </filter>
       </defs>
     </svg>
@@ -55,9 +61,10 @@
       <span class="btn-content">Sesiones</span>
     </button>
 
-    <script src="js/auth_guard.js"></script>
-    <script src="js/procedure_select_vanta.js" defer></script>
-    <script type="module" src="js/procedure_select.js"></script>
-    <script id="lucide-cdn" src="https://unpkg.com/lucide@latest" async crossorigin="anonymous"></script>
-  </body>
+  <script src="js/procedure_loader.js"></script>
+  <script src="js/auth_guard.js"></script>
+  <script src="js/procedure_select_vanta.js" defer></script>
+  <script type="module" src="js/procedure_select.js"></script>
+  <script id="lucide-cdn" src="https://unpkg.com/lucide@latest" async crossorigin="anonymous"></script>
+</body>
 </html>
