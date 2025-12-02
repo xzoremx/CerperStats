@@ -1,37 +1,70 @@
 // input_data/step_1_type.js
 document.addEventListener("DOMContentLoaded", () => {
-  const buttons = document.querySelectorAll(".select-btn");
-  const goMenu = document.getElementById("go-menu");
+  if (window.lucide?.createIcons) lucide.createIcons();
 
-  // Recuperar laboratorio y procedimiento actuales
-  const labKey = sessionStorage.getItem("labSeleccionado") || localStorage.getItem("labSeleccionado");
-  const labName = sessionStorage.getItem("labNombreVisible") || labKey;
-  const proc = sessionStorage.getItem("procedimientoSeleccionado") || localStorage.getItem("procedimientoSeleccionado");
+  const btnOptions = Array.from(document.querySelectorAll(".btn-option"));
+  const paramPlaceholder = document.getElementById("param-placeholder");
+  const paramPanel = document.getElementById("param-panel");
+  const paramBadge = document.getElementById("param-badge");
 
-  console.log(`Lab (key): ${labKey} | Visible: ${labName} | Procedimiento: ${proc}`);
+  const state = {
+    ok: false,
+    modified: false,
+  };
 
-  buttons.forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const mode = btn.dataset.mode;
-      sessionStorage.setItem("tipoAnalisis", mode);
+  function emitState() {
+    document.dispatchEvent(
+      new CustomEvent("step1:state", {
+        detail: { ...state },
+      })
+    );
+  }
 
-      console.log(`Modo seleccionado: ${mode}`);
-      // Navegar al siguiente paso
-      if (window.cerper && window.cerper.openPage) {
-        await window.cerper.openPage("input_data/step_2_parametro.html");
-      } else {
-        window.location.href = "step_2_parametro.html";
-      }
+  let selectedMode = sessionStorage.getItem("modoAnalito") || null;
+
+  if (selectedMode) {
+    aplicarModoUI(selectedMode);
+    state.ok = true;
+    state.modified = false;
+    emitState();
+    notificarModo(selectedMode);
+  } else {
+    emitState();
+  }
+
+  btnOptions.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const mode = btn.textContent.trim().toLowerCase().includes("multi") ? "multi" : "mono";
+      selectedMode = mode;
+      sessionStorage.setItem("modoAnalito", mode);
+      sessionStorage.removeItem("parametroSeleccionado");
+      aplicarModoUI(mode);
+      state.ok = true;
+      state.modified = true;
+      emitState();
+      notificarModo(mode);
     });
   });
 
-  // Volver a preinfo
-  goMenu.addEventListener("click", () => {
-    if (window.cerper && window.cerper.openPage) {
-      window.cerper.openPage("input_data/input_data.html");
-    } else {
-      window.location.href = "input_data.html"; 
+  function aplicarModoUI(mode) {
+    btnOptions.forEach(other => {
+      const isMulti = other.textContent.trim().toLowerCase().includes("multi");
+      other.classList.toggle("active", isMulti ? mode === "multi" : mode === "mono");
+    });
+    paramPlaceholder?.classList.add("hidden");
+    paramPanel?.classList.add("active");
+    if (paramBadge) {
+      paramBadge.textContent = mode === "multi" ? "Multianalito" : "Monoanalito";
     }
-  });
+  }
 
-});
+  function notificarModo(mode) {
+    document.dispatchEvent(
+      new CustomEvent("analito:mode", {
+        detail: { mode },
+      })
+    );
+  }
+}
+);
+

@@ -1,146 +1,212 @@
 // input_data/step_4_k.js
 document.addEventListener("DOMContentLoaded", () => {
-  // --- Recuperar datos del laboratorio y del flujo ---
-  const labKey =
-    sessionStorage.getItem("labSeleccionado") ||
-    localStorage.getItem("labSeleccionado");
-  const labName =
-    sessionStorage.getItem("labNombreVisible") || labKey || "Laboratorio";
+  const context = buildContext();
 
-  const parametro =
-    sessionStorage.getItem("parametroSeleccionado") || "Parámetro";
-  const tipoDato =
-    sessionStorage.getItem("tipoDato") || "cuantitativo";
+  const step4State = {
+    ok: false,
+    modified: false,
+  };
 
-  // --- Referencias del DOM ---
-  const title = document.getElementById("lab-title");
-  const paramName = document.getElementById("param-name");
-  const paramLabel = document.getElementById("param-label");
-  const paramSingular = document.getElementById("param-singular");
-  const inputK = document.getElementById("input-k");
-  const inputN = document.getElementById("input-n");
-  const lecturasContainer = document.getElementById("lecturas-container");
-  const lecturasK2 = document.getElementById("lecturas-k2");
+  function emitStep4State() {
+    document.dispatchEvent(
+      new CustomEvent("step4:state", {
+        detail: { ...step4State },
+      })
+    );
+  }
 
-  // --- Determinar singular y plural coherente para UI ---
-  let singular = parametro.toLowerCase();
-  let plural = parametro.toLowerCase();
-  if (parametro.endsWith("s")) {
-    singular = parametro.slice(0, -1).toLowerCase();
-    plural = parametro.toLowerCase();
+  context.inputK?.addEventListener("input", () => {
+    step4State.modified = true;
+    validarEntero(context.inputK);
+    toggleLecturas(context);
+    evaluarStep4(context, step4State, emitStep4State);
+  });
+
+  context.inputN?.addEventListener("input", () => {
+    step4State.modified = true;
+    validarEntero(context.inputN);
+    evaluarStep4(context, step4State, emitStep4State);
+  });
+  context.inputN1?.addEventListener("input", () => {
+    step4State.modified = true;
+    validarEntero(context.inputN1);
+    evaluarStep4(context, step4State, emitStep4State);
+  });
+  context.inputN2?.addEventListener("input", () => {
+    step4State.modified = true;
+    validarEntero(context.inputN2);
+    evaluarStep4(context, step4State, emitStep4State);
+  });
+
+  const showStep4 = (opts = {}) => {
+    const shouldScroll = opts.scroll !== false;
+    updateLabels(context);
+    toggleLecturas(context);
+    if (context.badge) context.badge.textContent = "Listo para continuar";
+    if (context.isUnified && context.status) {
+      context.status.textContent = "Define cuantos parametros y lecturas necesitas.";
+    }
+    if (context.section) {
+      context.section.classList.remove("hidden");
+      if (shouldScroll) {
+        context.section.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  };
+
+  if (context.isUnified) {
+    document.addEventListener("step3:completed", () => showStep4({ scroll: true }));
+    if (sessionStorage.getItem("tipoDato")) {
+      showStep4({ scroll: false });
+    }
   } else {
-    plural = parametro.toLowerCase() + "s";
+    showStep4({ scroll: false });
   }
 
-  // --- Actualizar textos en pantalla ---
-  title.textContent = `${labName} - Definir cantidad de ${capitalize(plural)}`;
-  paramName.textContent = plural;
-  paramLabel.textContent = plural;
-  paramSingular.textContent = singular;
-
-  const subtitle = document.querySelector(".subtitle");
-  subtitle.innerHTML = `Ingrese la cantidad de <strong>${plural}</strong> y el número de lecturas esperadas.`;
-
-  // --- Mostrar/ocultar bloque K=2 dinámicamente ---
-  inputK.addEventListener("input", () => {
-    const k = parseInt(inputK.value);
-    if (k === 2) {
-      lecturasContainer.style.display = "none";
-      lecturasK2.style.display = "block";
-    } else {
-      lecturasContainer.style.display = "block";
-      lecturasK2.style.display = "none";
-    }
-  });
-
-  // --- Validación automática al escribir ---
-  [inputK, inputN].forEach(input => {
-    input.addEventListener("input", () => {
-      const val = input.value.trim();
-      if (val === "") return;
-      const num = Number(val);
-      if (!Number.isInteger(num) || num < 1) {
-        notify("Por favor, ingrese solo números enteros positivos (sin decimales).", "error");
-        input.value = Math.max(1, Math.floor(num || 1));
-      }
-    });
-  });
-
-  ["input-n1", "input-n2"].forEach(id => {
-    const field = document.getElementById(id);
-    field.addEventListener("input", () => {
-      const val = field.value.trim();
-      if (val === "") return;
-      const num = Number(val);
-      if (!Number.isInteger(num) || num < 1) {
-        notify("Por favor, ingrese solo números enteros positivos (sin decimales).", "error");
-        field.value = Math.max(1, Math.floor(num || 1));
-      }
-    });
-  });
-
-  // --- Botón Continuar ---
-  document.getElementById("continue").addEventListener("click", () => {
-    const k = parseInt(inputK.value);
-    if (isNaN(k) || k < 2)
-      return notify("La cantidad de parámetros debe ser mayor a 1.", "error");
-
-    let lecturas = [];
-    if (k === 2) {
-      const n1 = parseInt(document.getElementById("input-n1").value);
-      const n2 = parseInt(document.getElementById("input-n2").value);
-      if (isNaN(n1) || isNaN(n2) || n1 < 1 || n2 < 1)
-        return notify("Ingrese lecturas válidas para ambos casos.", "error");
-      lecturas = [n1, n2];
-    } else {
-      const n = parseInt(inputN.value);
-      if (isNaN(n) || n < 1)
-        return notify("Ingrese un número válido de lecturas.", "error");
-      lecturas = Array(k).fill(n);
-    }
-
-    // --- Guardar datos ---
-    sessionStorage.setItem("K", k);
-    sessionStorage.setItem("lecturasPorParametro", JSON.stringify(lecturas));
-
-    notify("Datos guardados correctamente.", "success");
-
-    setTimeout(() => {
-      if (window.cerper?.openPage) {
-        window.cerper.openPage("input_data/step_5_sheet.html");
-      } else {
-        window.location.href = "step_5_sheet.html";
-      }
-    }, 1200);
-  });
-
-  // --- Botón Volver ---
-  document.getElementById("go-back").addEventListener("click", () => {
-    if (window.cerper?.openPage) {
-      window.cerper.openPage("input_data/step_2_parametro.html");
-    } else {
-      window.location.href = "step_2_parametro.html";
-    }
-  });
-
-  // --- Sistema de notificaciones ---
-  function notify(message, type = "info") {
-    const existing = document.querySelector(".notify");
-    if (existing) existing.remove();
-
-    const div = document.createElement("div");
-    div.className = `notify ${type}`;
-    div.textContent = message;
-    document.body.appendChild(div);
-
-    setTimeout(() => div.classList.add("show"), 50);
-    setTimeout(() => div.classList.remove("show"), 3000);
-    setTimeout(() => div.remove(), 3500);
-  }
-
-  // --- Función auxiliar ---
-  function capitalize(text) {
-    return text.charAt(0).toUpperCase() + text.slice(1);
-  }
+  emitStep4State();
 });
+
+function buildContext() {
+  return {
+    isUnified: Boolean(document.getElementById("step4-section")),
+    section: document.getElementById("step4-section"),
+    badge: document.getElementById("step4-badge"),
+    status: document.getElementById("step4-status"),
+    title: document.getElementById("step4-title") || document.getElementById("lab-title"),
+    subtitle: document.getElementById("step4-subtitle") || document.querySelector(".subtitle"),
+    paramName: document.getElementById("step4-param-name") || document.getElementById("param-name"),
+    paramLabel:
+      document.getElementById("step4-param-label") || document.getElementById("param-label"),
+    paramSingular:
+      document.getElementById("step4-param-singular") ||
+      document.getElementById("param-singular"),
+    inputK: document.getElementById("step4-input-k") || document.getElementById("input-k"),
+    inputN: document.getElementById("step4-input-n") || document.getElementById("input-n"),
+    lecturasContainer:
+      document.getElementById("step4-lecturas-container") ||
+      document.getElementById("lecturas-container"),
+    lecturasK2: document.getElementById("step4-lecturas-k2") || document.getElementById("lecturas-k2"),
+    inputN1: document.getElementById("step4-input-n1") || document.getElementById("input-n1"),
+    inputN2: document.getElementById("step4-input-n2") || document.getElementById("input-n2"),
+  };
+}
+
+function updateLabels(context) {
+  const parametro = sessionStorage.getItem("parametroSeleccionado") || "elementos";
+  const { singular, plural } = obtenerTextosParametro(parametro);
+
+  if (context.paramName) context.paramName.textContent = plural;
+  if (context.paramLabel) context.paramLabel.textContent = plural;
+  if (context.paramSingular) context.paramSingular.textContent = singular;
+
+  if (context.title) {
+    context.title.textContent = `Definir cantidad de ${capitalize(plural)}`;
+  }
+  if (context.subtitle) {
+    context.subtitle.innerHTML = `Ingrese la cantidad de <strong>${plural}</strong> y el numero de lecturas esperadas.`;
+  }
+}
+
+function toggleLecturas(context) {
+  const k = parseInt(context.inputK?.value ?? "0", 10);
+  if (!context.inputK) return;
+
+  const showK2 = k === 2;
+  if (context.lecturasContainer) {
+    context.lecturasContainer.classList.toggle("hidden", showK2);
+    context.lecturasContainer.style.display = showK2 ? "none" : "block";
+  }
+  if (context.lecturasK2) {
+    context.lecturasK2.classList.toggle("hidden", !showK2);
+    context.lecturasK2.style.display = showK2 ? "block" : "none";
+  }
+
+  if (context.status) {
+    context.status.textContent = showK2
+      ? "k=2 permite definir lecturas independientes."
+      : "Usa el mismo numero de lecturas por elemento.";
+  }
+}
+
+function evaluarStep4(context, step4State, emitStep4State) {
+  const k = parseInt(context.inputK?.value ?? "0", 10);
+  if (!Number.isInteger(k) || k < 2) {
+    step4State.ok = false;
+    emitStep4State();
+    return;
+  }
+
+  let lecturas = [];
+  if (k === 2) {
+    const n1 = parseInt(context.inputN1?.value ?? "0", 10);
+    const n2 = parseInt(context.inputN2?.value ?? "0", 10);
+    if (!Number.isInteger(n1) || n1 < 1 || !Number.isInteger(n2) || n2 < 1) {
+      step4State.ok = false;
+      emitStep4State();
+      return;
+    }
+    lecturas = [n1, n2];
+  } else {
+    const n = parseInt(context.inputN?.value ?? "0", 10);
+    if (!Number.isInteger(n) || n < 1) {
+      step4State.ok = false;
+      emitStep4State();
+      return;
+    }
+    lecturas = Array(k).fill(n);
+  }
+
+  sessionStorage.setItem("K", String(k));
+  sessionStorage.setItem("lecturasPorParametro", JSON.stringify(lecturas));
+  if (context.badge) context.badge.textContent = "Configuracion guardada";
+
+  step4State.ok = true;
+  emitStep4State();
+}
+
+function obtenerTextosParametro(parametro) {
+  const limpio = (parametro || "elementos").trim();
+  let singular = limpio.toLowerCase();
+  let plural = limpio.toLowerCase();
+  if (singular.endsWith("s") && singular.length > 1) {
+    plural = singular;
+    singular = singular.slice(0, -1);
+  } else {
+    plural = `${singular || "elemento"}s`;
+  }
+  return {
+    singular: singular || "elemento",
+    plural: plural || "elementos",
+  };
+}
+
+function validarEntero(field) {
+  if (!field) return;
+  const val = field.value.trim();
+  if (!val) return;
+  const num = Number(val);
+  if (!Number.isInteger(num) || num < 1) {
+    notify("Por favor, ingrese solo numeros enteros positivos (sin decimales).", "error");
+    field.value = Math.max(1, Math.floor(num || 1));
+  }
+}
+
+function notify(message, type = "info") {
+  const existing = document.querySelector(".notify");
+  if (existing) existing.remove();
+
+  const div = document.createElement("div");
+  div.className = `notify ${type}`;
+  div.textContent = message;
+  document.body.appendChild(div);
+
+  setTimeout(() => div.classList.add("show"), 50);
+  setTimeout(() => div.classList.remove("show"), 3000);
+  setTimeout(() => div.remove(), 3500);
+}
+
+function capitalize(text) {
+  if (!text) return "";
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 

@@ -19,7 +19,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   const labSubtitle = document.getElementById("lab-subtitle");
   const procedureDescription = document.getElementById("procedure-description");
 
-  const normalizeAssetPath = (src) => {
+  const preinfoState = {
+    ok: false,
+    modified: false,
+  };
+
+  function emitPreinfoState() {
+    document.dispatchEvent(
+      new CustomEvent("preinfo:state", {
+        detail: { ...preinfoState },
+      })
+    );
+  }
+
+  const normalizeAssetPath = src => {
     if (!src) return "";
     if (/^https?:/i.test(src) || src.startsWith("data:")) return src;
     if (src.startsWith("../")) return src;
@@ -28,13 +41,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const labKey = sessionStorage.getItem("labSeleccionado") || localStorage.getItem("labSeleccionado");
   const labName = sessionStorage.getItem("labNombreVisible") || labKey || "Laboratorio";
-  const proc = sessionStorage.getItem("procedimientoSeleccionado") || localStorage.getItem("procedimientoSeleccionado") || "Procedimiento";
+  const proc =
+    sessionStorage.getItem("procedimientoSeleccionado") ||
+    localStorage.getItem("procedimientoSeleccionado") ||
+    "Procedimiento";
+
   if (labTitle) labTitle.textContent = `${labName} - ${proc}`;
   if (labSubtitle) labSubtitle.textContent = labName || "Laboratorio";
 
   const storedTitle = sessionStorage.getItem("procedimientoTitulo") || proc;
-  const storedDesc = sessionStorage.getItem("procedimientoDescripcion") || procedureDescription?.textContent || "";
-  const storedImg = sessionStorage.getItem("procedimientoImagen") || headerLogo?.getAttribute("src");
+  const storedDesc =
+    sessionStorage.getItem("procedimientoDescripcion") || procedureDescription?.textContent || "";
+  const storedImg =
+    sessionStorage.getItem("procedimientoImagen") || headerLogo?.getAttribute("src");
+
   if (headerTitle && storedTitle) headerTitle.textContent = storedTitle;
   if (procedureDescription && storedDesc) procedureDescription.textContent = storedDesc;
   if (headerLogo && storedImg) {
@@ -60,17 +80,38 @@ document.addEventListener("DOMContentLoaded", async () => {
             const input = document.getElementById(id);
             if (input && text) input.placeholder = text;
           });
-          console.log(`[CerperStats] Placeholders cargados desde BD para ${labKey}:`, placeholders);
+          console.log(
+            `[CerperStats] Placeholders cargados desde BD para ${labKey}:`,
+            placeholders
+          );
         } else {
-          console.warn(`[CerperStats] No se encontro configuracion para labKey: ${labKey}`);
+          console.warn(
+            `[CerperStats] No se encontro configuracion para labKey: ${labKey}`
+          );
         }
       } catch (err) {
-        console.error("[CerperStats] Error cargando configuracion del laboratorio:", err);
+        console.error(
+          "[CerperStats] Error cargando configuracion del laboratorio:",
+          err
+        );
       }
     })();
   } else {
-    console.log("[CerperStats] Saltando fetch de lab al no estar en Electron o faltar labKey");
+    console.log(
+      "[CerperStats] Saltando fetch de lab al no estar en Electron o faltar labKey"
+    );
   }
+
+  // Marcar modificaciones en cualquier input
+  Object.values(inputs).forEach(input => {
+    input?.addEventListener("input", () => {
+      preinfoState.modified = true;
+      preinfoState.ok = false;
+      emitPreinfoState();
+    });
+  });
+
+  emitPreinfoState();
 
   if (btnSiguiente) {
     btnSiguiente.addEventListener("click", async () => {
@@ -80,13 +121,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       const allFilled = Object.values(data).every(v => v !== "");
 
       if (!allFilled) {
-        notify("Por favor, complete todos los campos antes de continuar.", "error");
+        notify(
+          "Por favor, complete todos los campos antes de continuar.",
+          "error"
+        );
         return;
       }
 
       if (!dataService.validateExpedienteFormat(data.expediente)) {
         inputs.expediente?.classList.add("input-error");
-        notify("Formato de expediente invalido (Ej: EXMA-04264-2025 o OSMA-04264-2025-001)", "error");
+        notify(
+          "Formato de expediente invalido (Ej: EXMA-04264-2025 o OSMA-04264-2025-001)",
+          "error"
+        );
         return;
       } else {
         inputs.expediente?.classList.remove("input-error");
@@ -117,7 +164,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       if (!dataService.validateUnidad(data.unidad)) {
-        notify("Ingrese una unidad de medida valida (ej: mg/L, %, ug/kg, etc.).", "error");
+        notify(
+          "Ingrese una unidad de medida valida (ej: mg/L, %, ug/kg, etc.).",
+          "error"
+        );
         inputs.unidad?.classList.add("input-error");
         return;
       } else {
@@ -136,7 +186,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       dataService.savePreinfo(data);
       notify("Datos validos y guardados temporalmente.", "success");
 
+      preinfoState.ok = true;
+      preinfoState.modified = true;
+      emitPreinfoState();
       document.dispatchEvent(new CustomEvent("preinfo:ready", { detail: data }));
+
       if (step1Section) {
         step1Section.scrollIntoView({ behavior: "smooth", block: "start" });
       }
@@ -167,3 +221,4 @@ function notify(message, type = "info") {
   setTimeout(() => note.classList.remove("show"), 2500);
   setTimeout(() => note.remove(), 3000);
 }
+

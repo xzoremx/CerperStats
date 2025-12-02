@@ -251,26 +251,135 @@ transform: translateY(0);
       </div>
     </div>
 
-    <!-- Button Continue -->
-    <div class="flex flex-wrap justify-center gap-6 mt-12 pt-6 border-t border-white/10">
-        <div id="btn-siguiente" class="bar bar-accent h-10 rounded-full px-6 py-2 font-geist w-fit cursor-pointer">
-            Continuar
+
+    <!-- Step_3_dato -->
+    <div id="step3-section" class="flex flex-wrap gap-6 mt-12 pt-6 border-t border-white/10">
+      <div class="w-full glass-card rounded-xl border border-white/10 p-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+          <div>
+            <p class="text-xs tracking-[0.2em] uppercase text-orange-300/80 font-geist mb-1">Paso 3</p>
+            <h3 class="text-xl font-space-grotesk text-white">Selecciona el tipo de dato</h3>
+            <p id="step3-instruction" class="text-sm text-gray-400">
+              Elige si los resultados que vas a ingresar son cuantitativos o cualitativos para desbloquear el siguiente paso.
+            </p>
+          </div>
+          <div id="step3-badge" class="text-xs px-3 py-1 rounded-full border border-white/10 text-gray-300 bg-white/5">
+            Esperando selección
+          </div>
         </div>
+
+        <div id="step3-placeholder" class="text-sm text-gray-400 bg-white/5 border border-dashed border-white/10 rounded-lg p-4">
+          Cargando tipos de dato configurados para este laboratorio...
+        </div>
+
+        <div id="step3-options" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4"></div>
+
+        <div id="step3-status" class="text-xs text-gray-400 mt-4">
+          Los tipos se definen en la configuración de tu laboratorio. Al seleccionar uno, avanzas automáticamente.
+        </div>
+
+        <div class="flex items-center justify-between gap-3 mt-6">
+          <button id="step3-go-back" class="text-xs font-geist flex items-center gap-1 text-white/80 hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-3 h-3"></i> Volver a paso 2
+          </button>
+          <span class="text-xs text-gray-400">Si no hay opciones, se usará cuantitativo por defecto.</span>
+        </div>
+      </div>
     </div>
 
-    <!-- Legend -->
+    <!-- Step_4_k -->
+    <div id="step4-section" class="flex flex-wrap gap-6 mt-12 pt-6 border-t border-white/10 hidden">
+      <div class="w-full glass-card rounded-xl border border-white/10 p-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+          <div>
+            <p id="step4-step-label" class="text-xs tracking-[0.2em] uppercase text-purple-300/80 font-geist mb-1">Paso 4</p>
+            <h3 id="step4-title" class="text-xl font-space-grotesk text-white">Definir cantidad</h3>
+            <p id="step4-subtitle" class="text-sm text-gray-400">
+              Ingrese la cantidad de <span id="step4-param-name">elementos</span> y el número de lecturas esperadas.
+            </p>
+          </div>
+          <div id="step4-badge" class="text-xs px-3 py-1 rounded-full border border-white/10 text-gray-300 bg-white/5">
+            Esperando parámetros
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="flex flex-col gap-2">
+            <label class="text-xs uppercase text-gray-400 tracking-[0.2em] font-geist">Cantidad de <span id="step4-param-label">elementos</span></label>
+            <input
+              id="step4-input-k"
+              type="number"
+              min="2"
+              value="3"
+              class="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner"
+            />
+          </div>
+          <div id="step4-lecturas-container" class="flex flex-col gap-2">
+            <label class="text-xs uppercase text-gray-400 tracking-[0.2em] font-geist">Lecturas por <span id="step4-param-singular">elemento</span></label>
+            <input
+              id="step4-input-n"
+              type="number"
+              min="1"
+              value="5"
+              class="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner"
+            />
+          </div>
+        </div>
+
+        <div id="step4-lecturas-k2" class="hidden mt-4 bg-white/5 border border-white/10 rounded-lg p-4 text-sm text-gray-300">
+          <p class="text-xs uppercase tracking-[0.2em] text-gray-400 mb-2">Caso especial k=2</p>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input
+              id="step4-input-n1"
+              type="number"
+              min="1"
+              value="5"
+              class="flex-1 px-3 py-2 rounded-lg bg-transparent border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner"
+            />
+            <span class="text-white/70 self-center font-geist text-sm">y</span>
+            <input
+              id="step4-input-n2"
+              type="number"
+              min="1"
+              value="4"
+              class="flex-1 px-3 py-2 rounded-lg bg-transparent border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner"
+            />
+          </div>
+        </div>
+
+        <div id="step4-status" class="text-xs text-gray-400 mt-4">
+          Ajusta los valores para reflejar tus lecturas por parámetro.
+        </div>
+      </div>
+    </div>
+
+    <!-- Botón de continuar-->
+    <div class="flex flex-wrap gap-6 mt-12 pt-6 border-t border-white/10">
+      <div class="w-full flex items-center justify-center mt-6">
+        <button
+          id="predata-continue"
+          class="bar bar-accent h-10 rounded-full px-6 py-2 font-geist text-sm"
+        >
+          Continuar
+        </button>
+      </div>
+    </div>
+
+
+
+    <!-- Leyenda -->
     <div class="flex flex-wrap gap-6 mt-12 pt-6 border-t border-white/10">
       <div class="flex items-center gap-2">
         <div class="w-4 h-4 rounded bar backdrop-blur-sm bg-white/5 border border-white/10"></div>
-        <span class="text-xs text-gray-400 font-geist">Standard Task</span>
+        <span class="text-xs text-gray-400 font-geist">Pendiente</span>
       </div>
       <div class="flex items-center gap-2">
         <div class="w-4 h-4 rounded bar-highlight"></div>
-        <span class="text-xs text-gray-400 font-geist">Design Focus</span>
+        <span class="text-xs text-gray-400 font-geist">En progreso</span>
       </div>
       <div class="flex items-center gap-2">
         <div class="w-4 h-4 rounded bar-accent"></div>
-        <span class="text-xs text-gray-400 font-geist">Launch Critical</span>
+        <span class="text-xs text-gray-400 font-geist">Completo</span>
       </div>
     </div>
 
@@ -292,100 +401,11 @@ transform: translateY(0);
 </main>
 
 <script type="module" src="../js/input_data/preinfo.js"></script>
-<script>
-  if (typeof lucide !== 'undefined') {
-    lucide.createIcons();
-  }
-  const btnOptions = Array.from(document.querySelectorAll('.btn-option'));
-  const paramPanel = document.getElementById('param-panel');
-  const paramGrid = document.getElementById('param-grid');
-  const paramPlaceholder = document.getElementById('param-placeholder');
-  const paramBadge = document.getElementById('param-badge');
-  const paramCustom = document.getElementById('param-custom');
-  const paramCustomInput = document.getElementById('param-custom-input');
-  const paramCustomConfirm = document.getElementById('param-custom-confirm');
-
-  const paramOptionsByMode = {
-    mono: [
-      { name: 'Dias', icon: 'calendar' },
-      { name: 'Analista', icon: 'user' },
-      { name: 'Equipos', icon: 'cpu' },
-      { name: 'Otro', icon: 'list' },
-    ],
-    multi: [
-      { name: 'Analista', icon: 'user' },
-      { name: 'Otro', icon: 'list' },
-    ],
-  };
-
-  let selectedMode = null;
-  let selectedParam = null;
-
-  btnOptions.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const mode = btn.textContent.trim().toLowerCase().includes('multi') ? 'multi' : 'mono';
-      selectedMode = mode;
-      selectedParam = null;
-      btnOptions.forEach(other => other.classList.remove('active'));
-      btn.classList.add('active');
-      paramPlaceholder.classList.add('hidden');
-      paramPanel.classList.add('active');
-      paramBadge.textContent = mode === 'multi' ? 'Multianalito' : 'Monoanalito';
-      renderParamButtons(mode);
-    });
-  });
-
-  function renderParamButtons(mode) {
-    paramGrid.innerHTML = '';
-    paramCustom.classList.add('hidden');
-    const opts = paramOptionsByMode[mode] || [];
-    opts.forEach(opt => {
-      const button = document.createElement('button');
-      button.className = 'param-btn group flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-sm text-white hover:border-orange-400/70 hover:bg-orange-500/10 transition-all';
-      button.dataset.param = opt.name;
-      button.innerHTML = `
-        <span class="flex items-center gap-2">
-          <i data-lucide="${opt.icon}" class="w-4 h-4 text-orange-200"></i>
-          <span class="font-geist">${opt.name}</span>
-        </span>
-        <span class="text-[11px] text-gray-400 group-hover:text-orange-200">Elegir</span>
-      `;
-      paramGrid.appendChild(button);
-    });
-    if (typeof lucide !== 'undefined' && lucide.createIcons) {
-      lucide.createIcons();
-    }
-  }
-
-  paramGrid.addEventListener('click', e => {
-    const btn = e.target.closest('.param-btn');
-    if (!btn) return;
-    selectedParam = btn.dataset.param;
-    if (selectedParam === 'Otro') {
-      paramCustom.classList.remove('hidden');
-      paramCustomInput.focus();
-    } else {
-      paramCustom.classList.add('hidden');
-    }
-    highlightParam(selectedParam);
-  });
-
-  paramCustomConfirm?.addEventListener('click', () => {
-    const custom = paramCustomInput.value.trim();
-    if (!custom) return;
-    selectedParam = custom;
-    highlightParam(null);
-  });
-
-  function highlightParam(paramName) {
-    paramGrid.querySelectorAll('.param-btn').forEach(btn => {
-      const isActive = paramName && btn.dataset.param === paramName;
-      btn.classList.toggle('ring-2', isActive);
-      btn.classList.toggle('ring-orange-400/70', isActive);
-      btn.classList.toggle('border-orange-400/70', isActive);
-    });
-  }
-</script>
+<script type="module" src="../js/input_data/step_1_type.js"></script>
+<script type="module" src="../js/input_data/step_2_parametro.js"></script>
+<script type="module" src="../js/input_data/step_3_dato.js"></script>
+<script type="module" src="../js/input_data/step_4_k.js"></script>
+<script type="module" src="../js/input_data/verificador_predata.js"></script>
 
 
 </body></html>

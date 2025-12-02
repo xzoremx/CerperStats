@@ -1,122 +1,149 @@
 // input_data/step_2_parametro.js
+document.addEventListener("DOMContentLoaded", () => {
+  const paramPanel = document.getElementById("param-panel");
+  const paramGrid = document.getElementById("param-grid");
+  const paramPlaceholder = document.getElementById("param-placeholder");
+  const paramBadge = document.getElementById("param-badge");
+  const paramCustom = document.getElementById("param-custom");
+  const paramCustomInput = document.getElementById("param-custom-input");
+  const paramCustomConfirm = document.getElementById("param-custom-confirm");
 
-document.addEventListener("DOMContentLoaded", async () => {
-  // --- Recuperar laboratorio (clave y nombre visible) ---
-  const labKey =
-    sessionStorage.getItem("labSeleccionado") ||
-    localStorage.getItem("labSeleccionado");
-  const labName =
-    sessionStorage.getItem("labNombreVisible") || labKey || "Laboratorio";
+  const paramOptionsByMode = {
+    mono: [
+      { name: "Dias", icon: "calendar" },
+      { name: "Analista", icon: "user" },
+      { name: "Equipos", icon: "cpu" },
+      { name: "Otro", icon: "list" },
+    ],
+    multi: [
+      { name: "Analista", icon: "user" },
+      { name: "Otro", icon: "list" },
+    ],
+  };
 
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
+  let selectedMode = sessionStorage.getItem("modoAnalito") || null;
+  let selectedParam = sessionStorage.getItem("parametroSeleccionado") || null;
 
-  // --- Buscar configuración del laboratorio desde la base ---
-  let tiposUnicos = [];
-  try {
-    const res = await window.cerper.getLabModules(labKey);
-    if (res?.ok && Array.isArray(res.data)) {
-      const tipos = res.data.map(r => r.tipo_dato).filter(Boolean);
-      tiposUnicos = [...new Set(tipos)];
-    }
-  } catch (err) {
-    console.error("[CerperStats] Error leyendo módulos:", err);
+  const state = {
+    ok: !!selectedParam,
+    modified: false,
+  };
+
+  function emitState() {
+    document.dispatchEvent(
+      new CustomEvent("step2:state", {
+        detail: { ...state },
+      })
+    );
   }
 
+  if (selectedMode) {
+    activarPanel();
+    renderParamButtons(selectedMode);
+    if (selectedParam) {
+      highlightParam(selectedParam);
+      actualizarBadge(selectedParam);
+    }
+  }
 
-  // --- UI: título ---
-  const title = document.getElementById("lab-title");
-  title.textContent = `${labName} - Parámetro`;
+  emitState();
 
-  const paramContainer = document.getElementById("param-options");
-  const customBlock = document.getElementById("custom-param");
-  const inputCustom = document.getElementById("input-param");
-  const confirmCustom = document.getElementById("confirm-param");
-
-  // --- Opciones según tipo de análisis ---
-  const opciones =
-    tipoAnalisis === "multi"
-      ? [
-          { name: "Analista", icon: "user" },
-          { name: "Otro", icon: "list" },
-        ]
-      : [
-          { name: "Días", icon: "calendar" },
-          { name: "Analista", icon: "user" },
-          { name: "Equipos", icon: "cpu" },
-          { name: "Otro", icon: "list" },
-        ];
-
-  // --- Renderizar botones ---
-  opciones.forEach(opt => {
-    const btn = document.createElement("button");
-    btn.classList.add("select-btn");
-    btn.dataset.param = opt.name;
-    btn.innerHTML = `<i data-lucide="${opt.icon}"></i> ${opt.name}`;
-    paramContainer.appendChild(btn);
+  document.addEventListener("analito:mode", evt => {
+    selectedMode = evt?.detail?.mode || null;
+    selectedParam = null;
+    sessionStorage.removeItem("parametroSeleccionado");
+    state.ok = false;
+    // no marcamos modified aquí; se marcará cuando el usuario elija un parámetro
+    emitState();
+    if (!selectedMode) return;
+    activarPanel();
+    renderParamButtons(selectedMode);
   });
 
-  if (window.lucide?.createIcons) lucide.createIcons();
-
-  // --- Lógica de selección ---
-  paramContainer.addEventListener("click", async e => {
-    const btn = e.target.closest(".select-btn");
+  paramGrid?.addEventListener("click", e => {
+    const btn = e.target.closest(".param-btn");
     if (!btn) return;
-
-    const param = btn.dataset.param;
-    if (param === "Otro") {
-      customBlock.style.display = "block";
-      inputCustom.focus();
-      return;
+    const value = btn.dataset.param;
+    if (value === "Otro") {
+      paramCustom?.classList.remove("hidden");
+      paramCustomInput?.focus();
+      highlightParam(null);
+    } else {
+      paramCustom?.classList.add("hidden");
+      setSelectedParam(value, true);
+      highlightParam(value);
     }
-    await guardarYContinuar(param);
   });
 
-  confirmCustom.addEventListener("click", async () => {
-    const custom = inputCustom.value.trim();
-    if (!custom) return alert("Ingrese un nombre válido para el parámetro.");
-    await guardarYContinuar(custom);
+  paramCustomConfirm?.addEventListener("click", () => {
+    const custom = paramCustomInput?.value.trim();
+    if (!custom) return;
+    setSelectedParam(custom, true);
+    highlightParam(null);
   });
 
-  // --- Botón Volver ---
-  document.getElementById("go-back").addEventListener("click", () => {
-    if (window.cerper?.openPage) window.cerper.openPage("input_data/step_1_type.html");
-    else window.location.href = "step_1_type.html";
-  });
-
-  // --- Guardar y decidir siguiente paso ---
-  async function guardarYContinuar(parametro) {
-    sessionStorage.setItem("parametroSeleccionado", parametro);
-    sessionStorage.removeItem("tipoDato");
-    sessionStorage.removeItem("modoCualitativo");
-    sessionStorage.removeItem("valoresPermitidos");
-
-    if (tiposUnicos.length > 1 || tiposUnicos.includes("cualitativo")) {
-      return irAStep3Dato();
-    }
-
-    
-    // Si solo hay tipo cuantitativo, establecerlo explícitamente
-    if (!(tiposUnicos.length > 1 || tiposUnicos.includes("cualitativo"))) {
-      sessionStorage.setItem("tipoDato", "cuantitativo");
-      sessionStorage.removeItem("modoCualitativo");
-      sessionStorage.removeItem("valoresPermitidos");
-    }
-
-    // Caso contrario → ir a step 4
-    return irAStep4();
+  function activarPanel() {
+    paramPlaceholder?.classList.add("hidden");
+    paramPanel?.classList.add("active");
   }
 
-  function irAStep3Dato() {
-    if (window.cerper?.openPage) window.cerper.openPage("input_data/step_3_dato.html");
-    else window.location.href = "step_3_dato.html";
+  function renderParamButtons(mode) {
+    if (!paramGrid) return;
+    paramGrid.innerHTML = "";
+    paramCustom?.classList.add("hidden");
+    const opts = paramOptionsByMode[mode] || [];
+    opts.forEach(opt => {
+      const button = document.createElement("button");
+      button.className =
+        "param-btn group flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-sm text-white hover:border-orange-400/70 hover:bg-orange-500/10 transition-all";
+      button.dataset.param = opt.name;
+      button.innerHTML = `
+        <span class="flex items-center gap-2">
+          <i data-lucide="${opt.icon}" class="w-4 h-4 text-orange-200"></i>
+          <span class="font-geist">${opt.name}</span>
+        </span>
+        <span class="text-[11px] text-gray-400 group-hover:text-orange-200">Elegir</span>
+      `;
+      paramGrid.appendChild(button);
+    });
+    if (typeof lucide !== "undefined" && lucide.createIcons) {
+      lucide.createIcons();
+    }
+    if (selectedParam) {
+      highlightParam(selectedParam);
+    }
   }
 
-  function irAStep4() {
-    if (window.cerper?.openPage) window.cerper.openPage("input_data/step_4_k.html");
-    else window.location.href = "step_4_k.html";
+  function setSelectedParam(paramName, fromUser) {
+    if (!paramName) return;
+    selectedParam = paramName;
+    sessionStorage.setItem("parametroSeleccionado", paramName);
+    actualizarBadge(paramName);
+    state.ok = true;
+    if (fromUser) state.modified = true;
+    emitState();
+    document.dispatchEvent(
+      new CustomEvent("parametro:seleccionado", {
+        detail: { valor: paramName, modo: selectedMode },
+      })
+    );
+  }
+
+  function actualizarBadge(paramName) {
+    const modeLabel = selectedMode === "multi" ? "Multianalito" : "Monoanalito";
+    if (paramBadge && paramName) {
+      paramBadge.textContent = `${modeLabel} - ${paramName}`;
+    }
+  }
+
+  function highlightParam(paramName) {
+    if (!paramGrid) return;
+    paramGrid.querySelectorAll(".param-btn").forEach(btn => {
+      const isActive = paramName && btn.dataset.param === paramName;
+      btn.classList.toggle("ring-2", isActive);
+      btn.classList.toggle("ring-orange-400/70", isActive);
+      btn.classList.toggle("border-orange-400/70", isActive);
+    });
   }
 });
-
-
-
 

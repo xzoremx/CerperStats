@@ -1,83 +1,51 @@
 // input_data/step_3_dato.js
-
 document.addEventListener("DOMContentLoaded", async () => {
-  // --- Recuperar laboratorio (clave y nombre visible) ---
   const labKey =
     sessionStorage.getItem("labSeleccionado") ||
     localStorage.getItem("labSeleccionado");
   const labName =
     sessionStorage.getItem("labNombreVisible") || labKey || "Laboratorio";
+  const isUnifiedPage = Boolean(document.getElementById("step3-section"));
 
-  const title = document.getElementById("lab-title");
-  const main = document.getElementById("main-container");
-
-// --- Obtener configuración del laboratorio desde la base ---
-let tipos = [];
-try {
-  const res = await window.cerper.getLabModules(labKey);
-  if (res?.ok && Array.isArray(res.data)) {
-    tipos = res.data.map(row => {
-      const tipoDato = (row.tipo_dato || "").toString().trim();
-      const modo =
-        (row.modo ?? row.modo_cualitativo ?? "")
-          .toString()
-          .trim() || null; // acepta alias "modo" o el nombre original
-      const valoresPermitidos =
-        (row.valores_permitidos ?? null);
-
-      return { tipoDato, modo, valoresPermitidos };
-    });
-
-    // Debug opcional:
-    console.log("[S3] filas BD:", res.data);
-    console.log("[S3] tipos mapeados:", tipos);
+  if (isUnifiedPage) {
+    await initUnifiedStep3({ labKey, labName });
+  } else {
+    await initStandaloneStep3({ labKey, labName });
   }
-} catch (err) {
-  console.error("[CerperStats] Error leyendo módulos:", err);
+});
+
+const step3State = {
+  ok: false,
+  modified: false,
+};
+
+function emitStep3State() {
+  document.dispatchEvent(
+    new CustomEvent("step3:state", {
+      detail: { ...step3State },
+    })
+  );
 }
 
+async function initStandaloneStep3({ labKey, labName }) {
+  const title = document.getElementById("lab-title");
+  const main = document.getElementById("main-container");
+  if (title) title.textContent = `${labName} - Tipo de Dato`;
 
-  // --- Título ---
-  title.textContent = `${labName} - Tipo de Dato`;
+  const tipos = await cargarTipos(labKey);
 
-  // --- Validar configuración ---
-  if (!tipos || tipos.length === 0) {
-    sessionStorage.setItem("tipoDato", "cuantitativo");
-    avanzarPaso();
+  if (!tipos.length) {
+    guardarTipoDato({ tipoDato: "cuantitativo" }, false);
+    irAStep4({ labName });
     return;
   }
 
-  // --- Si solo hay un tipo, guardar y continuar ---
   if (tipos.length === 1) {
-    const unico = tipos[0];
-    sessionStorage.setItem("tipoDato", unico.tipoDato);
-
-    // Guardar modo si existe, limpiar si no
-    if (unico.modo) {
-      sessionStorage.setItem("modoCualitativo", unico.modo);
-    } else {
-      sessionStorage.removeItem("modoCualitativo");
-    }
-
-    // Guardar valores permitidos (con parseo seguro)
-    if (unico.valoresPermitidos) {
-      let vals = unico.valoresPermitidos;
-      try {
-        vals = typeof vals === "string" ? JSON.parse(vals.replace(/'/g, '"')) : vals;
-      } catch {
-        vals = vals.split(",").map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
-      }
-      sessionStorage.setItem("valoresPermitidos", JSON.stringify(vals));
-    } else {
-      sessionStorage.removeItem("valoresPermitidos");
-    }
-
-    avanzarPaso();
+    guardarTipoDato(tipos[0], false);
+    irAStep4({ labName });
     return;
   }
 
-
-  // --- Si hay varios tipos (cuantitativo + cualitativo) ---
   const container = document.createElement("div");
   container.className = "form-block";
 
@@ -93,80 +61,214 @@ try {
     if (tipo.tipoDato === "cuantitativo") {
       btn.textContent = "Cuantitativo";
     } else {
-      if (tipo.modo) {
-        const modoTexto = tipo.modo.charAt(0).toUpperCase() + tipo.modo.slice(1);
-        btn.textContent = `Cualitativo - ${modoTexto}`;
-      } else {
-        btn.textContent = "Cualitativo";
-      }
+      const modoTexto = tipo.modo
+        ? tipo.modo.charAt(0).toUpperCase() + tipo.modo.slice(1)
+        : null;
+      btn.textContent = modoTexto ? `Cualitativo - ${modoTexto}` : "Cualitativo";
     }
 
-
     btn.addEventListener("click", () => {
-      sessionStorage.setItem("tipoDato", tipo.tipoDato);
-
-      if (tipo.tipoDato === "cualitativo") {
-        sessionStorage.setItem("modoCualitativo", tipo.modo);
-
-        if (tipo.valoresPermitidos) {
-          let vals = tipo.valoresPermitidos;
-          try {
-            vals = typeof vals === "string" ? JSON.parse(vals.replace(/'/g, '"')) : vals;
-          } catch {
-            vals = vals.split(",").map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
-          }
-          sessionStorage.setItem("valoresPermitidos", JSON.stringify(vals));
-        }
-
-        avanzarPaso();
-      } else {
-        avanzarPaso();
-      }
+      guardarTipoDato(tipo, true);
+      irAStep4({ labName });
     });
-
 
     container.appendChild(btn);
   });
 
-  main.appendChild(container);
+  main?.appendChild(container);
 
-  // --- Botón Volver ---
-  document.getElementById("go-back").addEventListener("click", () => {
-    if (window.cerper?.openPage)
-      window.cerper.openPage("input_data/step_2_parametro.html");
-    else
-      window.location.href = "step_2_parametro.html";
+  document.getElementById("go-back")?.addEventListener("click", () => {
+    const step2 = document.getElementById("step2-section");
+    if (step2) {
+      step2.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+    console.warn("[CerperStats] Paso 2 no disponible para volver en esta pagina.");
   });
-});
+}
 
-// --- Selector secundario para modo cualitativo ---
-function mostrarSelectorDeModo(modos) {
-  const main = document.getElementById("main-container");
-  main.innerHTML = "";
+async function initUnifiedStep3({ labKey, labName }) {
+  const step3Section = document.getElementById("step3-section");
+  const step3Badge = document.getElementById("step3-badge");
+  const step3Placeholder = document.getElementById("step3-placeholder");
+  const step3Options = document.getElementById("step3-options");
+  const step3Status = document.getElementById("step3-status");
+  const step3Instruction = document.getElementById("step3-instruction");
+  const step3GoBack = document.getElementById("step3-go-back");
 
-  const title = document.createElement("h3");
-  title.textContent = "Seleccione el modo cualitativo:";
-  main.appendChild(title);
+  if (step3Instruction) {
+    step3Instruction.textContent = `Laboratorio asignado: ${labName}`;
+  }
 
-  modos.forEach(m => {
-    const btn = document.createElement("button");
-    btn.className = "select-btn";
-    btn.textContent = `Modo ${m.modo}`;
-    btn.addEventListener("click", () => {
-      sessionStorage.setItem("tipoDato", "cualitativo");
-      sessionStorage.setItem("modoCualitativo", m.modo);
-      if (m.valoresPermitidos)
-        sessionStorage.setItem("valoresPermitidos", JSON.stringify(m.valoresPermitidos));
-      avanzarPaso();
+  step3GoBack?.addEventListener("click", () => scrollToSection("step2-section"));
+
+  const tipos = await cargarTipos(labKey);
+
+  if (!tipos.length) {
+    guardarTipoDato({ tipoDato: "cuantitativo" }, false);
+    step3Section?.classList.add("hidden");
+    irAStep4({ labName });
+    return;
+  }
+
+  if (tipos.length === 1) {
+    guardarTipoDato(tipos[0], false);
+    step3Section?.classList.add("hidden");
+    irAStep4({ labName });
+    return;
+  }
+
+  if (step3Badge) step3Badge.textContent = "Modo pendiente";
+  if (step3Placeholder) {
+    step3Placeholder.textContent =
+      "Selecciona la opcion que mejor describa el dato que vas a ingresar.";
+  }
+  if (step3Status) {
+    step3Status.textContent = "Elige el tipo que describe el contenido del dato.";
+  }
+
+  if (step3Options) {
+    step3Options.innerHTML = "";
+    tipos.forEach(tipo => {
+      const tipoNormalizado = tipo.tipoDato.toLowerCase();
+      const label =
+        tipoNormalizado === "cuantitativo"
+          ? "Cuantitativo"
+          : tipo.modo
+          ? `Cualitativo - ${tipo.modo.charAt(0).toUpperCase() + tipo.modo.slice(1)}`
+          : "Cualitativo";
+      const icon = tipoNormalizado === "cuantitativo" ? "activity" : "color-swatch";
+      const button = document.createElement("button");
+      button.className =
+        "flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-sm text-white hover:border-orange-400/70 hover:bg-orange-500/10 transition-all";
+      button.innerHTML = `
+        <span class="flex items-center gap-2">
+          <i data-lucide="${icon}" class="w-4 h-4 text-orange-200"></i>
+          <span class="font-geist">${label}</span>
+        </span>
+        <span class="text-[11px] text-gray-400 group-hover:text-orange-200">Elegir</span>
+      `;
+      button.addEventListener("click", () => {
+        guardarTipoDato(tipo, true);
+        if (step3Badge) {
+          const base = tipo.tipoDato.charAt(0).toUpperCase() + tipo.tipoDato.slice(1);
+          step3Badge.textContent = `Seleccionado: ${base}`;
+        }
+        if (step3Status) {
+          step3Status.textContent = "Tipo guardado, define ahora las cantidades.";
+        }
+        irAStep4({ labName });
+      });
+      step3Options.appendChild(button);
     });
-    main.appendChild(btn);
-  });
+
+    if (typeof lucide !== "undefined" && lucide.createIcons) {
+      lucide.createIcons();
+    }
+  }
 }
 
-// --- Avanzar al siguiente paso ---
-function avanzarPaso() {
-  if (window.cerper?.openPage)
-    window.cerper.openPage("input_data/step_4_k.html");
-  else
-    window.location.href = "step_4_k.html";
+async function cargarTipos(labKey) {
+  let tipos = [];
+  try {
+    const loader = window.cerper?.getLabModules;
+    if (typeof loader === "function") {
+      const res = await loader.call(window.cerper, labKey);
+      if (res?.ok && Array.isArray(res.data)) {
+        tipos = res.data
+          .map(row => {
+            const tipoDato = (row.tipo_dato || "").toString().trim();
+            if (!tipoDato) return null;
+            const modo =
+              (row.modo ?? row.modo_cualitativo ?? "").toString().trim() || null;
+            const valoresPermitidos = row.valores_permitidos ?? null;
+            return { tipoDato, modo, valoresPermitidos };
+          })
+          .filter(Boolean);
+      }
+    }
+  } catch (err) {
+    console.error("[CerperStats] Error leyendo modulos:", err);
+  }
+  return tipos;
 }
+
+function guardarTipoDato(tipo, modified) {
+  const tipoDato = tipo?.tipoDato || "cuantitativo";
+  sessionStorage.setItem("tipoDato", tipoDato);
+
+  if (tipo?.modo) {
+    sessionStorage.setItem("modoCualitativo", tipo.modo);
+  } else {
+    sessionStorage.removeItem("modoCualitativo");
+  }
+
+  const valores = parseValoresPermitidos(tipo?.valoresPermitidos);
+  if (valores) {
+    sessionStorage.setItem("valoresPermitidos", JSON.stringify(valores));
+  } else {
+    sessionStorage.removeItem("valoresPermitidos");
+  }
+
+  step3State.ok = true;
+  step3State.modified = !!modified;
+  emitStep3State();
+}
+
+function parseValoresPermitidos(valor) {
+  if (!valor && valor !== 0) return null;
+
+  let listado = valor;
+  if (typeof listado === "string") {
+    try {
+      listado = JSON.parse(listado.replace(/'/g, '"'));
+    } catch {
+      listado = listado
+        .split(",")
+        .map(v => parseFloat(v.trim()))
+        .filter(v => !Number.isNaN(v));
+    }
+  }
+
+  if (!Array.isArray(listado)) {
+    listado = [listado];
+  }
+
+  const sanitizado = listado
+    .map(v => {
+      if (typeof v === "string") v = v.trim();
+      return Number(v);
+    })
+    .filter(val => !Number.isNaN(val));
+
+  return sanitizado.length ? sanitizado : null;
+}
+
+function irAStep4({ labName }) {
+  const step4Section = document.getElementById("step4-section");
+  const step3Section = document.getElementById("step3-section");
+  const step4StepLabel = document.getElementById("step4-step-label");
+  if (step4Section) {
+    if (step3Section && step3Section.classList.contains("hidden") && step4StepLabel) {
+      step4StepLabel.textContent = "Paso 3";
+      step4StepLabel.classList.remove("text-purple-300/80");
+      step4StepLabel.classList.add("text-orange-300/80");
+    }
+    document.dispatchEvent(
+      new CustomEvent("step3:completed", {
+        detail: { labName },
+      })
+    );
+    step4Section.classList.remove("hidden");
+    step4Section.scrollIntoView({ behavior: "smooth" });
+    return;
+  }
+
+  console.warn("[CerperStats] No se encontro la seccion del paso 4 en esta pagina.");
+}
+
+function scrollToSection(id) {
+  const target = document.getElementById(id);
+  if (target) target.scrollIntoView({ behavior: "smooth" });
+}
+
