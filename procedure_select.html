@@ -14,7 +14,7 @@
     />
 
     <link rel="stylesheet" href="css/procedure_select.css" />
-    <!-- Estilos mínimos inline para que el loader aparezca de inmediato antes de que cargue el JS -->
+    <!-- Estilos mínimos inline para mostrar el loader apenas cargue la página -->
     <style>
       #procedure-loader {
         position: fixed;
@@ -65,19 +65,23 @@
         <p class="loader-text" style="margin:0;">Preparando procedimientos...</p>
       </div>
     </div>
-  <div id="vanta-bg" aria-hidden="true"></div>
-  <svg class="hidden-svg" aria-hidden="true">
-    <defs>
-      <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="15"></feGaussianBlur>
+    <div id="vanta-bg" aria-hidden="true"></div>
+    <svg class="hidden-svg" aria-hidden="true">
+      <defs>
+        <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="15"></feGaussianBlur>
+        </filter>
+        <filter id="hero-refraction" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="3" seed="8" result="noise"></feTurbulence>
+          <feGaussianBlur in="noise" stdDeviation="8" result="softNoise"></feGaussianBlur>
+          <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="26" xChannelSelector="R" yChannelSelector="B" result="displacement"></feDisplacementMap>
+          <feComposite in="displacement" in2="SourceGraphic" operator="atop"></feComposite>
         </filter>
       </defs>
     </svg>
 
     <main class="app menu" aria-label="Menu de seleccion de procedimientos">
       <div class="card-shell">
-        <div class="glow-bg"></div>
-
         <div class="card-container">
           <header class="card-header">
             <div class="card-hero" id="procedure-hero" aria-hidden="true">
@@ -104,10 +108,10 @@
       <span class="btn-content">Sesiones</span>
     </button>
 
-  <script src="js/procedure_loader.js"></script>
-  <script src="js/auth_guard.js"></script>
-  <script src="js/procedure_select_vanta.js" defer></script>
-  <script type="module" src="js/procedure_select.js"></script>
-  <script id="lucide-cdn" src="https://unpkg.com/lucide@latest" async crossorigin="anonymous"></script>
-</body>
+    <script src="js/auth_guard.js"></script>
+    <script src="js/procedure_loader.js"></script>
+    <script src="js/procedure_select_vanta.js" defer></script>
+    <script type="module" src="js/procedure_select.js"></script>
+    <script id="lucide-cdn" src="https://unpkg.com/lucide@latest" async crossorigin="anonymous"></script>
+  </body>
 </html>

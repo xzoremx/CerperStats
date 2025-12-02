@@ -1,7 +1,5 @@
 (function () {
-  let vantaHero = null;
   let vantaBackground = null;
-  let syncFrame = null;
   const MAX_RETRIES = 20;
   const RETRY_DELAY = 200;
   const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
@@ -18,21 +16,21 @@
     },
   ];
 
+  let readyFired = false;
+  const markReady = () => {
+    if (readyFired) return;
+    readyFired = true;
+    window.dispatchEvent(new CustomEvent("vanta-ready"));
+  };
+
   function destroyVanta() {
-    [vantaHero, vantaBackground].forEach((effect) => {
-      try {
-        effect?.destroy?.();
-      } catch (_) {}
-    });
-    vantaHero = null;
+    try {
+      vantaBackground?.destroy?.();
+    } catch (_) {}
     vantaBackground = null;
-    if (syncFrame) {
-      cancelAnimationFrame(syncFrame);
-      syncFrame = null;
-    }
   }
 
-  function createEffect(target, overrides = {}) {
+  function createBackgroundEffect(target, overrides = {}) {
     if (!target || !window.VANTA?.NET || !window.THREE) return null;
     const baseOptions = {
       el: target,
@@ -54,26 +52,16 @@
     return window.VANTA.NET({ ...baseOptions, ...overrides });
   }
 
-  function syncPointerToAll() {
-    if (syncFrame) return;
-    const loop = () => {
-      if (vantaHero && vantaBackground) {
-        vantaBackground.mouseX = vantaHero.mouseX;
-        vantaBackground.mouseY = vantaHero.mouseY;
-      }
-      syncFrame = requestAnimationFrame(loop);
-    };
-    syncFrame = requestAnimationFrame(loop);
-  }
-
   function initVanta() {
-    if (prefersReducedMotion) return;
-    const heroTarget = document.getElementById("procedure-hero");
+    if (prefersReducedMotion) {
+      markReady();
+      return;
+    }
     const backgroundTarget = document.getElementById("vanta-bg");
-    if (!window.VANTA?.NET || !window.THREE) return;
+    if (!window.VANTA?.NET || !window.THREE || !backgroundTarget) return;
 
-    if (!vantaBackground && backgroundTarget) {
-      vantaBackground = createEffect(backgroundTarget, {
+    if (!vantaBackground) {
+      vantaBackground = createBackgroundEffect(backgroundTarget, {
         mouseControls: true,
         touchControls: true,
         backgroundColor: 0x0a0a0d,
@@ -85,22 +73,16 @@
         minHeight: window.innerHeight,
         minWidth: window.innerWidth,
       });
+      markReady();
     }
-
-    if (!vantaHero && heroTarget) {
-      vantaHero = createEffect(heroTarget, {
-        backgroundColor: 0x0f0f11,
-        mouseControls: true,
-        touchControls: true,
-        color: 0xf4f4f5,
-      });
-    }
-
-    syncPointerToAll();
   }
 
   function attemptInit(attempt = 0) {
-    if ((vantaHero && vantaBackground) || attempt > MAX_RETRIES) return;
+    if (vantaBackground) return;
+    if (attempt > MAX_RETRIES) {
+      markReady();
+      return;
+    }
     if (window.VANTA?.NET && window.THREE) {
       initVanta();
       return;
@@ -153,11 +135,17 @@
   }
 
   function scheduleInit() {
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion) {
+      markReady();
+      return;
+    }
     const start = () => {
       loadLibraries()
         .then(() => requestAnimationFrame(() => attemptInit()))
-        .catch((err) => console.warn("[CerperStats] No se pudo cargar la animacion del hero:", err));
+        .catch((err) => {
+          console.warn("[CerperStats] No se pudo cargar la animacion del fondo:", err);
+          markReady();
+        });
     };
     if ("requestIdleCallback" in window) {
       window.requestIdleCallback(start, { timeout: 800 });
@@ -170,7 +158,6 @@
 
   window.addEventListener("resize", () => {
     try {
-      vantaHero?.resize?.();
       vantaBackground?.resize?.();
     } catch (err) {
       console.warn("[CerperStats] No se pudo reajustar Vanta NET:", err);

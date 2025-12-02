@@ -20,9 +20,7 @@ const root = document.documentElement;
 const cardsGrid = document.getElementById("cards-grid");
 const blurNode = document.querySelector("#blur feGaussianBlur");
 const lucideScript = document.getElementById("lucide-cdn");
-const glowLayer = document.querySelector(".glow-bg");
-let glowPaused = true;
-glowLayer?.classList.add("glow-paused");
+const loader = window.procLoader;
 
 function applyConfig() {
   const themeClass = CONFIG.theme === "light" ? "light" : "dark";
@@ -136,7 +134,7 @@ async function handleProcedureSelection(procedureId) {
   sessionStorage.setItem("procedimientoImagen", meta.image);
   sessionStorage.setItem("procedimientoTitulo", meta.title || proc);
   sessionStorage.setItem("procedimientoDescripcion", meta.description || "");
-  window.procLoader?.show?.("Preparando entrada de datos...");
+  loader?.show?.("Preparando entrada de datos...");
   const navigate = () => {
     if (window.cerper?.openPage) window.cerper.openPage("input_data/input_data.html");
     else window.location.href = "input_data/input_data.html";
@@ -233,7 +231,7 @@ function attachPointerTracking() {
 function wireNavigationButtons(session) {
   const backBtn = document.getElementById("go-menu");
   backBtn?.addEventListener("click", () => {
-    window.procLoader?.show?.("Abriendo menu...");
+    loader?.show?.("Abriendo menu...");
     const navigate = () => {
       if (window.cerper?.openPage) window.cerper.openPage("menu.html");
       else window.location.href = "menu.html";
@@ -255,7 +253,7 @@ function wireNavigationButtons(session) {
 
   sessionsBtn.addEventListener("click", () => {
     if (!session.usuario) { console.warn("No user session found"); return; }
-    window.procLoader?.show?.("Abriendo sesiones...");
+    loader?.show?.("Abriendo sesiones...");
     const navigate = () => {
       if (window.cerper?.openPage) window.cerper.openPage("sessions_panel.html");
       else window.location.href = "sessions_panel.html";
@@ -281,20 +279,8 @@ function initIcons() {
   );
 }
 
-function toggleGlowAnimation() {
-  glowPaused = !glowPaused;
-  glowLayer?.classList.toggle("glow-paused", glowPaused);
-}
-
-document.addEventListener("keydown", (event) => {
-  if (event.key?.toLowerCase() === "p") {
-    event.preventDefault();
-    toggleGlowAnimation();
-  }
-});
-
 async function initPage() {
-  window.procLoader?.show?.("Preparando procedimientos...");
+  loader?.show?.("Preparando procedimientos...");
   await loadProcedureDictionary();
   applyConfig();
   const session = getSessionData();
@@ -304,15 +290,14 @@ async function initPage() {
   wireNavigationButtons(session);
   initIcons();
 
-  let loadingCleared = false;
+  let cleared = false;
   const clearLoading = () => {
-    if (loadingCleared) return;
-    loadingCleared = true;
-    window.procLoader?.hide?.();
+    if (cleared) return;
+    cleared = true;
+    loader?.hide?.();
   };
 
   const handleVantaReady = () => {
-    window.removeEventListener("vanta-ready", handleVantaReady);
     clearLoading();
   };
 
