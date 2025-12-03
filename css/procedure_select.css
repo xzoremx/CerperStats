@@ -283,7 +283,9 @@ body::before {
 .hero-lab-name {
   font-weight: 600;
   letter-spacing: -0.02em;
+  font-size: clamp(10px, 3vw, 15px); 
 }
+
 
 .card-header .logo {
   width: 64px;
