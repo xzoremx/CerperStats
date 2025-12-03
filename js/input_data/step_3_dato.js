@@ -90,17 +90,29 @@ async function initStandaloneStep3({ labKey, labName }) {
 async function initUnifiedStep3({ labKey, labName }) {
   const step3Section = document.getElementById("step3-section");
   const step3Badge = document.getElementById("step3-badge");
-  const step3Placeholder = document.getElementById("step3-placeholder");
   const step3Options = document.getElementById("step3-options");
   const step3Status = document.getElementById("step3-status");
   const step3Instruction = document.getElementById("step3-instruction");
   const step3GoBack = document.getElementById("step3-go-back");
 
   if (step3Instruction) {
-    step3Instruction.textContent = `Laboratorio asignado: ${labName}`;
+    step3Instruction.textContent = "Selecciona la opcion que mejor describa el dato que vas a ingresar.";
   }
 
   step3GoBack?.addEventListener("click", () => scrollToSection("step2-section"));
+
+  const resetSelection = () => {
+    sessionStorage.removeItem("tipoDato");
+    sessionStorage.removeItem("modoCualitativo");
+    sessionStorage.removeItem("valoresPermitidos");
+    step3State.ok = false;
+    step3State.modified = false;
+    emitStep3State();
+    markStep3Selection(null);
+    if (step3Badge) step3Badge.textContent = "Modo pendiente";
+  };
+  document.addEventListener("analito:mode", resetSelection);
+  resetSelection();
 
   const tipos = await cargarTipos(labKey);
 
@@ -119,16 +131,11 @@ async function initUnifiedStep3({ labKey, labName }) {
   }
 
   if (step3Badge) step3Badge.textContent = "Modo pendiente";
-  if (step3Placeholder) {
-    step3Placeholder.textContent =
-      "Selecciona la opcion que mejor describa el dato que vas a ingresar.";
-  }
-  if (step3Status) {
-    step3Status.textContent = "Elige el tipo que describe el contenido del dato.";
-  }
 
   if (step3Options) {
     step3Options.innerHTML = "";
+    const storedTipo = (sessionStorage.getItem("tipoDato") || "").toLowerCase();
+    let preselectedBtn = null;
     tipos.forEach(tipo => {
       const tipoNormalizado = tipo.tipoDato.toLowerCase();
       const label =
@@ -137,35 +144,71 @@ async function initUnifiedStep3({ labKey, labName }) {
           : tipo.modo
           ? `Cualitativo - ${tipo.modo.charAt(0).toUpperCase() + tipo.modo.slice(1)}`
           : "Cualitativo";
-      const icon = tipoNormalizado === "cuantitativo" ? "activity" : "color-swatch";
+      const iconName =
+        tipo.icon ||
+        tipo.icon_lucide ||
+        (tipoNormalizado === "cuantitativo" ? "decimals-arrow-right" : "color-swatch");
+
       const button = document.createElement("button");
       button.className =
-        "flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-sm text-white hover:border-orange-400/70 hover:bg-orange-500/10 transition-all";
-      button.innerHTML = `
-        <span class="flex items-center gap-2">
-          <i data-lucide="${icon}" class="w-4 h-4 text-orange-200"></i>
-          <span class="font-geist">${label}</span>
-        </span>
-        <span class="text-[11px] text-gray-400 group-hover:text-orange-200">Elegir</span>
-      `;
+        "step3-option-btn flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-sm text-white hover:border-orange-400/70 hover:bg-orange-500/10 transition-all";
+
+      const mainWrap = document.createElement("span");
+      mainWrap.className = "flex items-center gap-2";
+
+      const iconSlot = document.createElement("span");
+      iconSlot.className = "step3-icon-slot";
+      mainWrap.appendChild(iconSlot);
+
+      const labelSpan = document.createElement("span");
+      labelSpan.className = "font-geist";
+      labelSpan.textContent = label;
+      mainWrap.appendChild(labelSpan);
+
+      const actionSpan = document.createElement("span");
+      actionSpan.className = "text-[11px] text-gray-400 group-hover:text-orange-200";
+      actionSpan.textContent = "Elegir";
+
+      button.appendChild(mainWrap);
+      button.appendChild(actionSpan);
+
+      if (!preselectedBtn && storedTipo && storedTipo === tipoNormalizado) {
+        preselectedBtn = button;
+      }
+
       button.addEventListener("click", () => {
         guardarTipoDato(tipo, true);
         if (step3Badge) {
           const base = tipo.tipoDato.charAt(0).toUpperCase() + tipo.tipoDato.slice(1);
           step3Badge.textContent = `Seleccionado: ${base}`;
         }
-        if (step3Status) {
-          step3Status.textContent = "Tipo guardado, define ahora las cantidades.";
-        }
+        markStep3Selection(button);
         irAStep4({ labName });
       });
+
       step3Options.appendChild(button);
+
+      window.IconSafety?.attachIcon(iconSlot, iconName).then(ok => {
+        if (!ok) {
+          iconSlot.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 text-orange-200"></i>`;
+        }
+        iconSlot.querySelector("i")?.classList.add("w-4", "h-4", "text-orange-200");
+        window.lucide?.createIcons?.({ icons: [iconSlot] });
+      });
     });
 
     if (typeof lucide !== "undefined" && lucide.createIcons) {
       lucide.createIcons();
     }
+    markStep3Selection(preselectedBtn);
   }
+}
+
+function markStep3Selection(selectedBtn) {
+  const options = document.getElementById("step3-options");
+  options
+    ?.querySelectorAll(".step3-option-btn")
+    .forEach(btn => btn.classList.toggle("step3-option-active", btn === selectedBtn));
 }
 
 async function cargarTipos(labKey) {
@@ -182,7 +225,9 @@ async function cargarTipos(labKey) {
             const modo =
               (row.modo ?? row.modo_cualitativo ?? "").toString().trim() || null;
             const valoresPermitidos = row.valores_permitidos ?? null;
-            return { tipoDato, modo, valoresPermitidos };
+            const icon =
+              (row.icon_lucide || row.icono || row.icon || "").toString().trim() || null;
+            return { tipoDato, modo, valoresPermitidos, icon };
           })
           .filter(Boolean);
       }
@@ -271,4 +316,3 @@ function scrollToSection(id) {
   const target = document.getElementById(id);
   if (target) target.scrollIntoView({ behavior: "smooth" });
 }
-

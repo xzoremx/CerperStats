@@ -8,18 +8,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const paramCustomInput = document.getElementById("param-custom-input");
   const paramCustomConfirm = document.getElementById("param-custom-confirm");
 
-  const paramOptionsByMode = {
-    mono: [
-      { name: "Dias", icon: "calendar" },
-      { name: "Analista", icon: "user" },
-      { name: "Equipos", icon: "cpu" },
-      { name: "Otro", icon: "list" },
-    ],
-    multi: [
-      { name: "Analista", icon: "user" },
-      { name: "Otro", icon: "list" },
-    ],
-  };
+  const PARAM_OPTIONS = [
+    { name: "Dias", icon: "calendar" },
+    { name: "Analista", icon: "user" },
+    { name: "Equipos", icon: "cpu" },
+    { name: "Otro", icon: "list" },
+  ];
 
   let selectedMode = sessionStorage.getItem("modoAnalito") || null;
   let selectedParam = sessionStorage.getItem("parametroSeleccionado") || null;
@@ -37,13 +31,12 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  if (selectedMode) {
-    activarPanel();
-    renderParamButtons(selectedMode);
-    if (selectedParam) {
-      highlightParam(selectedParam);
-      actualizarBadge(selectedParam);
-    }
+  paramPlaceholder?.classList.add("hidden");
+  paramPanel?.classList.add("active");
+  renderParamButtons();
+  if (selectedParam) {
+    highlightParam(selectedParam);
+    actualizarBadge(selectedParam);
   }
 
   emitState();
@@ -53,11 +46,12 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedParam = null;
     sessionStorage.removeItem("parametroSeleccionado");
     state.ok = false;
-    // no marcamos modified aquí; se marcará cuando el usuario elija un parámetro
+    state.modified = false;
     emitState();
-    if (!selectedMode) return;
-    activarPanel();
-    renderParamButtons(selectedMode);
+    paramCustom?.classList.add("hidden");
+    if (paramCustomInput) paramCustomInput.value = "";
+    highlightParam(null);
+    if (!selectedMode && paramBadge) paramBadge.textContent = "Esperando modo";
   });
 
   paramGrid?.addEventListener("click", e => {
@@ -82,21 +76,16 @@ document.addEventListener("DOMContentLoaded", () => {
     highlightParam(null);
   });
 
-  function activarPanel() {
-    paramPlaceholder?.classList.add("hidden");
-    paramPanel?.classList.add("active");
-  }
-
-  function renderParamButtons(mode) {
+  function renderParamButtons() {
     if (!paramGrid) return;
     paramGrid.innerHTML = "";
     paramCustom?.classList.add("hidden");
-    const opts = paramOptionsByMode[mode] || [];
-    opts.forEach(opt => {
+    PARAM_OPTIONS.forEach(opt => {
       const button = document.createElement("button");
       button.className =
         "param-btn group flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-sm text-white hover:border-orange-400/70 hover:bg-orange-500/10 transition-all";
       button.dataset.param = opt.name;
+      button.classList.add("param-btn");
       button.innerHTML = `
         <span class="flex items-center gap-2">
           <i data-lucide="${opt.icon}" class="w-4 h-4 text-orange-200"></i>
@@ -109,9 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (typeof lucide !== "undefined" && lucide.createIcons) {
       lucide.createIcons();
     }
-    if (selectedParam) {
-      highlightParam(selectedParam);
-    }
+    highlightParam(selectedParam);
   }
 
   function setSelectedParam(paramName, fromUser) {
@@ -140,10 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!paramGrid) return;
     paramGrid.querySelectorAll(".param-btn").forEach(btn => {
       const isActive = paramName && btn.dataset.param === paramName;
-      btn.classList.toggle("ring-2", isActive);
-      btn.classList.toggle("ring-orange-400/70", isActive);
-      btn.classList.toggle("border-orange-400/70", isActive);
+      btn.classList.toggle("param-btn-selected", isActive);
     });
   }
 });
-

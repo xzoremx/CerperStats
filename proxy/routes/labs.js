@@ -53,7 +53,7 @@ router.get('/:labKey/modes', async (req, res) => {
   const { labKey } = req.params;
   try {
     const { rows } = await pool.query(
-      `SELECT tipo_dato, modo_cualitativo, valores_permitidos
+      `SELECT tipo_dato, modo_cualitativo, valores_permitidos, icon_lucide
        FROM lab_data_modes
        WHERE lab_key = $1 AND activo = true
        ORDER BY id ASC`,

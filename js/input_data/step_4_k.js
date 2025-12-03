@@ -43,9 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateLabels(context);
     toggleLecturas(context);
     if (context.badge) context.badge.textContent = "Listo para continuar";
-    if (context.isUnified && context.status) {
-      context.status.textContent = "Define cuantos parametros y lecturas necesitas.";
-    }
+    
     if (context.section) {
       context.section.classList.remove("hidden");
       if (shouldScroll) {

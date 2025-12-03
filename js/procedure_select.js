@@ -25,14 +25,6 @@ const blurNode = document.querySelector("#blur feGaussianBlur");
 const lucideScript = document.getElementById("lucide-cdn");
 const loader = window.procLoader;
 
-const sanitizeIcon = raw => {
-  const value = String(raw || "").trim().toLowerCase();
-  if (!value) return DEFAULT_LAB_ICON;
-  const normalized = value.startsWith("lucide:") ? value.slice(7) : value;
-  const safe = normalized.replace(/[^a-z0-9-]/g, "");
-  return safe || DEFAULT_LAB_ICON;
-};
-
 const normalizeColor = raw => {
   const value = String(raw || "").trim();
   if (!value) return DEFAULT_LAB_COLOR;
@@ -104,7 +96,7 @@ function getSessionData() {
   const storedIcon = sessionStorage.getItem("labIcon") || localStorage.getItem("labIcon");
   const labName = (storedName || "").trim() || labKey || DEFAULT_LAB_NAME;
   const labColor = normalizeColor(storedColor || DEFAULT_LAB_COLOR);
-  const labIcon = sanitizeIcon(storedIcon);
+  const labIcon = storedIcon || DEFAULT_LAB_ICON;
   const rol = (sessionStorage.getItem("rol") || "").toLowerCase().trim();
   const usuario = sessionStorage.getItem("usuario");
   return { labKey, defaultLab, labName, labColor, labIcon, rol, usuario };
@@ -126,10 +118,17 @@ function setLabInfo(session) {
     iconWrap.className = "hero-lab-icon";
     iconWrap.style.borderColor = hexToRgba(heroColor, 0.35);
     iconWrap.style.background = hexToRgba(heroColor, 0.12);
-    const iconEl = document.createElement("i");
-    iconEl.setAttribute("data-lucide", heroIcon);
-    iconWrap.appendChild(iconEl);
+    const iconSlot = document.createElement("span");
+    iconSlot.className = "hero-icon-slot";
+    iconWrap.appendChild(iconSlot);
     heroTitle.appendChild(iconWrap);
+    const fallbackIcon = heroIcon || DEFAULT_LAB_ICON;
+    const applyHeroIcon = async () => {
+      const ok = await window.IconSafety?.attachIcon(iconSlot, fallbackIcon);
+      if (!ok) iconSlot.innerHTML = `<i data-lucide="${fallbackIcon}"></i>`;
+      window.lucide?.createIcons?.({ icons: [iconSlot] });
+    };
+    applyHeroIcon();
 
     const label = document.createElement("span");
     label.className = "hero-lab-name";
