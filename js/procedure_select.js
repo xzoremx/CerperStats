@@ -15,12 +15,47 @@ const CONFIG = {
 };
 
 const PROCEDURES = ["autorizaciones", "implementaciones", "intralaboratorios", "intercomparacion"];
+const DEFAULT_LAB_NAME = "Laboratorio";
+const DEFAULT_LAB_COLOR = "#22d3ee";
+const DEFAULT_LAB_ICON = "flask-conical";
 
 const root = document.documentElement;
 const cardsGrid = document.getElementById("cards-grid");
 const blurNode = document.querySelector("#blur feGaussianBlur");
 const lucideScript = document.getElementById("lucide-cdn");
 const loader = window.procLoader;
+
+const sanitizeIcon = raw => {
+  const value = String(raw || "").trim().toLowerCase();
+  if (!value) return DEFAULT_LAB_ICON;
+  const normalized = value.startsWith("lucide:") ? value.slice(7) : value;
+  const safe = normalized.replace(/[^a-z0-9-]/g, "");
+  return safe || DEFAULT_LAB_ICON;
+};
+
+const normalizeColor = raw => {
+  const value = String(raw || "").trim();
+  if (!value) return DEFAULT_LAB_COLOR;
+  let hex = value.startsWith("#") ? value : `#${value}`;
+  if (/^#([0-9a-f]{3})$/i.test(hex)) {
+    hex = `#${hex
+      .slice(1)
+      .split("")
+      .map(char => char + char)
+      .join("")}`;
+  }
+  if (!/^#([0-9a-f]{6})$/i.test(hex)) return DEFAULT_LAB_COLOR;
+  return hex.toLowerCase();
+};
+
+const hexToRgba = (hex, alpha = 1) => {
+  const normalized = normalizeColor(hex);
+  const value = normalized.replace("#", "");
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  return `rgba(${Number.isFinite(r) ? r : 34}, ${Number.isFinite(g) ? g : 211}, ${Number.isFinite(b) ? b : 238}, ${alpha})`;
+};
 
 function applyConfig() {
   const themeClass = CONFIG.theme === "light" ? "light" : "dark";
@@ -60,19 +95,50 @@ function applyConfig() {
 function getSessionData() {
   const labKey = sessionStorage.getItem("labSeleccionado") || localStorage.getItem("labSeleccionado");
   const defaultLab = (sessionStorage.getItem("default_lab") || "").trim();
-  const labName = sessionStorage.getItem("labNombreVisible") || labKey || "Laboratorio";
+  const storedName =
+    sessionStorage.getItem("labNombreVisible") ||
+    localStorage.getItem("labNombreVisible") ||
+    labKey ||
+    "";
+  const storedColor = sessionStorage.getItem("labColor") || localStorage.getItem("labColor");
+  const storedIcon = sessionStorage.getItem("labIcon") || localStorage.getItem("labIcon");
+  const labName = (storedName || "").trim() || labKey || DEFAULT_LAB_NAME;
+  const labColor = normalizeColor(storedColor || DEFAULT_LAB_COLOR);
+  const labIcon = sanitizeIcon(storedIcon);
   const rol = (sessionStorage.getItem("rol") || "").toLowerCase().trim();
   const usuario = sessionStorage.getItem("usuario");
-  return { labKey, defaultLab, labName, rol, usuario };
+  return { labKey, defaultLab, labName, labColor, labIcon, rol, usuario };
 }
 
 function setLabInfo(session) {
   const labTitle = document.getElementById("lab-title");
   const labInfo = document.getElementById("lab-info");
   const heroTitle = document.getElementById("hero-lab-title");
+  const heroDivider = document.querySelector(".hero-divider");
+  const heroColor = session.labColor || DEFAULT_LAB_COLOR;
+  const heroIcon = session.labIcon || DEFAULT_LAB_ICON;
+  const heroName = session.labName || DEFAULT_LAB_NAME;
 
   if (heroTitle) {
-    heroTitle.textContent = session.labName || "Laboratorio";
+    heroTitle.textContent = "";
+    heroTitle.style.setProperty("--lab-color", heroColor);
+    const iconWrap = document.createElement("span");
+    iconWrap.className = "hero-lab-icon";
+    iconWrap.style.borderColor = hexToRgba(heroColor, 0.35);
+    iconWrap.style.background = hexToRgba(heroColor, 0.12);
+    const iconEl = document.createElement("i");
+    iconEl.setAttribute("data-lucide", heroIcon);
+    iconWrap.appendChild(iconEl);
+    heroTitle.appendChild(iconWrap);
+
+    const label = document.createElement("span");
+    label.className = "hero-lab-name";
+    label.textContent = heroName;
+    heroTitle.appendChild(label);
+  }
+
+  if (heroDivider) {
+    heroDivider.style.background = `linear-gradient(90deg, ${hexToRgba(heroColor, 0.1)}, ${hexToRgba(heroColor, 0.9)}, ${hexToRgba(heroColor, 0.1)})`;
   }
 
   if (labTitle) {

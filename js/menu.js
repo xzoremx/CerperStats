@@ -49,8 +49,12 @@ function buildLabCard(lab, idx) {
     if (!key) return;
     sessionStorage.setItem("labSeleccionado", key);
     sessionStorage.setItem("labNombreVisible", nombre);
+    sessionStorage.setItem("labColor", color);
+    sessionStorage.setItem("labIcon", iconName);
     localStorage.setItem("labSeleccionado", key);
     localStorage.setItem("labNombreVisible", nombre);
+    localStorage.setItem("labColor", color);
+    localStorage.setItem("labIcon", iconName);
     if (window.cerper?.openPage) {
       window.cerper.openPage("procedure_select.html");
     } else {

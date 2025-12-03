@@ -1,3 +1,19 @@
+const DEFAULT_LAB_COLOR = "#22d3ee";
+const DEFAULT_LAB_ICON = "flask-conical";
+
+const sanitizeIcon = raw => {
+  const value = String(raw || "").trim().toLowerCase();
+  if (!value) return DEFAULT_LAB_ICON;
+  const normalized = value.startsWith("lucide:") ? value.slice(7) : value;
+  const safe = normalized.replace(/[^a-z0-9-]/g, "");
+  return safe || DEFAULT_LAB_ICON;
+};
+
+const normalizeColor = raw => {
+  const value = String(raw || "").trim();
+  return value || DEFAULT_LAB_COLOR;
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("login-form");
   const btnLogin = document.getElementById("btn-login");
@@ -36,15 +52,28 @@ document.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("labSeleccionado", user.default_lab || "");
       sessionStorage.setItem("default_lab", user.default_lab || "");
 
-      // Resolver y guardar el nombre visible del laboratorio a partir del lab_key (default_lab)
+      // Resolver y guardar metadata del laboratorio a partir del lab_key (default_lab)
       try {
         if (user.default_lab) {
           const labRes = await window.cerper.getLabByKey(user.default_lab);
-          if (labRes?.ok && labRes.data?.nombre) {
-            sessionStorage.setItem("labNombreVisible", labRes.data.nombre);
-            // Opcional: persistir también en localStorage para flujos que usan su fallback
+          if (labRes?.ok && labRes.data) {
+            const lab = labRes.data;
+            const nombreVisible =
+              (lab.nombre || user.default_lab || "").trim() ||
+              user.default_lab ||
+              "Laboratorio";
+            const labColor = normalizeColor(lab.color);
+            const labIcon = sanitizeIcon(lab.icon_lucide || lab.icono || lab.icon);
+
+            sessionStorage.setItem("labNombreVisible", nombreVisible);
+            sessionStorage.setItem("labColor", labColor);
+            sessionStorage.setItem("labIcon", labIcon);
+
+            // Persistir en localStorage para permitir refresh/fallbacks
             localStorage.setItem("labSeleccionado", user.default_lab);
-            localStorage.setItem("labNombreVisible", labRes.data.nombre);
+            localStorage.setItem("labNombreVisible", nombreVisible);
+            localStorage.setItem("labColor", labColor);
+            localStorage.setItem("labIcon", labIcon);
           }
         }
       } catch (_) {
