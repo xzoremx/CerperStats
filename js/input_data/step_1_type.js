@@ -2,6 +2,9 @@
 document.addEventListener("DOMContentLoaded", () => {
   if (window.lucide?.createIcons) lucide.createIcons();
 
+  sessionStorage.removeItem("modoAnalito");
+  sessionStorage.removeItem("parametroSeleccionado");
+
   const btnOptions = Array.from(document.querySelectorAll(".btn-option"));
   const paramPlaceholder = document.getElementById("param-placeholder");
   const paramPanel = document.getElementById("param-panel");
@@ -67,4 +70,3 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 }
 );
-

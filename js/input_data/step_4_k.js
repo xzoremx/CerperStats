@@ -61,6 +61,9 @@ document.addEventListener("DOMContentLoaded", () => {
     showStep4({ scroll: false });
   }
 
+  document.addEventListener("parametro:seleccionado", () => updateLabels(context));
+  document.addEventListener("analito:mode", () => updateLabels(context));
+
   emitStep4State();
 });
 
@@ -207,4 +210,3 @@ function capitalize(text) {
   if (!text) return "";
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
-
