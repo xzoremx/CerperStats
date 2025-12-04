@@ -38,9 +38,9 @@ document.addEventListener("DOMContentLoaded", () => {
   btnOptions.forEach(btn => {
     btn.addEventListener("click", () => {
       const mode = btn.textContent.trim().toLowerCase().includes("multi") ? "multi" : "mono";
+      if (selectedMode === mode) return;
       selectedMode = mode;
       sessionStorage.setItem("modoAnalito", mode);
-      sessionStorage.removeItem("parametroSeleccionado");
       aplicarModoUI(mode);
       state.ok = true;
       state.modified = true;

@@ -1,5 +1,6 @@
 // input_data/step_4_k.js
 document.addEventListener("DOMContentLoaded", () => {
+  setupModernNumberInputs();
   const context = buildContext();
 
   const step4State = {
@@ -93,7 +94,8 @@ function buildContext() {
 }
 
 function updateLabels(context) {
-  const parametro = sessionStorage.getItem("parametroSeleccionado") || "elementos";
+  const parametroRaw = sessionStorage.getItem("parametroSeleccionado");
+  const parametro = parametroRaw || "elementos";
   const { singular, plural } = obtenerTextosParametro(parametro);
 
   if (context.paramName) context.paramName.textContent = plural;
@@ -101,10 +103,15 @@ function updateLabels(context) {
   if (context.paramSingular) context.paramSingular.textContent = singular;
 
   if (context.title) {
-    context.title.textContent = `Definir cantidad de ${capitalize(plural)}`;
+    context.title.textContent = `Define la cantidad de ${capitalize(plural)}`;
   }
   if (context.subtitle) {
-    context.subtitle.innerHTML = `Ingrese la cantidad de <strong>${plural}</strong> y el numero de lecturas esperadas.`;
+    context.subtitle.innerHTML = `Ingrese el n?mero de <strong>${plural}</strong> y de sus lecturas esperadas.`;
+  }
+  if (context.badge) {
+    context.badge.textContent = parametroRaw
+      ? `Par?metro definido: ${capitalize(plural)}`
+      : "Esperando par?metros";
   }
 }
 
@@ -209,4 +216,33 @@ function notify(message, type = "info") {
 function capitalize(text) {
   if (!text) return "";
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function setupModernNumberInputs() {
+  const buttons = document.querySelectorAll(".modern-number-btn");
+  buttons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const inputId = btn.dataset.target;
+      if (!inputId) return;
+      const step = parseInt(btn.dataset.step || "1", 10);
+      if (Number.isNaN(step)) return;
+
+      const input = document.getElementById(inputId);
+      if (!input) return;
+
+      const minAttr = input.getAttribute("min");
+      const maxAttr = input.getAttribute("max");
+      const min = minAttr !== null ? parseInt(minAttr, 10) : null;
+      const max = maxAttr !== null ? parseInt(maxAttr, 10) : null;
+
+      let value = parseInt(input.value, 10);
+      if (Number.isNaN(value)) value = min ?? 0;
+      value += step;
+      if (min !== null && value < min) value = min;
+      if (max !== null && value > max) value = max;
+
+      input.value = value;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  });
 }

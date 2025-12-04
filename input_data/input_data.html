@@ -111,9 +111,75 @@ background: rgba(249,115,22,0.08);
 box-shadow: 0 0 0 1px rgba(249,115,22,0.4), 0 8px 24px rgba(249,115,22,0.18);
 }
 .step3-option-btn.step3-option-active{
-border-color: rgba(249,115,22,0.7) !important;
-background: rgba(249,115,22,0.08);
-box-shadow: 0 0 0 1px rgba(249,115,22,0.4), 0 8px 24px rgba(249,115,22,0.18);
+  border-color: rgba(249,115,22,0.7) !important;
+  background: rgba(249,115,22,0.08);
+  box-shadow: 0 0 0 1px rgba(249,115,22,0.4), 0 8px 24px rgba(249,115,22,0.18);
+}
+.modern-number-input{
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+  padding:0.45rem 0.55rem;
+  border-radius:0.85rem;
+  background:rgba(15,15,20,0.65);
+  border:1px solid rgba(255,255,255,0.12);
+  box-shadow:0 10px 28px rgba(5,5,7,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+  width:100%;
+  max-width:260px;
+  transition:border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.modern-number-input.modern-number-input-fluid{
+  max-width:none;
+}
+.modern-number-input:focus-within{
+  border-color:rgba(249,115,22,0.85);
+  box-shadow:0 0 0 1px rgba(249,115,22,0.35), 0 18px 36px rgba(249,115,22,0.18);
+}
+.modern-number-field{
+  flex:1;
+  background:transparent;
+  border:none;
+  text-align:center;
+  color:#fff;
+  font-size:1rem;
+  font-family:'Geist',sans-serif;
+  letter-spacing:0.03em;
+  padding:0.35rem 0.25rem;
+}
+.modern-number-field:focus{
+  outline:none;
+}
+.modern-number-field::-webkit-inner-spin-button,
+.modern-number-field::-webkit-outer-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}
+.modern-number-field{
+  -moz-appearance:textfield;
+  -webkit-appearance:textfield;
+  appearance:textfield; 
+}
+.modern-number-btn{
+  width:2rem;
+  height:2rem;
+  border-radius:9999px;
+  border:1px solid rgba(255,255,255,0.18);
+  background:linear-gradient(135deg,rgba(249,115,22,0.15),rgba(249,115,22,0.35));
+  color:#fff;
+  font-size:1rem;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.modern-number-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 8px 20px rgba(249,115,22,0.25);
+  border-color:rgba(249,115,22,0.5);
+}
+.modern-number-btn:active{
+  transform:scale(0.96);
 }
 </style>
 <link id="all-fonts-link-font-geist" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-geist">.font-geist { font-family: 'Geist', sans-serif !important; }</style><link id="all-fonts-link-font-roboto" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-roboto">.font-roboto { font-family: 'Roboto', sans-serif !important; }</style><link id="all-fonts-link-font-montserrat" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-montserrat">.font-montserrat { font-family: 'Montserrat', sans-serif !important; }</style><link id="all-fonts-link-font-poppins" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-poppins">.font-poppins { font-family: 'Poppins', sans-serif !important; }</style><link id="all-fonts-link-font-playfair" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;900&amp;display=swap"><style id="all-fonts-style-font-playfair">.font-playfair { font-family: 'Playfair Display', serif !important; }</style><link id="all-fonts-link-font-instrument-serif" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:wght@400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-instrument-serif">.font-instrument-serif { font-family: 'Instrument Serif', serif !important; }</style><link id="all-fonts-link-font-merriweather" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&amp;display=swap"><style id="all-fonts-style-font-merriweather">.font-merriweather { font-family: 'Merriweather', serif !important; }</style><link id="all-fonts-link-font-bricolage" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-bricolage">.font-bricolage { font-family: 'Bricolage Grotesque', sans-serif !important; }</style><link id="all-fonts-link-font-jakarta" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-jakarta">.font-jakarta { font-family: 'Plus Jakarta Sans', sans-serif !important; }</style><link id="all-fonts-link-font-manrope" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-manrope">.font-manrope { font-family: 'Manrope', sans-serif !important; }</style><link id="all-fonts-link-font-space-grotesk" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-space-grotesk">.font-space-grotesk { font-family: 'Space Grotesk', sans-serif !important; }</style><link id="all-fonts-link-font-work-sans" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-work-sans">.font-work-sans { font-family: 'Work Sans', sans-serif !important; }</style><link id="all-fonts-link-font-pt-serif" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&amp;display=swap"><style id="all-fonts-style-font-pt-serif">.font-pt-serif { font-family: 'PT Serif', serif !important; }</style><link id="all-fonts-link-font-geist-mono" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-geist-mono">.font-geist-mono { font-family: 'Geist Mono', monospace !important; }</style><link id="all-fonts-link-font-space-mono" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&amp;display=swap"><style id="all-fonts-style-font-space-mono">.font-space-mono { font-family: 'Space Mono', monospace !important; }</style><link id="all-fonts-link-font-quicksand" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-quicksand">.font-quicksand { font-family: 'Quicksand', sans-serif !important; }</style><link id="all-fonts-link-font-nunito" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-nunito">.font-nunito { font-family: 'Nunito', sans-serif !important; }</style></head>
@@ -157,7 +223,7 @@ box-shadow: 0 0 0 1px rgba(249,115,22,0.4), 0 8px 24px rgba(249,115,22,0.18);
         <div class="relative text-left md:col-span-2">
           <div class="inline-flex items-center gap-2 mb-3 backdrop-blur-sm bg-white/5 rounded-lg py-2 px-3 border border-white/10 font-geist">
             <i data-lucide="book-open" class="w-4 h-4 text-blue-400"></i>
-            Metodo
+            Método
           </div>
           <input id="metodo" type="text" placeholder="Ingresa el metodo" class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner">
         </div>
@@ -197,10 +263,9 @@ box-shadow: 0 0 0 1px rgba(249,115,22,0.4), 0 8px 24px rgba(249,115,22,0.18);
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
           <div>
             <p class="text-xs tracking-[0.2em] uppercase text-orange-300/80 font-geist mb-1">Paso 1</p>
-            <h3 class="text-xl font-space-grotesk text-white">Selecciona el tipo de analisis</h3>
+            <h3 class="text-xl font-space-grotesk text-white">Selecciona la estructura de datos</h3>
             <p class="text-sm text-gray-400">Elige si trabajas con un analito o multiples para continuar.</p>
           </div>
-          <div class="text-xs px-3 py-1 rounded-full border border-white/10 text-gray-300 bg-white/5">Modo de estructura</div>
         </div>
         <div class="flex flex-wrap justify-center gap-12 px-4">
           <div class="btn-wrapper btn-option group inline-flex justify-center items-center hover:border-[#F97316] transition-colors duration-300 sm:w-auto w-full border-neutral-800 border pt-4 pr-4 pb-4 pl-4 relative">
@@ -227,14 +292,10 @@ box-shadow: 0 0 0 1px rgba(249,115,22,0.4), 0 8px 24px rgba(249,115,22,0.18);
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
           <div>
             <p class="text-xs tracking-[0.2em] uppercase text-orange-300/80 font-geist mb-1">Paso 2</p>
-            <h3 class="text-xl font-space-grotesk text-white">Selecciona el parametro</h3>
-            <p class="text-sm text-gray-400">Elige como agrupar las repeticiones segun el modo.</p>
+            <h3 class="text-xl font-space-grotesk text-white">Selecciona el parámetro</h3>
+            <p class="text-sm text-gray-400">Elige como agrupar las repeticiones.</p>
           </div>
-          <div id="param-badge" class="text-xs px-3 py-1 rounded-full border border-white/10 text-gray-300 bg-white/5">Esperando modo</div>
-        </div>
-
-        <div id="param-placeholder" class="text-sm text-gray-400 bg-white/5 border border-dashed border-white/10 rounded-lg p-4">
-          Primero selecciona Monoanalito o Multianalito para ver las opciones de parametro.
+          <div id="param-badge" class="text-xs px-3 py-1 rounded-full border border-white/10 text-gray-300 bg-white/5">Esperando selección</div>
         </div>
 
         <div id="param-panel" class="param-panel">
@@ -273,9 +334,6 @@ box-shadow: 0 0 0 1px rgba(249,115,22,0.4), 0 8px 24px rgba(249,115,22,0.18);
               Elige si los resultados que vas a ingresar son cuantitativos o cualitativos para desbloquear el siguiente paso.
             </p>
           </div>
-          <div id="step3-badge" class="text-xs px-3 py-1 rounded-full border border-white/10 text-gray-300 bg-white/5">
-            Esperando selección
-          </div>
         </div>
 
         <div id="step3-options" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4"></div>
@@ -294,9 +352,9 @@ box-shadow: 0 0 0 1px rgba(249,115,22,0.4), 0 8px 24px rgba(249,115,22,0.18);
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
           <div>
             <p id="step4-step-label" class="text-xs tracking-[0.2em] uppercase text-orange-300/80 font-geist mb-1">Paso 4</p>
-            <h3 id="step4-title" class="text-xl font-space-grotesk text-white">Definir cantidad</h3>
+            <h3 id="step4-title" class="text-xl font-space-grotesk text-white">Define la cantidad de parámetros</h3>
             <p id="step4-subtitle" class="text-sm text-gray-400">
-              Ingrese la cantidad de <span id="step4-param-name">elementos</span> y el número de lecturas esperadas.
+              Ingrese el número de <span id="step4-param-name">parámetros</span> y de sus lecturas esperadas.
             </p>
           </div>
           <div id="step4-badge" class="text-xs px-3 py-1 rounded-full border border-white/10 text-gray-300 bg-white/5">
@@ -305,46 +363,82 @@ box-shadow: 0 0 0 1px rgba(249,115,22,0.4), 0 8px 24px rgba(249,115,22,0.18);
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="flex flex-col gap-2">
+          <div class="flex flex-col gap-2 max-w-xs">
             <label class="text-xs uppercase text-gray-400 tracking-[0.2em] font-geist">Cantidad de <span id="step4-param-label">elementos</span></label>
-            <input
-              id="step4-input-k"
-              type="number"
-              min="2"
-              value="3"
-              class="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner"
-            />
+            <div class="modern-number-input">
+              <button type="button" class="modern-number-btn" data-target="step4-input-k" data-step="-1" aria-label="Disminuir cantidad">
+                <span aria-hidden="true">−</span>
+              </button>
+              <input
+                id="step4-input-k"
+                type="number"
+                min="2"
+                value="3"
+                inputmode="numeric"
+                class="modern-number-field text-sm font-geist"
+              />
+              <button type="button" class="modern-number-btn" data-target="step4-input-k" data-step="1" aria-label="Aumentar cantidad">
+                <span aria-hidden="true">+</span>
+              </button>
+            </div>
           </div>
-          <div id="step4-lecturas-container" class="flex flex-col gap-2">
+          <div id="step4-lecturas-container" class="flex flex-col gap-2 max-w-xs">
             <label class="text-xs uppercase text-gray-400 tracking-[0.2em] font-geist">Lecturas por <span id="step4-param-singular">elemento</span></label>
-            <input
-              id="step4-input-n"
-              type="number"
-              min="1"
-              value="5"
-              class="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner"
-            />
+            <div class="modern-number-input">
+              <button type="button" class="modern-number-btn" data-target="step4-input-n" data-step="-1" aria-label="Disminuir lecturas">
+                <span aria-hidden="true">−</span>
+              </button>
+              <input
+                id="step4-input-n"
+                type="number"
+                min="1"
+                value="5"
+                inputmode="numeric"
+                class="modern-number-field text-sm font-geist"
+              />
+              <button type="button" class="modern-number-btn" data-target="step4-input-n" data-step="1" aria-label="Aumentar lecturas">
+                <span aria-hidden="true">+</span>
+              </button>
+            </div>
           </div>
         </div>
 
         <div id="step4-lecturas-k2" class="hidden mt-4 bg-white/5 border border-white/10 rounded-lg p-4 text-sm text-gray-300">
           <p class="text-xs uppercase tracking-[0.2em] text-gray-400 mb-2">Caso especial k=2</p>
           <div class="flex flex-col sm:flex-row gap-3">
-            <input
-              id="step4-input-n1"
-              type="number"
-              min="1"
-              value="5"
-              class="flex-1 px-3 py-2 rounded-lg bg-transparent border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner"
-            />
+            <div class="modern-number-input modern-number-input-fluid flex-1">
+              <button type="button" class="modern-number-btn" data-target="step4-input-n1" data-step="-1" aria-label="Disminuir lecturas primera muestra">
+                <span aria-hidden="true">−</span>
+              </button>
+              <input
+                id="step4-input-n1"
+                type="number"
+                min="1"
+                value="5"
+                inputmode="numeric"
+                class="modern-number-field text-sm font-geist"
+              />
+              <button type="button" class="modern-number-btn" data-target="step4-input-n1" data-step="1" aria-label="Aumentar lecturas primera muestra">
+                <span aria-hidden="true">+</span>
+              </button>
+            </div>
             <span class="text-white/70 self-center font-geist text-sm">y</span>
-            <input
-              id="step4-input-n2"
-              type="number"
-              min="1"
-              value="4"
-              class="flex-1 px-3 py-2 rounded-lg bg-transparent border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 backdrop-blur-sm shadow-inner"
-            />
+            <div class="modern-number-input modern-number-input-fluid flex-1">
+              <button type="button" class="modern-number-btn" data-target="step4-input-n2" data-step="-1" aria-label="Disminuir lecturas segunda muestra">
+                <span aria-hidden="true">−</span>
+              </button>
+              <input
+                id="step4-input-n2"
+                type="number"
+                min="1"
+                value="4"
+                inputmode="numeric"
+                class="modern-number-field text-sm font-geist"
+              />
+              <button type="button" class="modern-number-btn" data-target="step4-input-n2" data-step="1" aria-label="Aumentar lecturas segunda muestra">
+                <span aria-hidden="true">+</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -392,7 +486,7 @@ box-shadow: 0 0 0 1px rgba(249,115,22,0.4), 0 8px 24px rgba(249,115,22,0.18);
       </button>
       <div class="flex-1"></div>
       <div class="text-xs text-gray-400 sm:text-right sm:ml-auto w-full sm:w-auto">
-        <p class="font-geist">� 2025 Zorem Production</p>
+        <p class="font-geist">© 2025 Zorem Production</p>
       </div>
     </div>
 

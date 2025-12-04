@@ -109,9 +109,8 @@ async function initUnifiedStep3({ labKey, labName }) {
     step3State.modified = false;
     emitStep3State();
     markStep3Selection(null);
-    if (step3Badge) step3Badge.textContent = "Modo pendiente";
+    if (step3Badge) step3Badge.textContent = "Esperando selección";
   };
-  document.addEventListener("analito:mode", resetSelection);
   resetSelection();
 
   const tipos = await cargarTipos(labKey);
@@ -130,7 +129,6 @@ async function initUnifiedStep3({ labKey, labName }) {
     return;
   }
 
-  if (step3Badge) step3Badge.textContent = "Modo pendiente";
 
   if (step3Options) {
     step3Options.innerHTML = "";
@@ -178,10 +176,6 @@ async function initUnifiedStep3({ labKey, labName }) {
 
       button.addEventListener("click", () => {
         guardarTipoDato(tipo, true);
-        if (step3Badge) {
-          const base = tipo.tipoDato.charAt(0).toUpperCase() + tipo.tipoDato.slice(1);
-          step3Badge.textContent = `Seleccionado: ${base}`;
-        }
         markStep3Selection(button);
         irAStep4({ labName });
       });

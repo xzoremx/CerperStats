@@ -43,15 +43,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.addEventListener("analito:mode", evt => {
     selectedMode = evt?.detail?.mode || null;
-    selectedParam = null;
-    sessionStorage.removeItem("parametroSeleccionado");
-    state.ok = false;
-    state.modified = false;
-    emitState();
-    paramCustom?.classList.add("hidden");
-    if (paramCustomInput) paramCustomInput.value = "";
-    highlightParam(null);
-    if (!selectedMode && paramBadge) paramBadge.textContent = "Esperando modo";
+    if (!selectedParam) {
+      if (!selectedMode && paramBadge) paramBadge.textContent = "Esperando modo";
+    } else {
+      actualizarBadge(selectedParam);
+    }
   });
 
   paramGrid?.addEventListener("click", e => {
@@ -117,10 +113,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function actualizarBadge(paramName) {
-    const modeLabel = selectedMode === "multi" ? "Multianalito" : "Monoanalito";
-    if (paramBadge && paramName) {
-      paramBadge.textContent = `${modeLabel} - ${paramName}`;
-    }
+    if (!paramBadge || !paramName) return;
+    const modeLabel = selectedMode
+      ? selectedMode === "multi"
+        ? "Multianalito"
+        : "Monoanalito"
+      : "Estructura pendiente";
+    paramBadge.textContent = `${modeLabel} - ${paramName}`;
   }
 
   function highlightParam(paramName) {

@@ -1,22 +1,22 @@
 {
   "autorizaciones": {
     "title": "Autorizaciones",
-    "description": "Validacion de coherencia en mediciones entre operadores y equipos antes de autorizar resultados, aplicando criterios estadisticos de repetibilidad y reproducibilidad.",
+    "description": "Validación de coherencia en mediciones entre operadores y equipos antes de autorizar resultados, aplicando criterios estadísticos de repetibilidad y reproducibilidad.",
     "image": "assets/logos/procedures/autorizaciones.webp"
   },
   "implementaciones": {
     "title": "Implementaciones",
-    "description": "Configuracion y puesta en marcha de metodos y procedimientos analiticos, asegurando cumplimiento normativo y trazabilidad antes de su adopcion formal.",
+    "description": "Configuración y puesta en marcha de métodos y procedimientos analíticos, asegurando cumplimiento normativo y trazabilidad antes de su adopcion formal.",
     "image": "assets/logos/procedures/implementaciones.webp"
   },
   "intralaboratorios": {
     "title": "Intralaboratorios",
-    "description": "Ejecucion de pruebas internas para evaluar precision, exactitud y consistencia entre analistas y equipos dentro del mismo laboratorio.",
+    "description": "Ejecución de pruebas internas para evaluar precisión, exactitud y consistencia entre analistas y equipos dentro del mismo laboratorio.",
     "image": "assets/logos/procedures/intralaboratorios.webp"
   },
   "intercomparacion": {
     "title": "Intercomparacion",
-    "description": "Comparacion de resultados entre laboratorios para verificar desempeno y detectar sesgos, aplicando estadistica de comparacion interlab.",
+    "description": "Comparación de resultados entre laboratorios para verificar desempeno y detectar sesgos, aplicando estadística de comparacion interlab.",
     "image": "assets/logos/procedures/intercomparacion.webp"
   }
 }
