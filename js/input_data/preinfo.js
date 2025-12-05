@@ -10,7 +10,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     unidad: document.getElementById("unidad"),
   };
 
-  const btnSiguiente = document.getElementById("btn-siguiente");
   const goMenu = document.getElementById("go-menu");
   const labTitle = document.getElementById("lab-title");
   const step1Section = document.getElementById("step1-section");
@@ -23,6 +22,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     ok: false,
     modified: false,
   };
+
+  const VALIDATION_DELAY = 600;
+  let validationTimer = null;
+  let validationRunId = 0;
+  let lastSavedSnapshot = "";
 
   function emitPreinfoState() {
     document.dispatchEvent(
@@ -108,93 +112,109 @@ document.addEventListener("DOMContentLoaded", async () => {
       preinfoState.modified = true;
       preinfoState.ok = false;
       emitPreinfoState();
+      debounceValidate();
     });
   });
 
   emitPreinfoState();
 
-  if (btnSiguiente) {
-    btnSiguiente.addEventListener("click", async () => {
-      const data = Object.fromEntries(
-        Object.entries(inputs).map(([k, el]) => [k, (el?.value || "").trim()])
-      );
-      const allFilled = Object.values(data).every(v => v !== "");
+  async function validateAndPersist() {
+    const currentRun = ++validationRunId;
+    const data = Object.fromEntries(
+      Object.entries(inputs).map(([k, el]) => [k, (el?.value || "").trim()])
+    );
 
-      if (!allFilled) {
-        notify(
-          "Por favor, complete todos los campos antes de continuar.",
-          "error"
-        );
-        return;
-      }
+    const allFilled = Object.values(data).every(v => v !== "");
+    if (!allFilled) {
+      Object.entries(inputs).forEach(([, el]) => {
+        if (!el) return;
+        if (!el.value.trim()) {
+          el.classList.remove("input-error", "input-valid");
+        }
+      });
+      return;
+    }
 
-      if (!dataService.validateExpedienteFormat(data.expediente)) {
-        inputs.expediente?.classList.add("input-error");
-        notify(
-          "Formato de expediente invalido (Ej: EXMA-04264-2025 o OSMA-04264-2025-001)",
-          "error"
-        );
-        return;
-      } else {
-        inputs.expediente?.classList.remove("input-error");
-      }
+    const validations = [
+      {
+        ok: dataService.validateExpedienteFormat(data.expediente),
+        field: "expediente",
+        message: "Formato de expediente invalido (Ej: EXMA-04264-2025 o OSMA-04264-2025-001)",
+      },
+      {
+        ok: dataService.validateMetodo(data.metodo),
+        field: "metodo",
+        message: "El metodo ingresado no tiene un formato valido.",
+      },
+      {
+        ok: dataService.validateProducto(data.producto),
+        field: "producto",
+        message: "Ingrese un nombre de producto valido.",
+      },
+      {
+        ok: dataService.validateEnsayo(data.ensayo),
+        field: "ensayo",
+        message: "Ingrese una descripcion de ensayo valida",
+      },
+      {
+        ok: dataService.validateUnidad(data.unidad),
+        field: "unidad",
+        message: "Ingrese una unidad de medida valida (ej: mg/L, %, ug/kg, etc.).",
+      },
+    ];
 
-      if (!dataService.validateMetodo(data.metodo)) {
-        notify("El metodo ingresado no tiene un formato valido.", "error");
-        inputs.metodo?.classList.add("input-error");
-        return;
-      } else {
-        inputs.metodo?.classList.remove("input-error");
-      }
-
-      if (!dataService.validateProducto(data.producto)) {
-        notify("Ingrese un nombre de producto valido.", "error");
-        inputs.producto?.classList.add("input-error");
-        return;
-      } else {
-        inputs.producto?.classList.remove("input-error");
-      }
-
-      if (!dataService.validateEnsayo(data.ensayo)) {
-        notify("Ingrese una descripcion de ensayo valida", "error");
-        inputs.ensayo?.classList.add("input-error");
-        return;
-      } else {
-        inputs.ensayo?.classList.remove("input-error");
-      }
-
-      if (!dataService.validateUnidad(data.unidad)) {
-        notify(
-          "Ingrese una unidad de medida valida (ej: mg/L, %, ug/kg, etc.).",
-          "error"
-        );
-        inputs.unidad?.classList.add("input-error");
-        return;
-      } else {
-        inputs.unidad?.classList.remove("input-error");
-      }
-
-      const found = await dataService.getExpediente(data.expediente);
-      if (found) {
-        notify("Expediente existente cargado desde base local.", "info");
-        inputs.metodo.value = found.metodo || "";
-        inputs.producto.value = found.producto || "";
-        inputs.ensayo.value = found.ensayo || "";
-        inputs.unidad.value = found.unidad || "";
-      }
-
-      dataService.savePreinfo(data);
-      notify("Datos validos y guardados temporalmente.", "success");
-
-      preinfoState.ok = true;
-      preinfoState.modified = true;
-      emitPreinfoState();
-      document.dispatchEvent(new CustomEvent("preinfo:ready", { detail: data }));
-
-      if (step1Section) {
-        step1Section.scrollIntoView({ behavior: "smooth", block: "start" });
+    validations.forEach(v => {
+      const el = inputs[v.field];
+      if (el) {
+        el.classList.toggle("input-error", !v.ok);
+        el.classList.toggle("input-valid", v.ok);
       }
     });
+
+    const firstError = validations.find(v => !v.ok);
+    if (firstError) {
+      if (currentRun === validationRunId) {
+        notify(firstError.message, "error");
+      }
+      preinfoState.ok = false;
+      emitPreinfoState();
+      return;
+    }
+
+    const found = await dataService.getExpediente(data.expediente);
+    if (currentRun !== validationRunId) return;
+
+    if (found) {
+      inputs.metodo.value = found.metodo || data.metodo || "";
+      inputs.producto.value = found.producto || data.producto || "";
+      inputs.ensayo.value = found.ensayo || data.ensayo || "";
+      inputs.unidad.value = found.unidad || data.unidad || "";
+      data.metodo = inputs.metodo.value.trim();
+      data.producto = inputs.producto.value.trim();
+      data.ensayo = inputs.ensayo.value.trim();
+      data.unidad = inputs.unidad.value.trim();
+    }
+
+    const snapshot = JSON.stringify(data);
+    const isNew = snapshot !== lastSavedSnapshot;
+
+    if (found && isNew) {
+      notify("Expediente existente cargado desde base local.", "info");
+    }
+
+    dataService.savePreinfo(data);
+    lastSavedSnapshot = snapshot;
+
+    preinfoState.ok = true;
+    emitPreinfoState();
+    document.dispatchEvent(new CustomEvent("preinfo:ready", { detail: data }));
+
+    if (isNew) notify("Datos validos y guardados temporalmente.", "success");
+  }
+
+  function debounceValidate() {
+    clearTimeout(validationTimer);
+    validationTimer = setTimeout(validateAndPersist, VALIDATION_DELAY);
   }
 
   if (goMenu) {
@@ -221,4 +241,3 @@ function notify(message, type = "info") {
   setTimeout(() => note.classList.remove("show"), 2500);
   setTimeout(() => note.remove(), 3000);
 }
-
