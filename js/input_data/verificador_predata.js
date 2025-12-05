@@ -85,11 +85,11 @@ document.addEventListener("DOMContentLoaded", () => {
     notify("Datos validados correctamente. Avanzando…", "success");
 
     setTimeout(() => {
-      const destino = "input_data/step_5_sheet.html";
+      const destino = "input_data/input_data_sheet.html";
       if (window.cerper?.openPage) {
         window.cerper.openPage(destino);
       } else {
-        window.location.href = "step_5_sheet.html";
+        window.location.href = "input_data/input_data_sheet.html";
       }
     }, 800);
   });
