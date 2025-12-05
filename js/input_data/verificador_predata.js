@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     step1: { ok: false, modified: false },
     step2: { ok: false, modified: false },
     step3: { ok: false, modified: false },
-    step4: { ok: false, modified: false },
+    step4: { ok: false, modified: true },
   };
 
   updateContinue();
@@ -29,14 +29,22 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.addEventListener("step3:state", e => {
-    Object.assign(steps.step3, e.detail || {});
+    const detail = e.detail || {};
+    Object.assign(steps.step3, detail);
+    // Si el paso 3 no se muestra (auto-resuelto), considérese modificado para el estado visual.
+    if (!isStep3Visible()) steps.step3.modified = true;
     updateContinue();
   });
 
   document.addEventListener("step4:state", e => {
-    Object.assign(steps.step4, e.detail || {});
+    const detail = e.detail || {};
+    steps.step4.ok = Boolean(detail.ok);
+    steps.step4.modified = true;
     updateContinue();
   });
+
+  // Solicitar estados iniciales a los pasos que lo soporten (p.ej. step4).
+  document.dispatchEvent(new Event("predata:request-state"));
 
   continueBtn.addEventListener("click", () => {
     const pendientes = [];
@@ -94,11 +102,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 800);
   });
 
+  function isStep3Visible() {
+    const el = document.getElementById("step3-section");
+    if (!el) return false;
+    return !el.classList.contains("hidden");
+  }
+
   function updateContinue() {
     const allOk = Object.values(steps).every(s => s.ok);
 
-    // Solo pasos manuales para el estado visual (preinfo, 1, 2, 4)
-    const manual = [steps.preinfo, steps.step1, steps.step2, steps.step4];
+    // Pasos manuales para el estado visual (preinfo, 1, 2 y opcional 3). Step4 se fuerza como modificado.
+    const manual = [steps.preinfo, steps.step1, steps.step2];
+    if (isStep3Visible()) manual.push(steps.step3);
     const doneManual = manual.filter(s => s.modified).length;
 
     const isPending = doneManual === 0;
@@ -138,4 +153,3 @@ function notify(message, type = "info") {
   setTimeout(() => div.classList.remove("show"), 3000);
   setTimeout(() => div.remove(), 3500);
 }
-

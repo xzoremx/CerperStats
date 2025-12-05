@@ -72,7 +72,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("parametro:seleccionado", () => updateLabels(context, setBadgeState));
   document.addEventListener("analito:mode", () => updateLabels(context, setBadgeState));
 
+  // Evaluar valores iniciales para habilitar paso si ya son válidos.
+  evaluarStep4(context, step4State, emitStep4State);
   emitStep4State();
+
+  // Responder a solicitudes externas de estado (ej. verificador).
+  document.addEventListener("predata:request-state", emitStep4State);
 });
 
 function buildContext() {

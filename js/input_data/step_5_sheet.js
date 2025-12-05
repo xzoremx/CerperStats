@@ -1115,7 +1115,7 @@ if (btnBack) {
 
     // --- Caso 1: no hay sesión activa ---
     if (!sessionId) {
-      window.cerper.openPage("input_data/step_4_k.html");
+      window.cerper.openPage("input_data/input_data_info.html");
       return;
     }
 
