@@ -187,6 +187,60 @@ box-shadow: 0 0 0 1px rgba(249,115,22,0.4), 0 8px 24px rgba(249,115,22,0.18);
 .modern-number-btn:active{
   transform:scale(0.96);
 }
+.notify {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  padding: 12px 22px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.35s ease;
+  z-index: 9999;
+  color: #00ffff;
+  backdrop-filter: blur(8px);
+  background: rgba(0, 255, 255, 0.08);
+  border: 1.5px solid rgba(0, 255, 255, 0.35);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.notify.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.notify.success {
+  border-color: #00ffb3;
+  color: #00ffb3;
+  background: rgba(0, 255, 179, 0.1);
+  box-shadow: 0 0 20px rgba(0, 255, 179, 0.15);
+}
+
+.notify.error {
+  border-color: #ff4d4d;
+  color: #ff8080;
+  background: rgba(255, 77, 77, 0.08);
+  box-shadow: 0 0 20px rgba(255, 77, 77, 0.1);
+}
+
+.notify.info {
+  border-color: #00aaff;
+  color: #80e4ff;
+  background: rgba(0, 170, 255, 0.08);
+  box-shadow: 0 0 20px rgba(0, 170, 255, 0.15);
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(25px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.notify.show {
+  animation: fadeSlideIn 0.4s ease forwards;
+}
 .input-valid{
   border-color: rgba(0,212,170,0.6) !important;
   box-shadow: 0 0 0 1px rgba(0,212,170,0.3), 0 12px 32px rgba(0,212,170,0.18);
