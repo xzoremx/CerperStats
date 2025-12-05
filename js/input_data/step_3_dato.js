@@ -89,7 +89,6 @@ async function initStandaloneStep3({ labKey, labName }) {
 
 async function initUnifiedStep3({ labKey, labName }) {
   const step3Section = document.getElementById("step3-section");
-  const step3Badge = document.getElementById("step3-badge");
   const step3Options = document.getElementById("step3-options");
   const step3Status = document.getElementById("step3-status");
   const step3Instruction = document.getElementById("step3-instruction");
@@ -109,7 +108,6 @@ async function initUnifiedStep3({ labKey, labName }) {
     step3State.modified = false;
     emitStep3State();
     markStep3Selection(null);
-    if (step3Badge) step3Badge.textContent = "Esperando selección";
   };
   resetSelection();
 
