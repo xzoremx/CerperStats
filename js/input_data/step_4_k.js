@@ -3,6 +3,14 @@ document.addEventListener("DOMContentLoaded", () => {
   setupModernNumberInputs();
   const context = buildContext();
 
+  const BADGE_WAITING_TEXT = "Esperando parametro";
+  const BADGE_CONFIGURED_TEXT = "Configuración establecida";
+
+  const setBadgeState = configured => {
+    if (!context.badge) return;
+    context.badge.textContent = configured ? BADGE_CONFIGURED_TEXT : BADGE_WAITING_TEXT;
+  };
+
   const step4State = {
     ok: false,
     modified: false,
@@ -41,9 +49,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const showStep4 = (opts = {}) => {
     const shouldScroll = opts.scroll !== false;
-    updateLabels(context);
+    updateLabels(context, setBadgeState);
     toggleLecturas(context);
-    if (context.badge) context.badge.textContent = "Listo para continuar";
     
     if (context.section) {
       context.section.classList.remove("hidden");
@@ -62,8 +69,8 @@ document.addEventListener("DOMContentLoaded", () => {
     showStep4({ scroll: false });
   }
 
-  document.addEventListener("parametro:seleccionado", () => updateLabels(context));
-  document.addEventListener("analito:mode", () => updateLabels(context));
+  document.addEventListener("parametro:seleccionado", () => updateLabels(context, setBadgeState));
+  document.addEventListener("analito:mode", () => updateLabels(context, setBadgeState));
 
   emitStep4State();
 });
@@ -93,7 +100,7 @@ function buildContext() {
   };
 }
 
-function updateLabels(context) {
+function updateLabels(context, setBadgeState) {
   const parametroRaw = sessionStorage.getItem("parametroSeleccionado");
   const parametro = parametroRaw || "elementos";
   const { singular, plural } = obtenerTextosParametro(parametro);
@@ -108,11 +115,7 @@ function updateLabels(context) {
   if (context.subtitle) {
     context.subtitle.innerHTML = `Ingrese el número de <strong>${plural}</strong> y de sus lecturas esperadas.`;
   }
-  if (context.badge) {
-    context.badge.textContent = parametroRaw
-      ? `Parámetro definido: ${capitalize(plural)}`
-      : "Esperando parámetros";
-  }
+  if (setBadgeState) setBadgeState(Boolean(parametroRaw));
 }
 
 function toggleLecturas(context) {
@@ -166,8 +169,6 @@ function evaluarStep4(context, step4State, emitStep4State) {
 
   sessionStorage.setItem("K", String(k));
   sessionStorage.setItem("lecturasPorParametro", JSON.stringify(lecturas));
-  if (context.badge) context.badge.textContent = "Configuracion guardada";
-
   step4State.ok = true;
   emitStep4State();
 }
