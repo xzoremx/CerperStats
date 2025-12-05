@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupModernNumberInputs();
   const context = buildContext();
 
-  const BADGE_WAITING_TEXT = "Esperando parametro";
+  const BADGE_WAITING_TEXT = "Esperando parámetro";
   const BADGE_CONFIGURED_TEXT = "Configuración establecida";
 
   const setBadgeState = configured => {
