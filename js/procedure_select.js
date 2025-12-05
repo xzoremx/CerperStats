@@ -201,8 +201,8 @@ async function handleProcedureSelection(procedureId) {
   sessionStorage.setItem("procedimientoDescripcion", meta.description || "");
   loader?.show?.("Preparando entrada de datos...");
   const navigate = () => {
-    if (window.cerper?.openPage) window.cerper.openPage("input_data/input_data.html");
-    else window.location.href = "input_data/input_data.html";
+    if (window.cerper?.openPage) window.cerper.openPage("input_data/input_data_info.html");
+    else window.location.href = "input_data/input_data_info.html";
   };
   requestAnimationFrame(navigate);
 

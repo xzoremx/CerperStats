@@ -17,12 +17,8 @@ const ROUTES = new Set([
   'results_general.html',
   'reports.html',
   // Flujo input_data
-  'input_data/input_data.html',
-  'input_data/step_1_type.html',
-  'input_data/step_2_parametro.html',
-  'input_data/step_3_dato.html',
-  'input_data/step_4_k.html',
-  'input_data/step_5_sheet.html',
+  'input_data/input_data_info.html',
+  'input_data/input_data_sheet.html',
   // Evaluación y reporte
   'evaluation_select.html',
   'pdf_config.html',
