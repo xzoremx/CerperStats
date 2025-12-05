@@ -107,7 +107,7 @@ function buildContext() {
 
 function updateLabels(context, setBadgeState) {
   const parametroRaw = sessionStorage.getItem("parametroSeleccionado");
-  const parametro = parametroRaw || "elementos";
+  const parametro = parametroRaw || "parámetros";
   const { singular, plural } = obtenerTextosParametro(parametro);
 
   if (context.paramName) context.paramName.textContent = plural;
@@ -140,7 +140,7 @@ function toggleLecturas(context) {
   if (context.status) {
     context.status.textContent = showK2
       ? "k=2 permite definir lecturas independientes."
-      : "Usa el mismo numero de lecturas por elemento.";
+      : "Usa el mismo numero de lecturas por parámetro.";
   }
 }
 
@@ -179,18 +179,18 @@ function evaluarStep4(context, step4State, emitStep4State) {
 }
 
 function obtenerTextosParametro(parametro) {
-  const limpio = (parametro || "elementos").trim();
+  const limpio = (parametro || "parámetros").trim();
   let singular = limpio.toLowerCase();
   let plural = limpio.toLowerCase();
   if (singular.endsWith("s") && singular.length > 1) {
     plural = singular;
     singular = singular.slice(0, -1);
   } else {
-    plural = `${singular || "elemento"}s`;
+    plural = `${singular || "parámetro"}s`;
   }
   return {
-    singular: singular || "elemento",
-    plural: plural || "elementos",
+    singular: singular || "parámetro",
+    plural: plural || "parámetros",
   };
 }
 
@@ -200,7 +200,7 @@ function validarEntero(field) {
   if (!val) return;
   const num = Number(val);
   if (!Number.isInteger(num) || num < 1) {
-    notify("Por favor, ingrese solo numeros enteros positivos (sin decimales).", "error");
+    notify("Por favor, ingrese solo números enteros positivos (sin decimales).", "error");
     field.value = Math.max(1, Math.floor(num || 1));
   }
 }
@@ -211,10 +211,10 @@ function validarEnteroK(field) {
   if (!val) return;
   const num = Number(val);
   if (!Number.isInteger(num)) {
-    notify("Por favor, ingrese solo numeros enteros positivos (sin decimales).", "error");
+    notify("Por favor, ingrese solo números enteros positivos (sin decimales).", "error");
     field.value = Math.max(2, Math.floor(num || 2));
   } else if (num < 2) {
-    notify("La cantidad de elementos debe ser al menos 2.", "error");
+    notify("La cantidad de parámetros debe ser al menos 2.", "error");
     field.value = 2;
   }
 }

@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const paramCustomConfirm = document.getElementById("param-custom-confirm");
 
   const PARAM_OPTIONS = [
-    { name: "Dias", icon: "calendar" },
+    { name: "Días", icon: "calendar" },
     { name: "Analista", icon: "user" },
     { name: "Equipos", icon: "cpu" },
     { name: "Otro", icon: "list" },
