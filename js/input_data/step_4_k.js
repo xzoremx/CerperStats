@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   context.inputK?.addEventListener("input", () => {
     step4State.modified = true;
-    validarEntero(context.inputK);
+    validarEnteroK(context.inputK);
     toggleLecturas(context);
     evaluarStep4(context, step4State, emitStep4State);
   });
@@ -106,12 +106,12 @@ function updateLabels(context) {
     context.title.textContent = `Define la cantidad de ${capitalize(plural)}`;
   }
   if (context.subtitle) {
-    context.subtitle.innerHTML = `Ingrese el n?mero de <strong>${plural}</strong> y de sus lecturas esperadas.`;
+    context.subtitle.innerHTML = `Ingrese el número de <strong>${plural}</strong> y de sus lecturas esperadas.`;
   }
   if (context.badge) {
     context.badge.textContent = parametroRaw
-      ? `Par?metro definido: ${capitalize(plural)}`
-      : "Esperando par?metros";
+      ? `Parámetro definido: ${capitalize(plural)}`
+      : "Esperando parámetros";
   }
 }
 
@@ -122,7 +122,7 @@ function toggleLecturas(context) {
   const showK2 = k === 2;
   if (context.lecturasContainer) {
     context.lecturasContainer.classList.toggle("hidden", showK2);
-    context.lecturasContainer.style.display = showK2 ? "none" : "block";
+    context.lecturasContainer.style.display = showK2 ? "none" : "flex";
   }
   if (context.lecturasK2) {
     context.lecturasK2.classList.toggle("hidden", !showK2);
@@ -196,6 +196,20 @@ function validarEntero(field) {
   if (!Number.isInteger(num) || num < 1) {
     notify("Por favor, ingrese solo numeros enteros positivos (sin decimales).", "error");
     field.value = Math.max(1, Math.floor(num || 1));
+  }
+}
+
+function validarEnteroK(field) {
+  if (!field) return;
+  const val = field.value.trim();
+  if (!val) return;
+  const num = Number(val);
+  if (!Number.isInteger(num)) {
+    notify("Por favor, ingrese solo numeros enteros positivos (sin decimales).", "error");
+    field.value = Math.max(2, Math.floor(num || 2));
+  } else if (num < 2) {
+    notify("La cantidad de elementos debe ser al menos 2.", "error");
+    field.value = 2;
   }
 }
 
