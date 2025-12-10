@@ -63,6 +63,38 @@ function getProcedureMeta(id) {
   };
 }
 
+function renderProcedureCards() {
+  const grid = document.getElementById("cards-grid");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+
+  Object.keys(PROCEDURE_DICT).forEach((id) => {
+    const meta = getProcedureMeta(id);
+    if (!meta.id) return;
+
+    const article = document.createElement("article");
+    article.className = "card";
+    article.dataset.id = meta.id;
+    article.tabIndex = 0;
+    article.setAttribute("role", "button");
+    article.setAttribute("aria-label", meta.title);
+
+    article.innerHTML = `
+      <div class="border-backdrop"></div>
+      <div class="content">
+        <div class="img-container">
+          <img src="${meta.image}" alt="">
+        </div>
+        <img class="icon-foreground" src="${meta.image}" alt="${meta.title}">
+        <h2>${meta.title}</h2>
+      </div>
+    `;
+
+    grid.appendChild(article);
+  });
+}
+
 async function loadProcedureDictionary() {
   if (Object.keys(PROCEDURE_DICT).length) return PROCEDURE_DICT;
   try {
@@ -128,11 +160,14 @@ function gateSessionsSection() {
   sessionsDot?.remove();
 }
 
-function initPage() {
+async function initPage() {
   window.lucide?.createIcons?.();
   initLabName();
   initLabIcon();
   gateSessionsSection();
+
+  await loadProcedureDictionary();
+  renderProcedureCards();
 
   const sections = document.querySelectorAll(".section");
   const dots = document.querySelectorAll(".progress-dot");
