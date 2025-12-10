@@ -142,13 +142,25 @@ function initPage() {
     "#cards-grid article.card, .procedure-showcase article.card",
   );
   const backToMenuButton = document.getElementById("back-to-menu");
-  const sessionsCtaButton = document.querySelector(
-    '.section[data-index="3"] .cta-primary',
-  );
+  const sessionsCtaButton = document.querySelector('.section[data-index="3"] .cta-primary');
+
   let currentIndex = 0;
   let isScrolling = false;
 
-  updateActiveDot(currentIndex);
+  // Resetear reveals sin animar el fade‑out y luego reproducir sección 0
+  sections.forEach((section) => {
+    section.querySelectorAll(".reveal").forEach((el) => {
+      el.classList.remove("active");
+      el.style.transition = "none";
+      void el.offsetHeight;
+      el.style.transition = "";
+    });
+  });
+  requestAnimationFrame(() => changeSection(currentIndex));
+
+  
+
+  
 
   if (startButton) {
     startButton.addEventListener("click", () => {
