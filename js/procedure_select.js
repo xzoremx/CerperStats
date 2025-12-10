@@ -1,159 +1,45 @@
-const CONFIG = {
-  theme: "dark",
-  iconBlur: 15,
-  iconSaturate: 5,
-  iconBrightness: 1.3,
-  iconContrast: 1.4,
-  iconScale: 1.5,
-  iconOpacity: 0.25,
-  borderWidth: 2,
-  borderBlur: 0,
-  borderSaturate: 4.2,
-  borderBrightness: 2.5,
-  borderContrast: 2.5,
-  exclude: false,
-};
-
-const PROCEDURES = ["autorizaciones", "implementaciones", "intralaboratorios", "intercomparacion"];
-const DEFAULT_LAB_NAME = "Laboratorio";
-const DEFAULT_LAB_COLOR = "#22d3ee";
-const DEFAULT_LAB_ICON = "flask-conical";
-
-const root = document.documentElement;
-const cardsGrid = document.getElementById("cards-grid");
-const blurNode = document.querySelector("#blur feGaussianBlur");
-const lucideScript = document.getElementById("lucide-cdn");
+const DEFAULT_LAB_NAME = "Laboratorio seleccionado";
 const loader = window.procLoader;
-
-const normalizeColor = raw => {
-  const value = String(raw || "").trim();
-  if (!value) return DEFAULT_LAB_COLOR;
-  let hex = value.startsWith("#") ? value : `#${value}`;
-  if (/^#([0-9a-f]{3})$/i.test(hex)) {
-    hex = `#${hex
-      .slice(1)
-      .split("")
-      .map(char => char + char)
-      .join("")}`;
-  }
-  if (!/^#([0-9a-f]{6})$/i.test(hex)) return DEFAULT_LAB_COLOR;
-  return hex.toLowerCase();
-};
-
-const hexToRgba = (hex, alpha = 1) => {
-  const normalized = normalizeColor(hex);
-  const value = normalized.replace("#", "");
-  const r = parseInt(value.slice(0, 2), 16);
-  const g = parseInt(value.slice(2, 4), 16);
-  const b = parseInt(value.slice(4, 6), 16);
-  return `rgba(${Number.isFinite(r) ? r : 34}, ${Number.isFinite(g) ? g : 211}, ${Number.isFinite(b) ? b : 238}, ${alpha})`;
-};
-
-function applyConfig() {
-  const themeClass = CONFIG.theme === "light" ? "light" : "dark";
-  root.classList.remove("light", "dark");
-  root.classList.add(themeClass);
-  root.setAttribute("data-theme", themeClass);
-
-  const vars = {
-    "--icon-blur": `${CONFIG.iconBlur}px`,
-    "--icon-saturate": CONFIG.iconSaturate,
-    "--icon-brightness": CONFIG.iconBrightness,
-    "--icon-contrast": CONFIG.iconContrast,
-    "--icon-scale": CONFIG.iconScale,
-    "--icon-opacity": CONFIG.iconOpacity,
-    "--border-width": `${CONFIG.borderWidth}px`,
-    "--border-blur": `${CONFIG.borderBlur}px`,
-    "--border-saturate": CONFIG.borderSaturate,
-    "--border-brightness": CONFIG.borderBrightness,
-    "--border-contrast": CONFIG.borderContrast,
-  };
-
-  Object.entries(vars).forEach(([key, value]) => {
-    root.style.setProperty(key, value);
-  });
-
-  if (blurNode) {
-    blurNode.setAttribute("stdDeviation", CONFIG.iconBlur);
-  }
-
-  if (CONFIG.exclude) {
-    document.body.classList.add("exclude-icons");
-  } else {
-    document.body.classList.remove("exclude-icons");
-  }
-}
-
-function getSessionData() {
-  const labKey = sessionStorage.getItem("labSeleccionado") || localStorage.getItem("labSeleccionado");
-  const defaultLab = (sessionStorage.getItem("default_lab") || "").trim();
-  const storedName =
-    sessionStorage.getItem("labNombreVisible") ||
-    localStorage.getItem("labNombreVisible") ||
-    labKey ||
-    "";
-  const storedColor = sessionStorage.getItem("labColor") || localStorage.getItem("labColor");
-  const storedIcon = sessionStorage.getItem("labIcon") || localStorage.getItem("labIcon");
-  const labName = (storedName || "").trim() || labKey || DEFAULT_LAB_NAME;
-  const labColor = normalizeColor(storedColor || DEFAULT_LAB_COLOR);
-  const labIcon = storedIcon || DEFAULT_LAB_ICON;
-  const rol = (sessionStorage.getItem("rol") || "").toLowerCase().trim();
-  const usuario = sessionStorage.getItem("usuario");
-  return { labKey, defaultLab, labName, labColor, labIcon, rol, usuario };
-}
-
-function setLabInfo(session) {
-  const labTitle = document.getElementById("lab-title");
-  const labInfo = document.getElementById("lab-info");
-  const heroTitle = document.getElementById("hero-lab-title");
-  const heroDivider = document.querySelector(".hero-divider");
-  const heroColor = session.labColor || DEFAULT_LAB_COLOR;
-  const heroIcon = session.labIcon || DEFAULT_LAB_ICON;
-  const heroName = session.labName || DEFAULT_LAB_NAME;
-
-  if (heroTitle) {
-    heroTitle.textContent = "";
-    heroTitle.style.setProperty("--lab-color", heroColor);
-    const iconWrap = document.createElement("span");
-    iconWrap.className = "hero-lab-icon";
-    iconWrap.style.borderColor = hexToRgba(heroColor, 0.35);
-    iconWrap.style.background = hexToRgba(heroColor, 0.12);
-    const iconSlot = document.createElement("span");
-    iconSlot.className = "hero-icon-slot";
-    iconWrap.appendChild(iconSlot);
-    heroTitle.appendChild(iconWrap);
-    const fallbackIcon = heroIcon || DEFAULT_LAB_ICON;
-    const applyHeroIcon = async () => {
-      const ok = await window.IconSafety?.attachIcon(iconSlot, fallbackIcon);
-      if (!ok) iconSlot.innerHTML = `<i data-lucide="${fallbackIcon}"></i>`;
-      window.lucide?.createIcons?.({ icons: [iconSlot] });
-    };
-    applyHeroIcon();
-
-    const label = document.createElement("span");
-    label.className = "hero-lab-name";
-    label.textContent = heroName;
-    heroTitle.appendChild(label);
-  }
-
-  if (heroDivider) {
-    heroDivider.style.background = `linear-gradient(90deg, ${hexToRgba(heroColor, 0.1)}, ${hexToRgba(heroColor, 0.9)}, ${hexToRgba(heroColor, 0.1)})`;
-  }
-
-  if (labTitle) {
-    labTitle.textContent = "Selecciona el tipo de procedimiento";
-  }
-
-  if (!labInfo) return;
-
-  if (session.labKey) {
-    labInfo.textContent = "Seleccione el procedimiento para esta sesion.";
-  } else {
-    labInfo.textContent = "Seleccione el procedimiento correspondiente al laboratorio.";
-  }
-}
+const DEFAULT_LAB_ICON = "flask-conical";
+const DEFAULT_LAB_COLOR = "#22d3ee";
 
 let PROCEDURE_DICT = {};
+
+function initLabIcon() {
+  const iconSlot = document.getElementById("selected-lab-icon");
+  if (!iconSlot) return;
+
+  const storedIcon =
+    sessionStorage.getItem("labIcon") ||
+    localStorage.getItem("labIcon") ||
+    "";
+  const labIcon = storedIcon || DEFAULT_LAB_ICON;
+
+  const storedColor =
+    sessionStorage.getItem("labColor") ||
+    localStorage.getItem("labColor") ||
+    "";
+  const labColor = (storedColor || DEFAULT_LAB_COLOR).trim();
+  if (labColor) {
+    iconSlot.style.color = labColor;
+  }
+
+  if (window.IconSafety?.attachIcon) {
+    window.IconSafety.attachIcon(iconSlot, labIcon).then((ok) => {
+      if (!ok) {
+        iconSlot.innerHTML = `<i data-lucide="${DEFAULT_LAB_ICON}"></i>`;
+      }
+      if (window.lucide?.createIcons) {
+        window.lucide.createIcons();
+      }
+    });
+  } else {
+    iconSlot.innerHTML = `<i data-lucide="${DEFAULT_LAB_ICON}"></i>`;
+    if (window.lucide?.createIcons) {
+      window.lucide.createIcons();
+    }
+  }
+}
 
 function formatProcedureTitle(id = "") {
   if (!id) return "Procedimiento";
@@ -205,175 +91,188 @@ async function handleProcedureSelection(procedureId) {
     else window.location.href = "input_data/input_data_info.html";
   };
   requestAnimationFrame(navigate);
-
 }
 
-function createCard(procedureId) {
-  const meta = getProcedureMeta(procedureId);
-  const article = document.createElement("article");
-  article.className = "card";
-  article.dataset.id = meta.id;
-  article.dataset.proc = meta.title;
-  article.tabIndex = 0;
-  article.setAttribute("role", "button");
-  article.setAttribute("aria-label", meta.title);
-
-  const border = document.createElement("div");
-  border.className = "border-backdrop";
-  article.appendChild(border);
-
-  const content = document.createElement("div");
-  content.className = "content";
-  article.appendChild(content);
-
-  const imgContainer = document.createElement("div");
-  imgContainer.className = "img-container";
-  content.appendChild(imgContainer);
-
-  const glowImg = document.createElement("img");
-  glowImg.src = meta.image;
-  glowImg.alt = "";
-  imgContainer.appendChild(glowImg);
-
-  const icon = document.createElement("img");
-  icon.className = "icon-foreground";
-  icon.src = meta.image;
-  icon.alt = meta.title;
-  content.appendChild(icon);
-
-  const title = document.createElement("h2");
-  title.textContent = meta.title;
-  content.appendChild(title);
-
-  article.addEventListener("click", (event) => {
-    event.preventDefault();
-    handleProcedureSelection(meta.id);
-  });
-
-  article.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      handleProcedureSelection(meta.id);
-    }
-  });
-
-  return article;
+function initLabName() {
+  const stored =
+    sessionStorage.getItem("labNombreVisible") ||
+    localStorage.getItem("labNombreVisible") ||
+    sessionStorage.getItem("labSeleccionado") ||
+    localStorage.getItem("labSeleccionado");
+  const name = (stored || "").trim() || DEFAULT_LAB_NAME;
+  const target = document.getElementById("selected-lab");
+  if (target) target.textContent = name;
+  const labTitle = document.getElementById("lab-title");
+  const labInfo = document.getElementById("lab-info");
+  const heroTitle = document.getElementById("hero-lab-title");
+  if (labTitle) labTitle.textContent = "Selecciona el tipo de procedimiento";
+  if (labInfo) labInfo.textContent = "Seleccione el procedimiento para esta sesión.";
+  if (heroTitle) {
+    heroTitle.textContent = "";
+    const label = document.createElement("span");
+    label.className = "hero-lab-name";
+    label.textContent = name;
+    heroTitle.appendChild(label);
+  }
 }
 
-function renderCards() {
-  if (!cardsGrid) return;
-  cardsGrid.innerHTML = "";
-  PROCEDURES.forEach((procedureId) => {
-    cardsGrid.appendChild(createCard(procedureId));
-  });
+function gateSessionsSection() {
+  const labKey = sessionStorage.getItem("labSeleccionado") || localStorage.getItem("labSeleccionado") || "";
+  const defaultLab = (sessionStorage.getItem("default_lab") || "").trim();
+  const rol = (sessionStorage.getItem("rol") || "").toLowerCase().trim();
+  const allowed = rol === "admin" || (rol === "supervisor" && labKey && defaultLab && labKey === defaultLab);
+  if (allowed) return;
+  const sessionsSection = document.querySelector('.section[data-index="3"]') || document.querySelectorAll(".section")[2];
+  sessionsSection?.remove();
+  const sessionsDot = document.querySelector('.progress-dot[data-index="3"]') || document.querySelectorAll(".progress-dot")[2];
+  sessionsDot?.remove();
 }
 
-function attachPointerTracking() {
-  const cards = Array.from(document.querySelectorAll("article.card"));
-  if (!cards.length) return;
+function initPage() {
+  window.lucide?.createIcons?.();
+  initLabName();
+  initLabIcon();
+  gateSessionsSection();
 
-  const handlePointerMove = (event) => {
-    cards.forEach((card) => {
+  const sections = document.querySelectorAll(".section");
+  const dots = document.querySelectorAll(".progress-dot");
+  const magneticElements = document.querySelectorAll(".magnetic");
+  const startButton = document.getElementById("start-button");
+  const cardElements = document.querySelectorAll(
+    "#cards-grid article.card, .procedure-showcase article.card",
+  );
+  const backToMenuButton = document.getElementById("back-to-menu");
+  const sessionsCtaButton = document.querySelector(
+    '.section[data-index="3"] .cta-primary',
+  );
+  let currentIndex = 0;
+  let isScrolling = false;
+
+  updateActiveDot(currentIndex);
+
+  if (startButton) {
+    startButton.addEventListener("click", () => {
+      currentIndex = 1;
+      changeSection(currentIndex);
+    });
+  }
+
+  document.addEventListener("pointermove", (event) => {
+    if (!cardElements.length) return;
+    cardElements.forEach((card) => {
       const rect = card.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
-
       const relativeX = event.clientX - centerX;
       const relativeY = event.clientY - centerY;
-
       const x = (relativeX / (rect.width / 2)).toFixed(3);
       const y = (relativeY / (rect.height / 2)).toFixed(3);
-
       card.style.setProperty("--pointer-x", x);
       card.style.setProperty("--pointer-y", y);
     });
-  };
-
-  document.addEventListener("pointermove", handlePointerMove);
-  return () => document.removeEventListener("pointermove", handlePointerMove);
-}
-
-function wireNavigationButtons(session) {
-  const backBtn = document.getElementById("go-menu");
-  backBtn?.addEventListener("click", () => {
-    loader?.show?.("Abriendo menu...");
-    const navigate = () => {
-      if (window.cerper?.openPage) window.cerper.openPage("menu.html");
-      else window.location.href = "menu.html";
-    };
-    requestAnimationFrame(navigate); 
   });
 
-  const sessionsBtn = document.getElementById("go-sessions");
-  if (!sessionsBtn) return;
-
-  const allowed = session.rol === "admin" || (session.rol === "supervisor" && session.labKey && session.defaultLab && session.labKey === session.defaultLab);
-  if (!allowed) {
-    sessionsBtn.hidden = true;
-    sessionsBtn.style.display = "none";
-  } else {
-    sessionsBtn.hidden = false;
-    sessionsBtn.style.display = "";
-  }
-
-  sessionsBtn.addEventListener("click", () => {
-    if (!session.usuario) { console.warn("No user session found"); return; }
-    loader?.show?.("Abriendo sesiones...");
-    const navigate = () => {
-      if (window.cerper?.openPage) window.cerper.openPage("sessions_panel.html");
-      else window.location.href = "sessions_panel.html";
-    };
-    requestAnimationFrame(navigate);
-  });
-}
-
-function initIcons() {
-  if (window.lucide?.createIcons) {
-    window.lucide.createIcons();
-    return;
-  }
-
-  lucideScript?.addEventListener(
-    "load",
-    () => {
-      if (window.lucide?.createIcons) {
-        window.lucide.createIcons();
-      }
-    },
-    { once: true },
-  );
-}
-
-async function initPage() {
-  loader?.show?.("Preparando procedimientos...");
-  await loadProcedureDictionary();
-  applyConfig();
-  const session = getSessionData();
-  setLabInfo(session);
-  renderCards();
-  const detachPointer = attachPointerTracking();
-  wireNavigationButtons(session);
-  initIcons();
-
-  let cleared = false;
-  const clearLoading = () => {
-    if (cleared) return;
-    cleared = true;
-    loader?.hide?.();
-  };
-
-  const handleVantaReady = () => {
-    clearLoading();
-  };
-
-  window.addEventListener("vanta-ready", handleVantaReady, { once: true });
-  setTimeout(clearLoading, 1500);
-
-  if (window.router?.registerCleanup) {
-    window.router.registerCleanup(() => {
-      detachPointer?.();
-      window.removeEventListener("vanta-ready", handleVantaReady);
+  const staticProcedureCards = document.querySelectorAll(".procedure-showcase article.card");
+  staticProcedureCards.forEach((card) => {
+    const procedureId = card.dataset.id;
+    if (!procedureId) return;
+    card.addEventListener("click", (event) => {
+      event.preventDefault();
+      handleProcedureSelection(procedureId);
     });
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        handleProcedureSelection(procedureId);
+      }
+    });
+  });
+
+  if (backToMenuButton) {
+    backToMenuButton.addEventListener("click", () => {
+      loader?.show?.("Abriendo menu...");
+      const navigate = () => {
+        if (window.cerper?.openPage) window.cerper.openPage("menu.html");
+        else window.location.href = "menu.html";
+      };
+      requestAnimationFrame(navigate);
+    });
+  }
+
+  if (sessionsCtaButton) {
+    sessionsCtaButton.addEventListener("click", () => {
+      const usuario = sessionStorage.getItem("usuario");
+      if (!usuario) {
+        console.warn("No user session found");
+        return;
+      }
+      loader?.show?.("Abriendo sesiones...");
+      const navigate = () => {
+        if (window.cerper?.openPage) window.cerper.openPage("sessions_panel.html");
+        else window.location.href = "sessions_panel.html";
+      };
+      requestAnimationFrame(navigate);
+    });
+  }
+
+  magneticElements.forEach((el) => {
+    el.addEventListener("mousemove", (e) => {
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      el.style.transform = `translate(${x * 0.05}px, ${y * 0.05}px)`;
+    });
+    el.addEventListener("mouseleave", () => {
+      el.style.transform = "translate(0px, 0px)";
+    });
+  });
+
+  window.addEventListener("wheel", (e) => {
+    if (isScrolling) return;
+    isScrolling = true;
+    if (e.deltaY > 0) {
+      if (currentIndex < sections.length - 1) {
+        currentIndex += 1;
+        changeSection(currentIndex);
+      }
+    } else if (currentIndex > 0) {
+      currentIndex -= 1;
+      changeSection(currentIndex);
+    }
+    setTimeout(() => {
+      isScrolling = false;
+    }, 1000);
+  });
+
+  dots.forEach((dot) => {
+    dot.addEventListener("click", () => {
+      const index = parseInt(dot.getAttribute("data-index"), 10);
+      if (Number.isNaN(index)) return;
+      currentIndex = index;
+      changeSection(currentIndex);
+    });
+  });
+
+  function changeSection(index) {
+    sections.forEach((section) => section.classList.remove("active"));
+    if (sections[index]) sections[index].classList.add("active");
+    updateActiveDot(index);
+
+    const reveals = sections[index]?.querySelectorAll(".reveal") || [];
+    reveals.forEach((el, i) => {
+      setTimeout(() => el.classList.add("active"), i * 100);
+    });
+
+    sections.forEach((section, i) => {
+      if (i !== index) {
+        section.querySelectorAll(".reveal").forEach((el) => el.classList.remove("active"));
+      }
+    });
+  }
+
+  function updateActiveDot(index) {
+    dots.forEach((dot) => dot.classList.remove("active"));
+    if (dots[index]) dots[index].classList.add("active");
   }
 }
 
