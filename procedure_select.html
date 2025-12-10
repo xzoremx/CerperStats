@@ -295,27 +295,29 @@
     </style>
 </head>
 <body class="bg-black text-white font-manrope">
-    <!-- Navigation -->
-    <nav class="fixed top-0 left-0 w-full p-5 flex justify-between items-center z-50 nav-minimal">
+<!-- Navigation -->
+<nav class="fixed top-0 left-0 w-full p-5 flex items-center justify-center z-50 nav-minimal relative">
 
-        <div class="magnetic flex items-center">
-            <img src="assets/logos/logo.png" 
-                 alt="CerperStats Logo"
-                 class="h-12 object-contain select-none pointer-events-none 
-                        drop-shadow-[0_0_12px_rgba(255,255,255,0.12)]
-                        opacity-95 transition-all duration-300 hover:opacity-100" />
-        </div>
-        
-    
-        <div class="space-x-16 font-manrope text-sm tracking-wide uppercase">
-            <a href="mailto:sistemas@cerper.com?subject=Solicitud de Ayuda - CerperStats" 
-               class="magnetic hover:opacity-50 transition-all duration-300 inline-flex items-center gap-2">
-                <i data-lucide="mail" class="w-5 h-5"></i>
-                <span>Centro de Ayuda</span>
-            </a>
-        </div>
-    
-    </nav>
+    <!-- Logo centrado y más grande -->
+    <div class="magnetic flex items-center justify-center">
+      <img src="assets/logos/logo.png" 
+           alt="CerperStats Logo"
+           class="h-16 object-contain select-none pointer-events-none 
+                  drop-shadow-[0_0_12px_rgba(255,255,255,0.12)]
+                  opacity-95 transition-all duration-300 hover:opacity-100" />
+    </div>
+  
+    <!-- Centro de ayuda a la derecha -->
+    <div class="absolute right-8 top-1/2 -translate-y-1/2 space-x-16 font-manrope text-sm tracking-wide uppercase">
+      <a href="mailto:sistemas@cerper.com?subject=Solicitud de Ayuda - CerperStats" 
+         class="magnetic hover:opacity-50 transition-all duration-300 inline-flex items-center gap-2">
+        <i data-lucide="mail" class="w-5 h-5"></i>
+        <span>Centro de Ayuda</span>
+      </a>
+    </div>
+  
+  </nav>
+  
     
     <!-- Progress Indicator -->
     <div class="progress-bar">
