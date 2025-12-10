@@ -18,7 +18,7 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: #000 url("../assets/images/login/login_background3.jpg") center/cover no-repeat;
+  background: #000 url("../assets/images/login/loginbackground.jpg") center/cover no-repeat;
   z-index: -1;
   pointer-events: none;
 }
