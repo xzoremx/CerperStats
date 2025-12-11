@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://unpkg.com data:; connect-src 'self';" />
 <title>CerperStats Menu</title>
 <!-- Inter font -->
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
 <!-- Tailwind CDN -->
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/tailwind.css">
 <!-- Lucide Icons -->
 <script src="https://unpkg.com/lucide@latest"></script><link id="all-fonts-link-font-geist" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-geist">.font-geist { font-family: 'Geist', sans-serif !important; }</style><link id="all-fonts-link-font-roboto" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-roboto">.font-roboto { font-family: 'Roboto', sans-serif !important; }</style><link id="all-fonts-link-font-montserrat" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-montserrat">.font-montserrat { font-family: 'Montserrat', sans-serif !important; }</style><link id="all-fonts-link-font-poppins" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-poppins">.font-poppins { font-family: 'Poppins', sans-serif !important; }</style><link id="all-fonts-link-font-playfair" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;900&amp;display=swap"><style id="all-fonts-style-font-playfair">.font-playfair { font-family: 'Playfair Display', serif !important; }</style><link id="all-fonts-link-font-instrument-serif" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:wght@400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-instrument-serif">.font-instrument-serif { font-family: 'Instrument Serif', serif !important; }</style><link id="all-fonts-link-font-merriweather" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&amp;display=swap"><style id="all-fonts-style-font-merriweather">.font-merriweather { font-family: 'Merriweather', serif !important; }</style><link id="all-fonts-link-font-bricolage" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-bricolage">.font-bricolage { font-family: 'Bricolage Grotesque', sans-serif !important; }</style><link id="all-fonts-link-font-jakarta" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-jakarta">.font-jakarta { font-family: 'Plus Jakarta Sans', sans-serif !important; }</style><link id="all-fonts-link-font-manrope" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-manrope">.font-manrope { font-family: 'Manrope', sans-serif !important; }</style><link id="all-fonts-link-font-space-grotesk" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-space-grotesk">.font-space-grotesk { font-family: 'Space Grotesk', sans-serif !important; }</style><link id="all-fonts-link-font-work-sans" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-work-sans">.font-work-sans { font-family: 'Work Sans', sans-serif !important; }</style><link id="all-fonts-link-font-pt-serif" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&amp;display=swap"><style id="all-fonts-style-font-pt-serif">.font-pt-serif { font-family: 'PT Serif', serif !important; }</style><link id="all-fonts-link-font-geist-mono" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-geist-mono">.font-geist-mono { font-family: 'Geist Mono', monospace !important; }</style><link id="all-fonts-link-font-space-mono" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&amp;display=swap"><style id="all-fonts-style-font-space-mono">.font-space-mono { font-family: 'Space Mono', monospace !important; }</style><link id="all-fonts-link-font-quicksand" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-quicksand">.font-quicksand { font-family: 'Quicksand', sans-serif !important; }</style><link id="all-fonts-link-font-nunito" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-nunito">.font-nunito { font-family: 'Nunito', sans-serif !important; }</style></head>
   <body class="bg-black text-neutral-200 antialiased" style="font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji;"><div class="spline-container fixed top-0 w-full h-screen -z-10" data-alpha-mask="80" style="mask-image: linear-gradient(to bottom, transparent, black 0%, black 80%, transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 0%, black 80%, transparent)"><video id="menuBgVideo" class="w-full h-full object-cover" autoplay="" muted="" loop="" playsinline="" preload="auto" aria-hidden="true"><source src="assets/videos/menu_background.mp4" type="video/mp4"></video></div>
@@ -109,7 +110,7 @@
         <div class="mt-10 sm:mt-14">
           <div class="relative overflow-hidden rounded-2xl ring-1 ring-white/10 bg-white/5">
             <div class="absolute inset-0 bg-gradient-to-tr from-red-500/30 via-transparent to-transparent mix-blend-screen pointer-events-none"></div>
-            <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/66564ff6-2e5b-480a-8c1a-049f0289552a_1600w.jpg" alt="Portrait with bold red lighting" class="sm:h-[60vh] w-full h-[52vh] object-cover" loading="eager">
+            <img src="assets/images/menu/media.jpg" alt="Portrait with bold red lighting" class="sm:h-[60vh] w-full h-[52vh] object-cover" loading="eager">
           </div>
         </div>
       </div>
@@ -125,14 +126,16 @@
   <div class="rounded-2xl ring-1 ring-white/10 overflow-hidden bg-white/5">
     <div class="flex items-end justify-between p-6 border-b border-white/10">
       <h2 class="text-2xl sm:text-3xl tracking-tight font-semibold text-white">Dashboard</h2>
-      <p class="hidden sm:block text-xs text-neutral-400">Resumen general</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-12">
       <!-- Name -->
       <div class="p-6 md:col-span-3 border-b md:border-b-0 md:border-r border-white/10">
         <p class="text-sm text-neutral-400">App de Evaluación Estadística</p>
-        <p class="mt-1 text-lg font-medium tracking-tight text-white">CerperStats</p>
+        <p class="mt-1 text-lg font-medium tracking-tight text-white"
+           style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', system-ui, sans-serif;">
+          CerperStats
+        </p>
         <div class="mt-4 flex items-center gap-2 text-xs text-neutral-400">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="globe-2" class="lucide lucide-globe-2 w-4 h-4"><path d="M21.54 15H17a2 2 0 0 0-2 2v4.54"></path><path d="M7 3.34V5a3 3 0 0 0 3 3a2 2 0 0 1 2 2c0 1.1.9 2 2 2a2 2 0 0 0 2-2c0-1.1.9-2 2-2h3.17"></path><path d="M11 21.95V18a2 2 0 0 0-2-2a2 2 0 0 1-2-2v-1a2 2 0 0 0-2-2H2.05"></path><circle cx="12" cy="12" r="10"></circle></svg>
           <span class="">Remote-friendly</span>
@@ -142,7 +145,7 @@
       <!-- Portrait (row-span-2) -->
       <div class="relative md:col-span-6 md:row-span-2 border-b md:border-b-0 md:border-r border-white/10">
         <div class="relative aspect-[16/10] md:aspect-[9/10] lg:aspect-[16/10]">
-          <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/86667667-122a-46f3-98a9-2089ebc67625_1600w.jpg" alt="Portrait side profile with dramatic lighting" class="w-full h-full object-cover absolute top-0 right-0 bottom-0 left-0">
+          <img src="assets/images/menu/document_image.jpg" alt="Portrait side profile with dramatic lighting" class="w-full h-full object-cover absolute top-0 right-0 bottom-0 left-0">
           <div class="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent pointer-events-none"></div>
 
           <!-- Overlay stats (desktop) -->
@@ -307,20 +310,20 @@
           <div>
             <p class="text-sm text-neutral-400">Abierto para colaboraciones</p>
             <h3 class="mt-1 text-xl sm:text-2xl tracking-tight font-semibold text-white">Inf. de contacto</h3>
+            <p class="mt-3 text-xs text-neutral-500">©<span id="year">2025</span> Zorem Production</p>
           </div>
           <div class="flex items-center gap-3">
-            <a href="mailto:renato.huamani@pucp.edu.pe" class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium tracking-tight text-white bg-white/10 hover:bg-white/20">
+            <a href="mailto:renato.huamani@pucp.edu.pe" class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium tracking-tight text-white bg-white/10 hover:bg-white/20 transform-gpu transition duration-200 ease-out hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(0,0,0,0.35)]" style="will-change: transform, box-shadow;">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="mail" class="lucide lucide-mail w-4 h-4"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"></path><rect x="2" y="4" width="20" height="16" rx="2"></rect></svg>
               <span>renato.huamani@pucp.edu.pe</span>
             </a>
-            <a href="https://api.whatsapp.com/send?phone=51938897752" class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium tracking-tight text-white bg-emerald-500/90 hover:bg-emerald-500">
+            <a href="https://api.whatsapp.com/send?phone=51938897752" class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium tracking-tight text-white bg-emerald-500/90 hover:bg-emerald-500 transform-gpu transition duration-200 ease-out hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(16,185,129,0.35)]" style="will-change: transform, box-shadow;">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="message-square" class="lucide lucide-message-square w-4 h-4"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"></path></svg>
               <span>WhatsApp</span>
             </a>
           </div>
         </div>
       </div>
-      <p class="mt-6 text-xs text-neutral-500">©<span id="year">2025</span> zorem</p>
     </footer>
 
     <!-- Scripts -->
