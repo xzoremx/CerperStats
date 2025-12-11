@@ -1,4 +1,4 @@
-﻿// main.js
+// main.js
 const { app, BrowserWindow, ipcMain, Menu, nativeImage, shell } = require('electron');
 const { fileURLToPath } = require('url');
 const path = require('path');
@@ -118,8 +118,14 @@ class ExternalUrlSecurityManager {
    * @returns {{safe: boolean, reason?: string}} - Resultado de la validación
    */
   validateUrl(url) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/70d7887b-1d0b-4aa4-922f-b796d4488d19',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:120',message:'validateUrl called',data:{url:url?.substring(0,100)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     // Validación básica de tipo y formato
     if (!url || typeof url !== 'string' || url.trim().length === 0) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/70d7887b-1d0b-4aa4-922f-b796d4488d19',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:123',message:'validateUrl: invalid URL',data:{reason:'URL vacía o inválida'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       return { safe: false, reason: 'URL vacía o inválida' };
     }
 
@@ -145,9 +151,15 @@ class ExternalUrlSecurityManager {
       // Validación especí­fica por protocolo
       if (protocol === 'mailto:') {
         if (!this.validateMailto(parsedUrl)) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/70d7887b-1d0b-4aa4-922f-b796d4488d19',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:147',message:'validateUrl: mailto invalid format',data:{url:url?.substring(0,100)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
           return { safe: false, reason: 'Formato de email inválido' };
         }
         // mailto está permitido si pasa la validación de formato
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/70d7887b-1d0b-4aa4-922f-b796d4488d19',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:151',message:'validateUrl: mailto valid',data:{url:url?.substring(0,100),result:'safe:true,domain:undefined'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
         return { safe: true };
       }
 
@@ -155,18 +167,21 @@ class ExternalUrlSecurityManager {
       if (protocol === 'http:' || protocol === 'https:') {
         const domain = this.extractDomain(parsedUrl);
         if (!this.isDomainAllowed(parsedUrl)) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/70d7887b-1d0b-4aa4-922f-b796d4488d19',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:157',message:'validateUrl: domain not allowed',data:{domain,url:url?.substring(0,100)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+          // #endregion
           return { 
             safe: false, 
             reason: `Dominio no permitido: ${domain || 'desconocido'}` 
           };
         }
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/70d7887b-1d0b-4aa4-922f-b796d4488d19',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:163',message:'validateUrl: http/https valid',data:{domain,url:url?.substring(0,100),result:'safe:true,domain:'+domain},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         return { safe: true, domain };
       }
 
       return { safe: false, reason: 'Validación no implementada para este protocolo' };
-      // Bloquear cualquier otro protocolo
-      event.preventDefault();
-      console.warn('[CerperStats] Protocolo de navegaciÐ˜n no permitido:', protocol);
     } catch (err) {
       // Si no se puede parsear, no es segura
       return { safe: false, reason: `Error parseando URL: ${err.message}` };
@@ -190,11 +205,26 @@ class ExternalUrlSecurityManager {
   /**
    * Registra acceso permitido (para auditorí­a)
    * @param {string} url - URL permitida
+   * @param {string|null} domain - Dominio extraído (opcional, solo para http/https)
    */
   logAllowedAccess(url, domain) {
     const timestamp = new Date().toISOString();
+    let domainInfo = domain;
+    
+    // Si no se proporciona dominio, intentar extraerlo (solo para http/https)
+    if (!domainInfo && url && (url.startsWith('http://') || url.startsWith('https://'))) {
+      try {
+        domainInfo = this.extractDomain(new URL(url));
+      } catch (e) {
+        domainInfo = 'unknown';
+      }
+    } else if (!domainInfo) {
+      // Para mailto y otros protocolos sin dominio
+      domainInfo = 'N/A';
+    }
+    
     console.log(`[${timestamp}] [CerperStats:URLSecurity] PERMITIDO:`, {
-      domain: domain || this.extractDomain(new URL(url)),
+      domain: domainInfo,
       type: 'external_url_access'
     });
   }
@@ -209,11 +239,20 @@ const urlSecurityManager = new ExternalUrlSecurityManager();
  * @returns {boolean} - true si es segura
  */
 function isSafeExternalUrl(url) {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/70d7887b-1d0b-4aa4-922f-b796d4488d19',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:211',message:'isSafeExternalUrl called',data:{url:url?.substring(0,100)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+  // #endregion
   const result = urlSecurityManager.validateUrl(url);
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/70d7887b-1d0b-4aa4-922f-b796d4488d19',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:213',message:'isSafeExternalUrl result',data:{safe:result.safe,reason:result.reason,domain:result.domain},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+  // #endregion
   if (!result.safe) {
     urlSecurityManager.logBlockedAttempt(url, result.reason);
     return false;
   }
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/70d7887b-1d0b-4aa4-922f-b796d4488d19',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:218',message:'calling logAllowedAccess',data:{url:url?.substring(0,100),domain:result.domain},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
   urlSecurityManager.logAllowedAccess(url, result.domain);
   return true;
 }
