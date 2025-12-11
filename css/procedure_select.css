@@ -195,13 +195,13 @@ body {
     --border-contrast: 2.5;
     --pointer-x: 0;
     --pointer-y: 0;
-    max-width: 648px;
+    max-width: 552px;
     margin: 0rem auto 0;
     font-family: "Inter", "Manrope", system-ui, -apple-system, sans-serif;
 }
 .procedure-showcase .cards-grid {
     margin: 0;
-    padding: 50px 36px 36px;
+    padding: 42px 30px 30px;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
@@ -215,8 +215,8 @@ body {
 }
 .procedure-showcase article.card {
     position: relative;
-    width: 90%;
-    max-width: 234px;
+    width: 88%;
+    max-width: 200px;
     aspect-ratio: 4 / 3;
     border-radius: 10px;
     background: rgba(10, 12, 14, 0.62);
