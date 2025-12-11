@@ -14,7 +14,7 @@ body {
     transition: opacity 1s ease, transform 1s ease;
     overflow: hidden;
     transform: scale(0.95);
-    background: #000000;
+    background: rgba(0, 0, 0, 0);
 }
 .section.active {
     opacity: 1;
@@ -150,8 +150,22 @@ body {
     background: #ffffff;
 }
 .nav-minimal {
-    background: rgba(0, 0, 0, 0.9);
-    border-bottom: 1px solid #333333;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.45) 65%, rgba(0, 0, 0, 0));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+.page-top-gradient {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 220px;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.55) 55%, rgba(0, 0, 0, 0.08) 100%);
+    pointer-events: none;
+    z-index: 5;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 .headline-emphasis {
     background: linear-gradient(135deg, #ffffff 0%, #cccccc 100%);
@@ -276,6 +290,4 @@ body {
     color: #e4e4e7;
     user-select: none;
 }
-
-
 
