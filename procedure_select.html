@@ -1,18 +1,16 @@
 <html lang="en"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://unpkg.com data:; connect-src 'self';" />
     <title>Procedimientos - CerperStats</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://code.highcharts.com/highcharts.js"></script>
-    <script src="https://code.highcharts.com/modules/export-data.js"></script>
-    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+    <link rel="stylesheet" href="css/tailwind.css">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
     <link rel="stylesheet" href="css/procedure_select.css">
 
 </head>
-<body class="text-white font-manrope bg-black bg-[url(https://images.unsplash.com/photo-1635151227785-429f420c6b9d?w=2160&q=80)] bg-cover bg-center">
+<body class="text-white font-manrope bg-black bg-[url('../assets/images/procedure/background.jpg')] bg-cover bg-center">
 <!-- Navigation -->
 <nav class="fixed top-0 left-0 w-full p-5 flex items-center justify-center z-50 nav-minimal relative">
 
@@ -33,12 +31,9 @@
         <span>Centro de Ayuda</span>
       </a>
     </div>
-  
+
   </nav>
 
-  <!-- Top gradient overlay to mirror glass header -->
-  <div class="page-top-gradient"></div>
-  
     
     <!-- Progress Indicator -->
     <div class="progress-bar">
@@ -120,8 +115,10 @@
     <section class="section" data-index="2">
         <div class="content-overlay container mx-auto h-full flex flex-col justify-center px-8 pt-16 md:pt-24">
             <div class="max-w-6xl mx-auto">
-                <h2 class="font-work font-light mb-4 text-center reveal tracking-tight" style="font-size: clamp(50px, 6vw, 70px); line-height: 0.9;">Nuestros Procedimientos</h2>
-                <div class="minimal-line reveal mx-auto max-w-xs" style="transition-delay: 0.1s;"></div>
+                <div class="flex flex-col items-center">
+                    <h2 class="font-work font-light mb-4 text-center reveal tracking-tight" style="font-size: clamp(50px, 6vw, 70px); line-height: 0.9;">Nuestros Procedimientos</h2>
+                    <div class="minimal-line reveal mx-auto max-w-xs" style="transition-delay: 0.1s;"></div>
+                </div>
                 <!-- Cards -->
                 <div class="procedure-showcase reveal" style="transition-delay: 0.2s;">
                     <div class="cards-grid" id="cards-grid">
@@ -135,12 +132,14 @@
     <section class="section" data-index="3">
         <div class="content-overlay container mx-auto h-full flex flex-col justify-center items-center px-8 text-center">
             <div class="max-w-4xl">
-                <h2 class="font-work font-light mb-8 mt-14 reveal floating tracking-tight"
-                    style="font-size: clamp(50px, 6vw, 70px); line-height: 0.9;">
-                    Revisa y reutiliza sesiones anteriores
-                </h2>
+                <div class="flex flex-col items-center">
+                    <h2 class="font-work font-light mb-2 mt-14 reveal floating tracking-tight"
+                        style="font-size: clamp(50px, 6vw, 70px); line-height: 0.9;">
+                        Revisa y reutiliza sesiones anteriores
+                    </h2>
 
-                <div class="minimal-line reveal mx-auto max-w-xs" style="transition-delay: 0.1s;"></div>
+                    <div class="minimal-line reveal mx-auto max-w-xs" style="transition-delay: 0.1s;"></div>
+                </div>
                 <p class="font-manrope text-gray-400 max-w-3xl text-lg leading-relaxed mb-12 reveal text-center mx-auto"
                     style="transition-delay: 0.2s;">
                         Accede al historial de sesiones, revisa sus datos originales y, si lo deseas, vuelve a evaluarlos usando un nuevo procedimiento estadístico.
