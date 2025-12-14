@@ -54,7 +54,7 @@ class ExternalUrlSecurityManager {
     // Protocolos permitidos (solo estos)
     this.allowedProtocols = new Set(['https:', 'http:', 'mailto:']);
 
-    // Protocolos peligrosos explí­citamente bloqueados
+    // Protocolos peligrosos explícitamente bloqueados
     this.dangerousProtocols = new Set([
       'javascript:',
       'data:',
@@ -137,12 +137,12 @@ class ExternalUrlSecurityManager {
         return { safe: false, reason: `Protocolo peligroso bloqueado: ${protocol}` };
       }
 
-      // Solo permitir protocolos especí­ficos
+      // Solo permitir protocolos específicos
       if (!this.allowedProtocols.has(protocol)) {
         return { safe: false, reason: `Protocolo no permitido: ${protocol}` };
       }
 
-      // Validación especí­fica por protocolo
+      // Validación específica por protocolo
       if (protocol === 'mailto:') {
         if (!this.validateMailto(parsedUrl)) {
           return { safe: false, reason: 'Formato de email inválido' };
@@ -171,7 +171,7 @@ class ExternalUrlSecurityManager {
   }
 
   /**
-   * Registra intento de acceso bloqueado (para auditorí­a)
+   * Registra intento de acceso bloqueado (para auditoría)
    * @param {string} url - URL bloqueada
    * @param {string} reason - Razón del bloqueo
    */
@@ -185,7 +185,7 @@ class ExternalUrlSecurityManager {
   }
 
   /**
-   * Registra acceso permitido (para auditorí­a)
+   * Registra acceso permitido (para auditoría)
    * @param {string} url - URL permitida
    * @param {string|null} domain - Dominio extraído (opcional, solo para http/https)
    */
