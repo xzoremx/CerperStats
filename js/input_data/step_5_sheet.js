@@ -337,9 +337,13 @@ function generarTabla(tipo) {
     const columnas = K + 1; // primera columna = parámetro (ej. analista)
     const headerRow = document.createElement("tr");
 
+    // Derivar forma singular si termina en "s"
+    let singularMulti = parametroRaw.toLowerCase();
+    if (singularMulti.endsWith("s")) singularMulti = singularMulti.slice(0, -1);
+
     // Encabezado: parámetro + analitos (editables)
     const headers = [
-      capitalize(parametroRaw),
+      capitalize(singularMulti),
       ...Array.from({ length: K }, (_, i) => `Analito ${i + 1}`),
     ];
 
@@ -348,7 +352,7 @@ function generarTabla(tipo) {
       th.textContent = h;
 
       if (index === 0) {
-        // primera celda: nombre del parámetro (ej. Analista)
+        // primera celda: nombre del parámetro (ej. Día)
         th.contentEditable = false;
         th.classList.add("fixed-param", "placeholder");
       } else {
@@ -364,7 +368,7 @@ function generarTabla(tipo) {
     tbody.appendChild(headerRow);
 
 
-    // Filas: una sección por cada parámetro (ej. analista)
+    // Filas: una sección por cada parámetro (ej. día)
     for (let a = 0; a < K; a++) {
       const lecturasActuales = lecturas[a] || lecturas[0] || 5;
       for (let l = 0; l < lecturasActuales; l++) {
@@ -375,7 +379,7 @@ function generarTabla(tipo) {
           td.classList.add("placeholder");
           td.addEventListener("input", () => togglePlaceholder(td));
           if (c === 0) {
-            td.textContent = `${capitalize(parametroRaw)} ${a + 1}`;
+            td.textContent = `${capitalize(singularMulti)} ${a + 1}`;
             td.contentEditable = false;
             td.classList.add("fixed-param");
           } else {
@@ -821,11 +825,17 @@ function validarVisual() {
 }
 
 // --- Generador de colores dinámicos (para K analistas o columnas) ---
+// Evita colores rojos (hue 0-40 y 320-360)
 function generarColores(K) {
   const colores = [];
+  // Rango seguro: de 50° (amarillo-verde) a 300° (violeta), evitando rojos
+  const hueMin = 50;
+  const hueMax = 300;
+  const hueRange = hueMax - hueMin;
+  
   for (let i = 0; i < K; i++) {
-    const hue = (i * 360) / K;
-    colores.push(`hsla(${hue}, 70%, 50%, 0.25)`);
+    const hue = hueMin + (i * hueRange) / Math.max(K - 1, 1);
+    colores.push(`hsla(${Math.round(hue)}, 70%, 50%, 0.25)`);
   }
   return colores;
 }
@@ -845,18 +855,20 @@ function activarCopiadoExcel() {
     badge = document.createElement("div");
     badge.id = "copy-badge";
     badge.textContent = "Modo Copia: OFF";
-    Object.assign(badge.style, {
-      position: "fixed", bottom: "16px", right: "16px",
-      padding: "8px 12px", borderRadius: "10px",
-      background: "rgba(0,255,255,0.12)", color: "rgba(6, 244, 248, 1)",
-      fontFamily: "Segoe UI, sans-serif", fontSize: "12px",
-      border: "1px solid rgba(0,255,255,0.35)",
-      boxShadow: "0 0 12px rgba(0,255,255,0.2)",
-      backdropFilter: "blur(6px)", zIndex: 9999
-    });
     document.body.appendChild(badge);
   }
-  const setBadge = (on) => { badge.textContent = `Modo Copia: ${on ? "ON" : "OFF"}`; };
+
+  // Estilo del badge se define en CSS (#copy-badge); limpiamos estilos inline antiguos.
+  badge.classList.add("copy-badge");
+  badge.removeAttribute("style");
+  // Asegurar que no haya estilos inline que interfieran
+  badge.style.cssText = "";
+
+  const setBadge = (on) => {
+    badge.textContent = `Modo Copia: ${on ? "ON" : "OFF"}`;
+    badge.dataset.copyOn = on ? "true" : "false";
+  };
+  setBadge(false);
 
   function clearSelection() {
     table.querySelectorAll("td.selected").forEach(td => td.classList.remove("selected"));

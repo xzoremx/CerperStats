@@ -63,7 +63,7 @@
     .solid-card {
       position: relative;
       z-index: 0;
-      background: rgba(13, 17, 23, 0.92);
+      background: rgba(7, 10, 9, 1);
       border: none;
       box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
@@ -98,12 +98,12 @@
     }
 
     .solid-card .excel-container {
-      background: rgba(13, 17, 23, 0.78);
+      background: rgba(7, 10, 13, 1);
       box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.55);
     }
 
     .solid-card table.excel td {
-      background: rgba(13, 17, 23, 0.72);
+      background: rgba(7, 10, 13, 1);
     }
 
     /* Light mode only for the Excel zone */
@@ -355,6 +355,53 @@
       box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.08);
     }
 
+    /* Copy mode badge (Apple-like transparent) */
+    #copy-badge.copy-badge {
+      position: fixed !important;
+      right: 18px !important;
+      bottom: 78px !important; /* avoid overlapping .notify */
+      padding: 8px 12px !important;
+      border-radius: 12px !important;
+      border: 1px solid rgba(255, 255, 255, 0.06) !important;
+      background: rgba(255, 255, 255, 0.01) !important;
+      color: rgba(255, 255, 255, 0.65) !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif !important;
+      font-size: 11px !important;
+      font-weight: 400 !important;
+      letter-spacing: 0.03em !important;
+      user-select: none !important;
+      pointer-events: none !important;
+      z-index: 9998 !important;
+      backdrop-filter: blur(24px) saturate(160%) !important;
+      -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+      transform: translateZ(0) !important;
+      overflow: hidden !important;
+    }
+
+    #copy-badge.copy-badge::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%);
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    #copy-badge.copy-badge::after {
+      display: none;
+    }
+
+    #copy-badge.copy-badge[data-copy-on="true"] {
+      border-color: rgba(0, 212, 170, 0.2) !important;
+      background: rgba(0, 212, 170, 0.05) !important;
+      color: rgba(210, 255, 248, 0.8) !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 0 8px rgba(0, 212, 170, 0.08) !important;
+    }
+
+    /* El badge de copiado mantiene siempre el look "dark" (no cambia con body.excel-light). */
+
     /* Notification styles */
     .notify {
       position: fixed;
@@ -505,13 +552,6 @@
       autoplay loop muted playsinline></video>
   </div>
 
-  <!-- Toggle Excel focus zone theme -->
-  <button id="excel-theme-toggle" type="button"
-    class="fixed top-4 right-4 z-50 inline-flex items-center justify-center h-11 w-11 rounded-full bg-black/40 border border-white/15 backdrop-blur-md shadow-lg hover:bg-black/55 transition-colors"
-    aria-label="Cambiar modo de la tabla">
-    <i id="excel-theme-icon" data-lucide="sun" class="w-5 h-5"></i>
-  </button>
-
   <main class="flex items-start justify-center min-h-screen p-4 md:p-8">
     <section
       class="relative w-full max-w-7xl glass-card md:px-12 md:py-10 overflow-hidden rounded-xl pt-8 pr-6 pb-8 pl-6">
@@ -590,7 +630,14 @@
 
       <!-- Data Entry Section -->
       <div id="data-entry" class="w-full">
-        <div class="solid-card rounded-xl p-6 mb-6">
+        <div class="solid-card rounded-xl p-6 mb-6 relative">
+          <!-- Toggle Excel focus zone theme -->
+          <button id="excel-theme-toggle" type="button"
+            class="absolute top-6 right-6 z-50 inline-flex items-center justify-center h-10 w-10 rounded-full bg-black/40 border border-white/15 backdrop-blur-md shadow-lg hover:bg-black/55 transition-colors"
+            aria-label="Cambiar modo de la tabla">
+            <i id="excel-theme-icon" data-lucide="sun" class="w-5 h-5"></i>
+          </button>
+
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
             <div>
               <p class="text-xs tracking-[0.2em] uppercase text-orange-300/80 font-geist mb-1">Paso Final</p>
@@ -653,9 +700,12 @@
       function applyExcelTheme(theme) {
         const isLight = theme === "light";
         document.body.classList.toggle("excel-light", isLight);
+        // El ícono siempre será "sun", solo cambia el color según el tema
         if (themeIcon) {
-          themeIcon.setAttribute("data-lucide", isLight ? "moon" : "sun");
-          if (window.lucide?.createIcons) window.lucide.createIcons();
+          themeIcon.setAttribute("data-lucide", "sun");
+          if (window.lucide?.createIcons) {
+            window.lucide.createIcons();
+          }
         }
         if (themeToggle) {
           themeToggle.setAttribute(
@@ -666,7 +716,10 @@
       }
 
       const savedTheme = localStorage.getItem(THEME_KEY) || "dark";
-      applyExcelTheme(savedTheme);
+      // Aplicar tema inicial después de que Lucide haya creado los íconos iniciales
+      setTimeout(() => {
+        applyExcelTheme(savedTheme);
+      }, 50);
 
       if (themeToggle) {
         themeToggle.addEventListener("click", () => {
