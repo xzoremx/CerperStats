@@ -15,6 +15,26 @@ body {
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
+.lab-subtitle-row{
+  display:flex;
+  align-items:flex-start;
+  gap:0.5rem;
+  padding-left:0.25rem;
+}
+#lab-subtitle-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:1rem;
+  height:1rem;
+  flex:0 0 auto;
+  margin-top:0.125rem;
+}
+#lab-subtitle-icon svg{
+  width:100%;
+  height:100%;
+  display:block;
+}
 .timeline-col::before{
 content:'';
 position: absolute;
@@ -255,7 +275,7 @@ box-shadow: 0 0 0 1px rgba(249,115,22,0.4), 0 8px 24px rgba(249,115,22,0.18);
 }
 </style>
 <link id="all-fonts-link-font-geist" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-geist">.font-geist { font-family: 'Geist', sans-serif !important; }</style><link id="all-fonts-link-font-roboto" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-roboto">.font-roboto { font-family: 'Roboto', sans-serif !important; }</style><link id="all-fonts-link-font-montserrat" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-montserrat">.font-montserrat { font-family: 'Montserrat', sans-serif !important; }</style><link id="all-fonts-link-font-poppins" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-poppins">.font-poppins { font-family: 'Poppins', sans-serif !important; }</style><link id="all-fonts-link-font-playfair" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;900&amp;display=swap"><style id="all-fonts-style-font-playfair">.font-playfair { font-family: 'Playfair Display', serif !important; }</style><link id="all-fonts-link-font-instrument-serif" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:wght@400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-instrument-serif">.font-instrument-serif { font-family: 'Instrument Serif', serif !important; }</style><link id="all-fonts-link-font-merriweather" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&amp;display=swap"><style id="all-fonts-style-font-merriweather">.font-merriweather { font-family: 'Merriweather', serif !important; }</style><link id="all-fonts-link-font-bricolage" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-bricolage">.font-bricolage { font-family: 'Bricolage Grotesque', sans-serif !important; }</style><link id="all-fonts-link-font-jakarta" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-jakarta">.font-jakarta { font-family: 'Plus Jakarta Sans', sans-serif !important; }</style><link id="all-fonts-link-font-manrope" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-manrope">.font-manrope { font-family: 'Manrope', sans-serif !important; }</style><link id="all-fonts-link-font-space-grotesk" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-space-grotesk">.font-space-grotesk { font-family: 'Space Grotesk', sans-serif !important; }</style><link id="all-fonts-link-font-work-sans" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-work-sans">.font-work-sans { font-family: 'Work Sans', sans-serif !important; }</style><link id="all-fonts-link-font-pt-serif" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&amp;display=swap"><style id="all-fonts-style-font-pt-serif">.font-pt-serif { font-family: 'PT Serif', serif !important; }</style><link id="all-fonts-link-font-geist-mono" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-geist-mono">.font-geist-mono { font-family: 'Geist Mono', monospace !important; }</style><link id="all-fonts-link-font-space-mono" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&amp;display=swap"><style id="all-fonts-style-font-space-mono">.font-space-mono { font-family: 'Space Mono', monospace !important; }</style><link id="all-fonts-link-font-quicksand" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&amp;display=swap"><style id="all-fonts-style-font-quicksand">.font-quicksand { font-family: 'Quicksand', sans-serif !important; }</style><link id="all-fonts-link-font-nunito" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&amp;display=swap"><style id="all-fonts-style-font-nunito">.font-nunito { font-family: 'Nunito', sans-serif !important; }</style></head>
-<body class="bg-surface-900 text-white font-sans antialiased bg-pattern min-h-screen"><div class="spline-container fixed inset-0 -z-10 overflow-hidden"><video aria-hidden="true" class="w-full h-full object-cover" src="../assets/videos/input_data_background.mp4" autoplay loop muted playsinline></video></div>
+<body class="bg-surface-900 text-white font-sans antialiased bg-pattern min-h-screen"><div class="spline-container fixed inset-0 -z-10 overflow-hidden"><video aria-hidden="true" class="w-full h-full object-cover" src="../assets/videos/input_data_info_background.mp4" autoplay loop muted playsinline></video></div>
 
 <main class="flex items-start justify-center min-h-screen p-4 md:p-8">
   <section class="relative w-full max-w-7xl glass-card md:px-12 md:py-10 overflow-hidden rounded-xl pt-8 pr-6 pb-8 pl-6">
@@ -264,17 +284,17 @@ box-shadow: 0 0 0 1px rgba(249,115,22,0.4), 0 8px 24px rgba(249,115,22,0.18);
     <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-8">
       <div class="flex-1">
         <div class="inline-flex items-center gap-2 mb-4 backdrop-blur-sm bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium border border-white/10 font-geist">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3 text-accent-500"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>
-          Registro de datos
+          <i data-lucide="file-text" class="w-3 h-3 text-cyan-400"></i>
+          Info Data 
         </div>
         <div class="flex items-center gap-4">
           <img id="header-logo" src="../assets/logos/procedures/autorizaciones.webp" alt="Logotipo de Autorizaciones" class="w-14 h-14 object-contain rounded-lg bg-white/5 p-2 border border-white/10 shadow-lg">
           <h1 id="header-title" class="md:text-6xl text-3xl bg-clip-text text-transparent tracking-tight bg-gradient-to-r from-white via-white to-gray-300 mb-3 font-space-grotesk font-light">Autorizacion</h1>
         </div>
         <div class="flex items-center gap-5 text-sm text-gray-400 mb-4">
-          <div class="flex items-center gap-1 font-geist">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><path d="M16 3.128a4 4 0 0 1 0 7.744"></path><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><circle cx="9" cy="7" r="4"></circle></svg>
-            <span id="lab-subtitle">Laboratorio</span>
+          <div class="lab-subtitle-row font-geist">
+            <span id="lab-subtitle-icon" aria-hidden="true"></span>
+            <span id="lab-subtitle" class="leading-tight">Laboratorio</span>
           </div>
         </div>
       </div>
@@ -576,6 +596,4 @@ box-shadow: 0 0 0 1px rgba(249,115,22,0.4), 0 8px 24px rgba(249,115,22,0.18);
 
 
 </body></html>
-
-
 

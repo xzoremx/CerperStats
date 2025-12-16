@@ -1,57 +1,709 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://unpkg.com data:; connect-src 'self';" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <style>
+    html {
+      background-color: #050507;
+    }
+
+    body {
+      background-color: transparent;
+      color: #fff;
+    }
+  </style>
   <title>Ingreso de Lecturas - CerperStats</title>
-  <link rel="stylesheet" href="../css/input_data.css" />
-  <link rel="stylesheet" href="../css/sheet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      --glass-card-bg: rgba(255, 255, 255, 0.03);
+      --glass-card-border: rgba(255, 255, 255, 0.08);
+      --glass-card-shadow: 0 24px 48px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+
+      --glass-ui-bg: rgba(255, 255, 255, 0.05);
+      --glass-ui-border: rgba(255, 255, 255, 0.10);
+      --glass-ui-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+
+      --glass-ui-bg-hover: rgba(255, 255, 255, 0.08);
+      --glass-ui-border-hover: rgba(255, 255, 255, 0.20);
+      --glass-ui-shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+      --glass-divider-mid: rgba(255, 255, 255, 0.10);
+    }
+
+    /* Light theme tint (keeps glass feel) */
+    body.excel-light {
+      --glass-card-bg: rgba(255, 255, 255, 0.08);
+      --glass-card-border: rgba(255, 255, 255, 0.14);
+      --glass-card-shadow: 0 24px 48px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+
+      --glass-ui-bg: rgba(255, 255, 255, 0.10);
+      --glass-ui-border: rgba(255, 255, 255, 0.18);
+      --glass-ui-shadow: 0 10px 34px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+
+      --glass-ui-bg-hover: rgba(255, 255, 255, 0.14);
+      --glass-ui-border-hover: rgba(255, 255, 255, 0.26);
+      --glass-ui-shadow-hover: 0 14px 44px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+
+      --glass-divider-mid: rgba(255, 255, 255, 0.16);
+    }
+
+    .glass-card {
+      backdrop-filter: blur(32px);
+      background: var(--glass-card-bg);
+      border: 1px solid var(--glass-card-border);
+      box-shadow: var(--glass-card-shadow);
+    }
+
+    /* Solid surface for focused data entry (avoid animated bg distraction) */
+    .solid-card {
+      position: relative;
+      z-index: 0;
+      background: rgba(13, 17, 23, 0.92);
+      border: none;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    /* Softer/diffused edge (avoid crisp borders) */
+    .solid-card::before {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      border-radius: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      opacity: 0.35;
+      filter: blur(1.2px);
+      pointer-events: none;
+    }
+
+    .solid-card::after {
+      content: "";
+      position: absolute;
+      inset: -24px;
+      border-radius: inherit;
+      background: radial-gradient(60% 60% at 50% 40%, rgba(13, 17, 23, 0) 0%, rgba(13, 17, 23, 0.5) 55%, rgba(13, 17, 23, 0.78) 100%);
+      filter: blur(22px);
+      opacity: 0.78;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .solid-card,
+    .solid-card * {
+      backdrop-filter: none !important;
+    }
+
+    .solid-card .excel-container {
+      background: rgba(13, 17, 23, 0.78);
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.55);
+    }
+
+    .solid-card table.excel td {
+      background: rgba(13, 17, 23, 0.72);
+    }
+
+    /* Light mode only for the Excel zone */
+    body.excel-light .solid-card {
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      color: rgba(17, 24, 39, 0.95);
+    }
+
+    body.excel-light .solid-card::before {
+      border-color: rgba(0, 0, 0, 0.14);
+      opacity: 0.25;
+    }
+
+    body.excel-light .solid-card::after {
+      background: radial-gradient(60% 60% at 50% 40%, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.35) 55%, rgba(0, 0, 0, 0.18) 100%);
+      opacity: 0.8;
+    }
+
+    body.excel-light .solid-card .text-white {
+      color: rgba(17, 24, 39, 0.95) !important;
+    }
+
+    body.excel-light .solid-card .excel-container {
+      background: rgba(255, 255, 255, 0.92);
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.10);
+    }
+
+    body.excel-light .solid-card table.excel td {
+      background: rgba(255, 255, 255, 0.92);
+      border-color: rgba(0, 0, 0, 0.08);
+      color: rgba(17, 24, 39, 0.95);
+    }
+
+    body.excel-light .solid-card td.placeholder {
+      color: rgba(17, 24, 39, 0.35);
+    }
+
+    .glass-divider {
+      background: linear-gradient(90deg, transparent 0%, var(--glass-divider-mid) 50%, transparent 100%);
+      height: 1px;
+    }
+
+    .bg-pattern {
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(0, 212, 170, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 60%, rgba(168, 85, 247, 0.08) 0%, transparent 50%);
+    }
+
+    .bar {
+      position: relative;
+      border-radius: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      backdrop-filter: blur(18px);
+      background: var(--glass-ui-bg);
+      border: 1px solid var(--glass-ui-border);
+      box-shadow: var(--glass-ui-shadow);
+    }
+
+    .bar:hover {
+      background: var(--glass-ui-bg-hover);
+      border-color: var(--glass-ui-border-hover);
+      box-shadow: var(--glass-ui-shadow-hover);
+      transform: translateY(-2px);
+    }
+
+    body.excel-light #excel-theme-toggle {
+      background: rgba(255, 255, 255, 0.40) !important;
+      border-color: rgba(0, 0, 0, 0.12) !important;
+    }
+
+    body.excel-light #excel-theme-toggle:hover {
+      background: rgba(255, 255, 255, 0.55) !important;
+    }
+
+    #header-lab-icon svg {
+      width: 1.1rem;
+      height: 1.1rem;
+      display: block;
+    }
+
+    .bar-accent {
+      background: linear-gradient(135deg, rgba(0, 212, 170, 0.3) 0%, rgba(0, 184, 148, 0.3) 100%);
+      border: 1px solid rgba(0, 212, 170, 0.4);
+      color: white;
+      box-shadow: 0 8px 32px rgba(0, 212, 170, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .bar-accent:hover {
+      background: linear-gradient(135deg, rgba(0, 212, 170, 0.4) 0%, rgba(0, 184, 148, 0.4) 100%);
+      box-shadow: 0 12px 40px rgba(0, 212, 170, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    .bar-accent:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .bar-accent:disabled:hover {
+      transform: none;
+      box-shadow: 0 8px 32px rgba(0, 212, 170, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    /* Excel Table Styles - Adapted to glassmorphism */
+    .excel-container {
+      display: block;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      overflow: auto;
+      background: rgba(255, 255, 255, 0.02);
+      width: 100%;
+      height: 480px;
+      margin: 0 auto;
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(14px);
+    }
+
+    /* Custom scrollbar (Excel area) */
+    .excel-container {
+      scrollbar-width: thin; /* Firefox */
+      scrollbar-color: rgba(255, 255, 255, 0.22) rgba(255, 255, 255, 0.06);
+    }
+
+    .excel-container::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+
+    .excel-container::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 9999px;
+    }
+
+    .excel-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.22);
+      border-radius: 9999px;
+      border: 3px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .excel-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.32);
+    }
+
+    body.excel-light .excel-container {
+      scrollbar-color: rgba(0, 0, 0, 0.28) rgba(0, 0, 0, 0.06);
+    }
+
+    body.excel-light .excel-container::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    body.excel-light .excel-container::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.28);
+      border-color: rgba(0, 0, 0, 0.06);
+    }
+
+    body.excel-light .excel-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.38);
+    }
+
+    table.excel {
+      border-collapse: collapse;
+      table-layout: auto;
+      width: 100%;
+      cursor: text;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.9);
+      border-spacing: 0;
+    }
+
+    table.excel td {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 12px;
+      min-width: 120px;
+      max-width: 250px;
+      height: 36px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.02);
+      transition: all 0.2s ease;
+      word-break: break-word;
+    }
+
+    table.excel td:focus {
+      outline: 2px solid rgba(0, 212, 170, 0.6);
+      background: rgba(0, 212, 170, 0.1);
+      box-shadow: inset 0 0 12px rgba(0, 212, 170, 0.2);
+    }
+
+    table.excel td.selected {
+      outline: 2px solid rgba(0, 212, 170, 0.6);
+      outline-offset: -2px;
+      background: rgba(0, 212, 170, 0.12);
+    }
+
+    td.placeholder {
+      color: rgba(255, 255, 255, 0.3);
+      font-style: italic;
+    }
+
+    td.error {
+      background-color: rgba(239, 68, 68, 0.15);
+      box-shadow: inset 0 0 10px rgba(239, 68, 68, 0.3);
+    }
+
+    td.valido {
+      background: rgba(0, 212, 170, 0.12);
+      box-shadow: inset 0 0 12px rgba(0, 212, 170, 0.2);
+      color: rgba(255, 255, 255, 0.95);
+    }
+
+    td.vacio-rango {
+      background: rgba(255, 255, 255, 0.03);
+      box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+    }
+
+    td.fuera-vacio {
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    td.fuera-error {
+      background: rgba(239, 68, 68, 0.18);
+      box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.25);
+      color: #fff;
+    }
+
+    .analito-header {
+      color: rgba(255, 255, 255, 0.5);
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.04);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .fixed-param {
+      border-right: 1.5px solid rgba(255, 255, 255, 0.15);
+    }
+
+    table.excel td:hover:not(.fixed-param):not(.fuera-error) {
+      background: rgba(255, 255, 255, 0.06);
+      box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.08);
+    }
+
+    /* Notification styles */
+    .notify {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      padding: 12px 22px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.35s ease;
+      z-index: 9999;
+      color: #00ffff;
+      backdrop-filter: blur(8px);
+      background: rgba(0, 255, 255, 0.08);
+      border: 1.5px solid rgba(0, 255, 255, 0.35);
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.12);
+      pointer-events: none;
+    }
+
+    .notify.show {
+      opacity: 1;
+      transform: translateY(0);
+      animation: fadeSlideIn 0.4s ease forwards;
+    }
+
+    .notify.success {
+      border-color: #00ffb3;
+      color: #00ffb3;
+      background: rgba(0, 255, 179, 0.1);
+      box-shadow: 0 0 20px rgba(0, 255, 179, 0.15);
+    }
+
+    .notify.error {
+      border-color: #ff4d4d;
+      color: #ff8080;
+      background: rgba(255, 77, 77, 0.08);
+      box-shadow: 0 0 20px rgba(255, 77, 77, 0.1);
+    }
+
+    .notify.info {
+      border-color: #00aaff;
+      color: #80e4ff;
+      background: rgba(0, 170, 255, 0.08);
+      box-shadow: 0 0 20px rgba(0, 170, 255, 0.15);
+    }
+
+    @keyframes fadeSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(25px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    #data-entry {
+      display: none;
+    }
+
+    /* Modern Number Input for Niveles */
+    .modern-number-input {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.5rem;
+      border-radius: 0.85rem;
+      background: rgba(15, 15, 20, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 28px rgba(5, 5, 7, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      width: fit-content;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .modern-number-input:focus-within {
+      border-color: rgba(249, 115, 22, 0.85);
+      box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35), 0 18px 36px rgba(249, 115, 22, 0.18);
+    }
+
+    .modern-number-field {
+      width: 3rem;
+      background: transparent;
+      border: none;
+      text-align: center;
+      color: #fff;
+      font-size: 1rem;
+      font-family: 'Geist', sans-serif;
+      letter-spacing: 0.03em;
+      padding: 0.35rem 0.15rem;
+    }
+
+    .modern-number-field:focus {
+      outline: none;
+    }
+
+    .modern-number-btn {
+      width: 2.25rem;
+      height: 2.25rem;
+      min-width: 2.25rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(249, 115, 22, 0.35));
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .modern-number-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(249, 115, 22, 0.25);
+      border-color: rgba(249, 115, 22, 0.5);
+    }
+
+    .modern-number-btn:active {
+      transform: scale(0.96);
+    }
+
+  </style>
+  <link id="all-fonts-link-font-geist" rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap">
+  <style id="all-fonts-style-font-geist">
+    .font-geist {
+      font-family: 'Geist', sans-serif !important;
+    }
+  </style>
+  <link id="all-fonts-link-font-space-grotesk" rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap">
+  <style id="all-fonts-style-font-space-grotesk">
+    .font-space-grotesk {
+      font-family: 'Space Grotesk', sans-serif !important;
+    }
+  </style>
 </head>
 
-<body>
-  <!-- ENCABEZADO -->
-  <header class="header">
-    <img src="../assets/logos/cerper_logo.png" alt="CERPER" class="logo" />
-    <h1 id="lab-title">Ingreso de Lecturas</h1>
-    <p class="subtitle" id="sheet-subtitle">Pegue o escriba los datos de las lecturas</p>
-  </header>
+<body class="bg-surface-900 text-white font-sans antialiased bg-pattern min-h-screen">
+  <!-- Background (video) -->
+  <div class="spline-container fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+    <video aria-hidden="true" class="w-full h-full object-cover" src="../assets/videos/input_data_sheet_background.mp4"
+      autoplay loop muted playsinline></video>
+  </div>
 
-  <!-- CONTENIDO PRINCIPAL -->
-  <main class="container">
-  
-    <!-- Área de ingreso de datos -->
-    <section id="data-entry" class="form-block">
-      <h3 id="mode-title" style="margin-bottom: 1rem;">Modo: </h3>
+  <!-- Toggle Excel focus zone theme -->
+  <button id="excel-theme-toggle" type="button"
+    class="fixed top-4 right-4 z-50 inline-flex items-center justify-center h-11 w-11 rounded-full bg-black/40 border border-white/15 backdrop-blur-md shadow-lg hover:bg-black/55 transition-colors"
+    aria-label="Cambiar modo de la tabla">
+    <i id="excel-theme-icon" data-lucide="sun" class="w-5 h-5"></i>
+  </button>
 
-      <div class="excel-container">
-        <table id="excel" class="excel">
-          <tbody></tbody>
-        </table>
+  <main class="flex items-start justify-center min-h-screen p-4 md:p-8">
+    <section
+      class="relative w-full max-w-7xl glass-card md:px-12 md:py-10 overflow-hidden rounded-xl pt-8 pr-6 pb-8 pl-6">
+
+      <!-- Header Section -->
+      <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-8">
+        <div class="flex-1">
+          <!-- Badge superior -->
+          <div
+            class="inline-flex items-center gap-2 mb-4 backdrop-blur-sm bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium border border-white/10 font-geist">
+            <i data-lucide="table-2" class="w-3 h-3 text-emerald-400"></i>
+            Sheet Input
+          </div>
+
+          <!-- Título con icono del laboratorio -->
+          <div class="flex items-start gap-4 mb-4">
+            <div class="relative w-14 h-14 flex-shrink-0">
+              <img id="header-procedure-icon" alt="Procedimiento"
+                class="hidden absolute left-0 top-0 w-12 h-12 object-contain rounded-xl bg-white/5 p-2 border border-white/10 shadow-lg backdrop-blur-sm" />
+              <span id="header-lab-icon"
+                class="absolute right-0 bottom-0 inline-flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/15 shadow-lg backdrop-blur-sm"></span>
+            </div>
+            <div class="flex flex-col">
+              <span id="lab-name"
+                class="text-sm font-medium text-gray-400 tracking-wide uppercase font-geist mb-1">Laboratorio</span>
+              <h1 id="lab-title"
+                class="text-3xl md:text-4xl lg:text-5xl bg-clip-text text-transparent tracking-tight bg-gradient-to-r from-white via-white to-gray-300 font-space-grotesk font-light leading-tight">
+                Ingreso de Lecturas</h1>
+            </div>
+          </div>
+
+          <!-- Información de la sesión -->
+          <div class="flex flex-wrap items-center gap-3 mt-4 pl-2">
+            <!-- Parámetro y lecturas -->
+            <div
+              class="inline-flex items-center gap-2">
+              <i data-lucide="layers" class="w-4 h-4 text-blue-400"></i>
+              <span id="sheet-param-info" class="text-sm text-gray-300 font-geist">Parámetros</span>
+            </div>
+            <!-- Tipo de dato -->
+            <div
+              class="inline-flex items-center gap-2">
+              <i data-lucide="bar-chart-3" class="w-4 h-4 text-purple-400"></i>
+              <span id="sheet-tipo-dato" class="text-sm text-gray-300 font-geist">Tipo de dato</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controles de Niveles y Página (Ordenados en el header) -->
+        <div class="lg:max-w-sm mt-4 lg:mt-0 lg:ml-8 flex flex-col gap-3">
+          <!-- Control de Niveles -->
+          <div id="niveles-control-container"
+            class="flex items-center gap-3 backdrop-blur-sm bg-white/5 rounded-lg p-3 border border-white/10">
+            <label class="text-xs uppercase text-gray-400 tracking-[0.15em] font-geist">Niveles</label>
+            <div class="modern-number-input">
+              <button type="button" id="nivel-dec" class="modern-number-btn" aria-label="Disminuir nivel">
+                <span aria-hidden="true">−</span>
+              </button>
+              <div id="nivel-display" class="modern-number-field text-center font-geist" style="width:2.5rem;">1</div>
+              <button type="button" id="nivel-inc" class="modern-number-btn" aria-label="Aumentar nivel">
+                <span aria-hidden="true">+</span>
+              </button>
+            </div>
+          </div>
+          <!-- Badge de página -->
+          <div id="badge-pagina"
+            class="text-xs px-3 py-2 rounded-lg border border-white/10 text-gray-300 bg-white/5 font-geist text-center cursor-pointer hover:bg-white/10 transition-colors">
+            pág. 1/1
+          </div>
+        </div>
       </div>
 
-      <div class="actions">
-        <button id="continue-btn" class="select-btn" disabled>Continuar</button>
+      <div class="glass-divider mb-8"></div>
+
+      <!-- Data Entry Section -->
+      <div id="data-entry" class="w-full">
+        <div class="solid-card rounded-xl p-6 mb-6">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+            <div>
+              <p class="text-xs tracking-[0.2em] uppercase text-orange-300/80 font-geist mb-1">Paso Final</p>
+              <h3 id="mode-title" class="text-xl font-space-grotesk text-white">Modo: </h3>
+              <p class="text-sm text-gray-400 font-geist">Ingrese los valores en la tabla y valide para continuar.</p>
+            </div>
+          </div>
+
+          <div class="excel-container mt-4">
+            <table id="excel" class="excel">
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div id="feedback" class="mt-4 text-sm font-geist"></div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-center gap-4 mt-6">
+          <button id="continue-btn" class="bar bar-accent h-12 rounded-full px-8 py-3 font-geist text-sm" disabled>
+            <i data-lucide="check-circle" class="w-4 h-4 mr-2"></i>
+            Continuar
+          </button>
+        </div>
       </div>
 
-      <div id="feedback"></div>
+      <!-- Footer Info -->
+      <div
+        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-8 pt-6 border-t border-white/10">
+        <button id="go-back"
+          class="text-xs font-geist text-gray-300 hover:text-white transition-colors flex items-center gap-2">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          Volver
+        </button>
+        <div class="flex-1"></div>
+        <div class="text-xs text-gray-400 sm:text-right sm:ml-auto w-full sm:w-auto">
+          <p class="font-geist">© 2025 Zorem Production</p>
+        </div>
+      </div>
+
     </section>
   </main>
 
-  <!-- BOTÓN VOLVER -->
-  <button id="go-back" class="btn-back">
-    <i data-lucide="arrow-left"></i> Volver
-  </button>
-
-  <!-- ICONOS Y SCRIPTS -->
+  <!-- SCRIPTS -->
   <script src="../js/auth_guard.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../js/security/icon_safety.js"></script>
   <script src="../js/input_data/step_6_validation.js"></script>
   <script src="../js/input_data/step_5_sheet.js"></script>
   <script>
+    const DEFAULT_LAB_ICON = "flask-conical";
+    const DEFAULT_LAB_COLOR = "#22d3ee";
+
     document.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
+
+      const themeToggle = document.getElementById("excel-theme-toggle");
+      const themeIcon = document.getElementById("excel-theme-icon");
+      const THEME_KEY = "excelZoneTheme";
+
+      function applyExcelTheme(theme) {
+        const isLight = theme === "light";
+        document.body.classList.toggle("excel-light", isLight);
+        if (themeIcon) {
+          themeIcon.setAttribute("data-lucide", isLight ? "moon" : "sun");
+          if (window.lucide?.createIcons) window.lucide.createIcons();
+        }
+        if (themeToggle) {
+          themeToggle.setAttribute(
+            "aria-label",
+            isLight ? "Cambiar a modo oscuro (tabla)" : "Cambiar a modo claro (tabla)"
+          );
+        }
+      }
+
+      const savedTheme = localStorage.getItem(THEME_KEY) || "dark";
+      applyExcelTheme(savedTheme);
+
+      if (themeToggle) {
+        themeToggle.addEventListener("click", () => {
+          const nextTheme = document.body.classList.contains("excel-light") ? "dark" : "light";
+          localStorage.setItem(THEME_KEY, nextTheme);
+          applyExcelTheme(nextTheme);
+        });
+      }
+
+      // Renderizar icono del laboratorio (mismo patrón que procedure_select.js)
+      const iconSlot = document.getElementById("header-lab-icon");
+      if (iconSlot) {
+        const storedIcon = sessionStorage.getItem("labIcon") || localStorage.getItem("labIcon") || "";
+        const labIcon = storedIcon || DEFAULT_LAB_ICON;
+
+        const storedColor = sessionStorage.getItem("labColor") || localStorage.getItem("labColor") || "";
+        const labColor = (storedColor || DEFAULT_LAB_COLOR).trim();
+        if (labColor) {
+          iconSlot.style.color = labColor;
+        }
+
+        if (window.IconSafety?.attachIcon) {
+          window.IconSafety.attachIcon(iconSlot, labIcon).then((ok) => {
+            if (!ok) {
+              iconSlot.innerHTML = `<i data-lucide="${DEFAULT_LAB_ICON}"></i>`;
+            }
+            if (window.lucide?.createIcons) {
+              window.lucide.createIcons();
+            }
+          });
+        } else {
+          iconSlot.innerHTML = `<i data-lucide="${labIcon}"></i>`;
+          if (window.lucide?.createIcons) {
+            window.lucide.createIcons();
+          }
+        }
+      }
     });
   </script>
 </body>
-</html>
 
+</html>

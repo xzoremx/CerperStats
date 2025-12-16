@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Control de retorno y reanudación de sesión
   const btnBack = document.getElementById("btn-go-back") || document.getElementById("go-back");
   const sessionId = sessionStorage.getItem("sessionID");
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
   sessionStorage.removeItem("niveles");
   localStorage.removeItem("niveles");
   niveles = 1;
@@ -37,6 +37,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   const labName =
     sessionStorage.getItem("labNombreVisible") || labKey || "Laboratorio";
 
+  const normalizeAssetPath = (src) => {
+    if (!src) return "";
+    if (/^https?:/i.test(src) || src.startsWith("data:")) return src;
+    if (src.startsWith("../")) return src;
+    return `../${src.replace(/^\//, "")}`;
+  };
+
   const parametroRaw = sessionStorage.getItem("parametroSeleccionado") || "Parámetro";
   // Marcar visualmente si hay sesión activa, pero permitir que el handler global maneje el flujo
   if (sessionId && btnBack) {
@@ -46,8 +53,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Bloquear selects base si hay sesión activa
   if (sessionId) {
     [
-      "labKey","tipoAnalisis","tipoDato","modoCualitativo",
-      "metodo","producto","ensayo","unidad","procedure","expediente"
+      "labKey", "tipoAnalisis", "tipoDato", "modoCualitativo",
+      "metodo", "producto", "ensayo", "unidad", "procedure", "expediente"
     ].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.disabled = true;
@@ -58,7 +65,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   let parametro = parametroRaw.toLowerCase();
   if (!parametro.endsWith("s")) parametro += "s";
 
-  document.getElementById("lab-title").textContent = `${labName} - Ingreso de Lecturas`;
+  // --- Actualizar header ---
+  const labNameEl = document.getElementById("lab-name");
+  const labTitleEl = document.getElementById("lab-title");
+  if (labNameEl) labNameEl.textContent = labName;
+  if (labTitleEl) labTitleEl.textContent = "Ingreso de Lecturas";
+
+  const headerProcedureIcon = document.getElementById("header-procedure-icon");
+  if (headerProcedureIcon) {
+    const procedureTitle =
+      sessionStorage.getItem("procedimientoTitulo") ||
+      sessionStorage.getItem("procedimientoSeleccionado") ||
+      "Procedimiento";
+    const storedImg = sessionStorage.getItem("procedimientoImagen") || "";
+    const resolved = normalizeAssetPath(storedImg);
+
+    if (resolved) {
+      headerProcedureIcon.src = resolved;
+      headerProcedureIcon.alt = `Procedimiento: ${procedureTitle}`;
+      headerProcedureIcon.classList.remove("hidden");
+    } else {
+      headerProcedureIcon.classList.add("hidden");
+    }
+  }
 
   // --- Obtener datos de cantidad y lecturas ---
   const K = parseInt(sessionStorage.getItem("K")) || 1;
@@ -70,30 +99,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         ? lecturas[0]
         : `${lecturas.join(", ")}`;
 
-  // --- Texto descriptivo ---
+  // --- Texto descriptivo para parámetros ---
   const resumenLecturas =
     lecturas.every(v => v === lecturas[0])
-      ? `(${K}×${lecturasPromedio})`
-      : `(${K} parámetros con lecturas: ${lecturas.join(" y ")})`;
+      ? `${K} ${parametro} × ${lecturasPromedio} lecturas`
+      : `${K} ${parametro} (${lecturas.join(", ")} lecturas)`;
 
   // --- Tipo de dato y modo ---
   const tipoDato = (sessionStorage.getItem("tipoDato") || "cuantitativo").toLowerCase();
   const modoSeleccionado = sessionStorage.getItem("modoCualitativo") || null;
 
-  // --- Texto complementario según tipo ---
+  // --- Texto del tipo de dato ---
   let tipoDescripcion = "";
   if (tipoDato === "cuantitativo") {
-    tipoDescripcion = `<span style="opacity:0.7;">Tipo de dato: <strong>Cuantitativo</strong></span>`;
+    tipoDescripcion = "Cuantitativo";
   } else if (tipoDato === "cualitativo") {
-    tipoDescripcion = `<span style="opacity:0.7;">Tipo de dato: <strong>Cualitativo</strong>${modoSeleccionado ? ` — ${modoSeleccionado}` : ""}</span>`;
+    tipoDescripcion = modoSeleccionado ? `Cualitativo — ${modoSeleccionado}` : "Cualitativo";
   }
 
-  // --- Actualizar subtítulo ---
-  document.getElementById("sheet-subtitle").innerHTML = `
-    Pegue o escriba las lecturas para <strong>${parametro}</strong> 
-    <span style="opacity:0.8;">${resumenLecturas}</span>.<br>
-    ${tipoDescripcion}
-  `;
+  // --- Actualizar badges informativos ---
+  const paramInfoEl = document.getElementById("sheet-param-info");
+  const tipoDatoEl = document.getElementById("sheet-tipo-dato");
+  if (paramInfoEl) paramInfoEl.textContent = resumenLecturas;
+  if (tipoDatoEl) tipoDatoEl.textContent = tipoDescripcion;
 
 
 
@@ -305,7 +333,7 @@ function generarTabla(tipo) {
   }
 
   // --- MULTIANALITO ---
-  else if (tipo === "multi") {
+  else if (tipo === "multi" || tipo === "multianalito") {
     const columnas = K + 1; // primera columna = parámetro (ej. analista)
     const headerRow = document.createElement("tr");
 
@@ -326,7 +354,7 @@ function generarTabla(tipo) {
       } else {
         // celdas "Analito 1, 2, 3..."
         th.contentEditable = true;
-        th.classList.add("analito-header"); 
+        th.classList.add("analito-header");
         th.addEventListener("input", () => togglePlaceholder(th));
       }
 
@@ -348,10 +376,10 @@ function generarTabla(tipo) {
           td.addEventListener("input", () => togglePlaceholder(td));
           if (c === 0) {
             td.textContent = `${capitalize(parametroRaw)} ${a + 1}`;
-            td.contentEditable = false; 
+            td.contentEditable = false;
             td.classList.add("fixed-param");
           } else {
-            td.contentEditable = true; 
+            td.contentEditable = true;
             td.addEventListener("input", () => togglePlaceholder(td));
           }
           tr.appendChild(td);
@@ -385,7 +413,7 @@ function moveCaretToEnd(td) {
   const range = document.createRange();
   const sel = window.getSelection();
   range.selectNodeContents(td);
-  range.collapse(false); 
+  range.collapse(false);
   sel.removeAllRanges();
   sel.addRange(range);
 }
@@ -482,7 +510,7 @@ function expandIfNeeded(table, targetRow, targetCol) {
       td.contentEditable = true;
       td.classList.add("placeholder");
       td.addEventListener("input", () => togglePlaceholder(td));
-      td.addEventListener("focus", () => moveCaretToEnd(td)); 
+      td.addEventListener("focus", () => moveCaretToEnd(td));
       newRow.appendChild(td);
     }
     table.tBodies[0].appendChild(newRow);
@@ -558,7 +586,7 @@ function activarPegado() {
 
 // --- VALIDACIÓN VISUAL AUTOMÁTICA (Mono y Multi) ---
 function validarVisual() {
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
   const table = document.getElementById("excel");
   const K = parseInt(sessionStorage.getItem("K")) || 1;
   const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
@@ -566,7 +594,7 @@ function validarVisual() {
   if (!table) return;
   const rows = [...table.rows];
 
-  
+
   // --- MONOANALITO ---
   if (tipoAnalisis === "mono") {
     const columnas = K;
@@ -645,12 +673,12 @@ function validarVisual() {
       }
     }
 
-    
+
   }
 
 
   // --- MULTIANALITO ---
-  else if (tipoAnalisis === "multi") {
+  else if (tipoAnalisis === "multi" || tipoAnalisis === "multianalito") {
     const columnas = K + 1;
     const colores = generarColores(K);
     const headers = [...rows[0].cells].slice(1);
@@ -714,28 +742,28 @@ function validarVisual() {
 
           if (valor === "") {
             td.style.background = `${colorBase.replace("0.25", "0.07")}`; // tenue base
-            } else {
-              const num = parseFloat(valor.replace(",", "."));
-              const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
-              const valoresStr = sessionStorage.getItem("valoresPermitidos");
-              const permitidos = valoresStr ? JSON.parse(valoresStr) : null;
+          } else {
+            const num = parseFloat(valor.replace(",", "."));
+            const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
+            const valoresStr = sessionStorage.getItem("valoresPermitidos");
+            const permitidos = valoresStr ? JSON.parse(valoresStr) : null;
 
-              if (tipoDato === "cuantitativo" && num > 0) {
-                td.style.background = `${colorBase.replace("0.25", "0.15")}`; // válido
-              }
-              else if (tipoDato === "cualitativo" && permitidos && Number.isInteger(num) && permitidos.includes(num)) {
-                td.style.background = `${colorBase.replace("0.25", "0.15")}`; // válido
-              }
-              else if (tipoDato === "cualitativo") {
-                td.style.background = "rgba(255,60,60,0.25)"; // inválido
-                todoValido = false;
-              }
-              else {
-                td.style.background = "rgba(255,60,60,0.25)"; // inválido
-                todoValido = false;
-              }
-
+            if (tipoDato === "cuantitativo" && num > 0) {
+              td.style.background = `${colorBase.replace("0.25", "0.15")}`; // válido
             }
+            else if (tipoDato === "cualitativo" && permitidos && Number.isInteger(num) && permitidos.includes(num)) {
+              td.style.background = `${colorBase.replace("0.25", "0.15")}`; // válido
+            }
+            else if (tipoDato === "cualitativo") {
+              td.style.background = "rgba(255,60,60,0.25)"; // inválido
+              todoValido = false;
+            }
+            else {
+              td.style.background = "rgba(255,60,60,0.25)"; // inválido
+              todoValido = false;
+            }
+
+          }
 
         });
       }
@@ -787,7 +815,7 @@ function validarVisual() {
         }
       });
     }
-    
+
   }
 
 }
@@ -797,7 +825,7 @@ function generarColores(K) {
   const colores = [];
   for (let i = 0; i < K; i++) {
     const hue = (i * 360) / K;
-    colores.push(`hsla(${hue}, 70%, 50%, 0.25)`); 
+    colores.push(`hsla(${hue}, 70%, 50%, 0.25)`);
   }
   return colores;
 }
@@ -1158,10 +1186,10 @@ if (btnBack) {
         ];
         removeKeys.forEach(k => sessionStorage.removeItem(k));
 
-          notify("Volviendo al paso anterior...", "info");
-          window.cerper.openPage("procedure_select.html");
-        } catch (err) {
-          console.error("[CerperStats] Error al reiniciar:", err);
+        notify("Volviendo al paso anterior...", "info");
+        window.cerper.openPage("procedure_select.html");
+      } catch (err) {
+        console.error("[CerperStats] Error al reiniciar:", err);
         notify("Ocurrió un error al reiniciar.", "error");
       }
     } else {
@@ -1261,105 +1289,20 @@ async function mostrarConfirmacion(titulo, mensaje) {
 
 // === UI flotante para niveles y navegación de páginas ===
 function crearUINivelYPagina() {
-  const container = document.querySelector("main.container") || document.body;
-  container.style.position = "relative";
+  // Usar los elementos que ya existen en el HTML
+  const display = document.getElementById("nivel-display");
+  const dec = document.getElementById("nivel-dec");
+  const inc = document.getElementById("nivel-inc");
+  const badge = document.getElementById("badge-pagina");
 
-  // Control glassy para elegir número de niveles
-  const glass = document.createElement("div");
-  glass.id = "nivel-glass-input";
-  Object.assign(glass.style, {
-    position: "absolute",
-    left: "50%",
-    transform: "translateX(-50%)",
-    top: "4px",
+  if (!display || !dec || !inc) {
+    console.warn("[Step5] Elementos de nivel no encontrados en el HTML");
+    return;
+  }
 
-    padding: "10px 15px",
-    background:
-      "linear-gradient(135deg, rgba(255,255,255,0.38), rgba(255,255,255,0.18))",
-    border: "1px solid rgba(255,255,255,0.70)",
-    borderRadius: "18px",
-    boxShadow: "0 18px 40px rgba(0,0,0,0.35)",
-    backdropFilter: "blur(60px) saturate(180%)",
-    WebkitBackdropFilter: "blur(18px) saturate(180%)",
+  // Actualizar display inicial
+  display.textContent = String(niveles);
 
-    color: "#1a100fff",
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    zIndex: 30,
-    fontFamily:
-      "-apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif",
-    fontWeight: "600",
-    fontSize: "14px",
-  });
-
-  glass.innerHTML = `
-    <span style="
-      font-weight:700;
-      font-size:15px;
-      letter-spacing:0.3px;
-      color:#f0f0f0;
-      font-family:-apple-system, BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;
-    ">
-      Niveles
-    </span>
-    <div style="
-      display:flex;
-      align-items:center;
-      gap:10px;
-      background: linear-gradient(
-        135deg,
-        rgba(255,255,255,0.32),
-        rgba(255,255,255,0.14)
-      );
-      padding: 6px 10px;
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,0.65);
-      box-shadow:
-        0 8px 22px rgba(0,0,0,0.25),
-        inset 0 1px 0 rgba(255,255,255,0.55);
-    ">
-      <button id="nivel-dec" aria-label="Disminuir nivel" style="
-        width:32px;height:32px;
-        background: transparent;
-        color:#e4e4e4;
-        cursor:pointer;
-        font-size:20px;
-        line-height:0;
-        border:none;
-        outline:none;
-        box-shadow:none;
-        -webkit-appearance:none;
-        appearance:none;
-      ">−</button>
-      <div id="nivel-display" style="
-        min-width:64px;
-        text-align:center;
-        color:#f4f4f8;
-        font-size:16px;
-        font-weight:700;
-        letter-spacing:0.4px;
-      ">${niveles}</div>
-      <button id="nivel-inc" aria-label="Aumentar nivel" style="
-        width:32px;height:32px;
-        background: transparent;
-        color:#e4e4e4;
-        cursor:pointer;
-        font-size:20px;
-        line-height:0;
-        border:none;
-        outline:none;
-        box-shadow:none;
-        -webkit-appearance:none;
-        appearance:none;
-      ">+</button>
-    </div>
-  `;
-  container.appendChild(glass);
-
-  const display = glass.querySelector("#nivel-display");
-  const dec = glass.querySelector("#nivel-dec");
-  const inc = glass.querySelector("#nivel-inc");
   const setNiveles = (val) => {
     if (typeof guardarSnapshot === "function") {
       guardarSnapshot(paginaActual);
@@ -1375,54 +1318,15 @@ function crearUINivelYPagina() {
     actualizarBadge();
     restaurarPagina(paginaActual);
   };
+
   dec.addEventListener("click", () => setNiveles(niveles - 1));
   inc.addEventListener("click", () => setNiveles(niveles + 1));
 
-  // Badge glassy para página actual
-  const badge = document.createElement("div");
-  badge.id = "badge-pagina";
-  badge.textContent = `pág. ${paginaActual}/${niveles}`;
-  Object.assign(badge.style, {
-    position: "absolute",
-    right: "20px",
-    top: "25px",
-    padding: "9px 14px",
-    background:
-      "linear-gradient(135deg, rgba(255, 255, 255, 0.11), rgba(255,255,255,0.16))",
-    color: "#b6b6beff",
-    borderRadius: "14px",
-    cursor: "pointer",
-    zIndex: 30,
-    boxShadow: "0 14px 30px rgba(0,0,0,0.35)",
-    userSelect: "none",
-    border: "1px solid rgba(255,255,255,0.65)",
-    WebkitBackdropFilter: "blur(14px) saturate(180%)",
-    fontFamily:
-      "-apple-system, BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif",
-    fontSize: "13px",
-    fontWeight: "700",
-    letterSpacing: "0.25px",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    transition: "all .22s ease",
-  });
-
-  badge.addEventListener("mouseenter", () => {
-    badge.style.background =
-      "linear-gradient(135deg, rgba(255,255,255,0.46), rgba(255,255,255,0.24))";
-    badge.style.boxShadow = "0 18px 38px rgba(0,0,0,0.40)";
-    badge.style.transform = "translateY(-1px)";
-  });
-  badge.addEventListener("mouseleave", () => {
-    badge.style.background =
-      "linear-gradient(135deg, rgba(255,255,255,0.32), rgba(255,255,255,0.16))";
-    badge.style.boxShadow = "0 14px 30px rgba(0,0,0,0.35)";
-    badge.style.transform = "translateY(0)";
-  });
-
-  badge.onclick = () => irANivel((paginaActual % niveles) + 1);
-  container.appendChild(badge);
+  // Configurar badge de página
+  if (badge) {
+    badge.textContent = `pág. ${paginaActual}/${niveles}`;
+    badge.onclick = () => irANivel((paginaActual % niveles) + 1);
+  }
 }
 
 function actualizarBadge() {
@@ -1452,7 +1356,7 @@ function guardarSnapshot(nivel) {
 function restaurarPagina(nivel) {
   const table = document.getElementById("excel");
   if (!table) return;
-  const tipoActual = sessionStorage.getItem("tipoAnalisis") || "mono";
+  const tipoActual = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
   const esMulti = (tipoActual === "multi" || tipoActual === "multianalito");
   generarTabla(tipoActual);
 
@@ -1494,4 +1398,3 @@ function irANivel(nivel) {
   const target = ((nivel - 1 + niveles) % niveles) + 1;
   restaurarPagina(target);
 }
-

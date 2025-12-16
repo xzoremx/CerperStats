@@ -15,7 +15,7 @@
     "image": "assets/logos/procedures/intralaboratorios.webp"
   },
   "intercomparacion": {
-    "title": "Intercomparacion",
+    "title": "Intercomparación",
     "description": "Comparación de resultados entre laboratorios para verificar desempeno y detectar sesgos, aplicando estadística de comparacion interlab.",
     "image": "assets/logos/procedures/intercomparacion.webp"
   }

@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const headerLogo = document.getElementById("header-logo");
   const headerTitle = document.getElementById("header-title");
   const labSubtitle = document.getElementById("lab-subtitle");
+  const labSubtitleIcon = document.getElementById("lab-subtitle-icon");
   const procedureDescription = document.getElementById("procedure-description");
 
   const preinfoState = {
@@ -52,6 +53,48 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (labTitle) labTitle.textContent = `${labName} - ${proc}`;
   if (labSubtitle) labSubtitle.textContent = labName || "Laboratorio";
+
+  // Inicializar icono del laboratorio
+  function initLabIcon() {
+    if (!labSubtitleIcon) return;
+
+    const DEFAULT_LAB_ICON = "flask-conical";
+    const DEFAULT_LAB_COLOR = "#22d3ee";
+
+    const storedIcon =
+      sessionStorage.getItem("labIcon") ||
+      localStorage.getItem("labIcon") ||
+      "";
+    const labIcon = storedIcon || DEFAULT_LAB_ICON;
+
+    const storedColor =
+      sessionStorage.getItem("labColor") ||
+      localStorage.getItem("labColor") ||
+      "";
+    const labColor = (storedColor || DEFAULT_LAB_COLOR).trim();
+    
+    if (labColor) {
+      labSubtitleIcon.style.color = labColor;
+    }
+
+    if (window.IconSafety?.attachIcon) {
+      window.IconSafety.attachIcon(labSubtitleIcon, labIcon).then((ok) => {
+        if (!ok) {
+          labSubtitleIcon.innerHTML = `<i data-lucide="${DEFAULT_LAB_ICON}" class="w-3 h-3"></i>`;
+        }
+        if (window.lucide?.createIcons) {
+          window.lucide.createIcons();
+        }
+      });
+    } else {
+      labSubtitleIcon.innerHTML = `<i data-lucide="${DEFAULT_LAB_ICON}" class="w-3 h-3"></i>`;
+      if (window.lucide?.createIcons) {
+        window.lucide.createIcons();
+      }
+    }
+  }
+
+  initLabIcon();
 
   const storedTitle = sessionStorage.getItem("procedimientoTitulo") || proc;
   const storedDesc =

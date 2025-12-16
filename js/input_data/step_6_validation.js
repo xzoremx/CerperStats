@@ -1,12 +1,12 @@
 function validarEstructuraYContenido() {
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
   const table = document.getElementById("excel");
   if (!table) return { errores: ["No se encontró la tabla de datos."] };
 
   const rows = [...table.rows];
   const errores = [];
 
-  if (tipoAnalisis === "multi") {
+  if (tipoAnalisis === "multi" || tipoAnalisis === "multianalito") {
     validarMulti(rows, errores);
   } else if (tipoAnalisis === "mono") {
     validarMono(rows, errores);
@@ -493,7 +493,7 @@ function buildMultiAnalitoData(rows, K, lecturas, encabezados, nivel = 1) {
 
 // === Versión multi-nivel de validación (redefine para usar snapshots/páginas) ===
 function validarEstructuraYContenido(opts = {}) {
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
   const nivelesCount =
     opts.niveles ||
     (typeof window.niveles === "number" ? window.niveles : parseInt(sessionStorage.getItem("niveles")) || 1);
@@ -519,7 +519,7 @@ function validarEstructuraYContenido(opts = {}) {
     const rows = [...table.rows];
     const errores = [];
 
-    if (tipoAnalisis === "multi") {
+    if (tipoAnalisis === "multi" || tipoAnalisis === "multianalito") {
       const res = validarMulti(rows, errores, { nivel });
       if (!errores.length && res?.registros) {
         if (!expectedHeaders) {
@@ -568,7 +568,7 @@ function validarEstructuraYContenido(opts = {}) {
   }
 
   const payload = { tipo: tipoAnalisis, niveles: nivelesCount, registros, ...meta };
-  const key = tipoAnalisis === "multi" ? "multiAnalitoDatos" : "monoAnalitoDatos";
+  const key = (tipoAnalisis === "multi" || tipoAnalisis === "multianalito") ? "multiAnalitoDatos" : "monoAnalitoDatos";
   sessionStorage.setItem(key, JSON.stringify(payload));
   notify("Datos validados correctamente en todos los niveles.", "success");
   return true;
@@ -580,7 +580,7 @@ window.guardarDataframeTemp = guardarDataframeTemp;
 
 // --- Validación alternativa usando snapshots por nivel (evita tocar el DOM y mezclar páginas) ---
 function validarEstructuraYContenidoSnapshots(opts = {}) {
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
   const nivelesCount =
     opts.niveles ||
     (typeof window.niveles === "number" ? window.niveles : parseInt(sessionStorage.getItem("niveles")) || 1);
@@ -603,7 +603,7 @@ function validarEstructuraYContenidoSnapshots(opts = {}) {
     const rows = snapshotToRows(snap);
     const errores = [];
 
-    if (tipoAnalisis === "multi") {
+    if (tipoAnalisis === "multi" || tipoAnalisis === "multianalito") {
       const res = validarMulti(rows, errores, { nivel });
       if (!errores.length && res?.registros) {
         if (!expectedHeaders) {
@@ -641,7 +641,7 @@ function validarEstructuraYContenidoSnapshots(opts = {}) {
   }
 
   const payload = { tipo: tipoAnalisis, niveles: nivelesCount, registros, ...meta };
-  const key = tipoAnalisis === "multi" ? "multiAnalitoDatos" : "monoAnalitoDatos";
+  const key = (tipoAnalisis === "multi" || tipoAnalisis === "multianalito") ? "multiAnalitoDatos" : "monoAnalitoDatos";
   sessionStorage.setItem(key, JSON.stringify(payload));
   notify("Datos validados correctamente en todos los niveles.", "success");
   return true;
@@ -661,8 +661,8 @@ window.validarEstructuraYContenido = validarEstructuraYContenidoSnapshots;
 async function guardarDataframeTemp() {
   try {
     const session_id = sessionStorage.getItem("sessionID") || null;
-    const tipo = sessionStorage.getItem("tipoAnalisis") || "mono";
-    const key = (tipo === "multi") ? "multiAnalitoDatos" : "monoAnalitoDatos";
+    const tipo = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
+    const key = (tipo === "multi" || tipo === "multianalito") ? "multiAnalitoDatos" : "monoAnalitoDatos";
     const jsonStr = sessionStorage.getItem(key);
     const dataObj = JSON.parse(jsonStr);
     const registros = dataObj.registros || [];
@@ -709,7 +709,7 @@ async function guardarDataframeTemp() {
           });
         });
       });
-    } else if (tipo === "multi") {
+    } else if (tipo === "multi" || tipo === "multianalito") {
       dataObj.datosPorParametro.forEach(bloque => {
         const parametro = bloque.parametro;
 
@@ -747,7 +747,7 @@ async function guardarDataframeTemp() {
     else
       notify(`Error guardando datos: ${res.error}`, "error");
 
-    return res; 
+    return res;
 
   } catch (e) {
     console.error(`[CerperStats] Excepción en guardarDataframeTemp:`, e);
