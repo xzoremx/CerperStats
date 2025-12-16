@@ -1,19 +1,143 @@
-.watermark-glass {
-  position: fixed;
-  left: 50%;
-  bottom: 1.25rem;
-  transform: translateX(-50%);
-  padding: 0.25rem 0.65rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  background: rgba(255, 255, 255, 0);
-  border: 1px solid rgba(148, 163, 184, 0.7);
-  color: #e5e7eb;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.28);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-  pointer-events: none;
-  z-index: 9999;
+/* Scrollbar glass moderna */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: rgba(255, 255, 255, 0.5);
+  background-clip: padding-box;
+}
+
+/* Para Firefox (si es necesario en el futuro) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.1);
+}
+
+/* Barra de título estilo Apple */
+#apple-titlebar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 40px !important;
+  background: rgba(5, 5, 7, 0.85) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 12px !important;
+  z-index: 999999 !important;
+  -webkit-app-region: drag !important;
+  user-select: none !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+#apple-titlebar-buttons {
+  display: flex !important;
+  gap: 8px !important;
+  -webkit-app-region: no-drag !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.apple-titlebar-button {
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 8px !important;
+  font-weight: 600 !important;
+  color: transparent !important;
+  position: relative !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.apple-titlebar-button:hover {
+  color: rgba(0, 0, 0, 0.6) !important;
+  transform: scale(1.1) !important;
+}
+
+.apple-titlebar-button.close {
+  background: #ff5f57 !important;
+}
+
+.apple-titlebar-button.close:hover {
+  background: #ff3b30 !important;
+}
+
+.apple-titlebar-button.minimize {
+  background: #ffbd2e !important;
+}
+
+.apple-titlebar-button.minimize:hover {
+  background: #ff9500 !important;
+}
+
+.apple-titlebar-button.maximize {
+  background: #28c840 !important;
+}
+
+.apple-titlebar-button.maximize:hover {
+  background: #20d046 !important;
+}
+
+#apple-titlebar-title {
+  position: absolute !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  pointer-events: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ajustar contenido para la barra de título */
+html {
+  margin-top: 0;
+}
+
+body {
+  margin-top: 0 !important;
+  position: relative;
+  padding-top: 40px !important;
+  box-sizing: border-box !important;
+}
+
+/* Ajustar elementos con min-height: 100vh para que no se extiendan debajo de la barra */
+body[style*="min-height"] {
+  min-height: calc(100vh - 40px) !important;
 }

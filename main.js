@@ -1,5 +1,6 @@
 // main.js
 const { app, BrowserWindow, ipcMain, Menu, nativeImage } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const { registerExternalUrlSecurity } = require('./js/security/external_url_security');
 let mainWindow;
@@ -34,6 +35,71 @@ const APP_ROOT = path.resolve(__dirname);
 const ALLOWED_LOCAL_FILES = new Set(
   Array.from(ROUTES).map(route => path.resolve(APP_ROOT, route))
 );
+// === CSS global para scrollbar glass y estilos modernos ===
+const GLOBAL_STYLES = (() => {
+  try {
+    return fs.readFileSync(path.join(__dirname, 'css', 'global.css'), 'utf8');
+  } catch (err) {
+    console.error('[GLOBAL_CSS] Error leyendo css/global.css:', err);
+    return '';
+  }
+})();
+
+// === JavaScript para funcionalidad de la barra de título ===
+const APPLE_TITLEBAR_JS = `
+  (function() {
+    if (document.getElementById('apple-titlebar')) return;
+    
+    // Ajustar body si tiene min-height: 100vh
+    const bodyStyle = window.getComputedStyle(document.body);
+    if (bodyStyle.minHeight === '100vh' || bodyStyle.minHeight === '100%') {
+      document.body.style.minHeight = 'calc(100vh - 40px)';
+    }
+    
+    const titlebar = document.createElement('div');
+    titlebar.id = 'apple-titlebar';
+    titlebar.innerHTML = '<div id="apple-titlebar-buttons"><button class="apple-titlebar-button close" id="apple-btn-close" title="Cerrar">×</button><button class="apple-titlebar-button minimize" id="apple-btn-minimize" title="Minimizar">−</button><button class="apple-titlebar-button maximize" id="apple-btn-maximize" title="Maximizar">□</button></div><div id="apple-titlebar-title">CerperStats</div>';
+    document.body.insertBefore(titlebar, document.body.firstChild);
+    
+    const closeBtn = document.getElementById('apple-btn-close');
+    const minimizeBtn = document.getElementById('apple-btn-minimize');
+    const maximizeBtn = document.getElementById('apple-btn-maximize');
+    
+    if (closeBtn && window.cerper) {
+      closeBtn.addEventListener('click', () => {
+        window.cerper.windowClose();
+      });
+    }
+    
+    if (minimizeBtn && window.cerper) {
+      minimizeBtn.addEventListener('click', () => {
+        window.cerper.windowMinimize();
+      });
+    }
+    
+    if (maximizeBtn && window.cerper) {
+      maximizeBtn.addEventListener('click', () => {
+        window.cerper.windowMaximize();
+      });
+      
+      // Actualizar ícono cuando se maximiza/restaura
+      setInterval(async () => {
+        try {
+          const isMaximized = await window.cerper.windowIsMaximized();
+          maximizeBtn.textContent = isMaximized ? '❐' : '□';
+        } catch (e) {}
+      }, 500);
+    }
+    
+    // Actualizar título de la ventana
+    const titleElement = document.getElementById('apple-titlebar-title');
+    if (titleElement) {
+      const pageTitle = document.title || 'CerperStats';
+      titleElement.textContent = pageTitle.replace(' - CerperStats', '').replace(' | CerperStats', '');
+    }
+  })();
+`;
+
 // === Crear ventana principal ===
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -42,6 +108,7 @@ function createWindow() {
     minWidth: 1100,
     minHeight: 700,
     icon: browserIcon,
+    frame: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -53,6 +120,13 @@ function createWindow() {
     },
   });
   Menu.setApplicationMenu(null);
+  
+  // Inyectar estilos y barra de título cuando se carga cualquier página
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.insertCSS(GLOBAL_STYLES);
+    mainWindow.webContents.executeJavaScript(APPLE_TITLEBAR_JS);
+  });
+  
   mainWindow.loadFile('login.html'); // Pantalla inicial
 
   mainWindow.webContents.on('before-input-event', (event, input) => {
@@ -125,7 +199,7 @@ ipcMain.handle('open-page', async (_event, page) => {
 // === Proxy REST (reemplaza acceso directo a PostgreSQL) ===
 require('dotenv').config();
 
-const DEFAULT_PROXY_RUN_URL = "http://localhost:4000/run-eval";
+const DEFAULT_PROXY_RUN_URL = "http://localhost:4000/run-eval"; //fallback local 
 const PROXY_RUN_URL =
   process.env.CERPER_PROXY_URL ||
   process.env.CERPER_EVAL_URL ||
@@ -360,4 +434,30 @@ ipcMain.handle("db-get-tests-with-metadata", async (event, session_id) => {
     console.error("[PROXY] Error en metadata unificada:", err);
     return { ok: false, error: err.message };
   }
+});
+
+// === Control de ventana estilo Apple ===
+ipcMain.handle("window-minimize", () => {
+  if (mainWindow) mainWindow.minimize();
+  return { ok: true };
+});
+
+ipcMain.handle("window-maximize", () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  }
+  return { ok: true };
+});
+
+ipcMain.handle("window-close", () => {
+  if (mainWindow) mainWindow.close();
+  return { ok: true };
+});
+
+ipcMain.handle("window-is-maximized", () => {
+  return mainWindow ? mainWindow.isMaximized() : false;
 });

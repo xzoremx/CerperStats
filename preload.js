@@ -34,6 +34,11 @@ contextBridge.exposeInMainWorld('cerper', {
     ipcRenderer.invoke("db-delete-session-deep", session_id),
   getCurrentUser: () => ipcRenderer.invoke("auth-get-current-user"),
   logout: () => ipcRenderer.invoke("auth-logout"),
+  // Control de ventana estilo Apple
+  windowMinimize: () => ipcRenderer.invoke("window-minimize"),
+  windowMaximize: () => ipcRenderer.invoke("window-maximize"),
+  windowClose: () => ipcRenderer.invoke("window-close"),
+  windowIsMaximized: () => ipcRenderer.invoke("window-is-maximized"),
 });
 
 // Exponer configuración de iconos (leer archivos locales de forma segura)
