@@ -9,23 +9,39 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (btnVolver) {
     btnVolver.addEventListener("click", () => {
       if (window.cerper && window.cerper.openPage) {
-        window.cerper.openPage("input_data/step_5_sheet.html");
+        window.cerper.openPage("input_data/input_data_sheet.html");
       } else {
-        window.location.href = "step_5_sheet.html";
+        window.location.href = "input_data/input_data_sheet.html";
       }
     });
   }
 
   // === Obtener contexto de sesión ===
-  const labKey = sessionStorage.getItem("labSeleccionado");
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis");
+  const labKey =
+    sessionStorage.getItem("labSeleccionado") ||
+    localStorage.getItem("labSeleccionado");
+  const tipoAnalisis =
+    sessionStorage.getItem("tipoAnalisis") ||
+    sessionStorage.getItem("modoAnalito");
   const tipoDato = sessionStorage.getItem("tipoDato");
   const modoCualitativo = sessionStorage.getItem("modoCualitativo");
   const sessionId = sessionStorage.getItem("sessionID");
 
-  if (!labKey || !tipoAnalisis || !tipoDato) {
+  // Normalizar alias históricos para evitar perder contexto entre páginas
+  if (tipoAnalisis && !sessionStorage.getItem("tipoAnalisis")) {
+    sessionStorage.setItem("tipoAnalisis", tipoAnalisis);
+  }
+  if (labKey && !sessionStorage.getItem("labSeleccionado")) {
+    sessionStorage.setItem("labSeleccionado", labKey);
+  }
+
+  if (!labKey || !tipoAnalisis || !tipoDato || !sessionId) {
     notify("Faltan datos de sesión. Regresa al paso anterior.", "error");
-    window.cerper.openPage("input_data/step_5_sheet.html");
+    if (window.cerper && typeof window.cerper.openPage === "function") {
+      window.cerper.openPage("input_data/input_data_sheet.html");
+    } else {
+      window.location.href = "input_data/input_data_sheet.html";
+    }
     return;
   }
 
@@ -194,5 +210,4 @@ window.notify = function (message, type = "info") {
   setTimeout(() => div.classList.remove("show"), 2800);
   setTimeout(() => div.remove(), 3300);
 };
-
 

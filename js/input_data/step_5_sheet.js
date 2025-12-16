@@ -25,6 +25,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnBack = document.getElementById("btn-go-back") || document.getElementById("go-back");
   const sessionId = sessionStorage.getItem("sessionID");
   const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
+  if (!sessionStorage.getItem("tipoAnalisis")) {
+    sessionStorage.setItem("tipoAnalisis", tipoAnalisis);
+  }
   sessionStorage.removeItem("niveles");
   localStorage.removeItem("niveles");
   niveles = 1;
@@ -198,7 +201,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             ensayo: sessionStorage.getItem("ensayo"),
             expediente: sessionStorage.getItem("expediente"),
             unidad: sessionStorage.getItem("unidad"),
-            tipo_analisis: sessionStorage.getItem("tipoAnalisis"),
+            tipo_analisis: tipoAnalisis,
             tipo_dato: sessionStorage.getItem("tipoDato"),
             modo_cualitativo: sessionStorage.getItem("modoCualitativo"),
             parametro: sessionStorage.getItem("parametroSeleccionado"),
