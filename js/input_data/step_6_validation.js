@@ -1,193 +1,237 @@
-function validarEstructuraYContenido() {
+/**
+ * step_6_validation.js
+ * 
+ * Responsabilidades:
+ * - Validación visual automática (colorea celdas según validez)
+ * - Validación estructural de datos (encabezados, rangos, valores)
+ * - Construcción de estructuras de datos para guardar
+ * 
+ * Depende de: validation_utils.js (funciones puras)
+ */
+
+// ============================================================
+// ACCESO A UTILIDADES
+// ============================================================
+const Utils = typeof window !== "undefined" && window.ValidationUtils
+  ? window.ValidationUtils
+  : require("./validation_utils.js");
+
+// ============================================================
+// CONFIGURACIÓN DE COLORES
+// ============================================================
+const COLORS = {
+  valid: "rgba(0,255,200,0.18)",
+  validEmpty: "rgba(0,255,200,0.05)",
+  error: "rgba(255,50,50,0.25)",
+  errorMulti: "rgba(255,60,60,0.25)",
+  headerWithData: "rgba(200,200,200,0.10)",
+  transparent: "transparent"
+};
+
+// ============================================================
+// VALIDACIÓN VISUAL AUTOMÁTICA
+// ============================================================
+
+/**
+ * Aplica estilos visuales a las celdas según su validez
+ * Se llama automáticamente en cada input/paste
+ */
+function validarVisual() {
   const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
   const table = document.getElementById("excel");
-  if (!table) return { errores: ["No se encontró la tabla de datos."] };
+  if (!table) return;
 
-  const rows = [...table.rows];
-  const errores = [];
-
-  if (tipoAnalisis === "multi" || tipoAnalisis === "multianalito") {
-    validarMulti(rows, errores);
-  } else if (tipoAnalisis === "mono") {
-    validarMono(rows, errores);
-  } else {
-    errores.push("Tipo de análisis no reconocido.");
-  }
-
-  // --- Resultado final ---
-  if (errores.length > 0) {
-    console.error("Errores detectados:", errores);
-    return { errores };
-  } else {
-    notify("Datos validados correctamente.", "success");
-    return true;
-  }
-}
-
-// --- MULTIANALITO ---
-function validarMulti(rows, errores) {
-  const K = parseInt(sessionStorage.getItem("K")) || 1;
-  const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
-
-  // Encabezados
-  const encabezados = checkEncabezadosMulti(rows, errores);
-  if (errores.length > 0) return;
-
-  // Bloques de datos
-  checkBloquesMulti(rows, K, lecturas, encabezados, errores);
-
-  // Filas fuera de rango
-  checkFilasFueraDeRangoMulti(rows, K, lecturas, errores);
-
-  // Guardar estructura
-  if (errores.length === 0) {
-    const estructura = buildMultiAnalitoData(rows, K, lecturas, encabezados);
-    sessionStorage.setItem("multiAnalitoDatos", JSON.stringify(estructura));
-  }
-}
-
-// --- MONOANALITO ---
-function validarMono(rows, errores) {
   const K = parseInt(sessionStorage.getItem("K")) || 1;
   const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
   const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
   const valoresStr = sessionStorage.getItem("valoresPermitidos");
   const permitidos = valoresStr ? JSON.parse(valoresStr) : null;
-  const filasMax = Math.max(...lecturas);
 
-  // --- Validar encabezados ---
-  const headers = [...rows[0].cells];
-  const nombres = headers.slice(0, K).map(td => td.textContent.trim());
-  const duplicados = nombres.filter((v, i, a) => v && a.indexOf(v) !== i);
-  if (duplicados.length > 0)
-    errores.push(`Encabezados duplicados: ${[...new Set(duplicados)].join(", ")}`);
+  const rows = [...table.rows];
+  const colores = Utils.generarColores(K);
 
-  headers.forEach((td, i) => {
-    const valor = td.textContent.trim();
-    const tieneDatos = rows.slice(1).some(r => (r.cells[i]?.textContent.trim() || "") !== "");
-    if (i >= K && valor !== "")
-      errores.push(`Encabezado fuera de rango (columna ${i + 1}) no debe contener texto.`);
-    else if (!valor && tieneDatos)
-      errores.push(`Encabezado vacío con datos debajo (columna ${i + 1})`);
+  const validationConfig = { tipoDato, valoresPermitidos: permitidos };
+
+  if (tipoAnalisis === "mono") {
+    validarVisualMono(rows, K, lecturas, validationConfig);
+  } else if (tipoAnalisis === "multi" || tipoAnalisis === "multianalito") {
+    validarVisualMulti(rows, K, lecturas, colores, validationConfig);
+  }
+}
+
+/**
+ * Validación visual para modo monoanalito
+ */
+function validarVisualMono(rows, K, lecturas, config) {
+  const columnas = K;
+
+  // --- Validar encabezados fuera de rango ---
+  const headerCells = [...rows[0].cells];
+  headerCells.forEach((td, index) => {
+    if (index >= K) {
+      const valor = td.textContent.trim();
+      td.style.background = valor !== "" ? COLORS.error : COLORS.transparent;
+    } else {
+      td.style.background = COLORS.transparent;
+    }
   });
 
-  // --- Validar lecturas numéricas o cualitativas según tipo ---
-  for (let c = 0; c < K; c++) {
-    const nombre = headers[c].textContent.trim() || `Columna ${c + 1}`;
-    const filasEsperadas = lecturas[c] || lecturas[0] || 1;
-    let lecturasValidas = 0;
+  // --- Validar filas de datos ---
+  for (let r = 1; r < rows.length; r++) {
+    const celdas = [...rows[r].cells];
+    for (let c = 0; c < celdas.length; c++) {
+      const td = celdas[c];
+      td.style.transition = "background 0.15s ease";
 
-    for (let r = 1; r < rows.length; r++) {
-      const td = rows[r].cells[c];
-      if (!td) continue;
+      const dentroRango = Utils.estaDentroDeRango(r, c, K, lecturas);
       const valor = td.textContent.trim();
-      if (!valor) continue;
-
-      const num = parseFloat(valor.replace(",", "."));
-      const dentroRango = r <= filasEsperadas;
 
       if (!dentroRango) {
-        errores.push(`Dato fuera de rango en fila ${r + 1}, columna ${c + 1} (${nombre})`);
+        td.style.background = valor ? COLORS.error : COLORS.transparent;
         continue;
       }
 
-      // --- Validación diferenciada por tipo de dato ---
-      if (tipoDato === "cuantitativo") {
-        if (isNaN(num) || num <= 0)
-          errores.push(`Valor inválido en fila ${r + 1}, columna ${c + 1} (${nombre}). Debe ser > 0`);
-        else
-          lecturasValidas++;
-      }
-
-      else if (tipoDato === "cualitativo") {
-        const esEntero = Number.isInteger(num);
-        if (!permitidos) {
-          errores.push(`No hay valores permitidos definidos para el modo cualitativo.`);
-          return;
-        }
-        if (!esEntero || !permitidos.includes(num))
-          errores.push(`Valor inválido en fila ${r + 1}, columna ${c + 1} (${nombre}). Permitidos: ${permitidos.join(", ")}`);
-        else
-          lecturasValidas++;
+      // Dentro del rango válido
+      if (valor === "") {
+        td.style.background = COLORS.validEmpty;
+      } else {
+        const resultado = Utils.validateCellValue(valor, config);
+        td.style.background = resultado.valid ? COLORS.valid : COLORS.error;
       }
     }
-
-    if (lecturasValidas < filasEsperadas)
-      errores.push(`Faltan lecturas en ${nombre}: ${lecturasValidas}/${filasEsperadas}`);
-  }
-
-  // --- Validar columnas extra con datos ---
-  for (let c = K; c < headers.length; c++) {
-    const hayDatos = rows.slice(1).some(r => (r.cells[c]?.textContent.trim() || "") !== "");
-    if (hayDatos)
-      errores.push(`Columna adicional (columna ${c + 1}) con datos no permitidos.`);
-  }
-
-  // --- Construcción JSON ---
-  if (errores.length === 0) {
-    const estructura = buildMonoAnalitoData(rows, K, lecturas);
-    sessionStorage.setItem("monoAnalitoDatos", JSON.stringify(estructura));
   }
 }
 
+/**
+ * Validación visual para modo multianalito
+ */
+function validarVisualMulti(rows, K, lecturas, colores, config) {
+  const headers = [...rows[0].cells].slice(1);
 
-// --- Estructura final ---
-function buildMonoAnalitoData(rows, K, lecturas) {
-  const columnas = [...rows[0].cells].slice(0, K).map(td => td.textContent.trim());
-  const lecturasJSON = {};
+  // --- Detectar duplicados en encabezados ---
+  const nombres = headers.map(td => td.textContent.trim().toLowerCase());
+  const duplicados = Utils.findDuplicates(nombres);
 
-  columnas.forEach((col, c) => {
-    lecturasJSON[col] = [];
-    const filasEsperadas = lecturas[c] || lecturas[0] || 1;
+  headers.forEach(td => {
+    const nombre = td.textContent.trim().toLowerCase();
+    const colIndex = [...td.parentElement.cells].indexOf(td);
+    const celdasColumna = rows.slice(1).map(r => r.cells[colIndex]);
+    const tieneDatos = celdasColumna.some(cell => cell?.textContent.trim() !== "");
 
-    for (let r = 1; r <= filasEsperadas && r < rows.length; r++) {
-      const valor = rows[r].cells[c]?.textContent.trim();
-      if (!valor) continue;
-      const num = parseFloat(valor.replace(",", "."));
-      if (!isNaN(num)) lecturasJSON[col].push(num);
+    const esDuplicado = nombre && duplicados.some(d => d.toLowerCase() === nombre);
+    const esVacioConDatos = nombre === "" && tieneDatos;
+
+    if (esDuplicado || esVacioConDatos) {
+      td.style.background = COLORS.errorMulti;
+    } else {
+      td.style.background = tieneDatos ? COLORS.headerWithData : COLORS.transparent;
     }
   });
 
-  return {
-    tipo: "mono",
-    columnas,
-    lecturasPorColumna: lecturas,
-    filasTotales: rows.length - 1,
-    lecturas: lecturasJSON
-  };
+  // --- Validar bloques por parámetro ---
+  let inicioFila = 1;
+  const filasValidas = Utils.calcularFilasValidas(K, lecturas);
+
+  for (let a = 0; a < K; a++) {
+    const colorBase = colores[a];
+    const lecturasActuales = lecturas[a] || lecturas[0] || 1;
+    const finFila = inicioFila + lecturasActuales - 1;
+
+    for (let r = inicioFila; r <= finFila && r < rows.length; r++) {
+      const celdas = [...rows[r].cells];
+      celdas.forEach((td, c) => {
+        td.style.transition = "background 0.2s ease";
+
+        if (c === 0) {
+          td.style.background = COLORS.transparent;
+          td.style.borderTop = `2px solid ${colorBase.replace("0.25", "0.15")}`;
+          return;
+        }
+
+        const valor = td.textContent.trim();
+        if (valor === "") {
+          td.style.background = colorBase.replace("0.25", "0.07");
+        } else {
+          const resultado = Utils.validateCellValue(valor, config);
+          td.style.background = resultado.valid
+            ? colorBase.replace("0.25", "0.15")
+            : COLORS.errorMulti;
+        }
+      });
+    }
+
+    inicioFila = finFila + 1;
+  }
+
+  // --- Validar columna fija fuera de rango ---
+  for (let r = 1; r < rows.length; r++) {
+    const td = rows[r].cells[0];
+    if (r > filasValidas) {
+      const valor = td.textContent.trim();
+      td.style.background = valor !== "" ? COLORS.error : COLORS.transparent;
+      td.style.color = "";
+      td.style.fontWeight = "";
+    } else {
+      td.style.background = COLORS.transparent;
+      td.style.color = "";
+      td.style.fontWeight = "";
+    }
+  }
+
+  // --- Validar filas fuera del rango total ---
+  for (let r = filasValidas + 1; r < rows.length; r++) {
+    const celdas = [...rows[r].cells];
+    celdas.forEach((td, c) => {
+      if (c === 0) return;
+      const valor = td.textContent.trim();
+      td.style.background = valor !== "" ? COLORS.errorMulti : COLORS.transparent;
+    });
+  }
 }
 
+// ============================================================
+// VALIDACIÓN ESTRUCTURAL Y DE CONTENIDO
+// ============================================================
 
-
-
-// --- Multianalito: Encabezados ---
+/**
+ * Valida encabezados multianalito
+ * @returns {string[]} Lista de encabezados válidos
+ */
 function checkEncabezadosMulti(rows, errores) {
   const headers = [...rows[0].cells].slice(1);
   const nombres = headers.map(td => td.textContent.trim()).filter(Boolean);
-  const duplicados = nombres.filter((v, i, a) => a.indexOf(v) !== i);
+  const duplicados = Utils.findDuplicates(nombres);
 
-  if (duplicados.length > 0)
+  if (duplicados.length > 0) {
     errores.push(`Encabezados duplicados: ${[...new Set(duplicados)].join(", ")}`);
+  }
 
   headers.forEach((td, i) => {
     const nombre = td.textContent.trim();
     const colIndex = i + 1;
     const tieneDatos = rows.slice(1).some(r => (r.cells[colIndex]?.textContent.trim() || "") !== "");
-    if (!nombre && tieneDatos)
+    if (!nombre && tieneDatos) {
       errores.push(`Encabezado vacío con datos debajo (columna ${colIndex + 1})`);
+    }
   });
 
   return headers.map(td => td.textContent.trim()).filter(Boolean);
 }
 
-
-// --- Multianalito: Bloques de datos (rango dinámico según encabezados y tipo de análisis) ---
+/**
+ * Valida bloques de datos multianalito
+ */
 function checkBloquesMulti(rows, K, lecturas, encabezados, errores) {
   const columnasValidas = encabezados
     .map((h, i) => ({ nombre: h, idx: i + 1 }))
     .filter(c => c.nombre && !/nuevo/i.test(c.nombre));
 
-  const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo"; // cuanti o cuali
+  // Leer configuración UNA sola vez (fix del bug 3)
+  const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
+  const valoresStr = sessionStorage.getItem("valoresPermitidos");
+  const permitidos = valoresStr ? JSON.parse(valoresStr) : null;
+  const config = { tipoDato, valoresPermitidos: permitidos };
+
   let filaActual = 1;
 
   for (let a = 0; a < K; a++) {
@@ -205,48 +249,18 @@ function checkBloquesMulti(rows, K, lecturas, encabezados, errores) {
         const valor = td.textContent.trim();
         const celdaPos = `fila ${filaActual + r + 1}, columna ${col.idx + 1}`;
 
-        // === 1) Celda vacía dentro del rango válido ===
         if (valor === "") {
           errores.push(`Celda vacía no permitida dentro del rango (${parametro}, ${celdaPos})`);
           td.style.outline = "2px solid #ff0033";
           return;
         }
 
-        // === 2) Validaciones específicas según tipo de análisis ===
-        const num = parseFloat(valor.replace(",", "."));
-
-        if (isNaN(num)) {
-          errores.push(`Valor no numérico en ${parametro}, ${celdaPos}`);
+        const resultado = Utils.validateCellValue(valor, config);
+        if (!resultado.valid) {
+          errores.push(`Valor inválido (${parametro}, ${celdaPos}). ${resultado.error}`);
           td.style.outline = "2px solid #ff0033";
-          return;
-        }
-
-        if (tipoDato === "cuantitativo") {
-          // --- Cuantitativo: solo números reales mayores a 0 ---
-          if (num <= 0) {
-            errores.push(`Valor no permitido (${parametro}, ${celdaPos}). Debe ser > 0`);
-            td.style.outline = "2px solid #ff0033";
-          } else {
-            td.style.outline = "";
-          }
-        }
-
-        else if (tipoDato === "cualitativo") {
-          // --- Cualitativo: solo valores enteros dentro del conjunto permitido ---
-          const valoresStr = sessionStorage.getItem("valoresPermitidos");
-          const permitidos = valoresStr ? JSON.parse(valoresStr) : null;
-
-          const esEntero = Number.isInteger(num);
-
-          if (!permitidos) {
-            errores.push(`No hay valores permitidos definidos para este modo cualitativo.`);
-            td.style.outline = "2px solid #ff0033";
-          } else if (!esEntero || !permitidos.includes(num)) {
-            errores.push(`Valor inválido (${parametro}, ${celdaPos}). Permitidos: ${permitidos.join(", ")}`);
-            td.style.outline = "2px solid #ff0033";
-          } else {
-            td.style.outline = "";
-          }
+        } else {
+          td.style.outline = "";
         }
       });
     }
@@ -254,7 +268,7 @@ function checkBloquesMulti(rows, K, lecturas, encabezados, errores) {
     filaActual += lecturasEsperadas;
   }
 
-  // === 3) Revisión global adicional: filas vacías completas entre la primera y última con datos ===
+  // Revisión de filas vacías completas
   const primeraFila = rows.findIndex(
     (r, i) => i > 0 && columnasValidas.some(c => (r.cells[c.idx]?.textContent.trim() || "") !== "")
   );
@@ -278,13 +292,11 @@ function checkBloquesMulti(rows, K, lecturas, encabezados, errores) {
   }
 }
 
-
-
-
-// ---Multianalito: Filas fuera de rango ---
+/**
+ * Valida filas fuera de rango multianalito
+ */
 function checkFilasFueraDeRangoMulti(rows, K, lecturas, errores) {
-  let filasValidas = 0;
-  for (let a = 0; a < K; a++) filasValidas += (lecturas[a] || lecturas[0] || 1);
+  const filasValidas = Utils.calcularFilasValidas(K, lecturas);
 
   for (let r = filasValidas + 1; r < rows.length; r++) {
     const fila = rows[r];
@@ -293,140 +305,13 @@ function checkFilasFueraDeRangoMulti(rows, K, lecturas, errores) {
   }
 }
 
+// ============================================================
+// CONSTRUCCIÓN DE ESTRUCTURAS DE DATOS
+// ============================================================
 
-// ---Multianalito: Estructura final JSON ---
-function buildMultiAnalitoData(rows, K, lecturas, encabezados) {
-  let filaActual = 1;
-  const parametros = [];
-  const datosPorParametro = [];
-
-  for (let a = 0; a < K; a++) {
-    const parametro = rows[filaActual]?.cells[0]?.textContent.trim() || `Parámetro ${a + 1}`;
-    const lecturasActuales = lecturas[a] || lecturas[0] || 1;
-    const bloque = {};
-
-    encabezados.forEach(h => bloque[h] = []);
-
-    for (let r = 0; r < lecturasActuales; r++) {
-      const tr = rows[filaActual + r];
-      if (!tr) continue;
-      const celdas = [...tr.cells].slice(1);
-      celdas.forEach((td, idx) => {
-        const valor = td.textContent.trim();
-        if (!valor) return;
-        const num = parseFloat(valor.replace(",", "."));
-        if (!isNaN(num)) bloque[encabezados[idx]].push(num);
-      });
-    }
-
-    parametros.push(parametro);
-    datosPorParametro.push({ parametro, lecturas: bloque });
-    filaActual += lecturasActuales;
-  }
-
-  return { tipo: "multi", encabezados, parametros, datosPorParametro };
-}
-
-// === Validaciones redefinidas para soporte multi-nivel (cuando hay paginación de niveles) ===
-function validarMono(rows, errores, ctx = {}) {
-  const K = parseInt(sessionStorage.getItem("K")) || 1;
-  const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
-  const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
-  const valoresStr = sessionStorage.getItem("valoresPermitidos");
-  const permitidos = valoresStr ? JSON.parse(valoresStr) : null;
-  const nivel = ctx.nivel || 1;
-
-  // --- Validar encabezados ---
-  const headers = [...rows[0].cells];
-  const nombres = headers.slice(0, K).map(td => td.textContent.trim());
-  const duplicados = nombres.filter((v, i, a) => v && a.indexOf(v) !== i);
-  if (duplicados.length > 0)
-    errores.push(`Encabezados duplicados: ${[...new Set(duplicados)].join(", ")}`);
-
-  headers.forEach((td, i) => {
-    const valor = td.textContent.trim();
-    const tieneDatos = rows.slice(1).some(r => (r.cells[i]?.textContent.trim() || "") !== "");
-    if (i >= K && valor !== "")
-      errores.push(`Encabezado fuera de rango (columna ${i + 1}) no debe contener texto.`);
-    else if (!valor && tieneDatos)
-      errores.push(`Encabezado vacío con datos debajo (columna ${i + 1})`);
-  });
-
-  // --- Validar lecturas numéricas o cualitativas según tipo ---
-  for (let c = 0; c < K; c++) {
-    const nombre = headers[c].textContent.trim() || `Columna ${c + 1}`;
-    const filasEsperadas = lecturas[c] || lecturas[0] || 1;
-    let lecturasValidas = 0;
-
-    for (let r = 1; r < rows.length; r++) {
-      const td = rows[r].cells[c];
-      if (!td) continue;
-      const valor = td.textContent.trim();
-      if (!valor) continue;
-
-      const num = parseFloat(valor.replace(",", "."));
-      const dentroRango = r <= filasEsperadas;
-
-      if (!dentroRango) {
-        errores.push(`Dato fuera de rango en fila ${r + 1}, columna ${c + 1} (${nombre})`);
-        continue;
-      }
-
-      if (tipoDato === "cuantitativo") {
-        if (isNaN(num) || num <= 0)
-          errores.push(`Valor inválido en fila ${r + 1}, columna ${c + 1} (${nombre}). Debe ser > 0`);
-        else
-          lecturasValidas++;
-      } else if (tipoDato === "cualitativo") {
-        const esEntero = Number.isInteger(num);
-        if (!permitidos) {
-          errores.push(`No hay valores permitidos definidos para el modo cualitativo.`);
-          return;
-        }
-        if (!esEntero || !permitidos.includes(num))
-          errores.push(`Valor inválido en fila ${r + 1}, columna ${c + 1} (${nombre}). Permitidos: ${permitidos.join(", ")}`);
-        else
-          lecturasValidas++;
-      }
-    }
-
-    if (lecturasValidas < filasEsperadas)
-      errores.push(`Faltan lecturas en ${nombre}: ${lecturasValidas}/${filasEsperadas}`);
-  }
-
-  // --- Validar columnas extra con datos ---
-  for (let c = K; c < headers.length; c++) {
-    const hayDatos = rows.slice(1).some(r => (r.cells[c]?.textContent.trim() || "") !== "");
-    if (hayDatos)
-      errores.push(`Columna adicional (columna ${c + 1}) con datos no permitidos.`);
-  }
-
-  if (errores.length === 0) {
-    return buildMonoAnalitoData(rows, K, lecturas, nivel);
-  }
-}
-
-function validarMulti(rows, errores, ctx = {}) {
-  const K = parseInt(sessionStorage.getItem("K")) || 1;
-  const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
-  const nivel = ctx.nivel || 1;
-
-  // Encabezados
-  const encabezados = checkEncabezadosMulti(rows, errores);
-  if (errores.length > 0) return;
-
-  // Bloques de datos
-  checkBloquesMulti(rows, K, lecturas, encabezados, errores);
-
-  // Filas fuera de rango
-  checkFilasFueraDeRangoMulti(rows, K, lecturas, errores);
-
-  if (errores.length === 0) {
-    return buildMultiAnalitoData(rows, K, lecturas, encabezados, nivel);
-  }
-}
-
-// --- Estructuras con nivel incluido ---
+/**
+ * Construye estructura de datos monoanalito con soporte multi-nivel
+ */
 function buildMonoAnalitoData(rows, K, lecturas, nivel = 1) {
   const columnas = [...rows[0].cells].slice(0, K).map(td => td.textContent.trim());
   const registros = [];
@@ -437,7 +322,7 @@ function buildMonoAnalitoData(rows, K, lecturas, nivel = 1) {
     for (let r = 1; r <= filasEsperadas && r < rows.length; r++) {
       const valor = rows[r].cells[c]?.textContent.trim();
       if (!valor) continue;
-      const num = parseFloat(valor.replace(",", "."));
+      const num = Utils.parseNumericValue(valor);
       if (!isNaN(num)) {
         registros.push({
           parametro: col,
@@ -453,11 +338,15 @@ function buildMonoAnalitoData(rows, K, lecturas, nivel = 1) {
   return {
     tipo: "mono",
     columnas,
+    lecturas,
     lecturasPorColumna: lecturas,
     registros
   };
 }
 
+/**
+ * Construye estructura de datos multianalito con soporte multi-nivel
+ */
 function buildMultiAnalitoData(rows, K, lecturas, encabezados, nivel = 1) {
   let filaActual = 1;
   const registros = [];
@@ -472,7 +361,7 @@ function buildMultiAnalitoData(rows, K, lecturas, encabezados, nivel = 1) {
       encabezados.forEach((h, idx) => {
         const val = tr.cells[idx + 1]?.textContent.trim();
         if (!val) return;
-        const num = parseFloat(val.replace(",", "."));
+        const num = Utils.parseNumericValue(val);
         if (!isNaN(num)) {
           registros.push({
             parametro,
@@ -491,94 +380,112 @@ function buildMultiAnalitoData(rows, K, lecturas, encabezados, nivel = 1) {
   return { tipo: "multi", encabezados, lecturas, registros };
 }
 
-// === Versión multi-nivel de validación (redefine para usar snapshots/páginas) ===
-function validarEstructuraYContenido(opts = {}) {
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
-  const nivelesCount =
-    opts.niveles ||
-    (typeof window.niveles === "number" ? window.niveles : parseInt(sessionStorage.getItem("niveles")) || 1);
+// ============================================================
+// VALIDACIÓN MONOANALITO
+// ============================================================
 
-  const erroresTotales = [];
-  const registros = [];
-  const meta = {};
-  let expectedHeaders = null;
+function validarMono(rows, errores, ctx = {}) {
+  const K = parseInt(sessionStorage.getItem("K")) || 1;
+  const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
+  const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
+  const valoresStr = sessionStorage.getItem("valoresPermitidos");
+  const permitidos = valoresStr ? JSON.parse(valoresStr) : null;
+  const config = { tipoDato, valoresPermitidos: permitidos };
+  const nivel = ctx.nivel || 1;
 
-  // Backup de snapshots para no corromper otras páginas durante la validación
-  const snapshotRef = (typeof window.snapshotPorNivel === "object" && window.snapshotPorNivel) ? window.snapshotPorNivel : null;
-  const snapshotBackup = snapshotRef ? JSON.parse(JSON.stringify(snapshotRef)) : null;
+  // Validar encabezados
+  const headers = [...rows[0].cells];
+  const nombres = headers.slice(0, K).map(td => td.textContent.trim());
+  const duplicados = Utils.findDuplicates(nombres);
+  if (duplicados.length > 0) {
+    errores.push(`Encabezados duplicados: ${[...new Set(duplicados)].join(", ")}`);
+  }
 
-  const paginaOriginal = typeof window.paginaActual === "number" ? window.paginaActual : 1;
-  if (typeof window.guardarSnapshot === "function") window.guardarSnapshot(paginaOriginal);
+  headers.forEach((td, i) => {
+    const valor = td.textContent.trim();
+    const tieneDatos = rows.slice(1).some(r => (r.cells[i]?.textContent.trim() || "") !== "");
+    if (i >= K && valor !== "") {
+      errores.push(`Encabezado fuera de rango (columna ${i + 1}) no debe contener texto.`);
+    } else if (!valor && tieneDatos) {
+      errores.push(`Encabezado vacío con datos debajo (columna ${i + 1})`);
+    }
+  });
 
-  for (let nivel = 1; nivel <= nivelesCount; nivel++) {
-    if (typeof window.restaurarPagina === "function") window.restaurarPagina(nivel);
+  // Validar lecturas
+  for (let c = 0; c < K; c++) {
+    const nombre = headers[c].textContent.trim() || `Columna ${c + 1}`;
+    const filasEsperadas = lecturas[c] || lecturas[0] || 1;
+    let lecturasValidas = 0;
 
-    const table = document.getElementById("excel");
-    if (!table) return { errores: ["No se encontró la tabla de datos."] };
+    for (let r = 1; r < rows.length; r++) {
+      const td = rows[r].cells[c];
+      if (!td) continue;
+      const valor = td.textContent.trim();
+      if (!valor) continue;
 
-    const rows = [...table.rows];
-    const errores = [];
+      const dentroRango = r <= filasEsperadas;
 
-    if (tipoAnalisis === "multi" || tipoAnalisis === "multianalito") {
-      const res = validarMulti(rows, errores, { nivel });
-      if (!errores.length && res?.registros) {
-        if (!expectedHeaders) {
-          expectedHeaders = res.encabezados ? [...res.encabezados] : null;
-        } else if (expectedHeaders && res.encabezados) {
-          const sameLength = expectedHeaders.length === res.encabezados.length;
-          const sameOrder = sameLength && expectedHeaders.every((h, idx) => h === res.encabezados[idx]);
-          if (!sameLength || !sameOrder) {
-            errores.push("Los analitos/encabezados no coinciden con el nivel 1.");
-          }
-        }
-        if (errores.length) {
-          erroresTotales.push(...errores.map(e => `[Nivel ${nivel}] ${e}`));
-          continue;
-        }
-        registros.push(...res.registros);
-        meta.encabezados = res.encabezados;
-        meta.lecturas = res.lecturas;
+      if (!dentroRango) {
+        errores.push(`Dato fuera de rango en fila ${r + 1}, columna ${c + 1} (${nombre})`);
+        continue;
       }
-    } else if (tipoAnalisis === "mono") {
-      const res = validarMono(rows, errores, { nivel });
-      if (!errores.length && res?.registros) {
-        registros.push(...res.registros);
-        meta.columnas = res.columnas;
-        meta.lecturas = res.lecturas;
+
+      const resultado = Utils.validateCellValue(valor, config);
+      if (resultado.valid) {
+        lecturasValidas++;
+      } else {
+        errores.push(`Valor inválido en fila ${r + 1}, columna ${c + 1} (${nombre}). ${resultado.error}`);
       }
-    } else {
-      errores.push("Tipo de análisis no reconocido.");
     }
 
-    if (errores.length) erroresTotales.push(...errores.map(e => `[Nivel ${nivel}] ${e}`));
+    if (lecturasValidas < filasEsperadas) {
+      errores.push(`Faltan lecturas en ${nombre}: ${lecturasValidas}/${filasEsperadas}`);
+    }
   }
 
-  if (typeof window.restaurarPagina === "function") window.restaurarPagina(paginaOriginal);
-
-  if (snapshotRef && snapshotBackup) {
-    Object.keys(snapshotRef).forEach(k => delete snapshotRef[k]);
-    Object.entries(snapshotBackup).forEach(([k, v]) => {
-      snapshotRef[k] = v;
-    });
+  // Validar columnas extra
+  for (let c = K; c < headers.length; c++) {
+    const hayDatos = rows.slice(1).some(r => (r.cells[c]?.textContent.trim() || "") !== "");
+    if (hayDatos) {
+      errores.push(`Columna adicional (columna ${c + 1}) con datos no permitidos.`);
+    }
   }
 
-  if (erroresTotales.length > 0) {
-    console.error("Errores detectados:", erroresTotales);
-    return { errores: erroresTotales };
+  if (errores.length === 0) {
+    return buildMonoAnalitoData(rows, K, lecturas, nivel);
   }
-
-  const payload = { tipo: tipoAnalisis, niveles: nivelesCount, registros, ...meta };
-  const key = (tipoAnalisis === "multi" || tipoAnalisis === "multianalito") ? "multiAnalitoDatos" : "monoAnalitoDatos";
-  sessionStorage.setItem(key, JSON.stringify(payload));
-  notify("Datos validados correctamente en todos los niveles.", "success");
-  return true;
 }
 
-// --- Exponer funciones al contexto global ---
-window.validarEstructuraYContenido = validarEstructuraYContenido;
-window.guardarDataframeTemp = guardarDataframeTemp;
+// ============================================================
+// VALIDACIÓN MULTIANALITO
+// ============================================================
 
-// --- Validación alternativa usando snapshots por nivel (evita tocar el DOM y mezclar páginas) ---
+function validarMulti(rows, errores, ctx = {}) {
+  const K = parseInt(sessionStorage.getItem("K")) || 1;
+  const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
+  const nivel = ctx.nivel || 1;
+
+  const encabezados = checkEncabezadosMulti(rows, errores);
+  if (errores.length > 0) return;
+
+  checkBloquesMulti(rows, K, lecturas, encabezados, errores);
+  checkFilasFueraDeRangoMulti(rows, K, lecturas, errores);
+
+  if (errores.length === 0) {
+    return buildMultiAnalitoData(rows, K, lecturas, encabezados, nivel);
+  }
+}
+
+// ============================================================
+// VALIDACIÓN PRINCIPAL (MULTI-NIVEL CON SNAPSHOTS)
+// ============================================================
+
+function snapshotToRows(snap) {
+  return snap.map(row => ({
+    cells: row.map(val => ({ textContent: val ?? "", style: {} }))
+  }));
+}
+
 function validarEstructuraYContenidoSnapshots(opts = {}) {
   const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
   const nivelesCount =
@@ -647,17 +554,10 @@ function validarEstructuraYContenidoSnapshots(opts = {}) {
   return true;
 }
 
-function snapshotToRows(snap) {
-  return snap.map(row => ({
-    cells: row.map(val => ({ textContent: val ?? "", style: {} }))
-  }));
-}
+// ============================================================
+// GUARDADO DE DATAFRAME
+// ============================================================
 
-// Reasignar export a la versión que usa snapshots para evitar mezcla entre páginas
-window.validarEstructuraYContenido = validarEstructuraYContenidoSnapshots;
-
-
-// === Guardado de DataFrame temporal ===
 async function guardarDataframeTemp() {
   try {
     const session_id = sessionStorage.getItem("sessionID") || null;
@@ -689,51 +589,9 @@ async function guardarDataframeTemp() {
           comentario,
         });
       });
-    } else if (tipo === "mono") {
-      // Fallback para estructura antigua (sin niveles)
-      dataObj.columnas.forEach((parametro) => {
-        const lects = dataObj.lecturas[parametro] || [];
-        lects.forEach((v, idx) => {
-          datosParaInsertar.push({
-            session_id,
-            analito: "Analito",
-            parametro,
-            nivel: 1,
-            lectura_idx: idx + 1,
-            valor: v,
-            unidad,
-            tipo_dato,
-            modo_cualitativo,
-            valido: 1,
-            comentario,
-          });
-        });
-      });
-    } else if (tipo === "multi" || tipo === "multianalito") {
-      dataObj.datosPorParametro.forEach(bloque => {
-        const parametro = bloque.parametro;
-
-        for (const [analito, lects] of Object.entries(bloque.lecturas)) {
-          lects.forEach((v, idx) => {
-            datosParaInsertar.push({
-              session_id,
-              analito,
-              parametro,
-              nivel: 1,
-              lectura_idx: idx + 1,
-              valor: v,
-              unidad,
-              tipo_dato,
-              modo_cualitativo,
-              valido: 1,
-              comentario,
-            });
-          });
-        }
-      });
     }
 
-    // Limpiar datos anteriores de esta sesión antes de insertar (comportamiento de actualización)
+    // Limpiar datos anteriores
     const clear = await window.cerper.clearInputs(session_id, tipo);
     if (!clear?.ok) {
       notify(`No se pudo limpiar datos previos: ${clear?.error || 'desconocido'}`, "error");
@@ -742,10 +600,11 @@ async function guardarDataframeTemp() {
 
     const res = await window.cerper.insertInputs(session_id, tipo, datosParaInsertar);
 
-    if (res.ok)
+    if (res.ok) {
       notify("Datos guardados en base de datos correctamente.", "success");
-    else
+    } else {
       notify(`Error guardando datos: ${res.error}`, "error");
+    }
 
     return res;
 
@@ -753,4 +612,30 @@ async function guardarDataframeTemp() {
     console.error(`[CerperStats] Excepción en guardarDataframeTemp:`, e);
     return { ok: false, error: e.message || String(e) };
   }
-};
+}
+
+// ============================================================
+// EXPORTS AL CONTEXTO GLOBAL
+// ============================================================
+
+if (typeof window !== "undefined") {
+  window.validarVisual = validarVisual;
+  window.validarEstructuraYContenido = validarEstructuraYContenidoSnapshots;
+  window.guardarDataframeTemp = guardarDataframeTemp;
+}
+
+// Para uso en tests
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    validarVisual,
+    validarMono,
+    validarMulti,
+    checkEncabezadosMulti,
+    checkBloquesMulti,
+    checkFilasFueraDeRangoMulti,
+    buildMonoAnalitoData,
+    buildMultiAnalitoData,
+    validarEstructuraYContenidoSnapshots,
+    guardarDataframeTemp
+  };
+}

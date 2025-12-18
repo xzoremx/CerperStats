@@ -233,7 +233,8 @@
 
     /* Custom scrollbar (Excel area) */
     .excel-container {
-      scrollbar-width: thin; /* Firefox */
+      scrollbar-width: thin;
+      /* Firefox */
       scrollbar-color: rgba(255, 255, 255, 0.22) rgba(255, 255, 255, 0.06);
     }
 
@@ -359,7 +360,8 @@
     #copy-badge.copy-badge {
       position: fixed !important;
       right: 18px !important;
-      bottom: 78px !important; /* avoid overlapping .notify */
+      bottom: 78px !important;
+      /* avoid overlapping .notify */
       padding: 8px 12px !important;
       border-radius: 12px !important;
       border: 1px solid rgba(255, 255, 255, 0.06) !important;
@@ -527,7 +529,6 @@
     .modern-number-btn:active {
       transform: scale(0.96);
     }
-
   </style>
   <link id="all-fonts-link-font-geist" rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap">
@@ -588,14 +589,12 @@
           <!-- Información de la sesión -->
           <div class="flex flex-wrap items-center gap-3 mt-4 pl-2">
             <!-- Parámetro y lecturas -->
-            <div
-              class="inline-flex items-center gap-2">
+            <div class="inline-flex items-center gap-2">
               <i data-lucide="layers" class="w-4 h-4 text-blue-400"></i>
               <span id="sheet-param-info" class="text-sm text-gray-300 font-geist">Parámetros</span>
             </div>
             <!-- Tipo de dato -->
-            <div
-              class="inline-flex items-center gap-2">
+            <div class="inline-flex items-center gap-2">
               <i data-lucide="bar-chart-3" class="w-4 h-4 text-purple-400"></i>
               <span id="sheet-tipo-dato" class="text-sm text-gray-300 font-geist">Tipo de dato</span>
             </div>
@@ -684,6 +683,7 @@
   <!-- SCRIPTS -->
   <script src="../js/auth_guard.js"></script>
   <script src="../js/security/icon_safety.js"></script>
+  <script src="../js/input_data/validation_utils.js"></script>
   <script src="../js/input_data/step_6_validation.js"></script>
   <script src="../js/input_data/step_5_sheet.js"></script>
   <script>

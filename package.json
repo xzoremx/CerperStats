@@ -4,13 +4,15 @@
   "description": "App estadística de CERPER - prototipo inicial",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "test": "jest"
   },
   "author": "Renato Huamani",
   "license": "MIT",
   "devDependencies": {
     "autoprefixer": "^10.4.22",
     "electron": "^32.0.0",
+    "jest": "^30.2.0",
     "postcss": "^8.5.6",
     "tailwindcss": "https://registry.npmjs.org/tailwindcss/-/tailwindcss-3.4.14.tgz"
   },

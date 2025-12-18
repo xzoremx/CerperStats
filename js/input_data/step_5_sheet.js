@@ -147,11 +147,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       const res = await window.cerper.getInputsBySession(sessionId, tipoAnalisis);
       if (res?.ok && res.data?.length > 0) {
-        if (tipoAnalisis === "multianalito" || tipoAnalisis === "multi") {
-          rellenarTablaMulti(res.data);
-        } else {
-          rellenarTablaMono(res.data);
-        }
+        // sincronizarNivelesDesdeDatos ahora maneja la distribución por niveles
+        // y crea snapshots para cada nivel automáticamente
         sincronizarNivelesDesdeDatos(res.data);
         notify("Se cargaron los datos guardados de esta sesión.", "info");
       }
@@ -315,7 +312,7 @@ function generarTabla(tipo) {
 
     for (let i = 0; i < columnas; i++) {
       const th = document.createElement("td");
-      th.textContent = `${capitalize(singular)} ${i + 1}`;
+      th.textContent = `${capitalizeText(singular)} ${i + 1}`;
       th.classList.add("placeholder");
       headerRow.appendChild(th);
     }
@@ -346,7 +343,7 @@ function generarTabla(tipo) {
 
     // Encabezado: parámetro + analitos (editables)
     const headers = [
-      capitalize(singularMulti),
+      capitalizeText(singularMulti),
       ...Array.from({ length: K }, (_, i) => `Analito ${i + 1}`),
     ];
 
@@ -382,7 +379,7 @@ function generarTabla(tipo) {
           td.classList.add("placeholder");
           td.addEventListener("input", () => togglePlaceholder(td));
           if (c === 0) {
-            td.textContent = `${capitalize(singularMulti)} ${a + 1}`;
+            td.textContent = `${capitalizeText(singularMulti)} ${a + 1}`;
             td.contentEditable = false;
             td.classList.add("fixed-param");
           } else {
@@ -403,10 +400,12 @@ function generarTabla(tipo) {
 
 }
 
-// --- Función auxiliar ---
-function capitalize(text) {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
+// --- Función auxiliar (usa ValidationUtils) ---
+// Nota: no usar el nombre `capitalize` para evitar colisión con `validation_utils.js` en el scope global.
+const capitalizeText =
+  (window.ValidationUtils && typeof window.ValidationUtils.capitalize === "function")
+    ? window.ValidationUtils.capitalize
+    : (text => (text ? text.charAt(0).toUpperCase() + text.slice(1) : ""));
 
 
 // --- Placeholders dinámicos ---
@@ -536,14 +535,18 @@ function expandIfNeeded(table, targetRow, targetCol) {
 
 // --- Pegar desde Excel ---
 function activarPegado() {
-  document.getElementById("excel").addEventListener("paste", function (e) {
+  const table = document.getElementById("excel");
+  if (!table) return;
+  if (table.dataset.pasteAttached === "1") return;
+  table.dataset.pasteAttached = "1";
+
+  table.addEventListener("paste", function (e) {
     const active = document.activeElement;
     if (active.tagName !== "TD") return;
 
     e.preventDefault();
     const text = (e.clipboardData || window.clipboardData).getData("text");
     const rows = text.trim().split(/\r?\n/).map((r) => r.split("\t"));
-    const table = document.getElementById("excel");
     const startRow = [...table.rows].indexOf(active.parentElement);
     const startCol = [...active.parentElement.cells].indexOf(active);
 
@@ -591,262 +594,27 @@ function activarPegado() {
 
 
 
-// --- VALIDACIÓN VISUAL AUTOMÁTICA (Mono y Multi) ---
-function validarVisual() {
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
-  const table = document.getElementById("excel");
-  const K = parseInt(sessionStorage.getItem("K")) || 1;
-  const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
-
-  if (!table) return;
-  const rows = [...table.rows];
-
-
-  // --- MONOANALITO ---
-  if (tipoAnalisis === "mono") {
-    const columnas = K;
-    const filasEsperadas = Math.max(...lecturas);
-    const colores = generarColores(K);
-
-    let todoValido = true;
-
-    // --- Fila 0 (encabezado debe estar vacío) ---
-    const headerCells = [...rows[0].cells];
-    headerCells.forEach((td, index) => {
-      // Solo validar celdas fuera del rango de encabezados originales
-      if (index >= K) {
-        const valor = td.textContent.trim();
-        if (valor !== "") {
-          td.style.background = "rgba(255,50,50,0.25)"; // error si tiene texto o número
-          todoValido = false;
-        } else {
-          td.style.background = "transparent"; // sin color si vacío
-        }
-      } else {
-        // No marcar las K primeras celdas del encabezado
-        td.style.background = "transparent";
-      }
-    });
-
-
-    // --- Filas de datos ---
-    for (let r = 1; r < rows.length; r++) {
-      const celdas = [...rows[r].cells];
-      for (let c = 0; c < celdas.length; c++) {
-        const td = celdas[c];
-        td.style.transition = "background 0.15s ease";
-
-        const limiteCol = c < columnas;
-        const limiteFila = r <= (lecturas[c] || lecturas[0] || 1);
-        const dentroRango = limiteCol && limiteFila;
-
-        const valor = td.textContent.trim();
-        const esNumero = /^[+]?(?:\d+|\d*\.\d+)$/.test(valor);
-
-        if (!dentroRango) {
-          // Fuera del rango permitido
-          td.style.background = valor ? "rgba(255,50,50,0.25)" : "transparent";
-          if (valor) todoValido = false;
-          continue;
-        }
-
-        // Dentro del rango válido
-        if (valor === "") {
-          td.style.background = "rgba(0,255,200,0.05)"; // vacía dentro del rango
-        } else {
-
-          const num = parseFloat(valor.replace(",", "."));
-          const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
-          const valoresStr = sessionStorage.getItem("valoresPermitidos");
-          const permitidos = valoresStr ? JSON.parse(valoresStr) : null;
-
-          if (tipoDato === "cuantitativo" && num > 0) {
-            td.style.background = "rgba(0,255,200,0.18)"; // válido
-          }
-          else if (tipoDato === "cualitativo" && permitidos && Number.isInteger(num) && permitidos.includes(num)) {
-            td.style.background = "rgba(0,255,200,0.18)"; // válido
-          }
-          else if (tipoDato === "cualitativo") {
-            td.style.background = "rgba(255,50,50,0.25)"; // inválido
-            todoValido = false;
-          }
-          else {
-            td.style.background = "rgba(255,50,50,0.25)"; // inválido
-            todoValido = false;
-          }
-
-        }
-
-      }
-    }
-
-
-  }
-
-
-  // --- MULTIANALITO ---
-  else if (tipoAnalisis === "multi" || tipoAnalisis === "multianalito") {
-    const columnas = K + 1;
-    const colores = generarColores(K);
-    const headers = [...rows[0].cells].slice(1);
-    let todoValido = true;
-
-    // Detectar duplicados en encabezados y vacíos con datos debajo
-    const nombres = headers.map(td => td.textContent.trim().toLowerCase());
-    const duplicados = nombres.filter((v, i, a) => v && a.indexOf(v) !== i);
-
-    headers.forEach(td => {
-      const nombre = td.textContent.trim().toLowerCase();
-      const colIndex = [...td.parentElement.cells].indexOf(td);
-      const celdasColumna = rows.slice(1).map(r => r.cells[colIndex]);
-      const tieneDatos = celdasColumna.some(td => td?.textContent.trim() !== "");
-
-      const esDuplicado = duplicados.includes(nombre);
-      const esVacioConDatos = nombre === "" && tieneDatos;
-
-      // --- Caso 1: encabezado duplicado ---
-      if (esDuplicado) {
-        td.style.background = "rgba(255,60,60,0.25)";
-      }
-
-      // --- Caso 2: encabezado vacío pero con datos debajo ---
-      else if (esVacioConDatos) {
-        td.style.background = "rgba(255,60,60,0.25)";
-      }
-
-      // --- Caso 3: encabezado válido ---
-      else {
-        td.style.background = tieneDatos
-          ? "rgba(200,200,200,0.10)"
-          : "transparent";
-      }
-    });
-
-
-    // Bloques por analista
-    let inicioFila = 1;
-    let ultimaFila = 1;
-
-    for (let a = 0; a < K; a++) {
-      const colorBase = colores[a];
-      const lecturasActuales = lecturas[a] || lecturas[0] || 1;
-      const finFila = inicioFila + lecturasActuales - 1;
-      ultimaFila = finFila; // guardar última fila válida
-
-      for (let r = inicioFila; r <= finFila && r < rows.length; r++) {
-        const celdas = [...rows[r].cells];
-        celdas.forEach((td, c) => {
-          td.style.transition = "background 0.2s ease";
-
-          if (c === 0) {
-            td.style.background = "transparent";
-            td.style.borderTop = `2px solid ${colorBase.replace("0.25", "0.15")}`;
-            return;
-          }
-
-          const valor = td.textContent.trim();
-          const esNumero = /^[+]?(?:\d+|\d*\.\d+)$/.test(valor);
-
-          if (valor === "") {
-            td.style.background = `${colorBase.replace("0.25", "0.07")}`; // tenue base
-          } else {
-            const num = parseFloat(valor.replace(",", "."));
-            const tipoDato = sessionStorage.getItem("tipoDato") || "cuantitativo";
-            const valoresStr = sessionStorage.getItem("valoresPermitidos");
-            const permitidos = valoresStr ? JSON.parse(valoresStr) : null;
-
-            if (tipoDato === "cuantitativo" && num > 0) {
-              td.style.background = `${colorBase.replace("0.25", "0.15")}`; // válido
-            }
-            else if (tipoDato === "cualitativo" && permitidos && Number.isInteger(num) && permitidos.includes(num)) {
-              td.style.background = `${colorBase.replace("0.25", "0.15")}`; // válido
-            }
-            else if (tipoDato === "cualitativo") {
-              td.style.background = "rgba(255,60,60,0.25)"; // inválido
-              todoValido = false;
-            }
-            else {
-              td.style.background = "rgba(255,60,60,0.25)"; // inválido
-              todoValido = false;
-            }
-
-          }
-
-        });
-      }
-
-      inicioFila = finFila + 1;
-    }
-
-    // --- Validar columna fija (parámetro) fuera del rango de analistas válidos ---
-    const totalFilas = rows.length;
-    for (let r = 1; r < totalFilas; r++) {
-      const td = rows[r].cells[0]; // primera columna
-      const valor = td.textContent.trim();
-
-      // Determinar qué analista corresponde según las secciones esperadas
-      let filasValidas = 0;
-      for (let a = 0; a < K; a++) filasValidas += (lecturas[a] || lecturas[0] || 1);
-
-      // --- Solo validar celdas fuera del rango de filas válidas ---
-      if (r > filasValidas) {
-        if (valor !== "") {
-          td.style.background = "rgba(255,50,50,0.25)"; // error si hay texto fuera de rango
-          todoValido = false;
-        } else {
-          td.style.background = "transparent"; // vacío fuera de rango = ok
-          td.style.color = "";
-          td.style.fontWeight = "";
-        }
-      } else {
-        // Dentro del rango válido → mantener transparente
-        td.style.background = "transparent";
-        td.style.color = "";
-        td.style.fontWeight = "";
-      }
-    }
+// --- VALIDACIÓN VISUAL ---
+// Función movida a step_6_validation.js - usar window.validarVisual()
 
 
 
-    // Filas fuera del rango (debajo del último analista)
-    for (let r = ultimaFila + 1; r < rows.length; r++) {
-      const celdas = [...rows[r].cells];
-      celdas.forEach((td, c) => {
-        if (c === 0) return; // no validar la columna fija (Analista)
-        const valor = td.textContent.trim();
-        if (valor !== "") {
-          td.style.background = "rgba(255,60,60,0.25)"; // fuera de rango => rojo
-          todoValido = false;
-        } else {
-          td.style.background = "transparent"; // sin color si vacío
-        }
-      });
-    }
 
-  }
 
-}
 
-// --- Generador de colores dinámicos (para K analistas o columnas) ---
-// Evita colores rojos (hue 0-40 y 320-360)
-function generarColores(K) {
-  const colores = [];
-  // Rango seguro: de 50° (amarillo-verde) a 300° (violeta), evitando rojos
-  const hueMin = 50;
-  const hueMax = 300;
-  const hueRange = hueMax - hueMin;
-  
-  for (let i = 0; i < K; i++) {
-    const hue = hueMin + (i * hueRange) / Math.max(K - 1, 1);
-    colores.push(`hsla(${Math.round(hue)}, 70%, 50%, 0.25)`);
-  }
-  return colores;
-}
+
+
+
+
+
+
 
 // --- Copiar desde UI a Excel (modo Excel; toggle con Ctrl+Tab o Ctrl+Shift+X) ---
 function activarCopiadoExcel() {
   const table = document.getElementById("excel");
   if (!table) return;
+  if (table.dataset.copyAttached === "1") return;
+  table.dataset.copyAttached = "1";
 
   let startCell = null;
   let endCell = null;
@@ -1058,13 +826,42 @@ function sincronizarNivelesDesdeDatos(datos) {
   if (!Array.isArray(datos) || !datos.length) return;
   const maxNivel = Math.max(...datos.map(d => Number(d.nivel) || 1), 1);
   const nuevo = Math.max(1, maxNivel);
-  if (nuevo === niveles) return;
   niveles = nuevo;
   window.niveles = nuevo;
   if (paginaActual > niveles) paginaActual = niveles;
   const display = document.getElementById("nivel-display");
   if (display) display.textContent = String(niveles);
   actualizarBadge();
+
+  // Distribuir datos por nivel en snapshots separados
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
+  const esMulti = (tipoAnalisis === "multi" || tipoAnalisis === "multianalito");
+
+  // Agrupar datos por nivel
+  const datosPorNivel = {};
+  datos.forEach(d => {
+    const niv = Number(d.nivel) || 1;
+    if (!datosPorNivel[niv]) datosPorNivel[niv] = [];
+    datosPorNivel[niv].push(d);
+  });
+
+  // Para cada nivel, generar la tabla, rellenar y guardar snapshot
+  for (let niv = 1; niv <= nuevo; niv++) {
+    generarTabla(tipoAnalisis);
+    const datosNivel = datosPorNivel[niv] || [];
+    if (datosNivel.length > 0) {
+      if (esMulti) {
+        rellenarTablaMultiPorNivel(datosNivel);
+      } else {
+        rellenarTablaMono(datosNivel);
+      }
+    }
+    guardarSnapshot(niv);
+  }
+
+  // Restaurar al nivel 1 para mostrar al usuario
+  paginaActual = 1;
+  restaurarPagina(1);
 }
 
 function rellenarTablaMono(datos) {
@@ -1085,11 +882,20 @@ function rellenarTablaMono(datos) {
     const row = table.rows[r];
     if (!row) return;
     const cell = row.cells[colIndex];
-    if (cell) cell.textContent = (d.valor ?? "").toString();
+    if (cell) {
+      cell.textContent = (d.valor ?? "").toString();
+      togglePlaceholder(cell);
+    }
   });
 }
 
 function rellenarTablaMulti(datos) {
+  // Esta función ahora delega a sincronizarNivelesDesdeDatos que maneja niveles
+  // Se mantiene por compatibilidad pero el flujo principal usa sincronizarNivelesDesdeDatos
+  rellenarTablaMultiPorNivel(datos);
+}
+
+function rellenarTablaMultiPorNivel(datos) {
   const table = document.getElementById("excel");
   if (!table || !table.rows?.length) return;
 
