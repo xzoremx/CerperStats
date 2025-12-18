@@ -21,21 +21,35 @@ async function computeSessionMeta(sessionId) {
 
   let datos = [];
   if (tipo === 'multi' || tipo === 'multianalito') {
+    // Agrupar por parametro, analito y nivel para contar lecturas por nivel
+    // Luego tomar el máximo de lecturas por nivel para cada combinación parametro/analito
     const { rows } = await pool.query(
       `SELECT parametro, analito,
-              COUNT(DISTINCT lectura_idx) AS n_lecturas
-       FROM inputs_multianalito
-       WHERE session_id = $1 AND valido = true
+              MAX(lecturas_por_nivel) AS n_lecturas
+       FROM (
+         SELECT parametro, analito, nivel,
+                COUNT(DISTINCT lectura_idx) AS lecturas_por_nivel
+         FROM inputs_multianalito
+         WHERE session_id = $1 AND valido = true
+         GROUP BY parametro, analito, nivel
+       ) AS lecturas_por_nivel_grupo
        GROUP BY parametro, analito`,
       [sessionId]
     );
     datos = rows;
   } else {
+    // Agrupar por parametro y nivel para contar lecturas por nivel
+    // Luego tomar el máximo de lecturas por nivel para cada parámetro
     const { rows } = await pool.query(
       `SELECT parametro,
-              COUNT(lectura_idx) AS n_lecturas
-       FROM inputs_monoanalito
-       WHERE session_id = $1 AND valido = true
+              MAX(lecturas_por_nivel) AS n_lecturas
+       FROM (
+         SELECT parametro, nivel,
+                COUNT(DISTINCT lectura_idx) AS lecturas_por_nivel
+         FROM inputs_monoanalito
+         WHERE session_id = $1 AND valido = true
+         GROUP BY parametro, nivel
+       ) AS lecturas_por_nivel_grupo
        GROUP BY parametro`,
       [sessionId]
     );

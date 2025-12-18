@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """
-Runner seguro y minimalista para módulos de evaluación.
+Runner seguro y minimalista para mรณdulos de evaluaciรณn.
 
 - Lee JSON de trabajo desde sys.argv[1].
-- Resuelve módulos desde modules/_common/modules_manifest.json.
+- Resuelve mรณdulos desde modules/_common/modules_manifest.json.
 - Valida rutas, verifica SHA-256 y ejecuta con runpy.run_path.
-- No transforma df_ingreso; sólo lo convierte a DataFrame y trabaja con copias profundas.
-- Captura stdout del módulo o, en su defecto, df_resultado.
+- No transforma df_ingreso; sรณlo lo convierte a DataFrame y trabaja con copias profundas.
+- Captura stdout del mรณdulo o, en su defecto, df_resultado.
 - Imprime en stdout un JSON con los resultados; logs en stderr.
 """
 
@@ -91,7 +91,7 @@ def load_manifest(manifest_path: Path) -> dict:
 
 def resolve_manifest_entry(test: dict, manifest_idx: dict):
     """Resolver entrada del manifest por id o nombre_interno."""
-    # Preferir module_id cuando esté disponible (test_modules.id)
+    # Preferir module_id cuando estรฉ disponible (test_modules.id)
     mid = test.get("module_id")
     if mid is not None:
         entry = manifest_idx["by_module_id"].get(mid)
@@ -110,7 +110,7 @@ def resolve_manifest_entry(test: dict, manifest_idx: dict):
 
 
 def is_safe_rel_path(rel: str) -> bool:
-    """Validar patrón de ruta y evitar traversal / absoluta."""
+    """Validar patrรณn de ruta y evitar traversal / absoluta."""
     if not rel:
         return False
     if not SAFE_PATH_RE.match(rel):
@@ -143,7 +143,7 @@ def normalize_stdout_records(stdout_content: str):
     try:
         data = json.loads(stdout_content)
     except Exception as e:
-        return False, None, f"stdout no es JSON válido: {e}"
+        return False, None, f"stdout no es JSON vรกlido: {e}"
 
     if isinstance(data, list):
         # Debe ser lista de dicts (records)
@@ -151,7 +151,7 @@ def normalize_stdout_records(stdout_content: str):
             return False, None, "stdout JSON debe ser una lista de objetos (records)"
         try:
             if pd is None:
-                # Sin pandas: reserializar tal cual pero asegurando JSON válido
+                # Sin pandas: reserializar tal cual pero asegurando JSON vรกlido
                 return True, json.dumps(data, ensure_ascii=False), None
             df = pd.DataFrame(data)
             return True, df.to_json(orient="records", force_ascii=False), None
@@ -173,7 +173,7 @@ def is_valid_base64_payload(value: str) -> bool:
         # data URI: separar encabezado
         s = s.split(",", 1)[1]
     s = s.strip()
-    # Longitud múltiplo de 4 y caracteres válidos
+    # Longitud mรบltiplo de 4 y caracteres vรกlidos
     if len(s) % 4 != 0:
         return False
     if not BASE64_RE.fullmatch(s):
@@ -186,23 +186,26 @@ def is_valid_base64_payload(value: str) -> bool:
 
 
 # ==========================
-# Preparación del DataFrame de ingreso
+# Preparaciรณn del DataFrame de ingreso
 # ==========================
 def prepare_input_dataframe(df_raw: "DataFrame", tipo_analisis: str) -> "DataFrame":
-    """Construye el DataFrame que consumen los módulos a partir de df_ingreso_raw.
+    """Construye el DataFrame que consumen los mรณdulos a partir de df_ingreso_raw.
 
-    - Monoanalito: columnas = parámetros; filas = lectura_idx; valores = valor
+    - Monoanalito: columnas = parรกmetros; filas = lectura_idx; valores = valor
     - Multianalito: columnas = analitos; filas = (parametro, lectura_idx); valores = valor
+    
+    Nota: Los niveles se procesan por separado antes de llamar a esta función,
+    por lo que aquí no se espera el campo 'nivel' en los datos.
     """
     if pd is None:
-        raise RuntimeError("pandas no está disponible en el entorno de ejecución")
+        raise RuntimeError("pandas no estรก disponible en el entorno de ejecuciรณn")
     df = df_raw.copy(deep=True)
 
     t = (tipo_analisis or "").lower()
     is_multi = t in ("multi", "multianalito")
 
     try:
-        # Tipado básico de columnas esperadas
+        # Tipado bรกsico de columnas esperadas
         if 'lectura_idx' in df.columns:
             df['lectura_idx'] = pd.to_numeric(df['lectura_idx'], errors='coerce')
         if 'valor' in df.columns:
@@ -215,7 +218,7 @@ def prepare_input_dataframe(df_raw: "DataFrame", tipo_analisis: str) -> "DataFra
             if missing:
                 raise ValueError(f"Faltan columnas requeridas para multianalito: {missing}")
             pv = df.pivot_table(index=['parametro', 'lectura_idx'], columns='analito', values='valor', aggfunc='first')
-            # Ordenar para estabilidad y exponer como columnas explícitas
+            # Ordenar para estabilidad y exponer como columnas explรญcitas
             try:
                 pv = pv.sort_index(level=['parametro', 'lectura_idx'])
             except Exception:
@@ -242,7 +245,7 @@ def prepare_input_dataframe(df_raw: "DataFrame", tipo_analisis: str) -> "DataFra
             pv = pv.reset_index(drop=True)
             return pv
     except Exception as e:
-        # En caso de error, devolver el df original para no bloquear ejecución
+        # En caso de error, devolver el df original para no bloquear ejecuciรณn
         log_err(f"[EVAL] Error preparando df_ingreso ({'multi' if is_multi else 'mono'}): {e}")
         return df
 
@@ -251,7 +254,7 @@ def prepare_input_dataframe(df_raw: "DataFrame", tipo_analisis: str) -> "DataFra
 
 
 # ==========================
-# Ejecución por módulo
+# Ejecuciรณn por mรณdulo
 # ==========================
 def run_single_module(
     test: dict,
@@ -262,7 +265,7 @@ def run_single_module(
    
 ) -> dict:
     """
-    Ejecuta un módulo específico y devuelve el resultado en el formato requerido.
+    Ejecuta un mรณdulo especรญfico y devuelve el resultado en el formato requerido.
     No levanta excepciones: devuelve dict ok/false.
     """
     # Prefer module_id primary identifier
@@ -270,7 +273,7 @@ def run_single_module(
     catalog_id = test.get("catalog_id") or test.get("id")
     nombre = test.get("nombre_interno")
 
-    log_err(f"[EVAL] Ejecutando módulo module_id={module_id} catalog_id={catalog_id} nombre={nombre}")
+    log_err(f"[EVAL] Ejecutando mรณdulo module_id={module_id} catalog_id={catalog_id} nombre={nombre}")
 
     if manifest_entry is None:
         return {
@@ -278,7 +281,7 @@ def run_single_module(
             "module_id": module_id,
             "catalog_id": catalog_id,
             "nombre": nombre,
-            "error": "No se encontró entrada en el manifest para este módulo",
+            "error": "No se encontrรณ entrada en el manifest para este mรณdulo",
         }
 
     module_asset = manifest_entry.get("module_asset")
@@ -293,24 +296,24 @@ def run_single_module(
 
     # Validar ruta segura
     if not is_safe_rel_path(module_asset):
-        log_err(f"[EVAL] Ruta de módulo inválida: {module_asset}")
+        log_err(f"[EVAL] Ruta de mรณdulo invรกlida: {module_asset}")
         return {
             "ok": False,
             "catalog_id": catalog_id,
             "nombre": nombre,
-            "error": f"Ruta de módulo inválida: {module_asset}",
+            "error": f"Ruta de mรณdulo invรกlida: {module_asset}",
         }
 
     # Resolver ruta absoluta dentro de modules/
     mod_path = (modules_root / module_asset).resolve()
     if not mod_path.is_file():
-        log_err(f"[EVAL] Archivo de módulo no encontrado: {mod_path}")
+        log_err(f"[EVAL] Archivo de mรณdulo no encontrado: {mod_path}")
         return {
             "ok": False,
             "module_id": module_id,
             "catalog_id": catalog_id,
             "nombre": nombre,
-            "error": f"Archivo de módulo no encontrado: {mod_path}",
+            "error": f"Archivo de mรณdulo no encontrado: {mod_path}",
         }
 
     # Proteger contra salir de modules/ (por symlinks u otros)
@@ -321,10 +324,10 @@ def run_single_module(
             "module_id": module_id,
             "catalog_id": catalog_id,
             "nombre": nombre,
-            "error": "Ruta de módulo fuera de la carpeta 'modules'",
+            "error": "Ruta de mรณdulo fuera de la carpeta 'modules'",
         }
 
-    # Verificación de SHA-256 (manifest manda; payload opcional)
+    # Verificaciรณn de SHA-256 (manifest manda; payload opcional)
     actual_hash = compute_sha256_text(mod_path).lower()
     mf_hash = manifest_entry.get("sha256_module")
     if mf_hash and str(mf_hash).lower() != actual_hash:
@@ -334,7 +337,7 @@ def run_single_module(
             "module_id": module_id,
             "catalog_id": catalog_id,
             "nombre": nombre,
-            "error": "Verificación SHA-256 contra manifest fallida",
+            "error": "Verificaciรณn SHA-256 contra manifest fallida",
         }
     # Si viene hash en el payload y no coincide, advertimos pero no bloqueamos
     for key in ("hash_module", "sha256_module"):
@@ -345,7 +348,7 @@ def run_single_module(
 
     # Preparar locals para runpy
     if pd is None:
-        raise RuntimeError("pandas no está disponible en el entorno de ejecución")
+        raise RuntimeError("pandas no estรก disponible en el entorno de ejecuciรณn")
 
     df_ingreso = df_base.copy(deep=True)
     df_raw = df_base.copy(deep=True)
@@ -364,7 +367,7 @@ def run_single_module(
         with redirect_stdout(stdout_buffer):
             module_ns = runpy.run_path(str(mod_path), init_globals=local_vars)
 
-        # grafico_data: sólo se rellena si existe script_grafico (ver más abajo)
+        # grafico_data: sรณlo se rellena si existe script_grafico (ver mรกs abajo)
         grafico_data = ""
 
         # Resultado principal: SOLO DataFrame (df_resultado). Ignorar stdout.
@@ -377,45 +380,45 @@ def run_single_module(
                 "module_id": module_id,
                 "catalog_id": catalog_id,
                 "nombre": nombre,
-                "error": "El módulo no produjo df_resultado (DataFrame)",
+                "error": "El mรณdulo no produjo df_resultado (DataFrame)",
             }
 
-        # Ejecutar script gráfico si está definido (script_grafico o graph_asset)
+        # Ejecutar script grรกfico si estรก definido (script_grafico o graph_asset)
         script_grafico = manifest_entry.get("script_grafico") or manifest_entry.get("graph_asset")
         if script_grafico:
             # 1) Validar ruta segura
             if not is_safe_rel_path(script_grafico):
-                log_err(f"[EVAL] Ruta de gráfico inválida: {script_grafico}")
+                log_err(f"[EVAL] Ruta de grรกfico invรกlida: {script_grafico}")
                 return {
                     "ok": False,
                     "module_id": module_id,
                     "catalog_id": catalog_id,
                     "nombre": nombre,
-                    "error": f"Ruta de gráfico inválida: {script_grafico}",
+                    "error": f"Ruta de grรกfico invรกlida: {script_grafico}",
                 }
 
-            # 2) Resolver y asegurar que esté dentro de modules/
+            # 2) Resolver y asegurar que estรฉ dentro de modules/
             graph_path = (modules_root / script_grafico).resolve()
             if not graph_path.is_file():
-                log_err(f"[EVAL] Archivo de gráfico no encontrado: {graph_path}")
+                log_err(f"[EVAL] Archivo de grรกfico no encontrado: {graph_path}")
                 return {
                     "ok": False,
                     "module_id": module_id,
                     "catalog_id": catalog_id,
                     "nombre": nombre,
-                    "error": f"Archivo de gráfico no encontrado: {graph_path}",
+                    "error": f"Archivo de grรกfico no encontrado: {graph_path}",
                 }
             if not str(graph_path).startswith(str(modules_root.resolve())):
-                log_err(f"[EVAL] Ruta de gráfico fuera de la carpeta 'modules': {graph_path}")
+                log_err(f"[EVAL] Ruta de grรกfico fuera de la carpeta 'modules': {graph_path}")
                 return {
                     "ok": False,
                     "module_id": module_id,
                     "catalog_id": catalog_id,
                     "nombre": nombre,
-                    "error": "Ruta de gráfico fuera de la carpeta 'modules'",
+                    "error": "Ruta de grรกfico fuera de la carpeta 'modules'",
                 }
 
-            # 3) Verificar SHA-256 del gráfico si está presente en el manifest
+            # 3) Verificar SHA-256 del grรกfico si estรก presente en el manifest
             graph_hash_actual = compute_sha256_text(graph_path).lower()
             mf_graph_hash = (
                 manifest_entry.get("sha256_script_grafico")
@@ -423,24 +426,24 @@ def run_single_module(
             )
             if mf_graph_hash and str(mf_graph_hash).lower() != graph_hash_actual:
                 log_err(
-                    f"[EVAL] Hash mismatch (manifest) para gráfico {graph_path}. Esperado={mf_graph_hash} Actual={graph_hash_actual}"
+                    f"[EVAL] Hash mismatch (manifest) para grรกfico {graph_path}. Esperado={mf_graph_hash} Actual={graph_hash_actual}"
                 )
                 return {
                     "ok": False,
                     "module_id": module_id,
                     "catalog_id": catalog_id,
                     "nombre": nombre,
-                    "error": "Verificación SHA-256 del gráfico contra manifest fallida",
+                    "error": "Verificaciรณn SHA-256 del grรกfico contra manifest fallida",
                 }
 
             # Warnings si el payload trae hash opcional (nuevos o legacy)
             for key in ("hash_script_grafico", "sha256_script_grafico", "hash_graph", "sha256_graph"):
                 if test.get(key) and str(test[key]).lower() != graph_hash_actual:
                     log_err(
-                        f"[EVAL] Aviso: hash de gráfico en payload no coincide (ignorado). Payload={test.get(key)} Actual={graph_hash_actual}"
+                        f"[EVAL] Aviso: hash de grรกfico en payload no coincide (ignorado). Payload={test.get(key)} Actual={graph_hash_actual}"
                     )
 
-            # 4) Ejecutar el gráfico con contexto controlado
+            # 4) Ejecutar el grรกfico con contexto controlado
             vars_grafico = {
                 "pd": pd,
                 "np": np,
@@ -464,14 +467,14 @@ def run_single_module(
                     except TypeError:
                         grafico_data = str(g)
             except Exception as ge:
-                log_err(f"[EVAL] Error ejecutando gráfico para {nombre}: {ge}")
+                log_err(f"[EVAL] Error ejecutando grรกfico para {nombre}: {ge}")
                 traceback.print_exc(file=sys.stderr)
                 return {
                     "ok": False,
                     "module_id": module_id,
                     "catalog_id": catalog_id,
                     "nombre": nombre,
-                    "error": f"Error ejecutando gráfico: {ge}",
+                    "error": f"Error ejecutando grรกfico: {ge}",
                 }
 
         # Validar grafico_data si existe (base64)
@@ -481,7 +484,7 @@ def run_single_module(
                     "ok": False,
                     "catalog_id": catalog_id,
                     "nombre": nombre,
-                    "error": "grafico_data no es base64 válido (aceptado: base64 plano o data:*;base64,...)",
+                    "error": "grafico_data no es base64 vรกlido (aceptado: base64 plano o data:*;base64,...)",
                 }
 
         return {
@@ -494,7 +497,7 @@ def run_single_module(
         }
 
     except Exception as e:
-        log_err(f"[EVAL] Error ejecutando módulo {nombre}: {e}")
+        log_err(f"[EVAL] Error ejecutando mรณdulo {nombre}: {e}")
         traceback.print_exc(file=sys.stderr)
         return {
             "ok": False,
@@ -518,14 +521,14 @@ def main(argv=None) -> int:
 
     json_path = Path(argv[1])
 
-    # Localización de carpetas base
+    # Localizaciรณn de carpetas base
     this_file = Path(__file__).resolve()
     modules_common = this_file.parent           # modules/_common
     modules_root = modules_common.parent        # modules/
 
     manifest_path = modules_common / "modules_manifest.json"
     if not manifest_path.is_file():
-        log_err(f"No se encontró manifest en: {manifest_path}")
+        log_err(f"No se encontrรณ manifest en: {manifest_path}")
         return 1
 
     # Cargar manifest
@@ -550,7 +553,7 @@ def main(argv=None) -> int:
     df_ingreso_raw = payload.get("df_ingreso", [])
     tests = payload.get("tests", [])
 
-    # Log sesión
+    # Log sesiรณn
     try:
         log_err(
             "[SESSION] " + json.dumps(
@@ -567,7 +570,7 @@ def main(argv=None) -> int:
         log_err(f"[SESSION] session_id={session_id} tipo_analisis={tipo_analisis} n_tests={len(tests)}")
 
     if pd is None:
-        log_err("pandas es requerido pero no está disponible.")
+        log_err("pandas es requerido pero no estรก disponible.")
         return 1
 
     # Construir DataFrame de ingreso con la estructura requerida por tipo_analisis
