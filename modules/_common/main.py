@@ -192,10 +192,11 @@ def prepare_input_dataframe(df_raw: "DataFrame", tipo_analisis: str) -> "DataFra
     """Construye el DataFrame que consumen los mรณdulos a partir de df_ingreso_raw.
 
     - Monoanalito: columnas = parรกmetros; filas = lectura_idx; valores = valor
-    - Multianalito: columnas = analitos; filas = (parametro, lectura_idx); valores = valor
+    - Multianalito: columnas = parรกmetros; filas = lectura_idx; valores = valor
+      (misma estructura que monoanalito, ya que la iteración por analito se hace antes)
     
-    Nota: Los niveles se procesan por separado antes de llamar a esta función,
-    por lo que aquí no se espera el campo 'nivel' en los datos.
+    Nota: Los niveles y analitos (en multianalito) se procesan por separado antes de llamar 
+    a esta función, por lo que aquí no se espera el campo 'nivel' ni 'analito' en los datos.
     """
     if pd is None:
         raise RuntimeError("pandas no estรก disponible en el entorno de ejecuciรณn")
@@ -211,39 +212,25 @@ def prepare_input_dataframe(df_raw: "DataFrame", tipo_analisis: str) -> "DataFra
         if 'valor' in df.columns:
             df['valor'] = pd.to_numeric(df['valor'], errors='coerce')
 
-        if is_multi:
-            # Requiere: analito, parametro, lectura_idx, valor
-            required = {'analito', 'parametro', 'lectura_idx', 'valor'}
-            missing = [c for c in required if c not in df.columns]
-            if missing:
-                raise ValueError(f"Faltan columnas requeridas para multianalito: {missing}")
-            pv = df.pivot_table(index=['parametro', 'lectura_idx'], columns='analito', values='valor', aggfunc='first')
-            # Ordenar para estabilidad y exponer como columnas explรญcitas
-            try:
-                pv = pv.sort_index(level=['parametro', 'lectura_idx'])
-            except Exception:
-                pv = pv.sort_index()
-            pv = pv.sort_index(axis=1)
-            pv = pv.reset_index()
-            # No exponer lectura_idx en el df_ingreso final (solo ayuda al armado)
-            if 'lectura_idx' in pv.columns:
-                pv = pv.drop(columns=['lectura_idx'])
-            return pv
-        else:
-            # Requiere: parametro, lectura_idx, valor
-            required = {'parametro', 'lectura_idx', 'valor'}
-            missing = [c for c in required if c not in df.columns]
-            if missing:
-                raise ValueError(f"Faltan columnas requeridas para monoanalito: {missing}")
-            pv = df.pivot_table(index='lectura_idx', columns='parametro', values='valor', aggfunc='first')
-            pv = pv.sort_index(axis=1)
-            # Filas ordenadas por lectura_idx (y reindexadas de 0..n-1)
-            try:
-                pv = pv.sort_index()
-            except Exception:
-                pass
-            pv = pv.reset_index(drop=True)
-            return pv
+        # Ambos tipos (mono y multi) usan la misma estructura:
+        # columnas = parámetros, filas = lectura_idx
+        # Para multianalito, el df_raw ya viene filtrado por un analito específico
+        
+        # Requiere: parametro, lectura_idx, valor
+        required = {'parametro', 'lectura_idx', 'valor'}
+        missing = [c for c in required if c not in df.columns]
+        if missing:
+            raise ValueError(f"Faltan columnas requeridas: {missing}")
+        
+        pv = df.pivot_table(index='lectura_idx', columns='parametro', values='valor', aggfunc='first')
+        pv = pv.sort_index(axis=1)
+        # Filas ordenadas por lectura_idx (y reindexadas de 0..n-1)
+        try:
+            pv = pv.sort_index()
+        except Exception:
+            pass
+        pv = pv.reset_index(drop=True)
+        return pv
     except Exception as e:
         # En caso de error, devolver el df original para no bloquear ejecuciรณn
         log_err(f"[EVAL] Error preparando df_ingreso ({'multi' if is_multi else 'mono'}): {e}")
@@ -262,7 +249,7 @@ def run_single_module(
     modules_root: Path,
     modules_common: Path,
     df_base: "DataFrame",
-   
+    total_analitos: int = None,
 ) -> dict:
     """
     Ejecuta un mรณdulo especรญfico y devuelve el resultado en el formato requerido.
@@ -361,6 +348,10 @@ def run_single_module(
         "df_ingreso": df_ingreso,
         "df_raw": df_raw,
     }
+    
+    # Agregar total_analitos al namespace si está disponible (para multianalito)
+    if total_analitos is not None:
+        local_vars["total_analitos"] = int(total_analitos)
 
     stdout_buffer = io.StringIO()
     try:
@@ -454,6 +445,9 @@ def run_single_module(
                 "df_resultado": df_res,
                 "resultado_pc": resultado_pc,
             }
+            # Agregar total_analitos si está disponible (para multianalito)
+            if total_analitos is not None:
+                vars_grafico["total_analitos"] = int(total_analitos)
             try:
                 graph_ns = runpy.run_path(str(graph_path), init_globals=vars_grafico)
                 g = graph_ns.get("grafico_data")
@@ -552,6 +546,7 @@ def main(argv=None) -> int:
     tipo_analisis = payload.get("tipo_analisis")
     df_ingreso_raw = payload.get("df_ingreso", [])
     tests = payload.get("tests", [])
+    total_analitos = payload.get("total_analitos")  # Para multianalito: cantidad total de analitos
 
     # Log sesiรณn
     try:
@@ -595,6 +590,7 @@ def main(argv=None) -> int:
             modules_root=modules_root,
             modules_common=modules_common,
             df_base=df_base,
+            total_analitos=total_analitos,  # Pasar total_analitos para multianalito
         )
         results.append(res)
 
