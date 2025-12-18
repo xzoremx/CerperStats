@@ -63,10 +63,16 @@ function loadManifest() {
 }
 
 router.post('/run', async (req, res) => {
+  console.log('[EVAL-ROUTE] POST /run recibido:', { session_id: req.body?.session_id, catalog_ids: req.body?.catalog_ids });
+  
   const { session_id, catalog_ids } = req.body || {};
   if (!session_id || !Array.isArray(catalog_ids) || catalog_ids.length === 0) {
+    console.log('[EVAL-ROUTE] Payload inválido');
     return res.status(400).json({ ok: false, error: 'invalid_payload' });
   }
+  
+  console.log(`[EVAL-ROUTE] Procesando sesión ${session_id} con ${catalog_ids.length} tests`);
+  
   try {
     const { rows: sessionRows } = await pool.query(
       `SELECT tipo_analisis, lab_key, usuario_id
@@ -90,8 +96,11 @@ router.post('/run', async (req, res) => {
       [session_id, catalog_ids]
     );
 
+    console.log(`[EVAL-ROUTE] Tipo análisis: ${tipo_analisis}, Usuario: ${usuario_id}`);
+    
     // Obtener datos con nivel para identificar niveles únicos
     let dfIngresoConNivel = [];
+    console.log(`[EVAL-ROUTE] Consultando datos para sesión ${session_id}...`);
     if (tipo_analisis === 'multi' || tipo_analisis === 'multianalito') {
       const { rows } = await pool.query(
         `SELECT analito, parametro, nivel, lectura_idx, valor
@@ -112,11 +121,19 @@ router.post('/run', async (req, res) => {
       dfIngresoConNivel = rows;
     }
 
+    console.log(`[EVAL-ROUTE] Total registros obtenidos: ${dfIngresoConNivel.length}`);
+    
     // Obtener niveles únicos (convertir a número para asegurar tipo consistente)
     const niveles = [...new Set(dfIngresoConNivel.map(d => Number(d.nivel) || 1))].sort((a, b) => a - b);
     if (niveles.length === 0) niveles.push(1);
 
-    console.log(`[EVAL] Niveles detectados: ${niveles.join(', ')} (total: ${niveles.length})`);
+    console.log(`[EVAL-ROUTE] Niveles detectados: ${niveles.join(', ')} (total: ${niveles.length})`);
+    
+    if (dfIngresoConNivel.length > 0) {
+      console.log(`[EVAL-ROUTE] Ejemplo de registro (primeros 3 niveles):`, 
+        dfIngresoConNivel.slice(0, 3).map(d => ({ nivel: d.nivel, parametro: d.parametro }))
+      );
+    }
 
     const placeholders = catalog_ids.map((_, idx) => `$${idx + 1}`).join(',');
     const { rows: testsRaw } = await pool.query(
