@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2025-12-19T00:07:57.516Z",
+  "generated_at": "2025-12-19T00:53:46.258Z",
   "entries": [
     {
       "id": 1,
@@ -42,14 +42,14 @@
       "sha256_graph": "40f405d4b3172472b6c9cb50f9b9d4be4fcd80855ef750e703a3877a2eaf5314"
     },
     {
-      "id": null,
-      "module_id": null,
-      "nombre_interno": null,
-      "version": null,
+      "id": 4,
+      "module_id": 4,
+      "nombre_interno": "normalidad_multianalito",
+      "version": "1.0.0",
       "module_asset": "python/4/principal.py",
       "script_grafico": "python/4/graph.py",
       "graph_asset": "python/4/graph.py",
-      "runtime": null,
+      "runtime": "stats",
       "sha256_module": "9974bd6281ffd3d8e1fbc6320cb78a0481c53c0af8f01f06121094103b1ab3be",
       "sha256_script_grafico": "e5420c0af7b78cf229d70de497455f91a62ec3edc189afe148801e9cedd8774b",
       "sha256_graph": "e5420c0af7b78cf229d70de497455f91a62ec3edc189afe148801e9cedd8774b"
