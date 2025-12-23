@@ -7,6 +7,124 @@ const runEvaluator = require('../lib/runEvaluator');
 const router = express.Router();
 const MANIFEST_PATH = path.resolve(__dirname, '../../modules/_common/modules_manifest.json');
 
+// Progreso en memoria (polling desde el cliente): /evaluaciones/progress/:session_id
+const progressStore = new Map();
+const PROGRESS_TTL_MS = Number(process.env.CERPER_PROGRESS_TTL_MS || 15 * 60 * 1000);
+
+function isoNow() {
+  return new Date().toISOString();
+}
+
+function clampInt(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.trunc(n));
+}
+
+function computePercent(numerator, denominator) {
+  const n = clampInt(numerator);
+  const d = clampInt(denominator);
+  if (d <= 0) return 0;
+  return Math.max(0, Math.min(100, Math.round((n / d) * 100)));
+}
+
+function getProgressSnapshot(entry) {
+  if (!entry) return null;
+  const { _cleanupTimer, ...publicEntry } = entry;
+  return publicEntry;
+}
+
+function initProgress(sessionId) {
+  const key = String(sessionId);
+  const existing = progressStore.get(key);
+  if (existing && existing.status === 'running') return { ok: false, error: 'already_running' };
+  if (existing?._cleanupTimer) clearTimeout(existing._cleanupTimer);
+
+  const entry = {
+    session_id: sessionId,
+    status: 'running',
+    message: 'inicializando',
+    total_tasks: 0,
+    processed_tasks: 0,
+    saved_results: 0,
+    failed_tasks: 0,
+    percent_tasks: 0,
+    percent_saved: 0,
+    started_at: isoNow(),
+    updated_at: isoNow(),
+    finished_at: null,
+    current: null,
+  };
+
+  progressStore.set(key, entry);
+  return { ok: true, entry };
+}
+
+function updateProgress(sessionId, patch = {}) {
+  const key = String(sessionId);
+  const entry = progressStore.get(key);
+  if (!entry) return null;
+
+  Object.assign(entry, patch);
+
+  entry.total_tasks = clampInt(entry.total_tasks);
+  entry.processed_tasks = clampInt(entry.processed_tasks);
+  entry.saved_results = clampInt(entry.saved_results);
+  entry.failed_tasks = clampInt(entry.failed_tasks);
+
+  if (entry.total_tasks > 0) {
+    entry.processed_tasks = Math.min(entry.processed_tasks, entry.total_tasks);
+    entry.saved_results = Math.min(entry.saved_results, entry.total_tasks);
+    entry.failed_tasks = Math.min(entry.failed_tasks, entry.total_tasks);
+  }
+
+  entry.percent_tasks = computePercent(entry.processed_tasks, entry.total_tasks);
+  entry.percent_saved = computePercent(entry.saved_results, entry.total_tasks);
+  if (
+    entry.total_tasks <= 0 &&
+    (entry.status === 'completed' || entry.status === 'completed_with_errors')
+  ) {
+    entry.percent_tasks = 100;
+    entry.percent_saved = 100;
+  }
+  entry.updated_at = isoNow();
+  return entry;
+}
+
+function bumpProgress(sessionId, delta = {}) {
+  const key = String(sessionId);
+  const entry = progressStore.get(key);
+  if (!entry) return null;
+  return updateProgress(sessionId, {
+    processed_tasks: entry.processed_tasks + (delta.processed_tasks || 0),
+    saved_results: entry.saved_results + (delta.saved_results || 0),
+    failed_tasks: entry.failed_tasks + (delta.failed_tasks || 0),
+  });
+}
+
+function finishProgress(sessionId, status, patch = {}) {
+  const key = String(sessionId);
+  const entry = progressStore.get(key);
+  if (!entry) return null;
+
+  if (entry._cleanupTimer) clearTimeout(entry._cleanupTimer);
+
+  const merged = updateProgress(sessionId, {
+    ...patch,
+    status,
+    finished_at: isoNow(),
+    current: null,
+  });
+
+  const timer = setTimeout(() => {
+    progressStore.delete(key);
+  }, PROGRESS_TTL_MS);
+  if (typeof timer.unref === 'function') timer.unref();
+
+  entry._cleanupTimer = timer;
+  return merged;
+}
+
 function sanitizeEvals(rows) {
   return rows.map((r) => {
     const iconLib = r.icon_lib_sanitized || '';
@@ -62,6 +180,14 @@ function loadManifest() {
   }
 }
 
+router.get('/progress/:session_id', (req, res) => {
+  const sessionId = String(req.params.session_id || '');
+  if (!sessionId) return res.status(400).json({ ok: false, error: 'missing_session_id' });
+  const entry = progressStore.get(sessionId);
+  if (!entry) return res.status(404).json({ ok: false, error: 'progress_not_found' });
+  return res.json({ ok: true, data: getProgressSnapshot(entry) });
+});
+
 router.post('/run', async (req, res) => {
   console.log('[EVAL-ROUTE] POST /run recibido:', { session_id: req.body?.session_id, catalog_ids: req.body?.catalog_ids });
   
@@ -70,6 +196,12 @@ router.post('/run', async (req, res) => {
     console.log('[EVAL-ROUTE] Payload inválido');
     return res.status(400).json({ ok: false, error: 'invalid_payload' });
   }
+
+  const progressInit = initProgress(session_id);
+  if (!progressInit.ok) {
+    return res.status(409).json({ ok: false, error: progressInit.error });
+  }
+  updateProgress(session_id, { message: 'preparando_evaluacion', current: null });
   
   console.log(`[EVAL-ROUTE] Procesando sesión ${session_id} con ${catalog_ids.length} tests`);
   
@@ -81,11 +213,14 @@ router.post('/run', async (req, res) => {
       [session_id]
     );
     if (!sessionRows.length) {
+      finishProgress(session_id, 'failed', { message: 'session_not_found' });
       return res.status(404).json({ ok: false, error: 'session_not_found' });
     }
     const session = sessionRows[0];
     const tipo_analisis = session.tipo_analisis;
     const usuario_id = session.usuario_id;
+
+    updateProgress(session_id, { message: 'cargando_inputs', tipo_analisis });
 
     // Auditoría de selección de catálogos en la sesión
     await pool.query(
@@ -133,10 +268,21 @@ router.post('/run', async (req, res) => {
     // Para multianalito: obtener analitos únicos y calcular total
     let analitos = [];
     let totalAnalitos = 0;
+    let nivelesPorAnalito = null;
     if (isMultianalito) {
       analitos = [...new Set(dfIngresoConNivel.map(d => d.analito).filter(Boolean))].sort();
       totalAnalitos = analitos.length;
       console.log(`[EVAL-ROUTE] Analitos detectados: ${analitos.join(', ')} (total: ${totalAnalitos})`);
+
+      nivelesPorAnalito = new Map();
+      for (const row of dfIngresoConNivel) {
+        if (!row?.analito) continue;
+        const key = row.analito;
+        const lvl = Number(row.nivel) || 1;
+        const set = nivelesPorAnalito.get(key) || new Set();
+        set.add(lvl);
+        nivelesPorAnalito.set(key, set);
+      }
     }
 
     console.log(`[EVAL-ROUTE] Niveles detectados: ${niveles.join(', ')} (total: ${niveles.length})`);
@@ -166,6 +312,7 @@ router.post('/run', async (req, res) => {
       catalog_ids
     );
     if (!testsRaw.length) {
+      finishProgress(session_id, 'failed', { message: 'tests_not_found' });
       return res.status(400).json({ ok: false, error: 'tests_not_found' });
     }
 
@@ -195,8 +342,27 @@ router.post('/run', async (req, res) => {
     }
 
     if (!verified.length) {
+      finishProgress(session_id, 'failed', { message: 'modules_manifest_missing' });
       return res.status(400).json({ ok: false, error: 'modules_manifest_missing' });
     }
+
+    // Inicializar totales de progreso (tareas = módulos × combinaciones con datos)
+    const nivelesConDatos = isMultianalito
+      ? []
+      : niveles.filter((nivel) => dfIngresoConNivel.some((d) => (Number(d.nivel) || 1) === nivel));
+
+    const totalCombinaciones = isMultianalito
+      ? analitos.reduce((sum, analito) => sum + (nivelesPorAnalito?.get(analito)?.size || 0), 0)
+      : nivelesConDatos.length;
+
+    const totalTasks = verified.length * totalCombinaciones;
+    updateProgress(session_id, {
+      message: 'ejecutando',
+      total_tasks: totalTasks,
+      processed_tasks: 0,
+      saved_results: 0,
+      failed_tasks: 0,
+    });
 
     // Procesamiento según tipo de análisis
     let totalResults = 0;
@@ -206,12 +372,14 @@ router.post('/run', async (req, res) => {
       console.log(`[EVAL] Iniciando procesamiento MULTIANALITO: ${analitos.length} analitos × ${niveles.length} niveles`);
       
       for (const analito of analitos) {
-        for (const nivel of niveles) {
+        const nivelesDisponibles = [...(nivelesPorAnalito?.get(analito) || [])].sort((a, b) => a - b);
+        for (const nivel of nivelesDisponibles) {
           console.log(`[EVAL] === INICIO PROCESAMIENTO: analito=${analito}, nivel=${nivel} ===`);
+          updateProgress(session_id, { current: { analito, nivel }, message: 'ejecutando' });
           
           // Filtrar datos para este analito y nivel específicos
           const dfIngreso = dfIngresoConNivel
-            .filter(d => d.analito === analito && Number(d.nivel) === nivel)
+            .filter(d => d.analito === analito && (Number(d.nivel) || 1) === nivel)
             .map(d => {
               const { nivel: _, analito: __, ...rest } = d;
               return rest;
@@ -241,6 +409,7 @@ router.post('/run', async (req, res) => {
           } catch (err) {
             console.error(`[EVAL] Error en analito=${analito}, nivel=${nivel}:`, err);
             console.error(`[EVAL] Continuando con siguiente combinación...`);
+            bumpProgress(session_id, { processed_tasks: verified.length, failed_tasks: verified.length });
             continue;
           }
 
@@ -252,6 +421,7 @@ router.post('/run', async (req, res) => {
 
           if (!results) {
             console.error(`[EVAL] Output inválido para analito=${analito}, nivel=${nivel}, tipo: ${typeof evaluatorOutput}`);
+            bumpProgress(session_id, { processed_tasks: verified.length, failed_tasks: verified.length });
             continue;
           }
 
@@ -259,8 +429,10 @@ router.post('/run', async (req, res) => {
 
           // Guardar resultados con el analito y nivel correspondientes
           for (const r of results) {
+            bumpProgress(session_id, { processed_tasks: 1 });
             if (!r.ok) {
               console.warn(`[EVAL] Falló módulo ${r.nombre || r.catalog_id} en analito=${analito}, nivel=${nivel}: ${r.error}`);
+              bumpProgress(session_id, { failed_tasks: 1 });
               continue;
             }
             
@@ -282,6 +454,7 @@ router.post('/run', async (req, res) => {
               );
               const insertedRow = insertResult.rows[0];
               console.log(`[EVAL] ✓ Resultado guardado: id=${insertedRow.id}, catalog_id=${r.catalog_id}, analito=${insertedRow.analito}, nivel=${insertedRow.nivel || nivel}`);
+              bumpProgress(session_id, { saved_results: 1 });
               
               try {
                 await pool.query(
@@ -292,11 +465,12 @@ router.post('/run', async (req, res) => {
               } catch (logErr) {
                 console.warn(`[EVAL] Error insertando log (no crítico):`, logErr.message);
               }
-              
+               
               totalResults++;
             } catch (insertErr) {
               console.error(`[EVAL] Error insertando resultado para catalog_id=${r.catalog_id}, analito=${analito}, nivel=${nivel}:`, insertErr.message);
               console.error(`[EVAL] Stack del error:`, insertErr.stack);
+              bumpProgress(session_id, { failed_tasks: 1 });
             }
           }
           
@@ -312,12 +486,13 @@ router.post('/run', async (req, res) => {
       // MONOANALITO: Iterar solo por nivel
       console.log(`[EVAL] Iniciando procesamiento MONOANALITO: ${niveles.length} niveles: [${niveles.join(', ')}]`);
       
-      for (const nivel of niveles) {
+      for (const nivel of nivelesConDatos) {
         console.log(`[EVAL] === INICIO PROCESAMIENTO NIVEL ${nivel} ===`);
+        updateProgress(session_id, { current: { nivel }, message: 'ejecutando' });
         
         // Filtrar datos para este nivel (convertir a número para comparación correcta)
         const dfIngreso = dfIngresoConNivel
-          .filter(d => Number(d.nivel) === nivel)
+          .filter(d => (Number(d.nivel) || 1) === nivel)
           .map(d => {
             const { nivel: _, ...rest } = d;
             return rest;
@@ -346,6 +521,7 @@ router.post('/run', async (req, res) => {
         } catch (err) {
           console.error(`[EVAL] Error en nivel ${nivel}:`, err);
           console.error(`[EVAL] Continuando con siguiente nivel...`);
+          bumpProgress(session_id, { processed_tasks: verified.length, failed_tasks: verified.length });
           continue;
         }
 
@@ -357,6 +533,7 @@ router.post('/run', async (req, res) => {
 
         if (!results) {
           console.error(`[EVAL] Output inválido para nivel ${nivel}, tipo: ${typeof evaluatorOutput}`);
+          bumpProgress(session_id, { processed_tasks: verified.length, failed_tasks: verified.length });
           continue;
         }
 
@@ -364,8 +541,10 @@ router.post('/run', async (req, res) => {
 
         // Guardar resultados con el nivel correspondiente
         for (const r of results) {
+          bumpProgress(session_id, { processed_tasks: 1 });
           if (!r.ok) {
             console.warn(`[EVAL] Falló módulo ${r.nombre || r.catalog_id} en nivel ${nivel}: ${r.error}`);
+            bumpProgress(session_id, { failed_tasks: 1 });
             continue;
           }
           
@@ -387,6 +566,7 @@ router.post('/run', async (req, res) => {
             );
             const insertedRow = insertResult.rows[0];
             console.log(`[EVAL] ✓ Resultado guardado: id=${insertedRow.id}, catalog_id=${r.catalog_id}, nivel=${insertedRow.nivel || nivel}`);
+            bumpProgress(session_id, { saved_results: 1 });
             
             try {
               await pool.query(
@@ -402,6 +582,7 @@ router.post('/run', async (req, res) => {
           } catch (insertErr) {
             console.error(`[EVAL] Error insertando resultado para catalog_id=${r.catalog_id}, nivel=${nivel}:`, insertErr.message);
             console.error(`[EVAL] Stack del error:`, insertErr.stack);
+            bumpProgress(session_id, { failed_tasks: 1 });
           }
         }
         
@@ -413,9 +594,18 @@ router.post('/run', async (req, res) => {
       console.log(`[EVAL] ==========================================`);
     }
     
+    const finalEntry = progressStore.get(String(session_id));
+    const incomplete =
+      finalEntry && finalEntry.total_tasks > 0 && finalEntry.processed_tasks < finalEntry.total_tasks;
+    const finalStatus =
+      !finalEntry || incomplete || finalEntry.failed_tasks > 0 ? 'completed_with_errors' : 'completed';
+
+    finishProgress(session_id, finalStatus, { message: finalStatus });
+
     res.json({ ok: true, count: totalResults, niveles: niveles.length, ...(isMultianalito && { analitos: analitos.length }) });
   } catch (err) {
     console.error('[API] Error ejecutando evaluaciones', err);
+    finishProgress(session_id, 'failed', { message: 'failed' });
     res.status(500).json({ ok: false, error: 'db_error' });
   }
 });

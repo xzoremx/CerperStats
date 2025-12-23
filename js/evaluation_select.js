@@ -5,6 +5,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnVolver = document.getElementById("go-back");
   const menuVisualizaciones = document.getElementById("menu-visualizaciones");
 
+  // === Obtener y mostrar el usuario actual ===
+  try {
+    const userRes = await window.cerper.getCurrentUser();
+    if (userRes?.ok && userRes.user) {
+      const userName = userRes.user.nombre_completo || userRes.user.username || "Usuario";
+      const titleElement = document.querySelector("h2.text-3xl");
+      if (titleElement) {
+        titleElement.textContent = `Hola de nuevo, ${userName}`;
+      }
+    }
+  } catch (err) {
+    console.warn("[EvalSelect] No se pudo obtener usuario:", err);
+  }
+
   // --- Boton Volver ---
   if (btnVolver) {
     btnVolver.addEventListener("click", () => {
@@ -88,30 +102,50 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  // Color palette for card icons
+  const iconColors = ['blue', 'purple', 'pink', 'emerald', 'orange', 'cyan', 'rose', 'indigo'];
+  let colorIndex = 0;
+
   for (const test of res.data) {
-    const card = document.createElement("article");
-    card.className = "analysis-card";
+    const card = document.createElement("div");
+    card.className = "glass-card rounded-2xl overflow-hidden group cursor-pointer h-72";
     card.dataset.catalogId = test.id;
+
+    // Pick a color for this card
+    const color = iconColors[colorIndex % iconColors.length];
+    colorIndex++;
+
+    // --- Build card HTML structure matching the glass UI design
+    card.innerHTML = `
+      <div class="p-6 flex flex-col h-full">
+        <div class="flex items-center justify-between mb-4">
+          <div class="icon-container p-3 rounded-xl">
+            <div class="card-icon w-6 h-6 text-${color}-400"></div>
+          </div>
+          <span class="status-badge text-xs px-3 py-1 rounded-full font-medium bg-blue-500/20 text-blue-400">Disponible</span>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-2 group-hover:text-${color}-300 transition-colors">${test.titulo}</h3>
+        <p class="text-gray-400 text-sm mb-4 flex-1">${test.descripcion}</p>
+      </div>
+    `;
 
     // --- Icono (seguro): usa módulo IconSafety
     const rawIcon = (test.icon_value || "").trim();
-    card.innerHTML = `
-      <div class="card-icon"></div>
-      <h2 class="card-title">${test.titulo}</h2>
-      <p class="card-desc">${test.descripcion}</p>
-    `;
     const iconSlot = card.querySelector('.card-icon');
     const ok = await window.IconSafety.attachIcon(iconSlot, rawIcon);
     if (!ok) {
-      iconSlot.innerHTML = `<i data-lucide="bar-chart-2"></i>`;
+      iconSlot.innerHTML = `<i data-lucide="bar-chart-2" class="w-6 h-6"></i>`;
     }
 
     // === Verificar si es aplicable según metadata ===
     const testMeta = resTests.data.find(t => t.id === test.id);
     const aplicable = testMeta ? testMeta.aplicable === 1 : true;
 
+    const statusBadge = card.querySelector('.status-badge');
     if (!aplicable) {
       card.classList.add("blocked");
+      statusBadge.className = "status-badge text-xs px-3 py-1 rounded-full font-medium bg-red-500/20 text-red-400";
+      statusBadge.textContent = "No aplicable";
     }
 
     // === Selección solo si aplicable ===
@@ -125,13 +159,43 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (seleccionadas.has(id)) {
         seleccionadas.delete(id);
         card.classList.remove("selected");
+        statusBadge.className = "status-badge text-xs px-3 py-1 rounded-full font-medium bg-blue-500/20 text-blue-400";
+        statusBadge.textContent = "Disponible";
       } else {
         seleccionadas.add(id);
         card.classList.add("selected");
+        statusBadge.className = "status-badge text-xs px-3 py-1 rounded-full font-medium bg-emerald-500/20 text-emerald-400";
+        statusBadge.textContent = "Seleccionada";
       }
+
+      // Update progress
+      updateProgress(seleccionadas.size, res.data.length);
     });
 
     contenedor.appendChild(card);
+  }
+
+  // Progress update function
+  function updateProgress(selected, total) {
+    const percent = total > 0 ? Math.round((selected / total) * 100) : 0;
+    const progressBar = document.getElementById('progress-bar');
+    const progressPercent = document.getElementById('progress-percent');
+    const progressStatus = document.getElementById('progress-status');
+
+    if (progressBar) progressBar.style.width = `${percent}%`;
+    if (progressPercent) progressPercent.textContent = `${percent}%`;
+    if (progressStatus) {
+      if (selected === 0) {
+        progressStatus.className = "text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full font-medium";
+        progressStatus.textContent = "Pendiente";
+      } else if (selected === total) {
+        progressStatus.className = "text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full font-medium";
+        progressStatus.textContent = "Completo";
+      } else {
+        progressStatus.className = "text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full font-medium";
+        progressStatus.textContent = `${selected} de ${total}`;
+      }
+    }
   }
 
 

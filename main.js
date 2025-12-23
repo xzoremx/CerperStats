@@ -102,6 +102,13 @@ const APPLE_TITLEBAR_JS = `
 
 // === Crear ventana principal ===
 function createWindow() {
+  // === Optimizaciones de Chromium para mejor rendimiento ===
+  app.commandLine.appendSwitch('enable-gpu-rasterization');
+  app.commandLine.appendSwitch('enable-zero-copy');
+  app.commandLine.appendSwitch('disable-software-rasterizer');
+  app.commandLine.appendSwitch('ignore-gpu-blocklist');
+  app.commandLine.appendSwitch('enable-features', 'VaapiVideoDecoder');
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -109,6 +116,8 @@ function createWindow() {
     minHeight: 700,
     icon: browserIcon,
     frame: false,
+    show: false,
+    backgroundColor: '#0f0f12',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -117,16 +126,23 @@ function createWindow() {
       enableRemoteModule: false,
       webSecurity: true,
       allowRunningInsecureContent: false,
+      hardwareAcceleration: true, // Activar aceleración de hardware
+      enableBlinkFeatures: 'CSSBackdropFilter', // Para glass effects optimizados
     },
   });
   Menu.setApplicationMenu(null);
-  
+
+  // Mostrar ventana solo cuando esté lista (evita flash blanco)
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+  });
+
   // Inyectar estilos y barra de título cuando se carga cualquier página
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.webContents.insertCSS(GLOBAL_STYLES);
     mainWindow.webContents.executeJavaScript(APPLE_TITLEBAR_JS);
   });
-  
+
   mainWindow.loadFile('login.html'); // Pantalla inicial
 
   mainWindow.webContents.on('before-input-event', (event, input) => {
@@ -178,7 +194,7 @@ app.on('window-all-closed', () => {
 });
 
 // Cierre limpio (no hay conexiones directas)
-app.on('before-quit', async () => {});
+app.on('before-quit', async () => { });
 // === Navegación segura controlada desde preload.js ===
 ipcMain.handle('open-page', async (_event, page) => {
   if (!ROUTES.has(page)) {
@@ -193,7 +209,7 @@ ipcMain.handle('open-page', async (_event, page) => {
     console.error(`[CerperStats] Error al cargar ${page}:`, err);
     return { ok: false, error: err.message };
   }
-  });
+});
 
 
 // === Proxy REST (reemplaza acceso directo a PostgreSQL) ===
