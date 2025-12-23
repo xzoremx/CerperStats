@@ -5,16 +5,23 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "dev": "vite",
+    "build": "vite build && powershell -Command \"Copy-Item -Path 'assets' -Destination 'dist-react\\' -Recurse -Force\"",
     "test": "jest"
   },
   "author": "Renato Huamani",
   "license": "MIT",
   "devDependencies": {
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.2",
     "autoprefixer": "^10.4.22",
     "electron": "^32.0.0",
     "jest": "^30.2.0",
     "postcss": "^8.5.6",
-    "tailwindcss": "https://registry.npmjs.org/tailwindcss/-/tailwindcss-3.4.14.tgz"
+    "tailwindcss": "https://registry.npmjs.org/tailwindcss/-/tailwindcss-3.4.14.tgz",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.0"
   },
   "dependencies": {
     "axios": "^1.13.2",
@@ -24,6 +31,8 @@
     "jsonwebtoken": "^9.0.2",
     "lucide": "^0.545.0",
     "pg": "^8.16.3",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
   }
