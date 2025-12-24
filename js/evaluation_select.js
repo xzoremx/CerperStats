@@ -337,9 +337,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             <img src="${g.grafico_data}" alt="${title}" loading="lazy">
           </div>
           <div class="viz-card-content">
-            <h2 class="viz-card-title">${title}</h2>
-            ${subtitle ? `<p class="viz-card-subtitle">${subtitle}</p>` : ""}
             <span class="viz-card-badge">#${g?.catalog_id || "?"}</span>
+            <h2 class="viz-card-title">${title}</h2>
+            ${subtitle ? `<span class="viz-card-subtitle">${subtitle}</span>` : ""}
           </div>
         </div>
       `;
