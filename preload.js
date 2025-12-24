@@ -10,7 +10,7 @@ contextBridge.exposeInMainWorld('cerper', {
     return res.data;
   },
   login: (username, password) =>
-  ipcRenderer.invoke("db-login", { username, password }),
+    ipcRenderer.invoke("db-login", { username, password }),
   getLabByKey: (labKey) => ipcRenderer.invoke("db-get-lab-by-key", labKey),
   getLabModules: (labKey) => ipcRenderer.invoke("db-get-lab-modes", labKey),
   insertSession: (data) => ipcRenderer.invoke("db-insert-session", data),
@@ -21,19 +21,21 @@ contextBridge.exposeInMainWorld('cerper', {
   clearInputs: (session_id, tipoAnalisis) =>
     ipcRenderer.invoke("db-clear-inputs", { session_id, tipoAnalisis }),
   closeSession: (session_id) =>
-  ipcRenderer.invoke("db-close-session", session_id),
+    ipcRenderer.invoke("db-close-session", session_id),
   getSessionInfo: (session_id) =>
-  ipcRenderer.invoke("db-get-session-info", session_id),
+    ipcRenderer.invoke("db-get-session-info", session_id),
   getSessionsByRole: (args) =>
-  ipcRenderer.invoke("db-get-sessions-by-role", args),
+    ipcRenderer.invoke("db-get-sessions-by-role", args),
   getEvaluaciones: (args) => ipcRenderer.invoke("db-get-evaluaciones", args),
   getTestsWithMetadata: (session_id) =>
-  ipcRenderer.invoke("db-get-tests-with-metadata", session_id),
+    ipcRenderer.invoke("db-get-tests-with-metadata", session_id),
   runEvaluations: (args) => ipcRenderer.invoke("db-run-evaluaciones", args),
   getEvaluacionesProgress: (session_id) =>
     ipcRenderer.invoke("db-get-evaluaciones-progress", session_id),
   getEvaluacionesGraficos: (session_id) =>
     ipcRenderer.invoke("db-get-evaluaciones-graficos", session_id),
+  getResultadosPreliminares: (session_id) =>
+    ipcRenderer.invoke("db-get-resultados-preliminares", session_id),
   deleteSessionDeep: (session_id) =>
     ipcRenderer.invoke("db-delete-session-deep", session_id),
   getCurrentUser: () => ipcRenderer.invoke("auth-get-current-user"),

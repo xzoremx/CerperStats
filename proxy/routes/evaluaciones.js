@@ -259,9 +259,82 @@ router.get('/graficos/:session_id', async (req, res) => {
   }
 });
 
+// Obtener resultados preliminares (resultado_pc) para la vista de dataframes
+router.get('/resultados/:session_id', async (req, res) => {
+  const sessionId = Number(req.params.session_id);
+  if (!sessionId) {
+    return res.status(400).json({ ok: false, error: 'invalid_session_id' });
+  }
+
+  const maxTestsRaw = Number(process.env.CERPER_RESULTADOS_MAX_TESTS || 100);
+  const maxTests = Number.isFinite(maxTestsRaw) ? Math.max(1, Math.min(200, Math.trunc(maxTestsRaw))) : 100;
+
+  try {
+    const { rows: metaRows } = await pool.query(
+      `SELECT MAX(creado_en)::text AS last_run_at
+       FROM results_general
+       WHERE session_id = $1
+         AND catalog_id IS NOT NULL
+         AND resultado_pc IS NOT NULL`,
+      [sessionId]
+    );
+    const lastRunAt = metaRows?.[0]?.last_run_at || null;
+
+    const { rows: latestRows } = await pool.query(
+      `WITH latest_tests AS (
+         SELECT
+           rg.catalog_id,
+           MAX(rg.creado_en) AS last_creado_en
+         FROM results_general rg
+         WHERE rg.session_id = $1
+           AND rg.catalog_id IS NOT NULL
+           AND rg.resultado_pc IS NOT NULL
+         GROUP BY rg.catalog_id
+         ORDER BY last_creado_en DESC
+         LIMIT $2
+       )
+       SELECT DISTINCT ON (rg.catalog_id, rg.nivel, rg.analito)
+         rg.id,
+         rg.catalog_id,
+         rg.nivel,
+         rg.analito,
+         rg.resultado_pc,
+         rg.creado_en,
+         tc.titulo AS test_titulo,
+         tc.nombre_interno,
+         tc.categoria
+       FROM results_general rg
+       LEFT JOIN tests_catalog tc ON tc.id = rg.catalog_id
+       JOIN latest_tests lt ON lt.catalog_id = rg.catalog_id
+       WHERE rg.session_id = $1
+         AND rg.resultado_pc IS NOT NULL
+       ORDER BY rg.catalog_id ASC, rg.nivel ASC, rg.analito ASC, rg.creado_en DESC`,
+      [sessionId, maxTests]
+    );
+
+    const data = latestRows || [];
+    const selectedCatalogIds = [...new Set(data.map((r) => Number(r.catalog_id)).filter((n) => Number.isFinite(n)))].sort(
+      (a, b) => a - b
+    );
+
+    return res.json({
+      ok: true,
+      data,
+      meta: {
+        session_id: sessionId,
+        last_run_at: data.length ? lastRunAt : null,
+        selected_catalog_ids: selectedCatalogIds,
+      },
+    });
+  } catch (err) {
+    console.error('[API] Error obteniendo resultados', err);
+    return res.status(500).json({ ok: false, error: 'db_error' });
+  }
+});
+
 router.post('/run', async (req, res) => {
   console.log('[EVAL-ROUTE] POST /run recibido:', { session_id: req.body?.session_id, catalog_ids: req.body?.catalog_ids });
-  
+
   const { session_id, catalog_ids } = req.body || {};
   if (!session_id || !Array.isArray(catalog_ids) || catalog_ids.length === 0) {
     console.log('[EVAL-ROUTE] Payload inválido');
@@ -273,9 +346,9 @@ router.post('/run', async (req, res) => {
     return res.status(409).json({ ok: false, error: progressInit.error });
   }
   updateProgress(session_id, { message: 'preparando_evaluacion', current: null });
-  
+
   console.log(`[EVAL-ROUTE] Procesando sesión ${session_id} con ${catalog_ids.length} tests`);
-  
+
   try {
     const { rows: sessionRows } = await pool.query(
       `SELECT tipo_analisis, lab_key, usuario_id
@@ -304,7 +377,7 @@ router.post('/run', async (req, res) => {
     );
 
     console.log(`[EVAL-ROUTE] Tipo análisis: ${tipo_analisis}, Usuario: ${usuario_id}`);
-    
+
     // Obtener datos con nivel para identificar niveles únicos
     let dfIngresoConNivel = [];
     console.log(`[EVAL-ROUTE] Consultando datos para sesión ${session_id}...`);
@@ -329,10 +402,10 @@ router.post('/run', async (req, res) => {
     }
 
     console.log(`[EVAL-ROUTE] Total registros obtenidos: ${dfIngresoConNivel.length}`);
-    
+
     // Determinar si es multianalito
     const isMultianalito = (tipo_analisis === 'multi' || tipo_analisis === 'multianalito');
-    
+
     // Obtener niveles únicos (convertir a número para asegurar tipo consistente)
     const niveles = [...new Set(dfIngresoConNivel.map(d => Number(d.nivel) || 1))].sort((a, b) => a - b);
     if (niveles.length === 0) niveles.push(1);
@@ -358,9 +431,9 @@ router.post('/run', async (req, res) => {
     }
 
     console.log(`[EVAL-ROUTE] Niveles detectados: ${niveles.join(', ')} (total: ${niveles.length})`);
-    
+
     if (dfIngresoConNivel.length > 0) {
-      const exampleFields = isMultianalito 
+      const exampleFields = isMultianalito
         ? { nivel: dfIngresoConNivel[0].nivel, parametro: dfIngresoConNivel[0].parametro, analito: dfIngresoConNivel[0].analito }
         : { nivel: dfIngresoConNivel[0].nivel, parametro: dfIngresoConNivel[0].parametro };
       console.log(`[EVAL-ROUTE] Ejemplo de registro:`, exampleFields);
@@ -438,17 +511,17 @@ router.post('/run', async (req, res) => {
 
     // Procesamiento según tipo de análisis
     let totalResults = 0;
-    
+
     if (isMultianalito) {
       // MULTIANALITO: Iterar por analito × nivel
       console.log(`[EVAL] Iniciando procesamiento MULTIANALITO: ${analitos.length} analitos × ${niveles.length} niveles`);
-      
+
       for (const analito of analitos) {
         const nivelesDisponibles = [...(nivelesPorAnalito?.get(analito) || [])].sort((a, b) => a - b);
         for (const nivel of nivelesDisponibles) {
           console.log(`[EVAL] === INICIO PROCESAMIENTO: analito=${analito}, nivel=${nivel} ===`);
           updateProgress(session_id, { current: { analito, nivel }, message: 'ejecutando' });
-          
+
           // Filtrar datos para este analito y nivel específicos
           const dfIngreso = dfIngresoConNivel
             .filter(d => d.analito === analito && (Number(d.nivel) || 1) === nivel)
@@ -507,7 +580,7 @@ router.post('/run', async (req, res) => {
               bumpProgress(session_id, { failed_tasks: 1 });
               continue;
             }
-            
+
             try {
               const insertResult = await pool.query(
                 `INSERT INTO results_general
@@ -527,7 +600,7 @@ router.post('/run', async (req, res) => {
               const insertedRow = insertResult.rows[0];
               console.log(`[EVAL] ✓ Resultado guardado: id=${insertedRow.id}, catalog_id=${r.catalog_id}, analito=${insertedRow.analito}, nivel=${insertedRow.nivel || nivel}`);
               bumpProgress(session_id, { saved_results: 1 });
-              
+
               try {
                 await pool.query(
                   `INSERT INTO logs_sistema (usuario_id, accion, detalle)
@@ -537,7 +610,7 @@ router.post('/run', async (req, res) => {
               } catch (logErr) {
                 console.warn(`[EVAL] Error insertando log (no crítico):`, logErr.message);
               }
-               
+
               totalResults++;
             } catch (insertErr) {
               console.error(`[EVAL] Error insertando resultado para catalog_id=${r.catalog_id}, analito=${analito}, nivel=${nivel}:`, insertErr.message);
@@ -545,23 +618,23 @@ router.post('/run', async (req, res) => {
               bumpProgress(session_id, { failed_tasks: 1 });
             }
           }
-          
+
           console.log(`[EVAL] === FIN PROCESAMIENTO: analito=${analito}, nivel=${nivel} (${totalResults} resultados guardados hasta ahora) ===`);
         }
       }
-      
+
       console.log(`[EVAL] ==========================================`);
       console.log(`[EVAL] PROCESAMIENTO MULTIANALITO COMPLETADO: ${totalResults} módulos procesados en ${analitos.length} analitos × ${niveles.length} niveles`);
       console.log(`[EVAL] ==========================================`);
-      
+
     } else {
       // MONOANALITO: Iterar solo por nivel
       console.log(`[EVAL] Iniciando procesamiento MONOANALITO: ${niveles.length} niveles: [${niveles.join(', ')}]`);
-      
+
       for (const nivel of nivelesConDatos) {
         console.log(`[EVAL] === INICIO PROCESAMIENTO NIVEL ${nivel} ===`);
         updateProgress(session_id, { current: { nivel }, message: 'ejecutando' });
-        
+
         // Filtrar datos para este nivel (convertir a número para comparación correcta)
         const dfIngreso = dfIngresoConNivel
           .filter(d => (Number(d.nivel) || 1) === nivel)
@@ -619,7 +692,7 @@ router.post('/run', async (req, res) => {
             bumpProgress(session_id, { failed_tasks: 1 });
             continue;
           }
-          
+
           try {
             const insertResult = await pool.query(
               `INSERT INTO results_general
@@ -639,7 +712,7 @@ router.post('/run', async (req, res) => {
             const insertedRow = insertResult.rows[0];
             console.log(`[EVAL] ✓ Resultado guardado: id=${insertedRow.id}, catalog_id=${r.catalog_id}, nivel=${insertedRow.nivel || nivel}`);
             bumpProgress(session_id, { saved_results: 1 });
-            
+
             try {
               await pool.query(
                 `INSERT INTO logs_sistema (usuario_id, accion, detalle)
@@ -649,7 +722,7 @@ router.post('/run', async (req, res) => {
             } catch (logErr) {
               console.warn(`[EVAL] Error insertando log (no crítico):`, logErr.message);
             }
-            
+
             totalResults++;
           } catch (insertErr) {
             console.error(`[EVAL] Error insertando resultado para catalog_id=${r.catalog_id}, nivel=${nivel}:`, insertErr.message);
@@ -657,7 +730,7 @@ router.post('/run', async (req, res) => {
             bumpProgress(session_id, { failed_tasks: 1 });
           }
         }
-        
+
         console.log(`[EVAL] === FIN PROCESAMIENTO NIVEL ${nivel} (${totalResults} resultados guardados hasta ahora) ===`);
       }
 
@@ -665,7 +738,7 @@ router.post('/run', async (req, res) => {
       console.log(`[EVAL] PROCESAMIENTO MONOANALITO COMPLETADO: ${totalResults} módulos procesados en ${niveles.length} niveles`);
       console.log(`[EVAL] ==========================================`);
     }
-    
+
     const finalEntry = progressStore.get(String(session_id));
     const incomplete =
       finalEntry && finalEntry.total_tasks > 0 && finalEntry.processed_tasks < finalEntry.total_tasks;

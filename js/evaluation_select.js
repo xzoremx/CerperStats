@@ -719,7 +719,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.addEventListener("keydown", handleVizKeydown);
 
   function setActiveView(nextView) {
-    const validViews = ["evaluaciones", "visualizaciones", "configuracion"];
+    const validViews = ["evaluaciones", "visualizaciones", "configuracion", "resultados"];
     activeView = validViews.includes(nextView) ? nextView : "evaluaciones";
     sessionStorage.setItem("evalSelectView", activeView);
 
@@ -727,13 +727,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (viewVisualizaciones)
       viewVisualizaciones.classList.toggle("hidden", activeView !== "visualizaciones");
     if (viewConfiguracion) viewConfiguracion.classList.toggle("hidden", activeView !== "configuracion");
+    if (viewResultados) viewResultados.classList.toggle("hidden", activeView !== "resultados");
 
     setMenuActiveState(menuEvaluaciones, activeView === "evaluaciones");
     setMenuActiveState(menuVisualizaciones, activeView === "visualizaciones");
     setMenuActiveState(menuConfiguracion, activeView === "configuracion");
+    setMenuActiveState(menuResultados, activeView === "resultados");
 
     if (activeView === "visualizaciones") {
       loadVisualizaciones();
+    } else if (activeView === "resultados") {
+      loadResultados();
     }
   }
 
@@ -752,7 +756,349 @@ document.addEventListener("DOMContentLoaded", async () => {
     setActiveView("configuracion");
   });
 
-  // Restore last view (but not configuracion on page load to avoid confusion)
+  // ========================================
+  // Resultados Preliminares Logic
+  // ========================================
+
+  const menuResultados = document.getElementById("menu-resultados");
+  const viewResultados = document.getElementById("view-resultados");
+  const resultListContainer = document.getElementById("result-list-container");
+  const resultEmptyState = document.getElementById("result-empty-state");
+  const resultEmptyTitle = document.getElementById("result-empty-title");
+  const resultEmptyText = document.getElementById("result-empty-text");
+  const resultRunInfo = document.getElementById("result-run-info");
+  const dropdownResultNivel = document.getElementById("dropdown-result-nivel");
+  const dropdownResultAnalito = document.getElementById("dropdown-result-analito");
+  const resultModalBackdrop = document.getElementById("result-modal-backdrop");
+  const resultModalTitle = document.getElementById("result-modal-title");
+  const resultModalSubtitle = document.getElementById("result-modal-subtitle");
+  const resultModalBody = document.getElementById("result-modal-body");
+  const resultModalClose = document.getElementById("result-modal-close");
+
+  let allResults = [];
+  let filteredResults = [];
+  let resultadosLoading = false;
+  let resultFilterNivel = "";
+  let resultFilterAnalito = "";
+
+  menuResultados?.addEventListener("click", (e) => {
+    e.preventDefault();
+    setActiveView("resultados");
+  });
+
+  function showResultadosEmpty(title, message) {
+    if (resultListContainer) resultListContainer.innerHTML = "";
+    if (resultEmptyTitle) resultEmptyTitle.textContent = title || "";
+    if (resultEmptyText) resultEmptyText.textContent = message || "";
+    if (resultEmptyState) resultEmptyState.classList.remove("hidden");
+    if (resultListContainer) resultListContainer.classList.add("hidden");
+    if (resultRunInfo) resultRunInfo.textContent = "";
+  }
+
+  function hideResultadosEmpty() {
+    if (resultEmptyState) resultEmptyState.classList.add("hidden");
+    if (resultListContainer) resultListContainer.classList.remove("hidden");
+  }
+
+  function formatDataframeValue(value) {
+    if (value === true) return '<span class="df-value-true">✓ Sí</span>';
+    if (value === false) return '<span class="df-value-false">✗ No</span>';
+    if (typeof value === "number") {
+      const formatted = Number.isInteger(value) ? value.toString() : value.toFixed(4);
+      return `<span class="df-value-number">${formatted}</span>`;
+    }
+    if (typeof value === "string") {
+      return `<span class="df-value-string">${value}</span>`;
+    }
+    return String(value);
+  }
+
+  function getColumnLabel(key) {
+    const labels = {
+      n: "n",
+      media: "Media",
+      desviacion: "Desviación",
+      asimetria: "Asimetría",
+      curtosis: "Curtosis",
+      p_value: "P-Value",
+      normalidad: "Normalidad",
+      prueba_normalidad: "Prueba",
+      parametro: "Parámetro",
+      estadistico: "Estadístico",
+      conclusion: "Conclusión",
+      prueba_homogeneidad: "Prueba",
+      prueba_tendencia: "Prueba"
+    };
+    return labels[key] || key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ");
+  }
+
+  function renderDataframeTable(data) {
+    if (!Array.isArray(data) || data.length === 0) {
+      return '<p class="text-gray-400">No hay datos disponibles.</p>';
+    }
+
+    // Get all unique keys from all rows
+    const allKeys = new Set();
+    data.forEach(row => {
+      if (row && typeof row === "object") {
+        Object.keys(row).forEach(key => allKeys.add(key));
+      }
+    });
+
+    // Order columns: parametro first if exists, then the rest
+    const orderedKeys = [];
+    if (allKeys.has("parametro")) {
+      orderedKeys.push("parametro");
+      allKeys.delete("parametro");
+    }
+    // Add prueba fields first
+    ["prueba_normalidad", "prueba_homogeneidad", "prueba_tendencia"].forEach(key => {
+      if (allKeys.has(key)) {
+        orderedKeys.push(key);
+        allKeys.delete(key);
+      }
+    });
+    // Add remaining keys
+    orderedKeys.push(...Array.from(allKeys).sort());
+
+    // Build table HTML
+    let html = '<div class="df-table-container"><table class="df-table"><thead><tr>';
+    orderedKeys.forEach(key => {
+      html += `<th>${getColumnLabel(key)}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    data.forEach(row => {
+      html += '<tr>';
+      orderedKeys.forEach(key => {
+        const value = row[key];
+        html += `<td>${formatDataframeValue(value)}</td>`;
+      });
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+    return html;
+  }
+
+  function openResultModal(result) {
+    const title = result.test_titulo || result.nombre_interno || `Prueba #${result.catalog_id}`;
+    const subtitleParts = [];
+    if (result.nivel != null) subtitleParts.push(`Nivel ${result.nivel}`);
+    if (result.analito) subtitleParts.push(result.analito);
+
+    if (resultModalTitle) resultModalTitle.textContent = title;
+    if (resultModalSubtitle) resultModalSubtitle.textContent = subtitleParts.join(" · ") || "Sin detalles";
+
+    // Parse resultado_pc if it's a string
+    let dataArray = result.resultado_pc;
+    if (typeof dataArray === "string") {
+      try {
+        dataArray = JSON.parse(dataArray);
+      } catch (e) {
+        dataArray = [];
+      }
+    }
+    if (!Array.isArray(dataArray)) dataArray = [dataArray].filter(Boolean);
+
+    if (resultModalBody) {
+      resultModalBody.innerHTML = renderDataframeTable(dataArray);
+    }
+
+    if (resultModalBackdrop) resultModalBackdrop.classList.add("visible");
+  }
+
+  function closeResultModal() {
+    if (resultModalBackdrop) resultModalBackdrop.classList.remove("visible");
+  }
+
+  resultModalClose?.addEventListener("click", closeResultModal);
+  resultModalBackdrop?.addEventListener("click", (e) => {
+    if (e.target === resultModalBackdrop) closeResultModal();
+  });
+
+  // Close modal on Escape key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && resultModalBackdrop?.classList.contains("visible")) {
+      closeResultModal();
+    }
+  });
+
+  function renderResultadosList() {
+    if (!resultListContainer) return;
+    resultListContainer.innerHTML = "";
+
+    if (filteredResults.length === 0) {
+      if (allResults.length > 0) {
+        showResultadosEmpty("Sin resultados", "No hay resultados que coincidan con los filtros seleccionados.");
+      }
+      return;
+    }
+
+    hideResultadosEmpty();
+
+    filteredResults.forEach((r, index) => {
+      const title = r.test_titulo || r.nombre_interno || `Prueba ${r.catalog_id}`;
+      const metaParts = [];
+      if (r.analito) metaParts.push(r.analito);
+      if (r.nivel != null) metaParts.push(`Nivel ${r.nivel}`);
+
+      const item = document.createElement("div");
+      item.className = "result-list-item";
+      item.dataset.index = index;
+
+      item.innerHTML = `
+        <div class="result-list-item-inner">
+          <span class="result-list-id">#${r.catalog_id || "?"}</span>
+          <h2 class="result-list-title">${title}</h2>
+          <p class="result-list-meta">${metaParts.join(" · ")}</p>
+          ${r.categoria ? `<span class="result-list-category">${r.categoria}</span>` : ""}
+          <span class="result-list-arrow">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </span>
+        </div>
+      `;
+
+      item.addEventListener("click", () => openResultModal(r));
+      resultListContainer.appendChild(item);
+    });
+  }
+
+  function applyResultFilters() {
+    filteredResults = allResults.filter(r => {
+      if (resultFilterNivel && String(r.nivel) !== resultFilterNivel) return false;
+      if (resultFilterAnalito && r.analito !== resultFilterAnalito) return false;
+      return true;
+    });
+    renderResultadosList();
+  }
+
+  function populateResultFilters() {
+    const niveles = new Set();
+    const analitos = new Set();
+
+    allResults.forEach(r => {
+      if (r.nivel != null) niveles.add(String(r.nivel));
+      if (r.analito) analitos.add(r.analito);
+    });
+
+    const nivelItems = [...niveles].sort((a, b) => Number(a) - Number(b)).map(n => ({
+      value: n,
+      label: `Nivel ${n}`
+    }));
+
+    const analitoItems = [...analitos].sort().map(a => ({
+      value: a,
+      label: a
+    }));
+
+    populateDropdown(dropdownResultNivel, nivelItems, "Todos los niveles");
+    populateDropdown(dropdownResultAnalito, analitoItems, "Todos los analitos");
+  }
+
+  // Initialize result dropdowns with reused function
+  initDropdown(dropdownResultNivel, (value) => {
+    resultFilterNivel = value;
+    applyResultFilters();
+  });
+
+  initDropdown(dropdownResultAnalito, (value) => {
+    resultFilterAnalito = value;
+    applyResultFilters();
+  });
+
+  async function loadResultados() {
+    if (resultadosLoading) return;
+
+    if (!sessionId) {
+      showResultadosEmpty(
+        "No hay sesión activa",
+        "Regresa al flujo de sesión y ejecuta las evaluaciones para ver resultados."
+      );
+      return;
+    }
+
+    if (!window.cerper || typeof window.cerper.getResultadosPreliminares !== "function") {
+      showResultadosEmpty(
+        "Resultados no disponibles",
+        "Falta la función para cargar resultados. Reinicia la app o revisa la integración."
+      );
+      return;
+    }
+
+    resultadosLoading = true;
+    if (resultRunInfo) resultRunInfo.textContent = "Cargando resultados...";
+    hideResultadosEmpty();
+
+    let res;
+    try {
+      res = await window.cerper.getResultadosPreliminares(sessionId);
+    } catch (err) {
+      console.error("[EvalSelect] Error obteniendo resultados:", err);
+      showResultadosEmpty("Error al cargar resultados", "No se pudieron obtener los resultados preliminares.");
+      resultadosLoading = false;
+      return;
+    }
+
+    if (!res?.ok) {
+      showResultadosEmpty(
+        "Error al cargar resultados",
+        "No se pudieron obtener los resultados desde el backend."
+      );
+      resultadosLoading = false;
+      return;
+    }
+
+    const results = Array.isArray(res.data) ? res.data : [];
+    const lastRunAt = res?.meta?.last_run_at || null;
+
+    if (results.length === 0) {
+      showResultadosEmpty(
+        "No hay resultados aún",
+        "Ejecuta las evaluaciones para ver los resultados preliminares."
+      );
+      resultadosLoading = false;
+      return;
+    }
+
+    // Sort by catalog_id
+    allResults = results.sort((a, b) => (a.catalog_id || 0) - (b.catalog_id || 0));
+
+    // Format last run date
+    let formattedDate = "";
+    if (lastRunAt) {
+      try {
+        const date = new Date(lastRunAt.replace(" ", "T") + "Z");
+        formattedDate = date.toLocaleString("es-PE", {
+          timeZone: "America/Lima",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true
+        });
+      } catch (e) {
+        formattedDate = lastRunAt;
+      }
+    }
+    if (resultRunInfo) resultRunInfo.textContent = formattedDate
+      ? `Última corrida: ${formattedDate} · ${allResults.length} resultados`
+      : `${allResults.length} resultados`;
+
+    // Populate filters
+    populateResultFilters();
+
+    // Apply initial filters
+    filteredResults = [...allResults];
+    renderResultadosList();
+
+    resultadosLoading = false;
+  }
+
+  // Restore last view (but not configuracion/resultados on page load to avoid confusion)
   const savedView = sessionStorage.getItem("evalSelectView");
   setActiveView(savedView === "visualizaciones" ? "visualizaciones" : "evaluaciones");
 

@@ -968,6 +968,230 @@
       background: rgba(139, 92, 246, 0.3);
       color: #c4b5fd;
     }
+
+    /* ========================================
+       Resultados Preliminares Styles
+       ======================================== */
+
+    .result-list-container {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .result-list-item {
+      display: block;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      transition: background-color 0.2s ease;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .result-list-item:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .result-list-item-inner {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.875rem 1rem;
+    }
+
+    .result-list-id {
+      font-size: 0.75rem;
+      color: #22d3ee;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      width: 4rem;
+      flex-shrink: 0;
+    }
+
+    .result-list-title {
+      flex: 1;
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color 0.2s ease;
+    }
+
+    .result-list-item:hover .result-list-title {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .result-list-meta {
+      flex: 1;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.4);
+      white-space: nowrap;
+    }
+
+    .result-list-category {
+      font-size: 0.65rem;
+      padding: 0.25rem 0.5rem;
+      background: rgba(139, 92, 246, 0.15);
+      color: #a78bfa;
+      border-radius: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+
+    .result-list-arrow {
+      color: rgba(255, 255, 255, 0.3);
+      flex-shrink: 0;
+      transition: color 0.2s ease;
+    }
+
+    .result-list-item:hover .result-list-arrow {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Dataframe Table Styles */
+    .df-table-container {
+      overflow-x: auto;
+      margin-top: 1rem;
+    }
+
+    .df-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .df-table th {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: #94a3b8;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .df-table td {
+      padding: 0.75rem 1rem;
+      color: #e2e8f0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .df-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .df-table .df-value-true {
+      color: #4ade80;
+    }
+
+    .df-table .df-value-false {
+      color: #f87171;
+    }
+
+    .df-table .df-value-number {
+      font-variant-numeric: tabular-nums;
+      color: #67e8f9;
+    }
+
+    .df-table .df-value-string {
+      color: #fbbf24;
+    }
+
+    /* Result Modal Styles */
+    .result-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s ease;
+    }
+
+    .result-modal-backdrop.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .result-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      width: 90%;
+      max-width: 900px;
+      max-height: 80vh;
+      background: linear-gradient(145deg, #1e1e2e 0%, #181825 100%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      overflow: hidden;
+      z-index: 1001;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s ease;
+    }
+
+    .result-modal-backdrop.visible .result-modal {
+      opacity: 1;
+      visibility: visible;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .result-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .result-modal-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .result-modal-subtitle {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 0.25rem;
+    }
+
+    .result-modal-close {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.5rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .result-modal-close:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+    }
+
+    .result-modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      max-height: calc(80vh - 80px);
+    }
+
+    .result-filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
   </style>
 </head>
 
@@ -1009,6 +1233,12 @@
                   class="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/8 transition-all duration-200 group">
                   <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
                   <span class="font-medium">Visualizaciones</span>
+                </a>
+
+                <a href="#" id="menu-resultados"
+                  class="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/8 transition-all duration-200 group">
+                  <i data-lucide="table-2" class="w-5 h-5"></i>
+                  <span class="font-medium">Resultados Preliminares</span>
                 </a>
 
                 <a href="#" id="menu-configuracion"
@@ -1368,8 +1598,86 @@
 
               </div>
             </div>
+
+            <!-- Resultados Preliminares View -->
+            <div id="view-resultados" class="hidden min-h-[60vh]">
+              <!-- Header with Filters -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div id="result-run-info" class="text-sm text-gray-400"></div>
+
+                <div class="flex items-center gap-3">
+                  <!-- Custom Glass Dropdowns -->
+                  <div class="viz-dropdown" id="dropdown-result-nivel">
+                    <button class="viz-dropdown-trigger" type="button">
+                      <span class="viz-dropdown-text">Todos los niveles</span>
+                      <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </button>
+                    <div class="viz-dropdown-menu">
+                      <div class="viz-dropdown-item active" data-value="">Todos los niveles</div>
+                    </div>
+                  </div>
+
+                  <div class="viz-dropdown" id="dropdown-result-analito">
+                    <button class="viz-dropdown-trigger" type="button">
+                      <span class="viz-dropdown-text">Todos los analitos</span>
+                      <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </button>
+                    <div class="viz-dropdown-menu">
+                      <div class="viz-dropdown-item active" data-value="">Todos los analitos</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- List Container -->
+              <div id="result-list-container" class="result-list-container">
+                <!-- Populated by JS -->
+              </div>
+
+              <!-- Empty State -->
+              <div id="result-empty-state" class="glass-card p-8 rounded-xl hidden">
+                <div class="flex items-start gap-4">
+                  <div
+                    class="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="table-2" class="w-6 h-6 text-white"></i>
+                  </div>
+                  <div>
+                    <h3 id="result-empty-title" class="text-xl font-semibold text-white mb-2">No hay resultados aún
+                    </h3>
+                    <p id="result-empty-text" class="text-gray-300">Ejecuta las evaluaciones para ver los resultados
+                      preliminares.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Modal -->
+  <div id="result-modal-backdrop" class="result-modal-backdrop">
+    <div class="result-modal" id="result-modal">
+      <div class="result-modal-header">
+        <div>
+          <h3 class="result-modal-title" id="result-modal-title">Resultado</h3>
+          <p class="result-modal-subtitle" id="result-modal-subtitle">Nivel 1 · Analito</p>
+        </div>
+        <button id="result-modal-close" class="result-modal-close">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="result-modal-body" id="result-modal-body">
+        <!-- Dataframe table rendered here -->
       </div>
     </div>
   </div>
