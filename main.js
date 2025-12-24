@@ -439,6 +439,21 @@ ipcMain.handle("db-run-evaluaciones", async (event, { session_id, catalog_ids })
   }
 });
 
+// === Progreso de evaluaciones (polling desde renderer) ===
+ipcMain.handle("db-get-evaluaciones-progress", async (_event, session_id) => {
+  try {
+    const payload = await proxyFetch(`/evaluaciones/progress/${session_id}`);
+    return { ok: true, data: payload.data };
+  } catch (err) {
+    const status = err?.status;
+    if (status === 404) {
+      return { ok: false, error: "progress_not_found", status };
+    }
+    console.error("[PROXY] Error obteniendo progreso:", err);
+    return { ok: false, error: err.message, status: status || 500 };
+  }
+});
+
 
 
 // === Obtener pruebas con metadatos (usa la metadata calculada arriba) ===

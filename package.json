@@ -12,9 +12,6 @@
   "author": "Renato Huamani",
   "license": "MIT",
   "devDependencies": {
-    "@types/react": "^19.2.7",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.2",
     "autoprefixer": "^10.4.22",
     "electron": "^32.0.0",
     "jest": "^30.2.0",
@@ -31,8 +28,6 @@
     "jsonwebtoken": "^9.0.2",
     "lucide": "^0.545.0",
     "pg": "^8.16.3",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
   }
