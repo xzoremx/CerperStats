@@ -184,7 +184,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  function startProgressPolling() {
+  function startProgressPolling(
+    { stopOnTerminal = true, skipTerminalRender = false, onTerminal = null } = {}
+  ) {
     clearProgressPolling();
     stopProgressPolling = false;
 
@@ -197,9 +199,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
       if (progressRes?.ok && progressRes.data) {
-        renderExecutionProgress(progressRes.data);
-        if (isTerminalProgress(progressRes.data.status)) {
+        const terminal = isTerminalProgress(progressRes.data.status);
+        if (!(skipTerminalRender && terminal)) {
+          renderExecutionProgress(progressRes.data);
+        }
+        if (terminal && stopOnTerminal) {
           clearProgressPolling();
+          if (typeof onTerminal === "function") onTerminal(progressRes.data);
           return;
         }
       } else if (progressRes?.status !== 404 && progressRes?.error !== "progress_not_found") {
@@ -351,11 +357,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Si existe una evaluación en curso, reflejar progreso al entrar
   const initialProgressRes = await getEvaluacionesProgressSafe();
   if (initialProgressRes?.ok && initialProgressRes.data) {
-    renderExecutionProgress(initialProgressRes.data);
     if (initialProgressRes.data.status === "running") {
+      renderExecutionProgress(initialProgressRes.data);
       isEvaluating = true;
       bloquearBotones(true);
-      startProgressPolling();
+      startProgressPolling({
+        stopOnTerminal: true,
+        skipTerminalRender: false,
+        onTerminal: (finalProgress) => {
+          isEvaluating = false;
+          bloquearBotones(false);
+          if (
+            finalProgress &&
+            (finalProgress.status === "completed" || finalProgress.status === "completed_with_errors") &&
+            menuVisualizaciones
+          ) {
+            menuVisualizaciones.classList.add("active");
+          }
+        },
+      });
+    } else {
+      setProgressUi({ percent: 0, badgeVariant: "pending", badgeText: "Listo para evaluar" });
     }
   }
 
@@ -369,7 +391,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     bloquearBotones(true);
     isEvaluating = true;
     setProgressUi({ percent: 0, badgeVariant: "running", badgeText: "Iniciando..." });
-    startProgressPolling();
+    startProgressPolling({ stopOnTerminal: false, skipTerminalRender: true });
     notify("Ejecutando evaluaciones seleccionadas...", "info");
 
     try {
