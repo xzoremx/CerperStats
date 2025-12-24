@@ -10,11 +10,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   const progressStatus = document.getElementById("progress-status");
   const viewEvaluaciones = document.getElementById("view-evaluaciones");
   const viewVisualizaciones = document.getElementById("view-visualizaciones");
-  const graphsGrid = document.getElementById("graphs-grid");
   const emptyState = document.getElementById("empty-state");
   const emptyTitle = document.getElementById("empty-title");
   const emptyText = document.getElementById("empty-text");
   const runInfo = document.getElementById("run-info");
+
+  // New visualization UI elements
+  const filterNivel = document.getElementById("filter-nivel");
+  const filterAnalito = document.getElementById("filter-analito");
+  const btnVizRolodex = document.getElementById("btn-viz-rolodex");
+  const btnVizList = document.getElementById("btn-viz-list");
+  const vizRolodexView = document.getElementById("viz-rolodex-view");
+  const vizListView = document.getElementById("viz-list-view");
+  const vizCardsContainer = document.getElementById("viz-cards-container");
+  const vizListContainer = document.getElementById("viz-list-container");
+  const vizTimelineTrack = document.getElementById("viz-timeline-track");
+  const vizHoverPreview = document.getElementById("viz-hover-preview");
+  const vizHoverImage = document.getElementById("viz-hover-image");
 
   const PROGRESS_POLL_INTERVAL_MS = 700;
   let progressPollTimer = null;
@@ -22,6 +34,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   let isEvaluating = false;
   let activeView = "evaluaciones";
   let visualizacionesLoading = false;
+
+  // Visualization state
+  let allGraphs = [];
+  let filteredGraphs = [];
+  let vizActiveIndex = 0;
+  let vizDragProgress = 0;
+  let vizScrollAccumulator = 0;
+  let vizCurrentView = "rolodex"; // 'rolodex' or 'list'
 
   // === Obtener y mostrar el usuario actual ===
   try {
@@ -44,7 +64,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (returnTo) {
         try {
           sessionStorage.removeItem("evalSelectReturnTo");
-        } catch (_) {}
+        } catch (_) { }
         if (window.cerper && window.cerper.openPage) {
           window.cerper.openPage(returnTo);
         } else {
@@ -141,11 +161,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function showVisualizacionesEmpty(title, message) {
-    if (graphsGrid) graphsGrid.innerHTML = "";
+    if (vizCardsContainer) vizCardsContainer.innerHTML = "";
+    if (vizListContainer) vizListContainer.innerHTML = "";
+    if (vizTimelineTrack) vizTimelineTrack.innerHTML = "";
     if (runInfo) runInfo.textContent = "";
     if (emptyTitle) emptyTitle.textContent = title || "";
     if (emptyText) emptyText.textContent = message || "";
     if (emptyState) emptyState.classList.remove("hidden");
+    if (vizRolodexView) vizRolodexView.classList.add("viz-hidden");
+    if (vizListView) vizListView.classList.add("viz-hidden");
   }
 
   function isValidDataImageUrl(value) {
@@ -156,9 +180,342 @@ document.addEventListener("DOMContentLoaded", async () => {
     );
   }
 
+  // ========================================
+  // Visualization UI Functions
+  // ========================================
+
+  function setVizView(view) {
+    vizCurrentView = view === "list" ? "list" : "rolodex";
+
+    if (btnVizRolodex) btnVizRolodex.classList.toggle("active", vizCurrentView === "rolodex");
+    if (btnVizList) btnVizList.classList.toggle("active", vizCurrentView === "list");
+
+    if (vizRolodexView) vizRolodexView.classList.toggle("viz-hidden", vizCurrentView !== "rolodex");
+    if (vizListView) vizListView.classList.toggle("viz-hidden", vizCurrentView !== "list");
+  }
+
+  function applyFilters() {
+    const nivelFilter = filterNivel?.value || "";
+    const analitoFilter = filterAnalito?.value || "";
+
+    filteredGraphs = allGraphs.filter(g => {
+      if (nivelFilter && String(g.nivel) !== nivelFilter) return false;
+      if (analitoFilter && g.analito !== analitoFilter) return false;
+      return true;
+    });
+
+    vizActiveIndex = Math.min(vizActiveIndex, Math.max(0, filteredGraphs.length - 1));
+    renderVizCards();
+    renderVizTimeline();
+    renderVizList();
+  }
+
+  function populateFilters() {
+    const niveles = new Set();
+    const analitos = new Set();
+
+    allGraphs.forEach(g => {
+      if (g.nivel != null) niveles.add(String(g.nivel));
+      if (g.analito) analitos.add(g.analito);
+    });
+
+    if (filterNivel) {
+      const currentVal = filterNivel.value;
+      filterNivel.innerHTML = '<option value="">Todos los niveles</option>';
+      [...niveles].sort((a, b) => Number(a) - Number(b)).forEach(n => {
+        const opt = document.createElement("option");
+        opt.value = n;
+        opt.textContent = `Nivel ${n}`;
+        filterNivel.appendChild(opt);
+      });
+      filterNivel.value = currentVal;
+    }
+
+    if (filterAnalito) {
+      const currentVal = filterAnalito.value;
+      filterAnalito.innerHTML = '<option value="">Todos los analitos</option>';
+      [...analitos].sort().forEach(a => {
+        const opt = document.createElement("option");
+        opt.value = a;
+        opt.textContent = a;
+        filterAnalito.appendChild(opt);
+      });
+      filterAnalito.value = currentVal;
+    }
+  }
+
+  function renderVizCards() {
+    if (!vizCardsContainer) return;
+    vizCardsContainer.innerHTML = "";
+
+    if (filteredGraphs.length === 0) {
+      if (allGraphs.length > 0) {
+        showVisualizacionesEmpty("Sin resultados", "No hay gráficos que coincidan con los filtros seleccionados.");
+      }
+      return;
+    }
+
+    if (emptyState) emptyState.classList.add("hidden");
+    if (vizRolodexView && vizCurrentView === "rolodex") vizRolodexView.classList.remove("viz-hidden");
+
+    filteredGraphs.forEach((g, index) => {
+      const card = document.createElement("div");
+      card.className = "viz-card";
+      card.dataset.index = index;
+
+      const title = g?.test_titulo || g?.nombre_interno || (g?.catalog_id ? `Prueba ${g.catalog_id}` : "Prueba");
+      const subtitleParts = [];
+      if (g?.analito) subtitleParts.push(g.analito);
+      if (g?.nivel != null) subtitleParts.push(`Nivel ${g.nivel}`);
+      const subtitle = subtitleParts.join(" · ");
+
+      card.innerHTML = `
+        <div class="viz-card-inner">
+          <div class="viz-card-image">
+            <img src="${g.grafico_data}" alt="${title}" loading="lazy">
+          </div>
+          <div class="viz-card-content">
+            <h2 class="viz-card-title">${title}</h2>
+            ${subtitle ? `<p class="viz-card-subtitle">${subtitle}</p>` : ""}
+            <span class="viz-card-badge">#${g?.catalog_id || "?"}</span>
+          </div>
+        </div>
+      `;
+
+      vizCardsContainer.appendChild(card);
+    });
+
+    updateVizCards();
+  }
+
+  function updateVizCards() {
+    const cards = vizCardsContainer?.querySelectorAll(".viz-card") || [];
+
+    cards.forEach((card, index) => {
+      const offset = index - vizActiveIndex;
+      const absOffset = Math.abs(offset);
+      const isActive = index === vizActiveIndex;
+
+      let translateY = offset * 45;
+      let translateZ = -absOffset * 60;
+      let rotateX = 0;
+      let opacity = Math.max(0.4, 1 - absOffset * 0.08);
+      let scale = Math.max(0.7, 1 - absOffset * 0.035);
+
+      if (isActive && Math.abs(vizDragProgress) > 0.05) {
+        translateY = translateY - vizDragProgress * 100;
+        translateZ = translateZ + Math.abs(vizDragProgress) * 40;
+        rotateX = -vizDragProgress * 12;
+      }
+
+      card.style.transform = `translateY(${translateY}px) translateZ(${translateZ}px) rotateX(${rotateX}deg) scale(${scale})`;
+      card.style.opacity = opacity;
+      card.style.zIndex = 100 - Math.round(absOffset * 10);
+
+      if (isActive) {
+        card.classList.add("active");
+      } else {
+        card.classList.remove("active");
+      }
+    });
+
+    updateVizTimeline();
+  }
+
+  function renderVizTimeline() {
+    if (!vizTimelineTrack) return;
+    vizTimelineTrack.innerHTML = "";
+
+    if (filteredGraphs.length === 0) return;
+
+    // Update labels
+    const topLabel = document.querySelector(".viz-timeline-label-top");
+    const bottomLabel = document.querySelector(".viz-timeline-label-bottom");
+    if (topLabel) topLabel.textContent = `#${filteredGraphs[0]?.catalog_id || 1}`;
+    if (bottomLabel) bottomLabel.textContent = `#${filteredGraphs[filteredGraphs.length - 1]?.catalog_id || "?"}`;
+
+    // Create tick marks
+    const tickCount = Math.min(Math.max(filteredGraphs.length, 10), 40);
+    for (let i = 0; i <= tickCount; i++) {
+      const tick = document.createElement("div");
+      tick.className = "viz-timeline-tick";
+      tick.style.top = `${(i / tickCount) * 100}%`;
+      vizTimelineTrack.appendChild(tick);
+    }
+
+    // Create markers for each graph
+    filteredGraphs.forEach((g, index) => {
+      const position = index / Math.max(1, filteredGraphs.length - 1);
+
+      const marker = document.createElement("div");
+      marker.className = "viz-timeline-marker";
+      marker.dataset.index = index;
+      marker.style.top = `${position * 100}%`;
+
+      marker.innerHTML = `
+        <span class="viz-timeline-id-label">#${g?.catalog_id || "?"}</span>
+        <div class="viz-timeline-marker-bar" style="width: 1.25rem;"></div>
+      `;
+
+      marker.addEventListener("click", () => {
+        vizActiveIndex = index;
+        vizDragProgress = 0;
+        updateVizCards();
+      });
+
+      vizTimelineTrack.appendChild(marker);
+    });
+
+    updateVizTimeline();
+
+    // Timeline drag
+    vizTimelineTrack.addEventListener("mousedown", handleVizTimelineDrag);
+  }
+
+  function updateVizTimeline() {
+    const markers = vizTimelineTrack?.querySelectorAll(".viz-timeline-marker") || [];
+    markers.forEach(marker => {
+      const index = parseInt(marker.dataset.index);
+      if (index === vizActiveIndex) {
+        marker.classList.add("active");
+      } else {
+        marker.classList.remove("active");
+      }
+    });
+  }
+
+  function handleVizTimelineDrag(e) {
+    const rect = vizTimelineTrack.getBoundingClientRect();
+
+    const updateFromMouse = (event) => {
+      const y = event.clientY - rect.top;
+      const percentage = Math.max(0, Math.min(1, y / rect.height));
+      const nearestIndex = Math.round(percentage * (filteredGraphs.length - 1));
+      vizActiveIndex = Math.max(0, Math.min(filteredGraphs.length - 1, nearestIndex));
+      vizDragProgress = 0;
+      updateVizCards();
+    };
+
+    const handleMouseUp = () => {
+      window.removeEventListener("mousemove", updateFromMouse);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    updateFromMouse(e);
+    window.addEventListener("mousemove", updateFromMouse);
+    window.addEventListener("mouseup", handleMouseUp);
+  }
+
+  function renderVizList() {
+    if (!vizListContainer) return;
+    vizListContainer.innerHTML = "";
+
+    if (filteredGraphs.length === 0) return;
+
+    filteredGraphs.forEach((g, index) => {
+      const title = g?.test_titulo || g?.nombre_interno || (g?.catalog_id ? `Prueba ${g.catalog_id}` : "Prueba");
+      const metaParts = [];
+      if (g?.analito) metaParts.push(g.analito);
+      if (g?.nivel != null) metaParts.push(`Nivel ${g.nivel}`);
+
+      const item = document.createElement("a");
+      item.href = "#";
+      item.className = "viz-list-item";
+      item.dataset.index = index;
+      item.dataset.image = g?.grafico_data || "";
+      item.onclick = (e) => {
+        e.preventDefault();
+        vizActiveIndex = index;
+        setVizView("rolodex");
+        updateVizCards();
+      };
+
+      item.innerHTML = `
+        <div class="viz-list-item-inner">
+          <span class="viz-list-id">#${g?.catalog_id || "?"}</span>
+          <h2 class="viz-list-title">${title}</h2>
+          <p class="viz-list-meta">${metaParts.join(" · ")}</p>
+          <span class="viz-list-arrow">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </span>
+        </div>
+      `;
+
+      // Hover preview
+      item.addEventListener("mouseenter", () => {
+        if (g?.grafico_data && vizHoverImage && vizHoverPreview) {
+          vizHoverImage.src = g.grafico_data;
+          vizHoverPreview.classList.add("visible");
+        }
+      });
+
+      item.addEventListener("mouseleave", () => {
+        if (vizHoverPreview) vizHoverPreview.classList.remove("visible");
+      });
+
+      item.addEventListener("mousemove", (e) => {
+        if (vizHoverPreview) {
+          vizHoverPreview.style.left = `${e.clientX + 20}px`;
+          vizHoverPreview.style.top = `${e.clientY - 100}px`;
+        }
+      });
+
+      vizListContainer.appendChild(item);
+    });
+  }
+
+  // Wheel handling for rolodex
+  let vizWheelTimeout;
+  function handleVizWheel(e) {
+    if (vizCurrentView !== "rolodex" || filteredGraphs.length === 0) return;
+    e.preventDefault();
+
+    vizScrollAccumulator += e.deltaY * 0.012;
+    vizDragProgress += vizScrollAccumulator;
+    vizScrollAccumulator = 0;
+
+    if (Math.abs(vizDragProgress) > 1) {
+      const direction = vizDragProgress > 0 ? 1 : -1;
+      vizActiveIndex = Math.max(0, Math.min(filteredGraphs.length - 1, vizActiveIndex + direction));
+      vizDragProgress = 0;
+    } else {
+      vizDragProgress = Math.max(-1, Math.min(1, vizDragProgress));
+    }
+
+    updateVizCards();
+
+    clearTimeout(vizWheelTimeout);
+    vizWheelTimeout = setTimeout(() => {
+      if (Math.abs(vizDragProgress) > 0.25) {
+        const direction = vizDragProgress > 0 ? 1 : -1;
+        vizActiveIndex = Math.max(0, Math.min(filteredGraphs.length - 1, vizActiveIndex + direction));
+      }
+      vizDragProgress = 0;
+      updateVizCards();
+    }, 40);
+  }
+
+  // Keyboard navigation
+  function handleVizKeydown(e) {
+    if (activeView !== "visualizaciones" || vizCurrentView !== "rolodex" || filteredGraphs.length === 0) return;
+
+    if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      vizActiveIndex = Math.max(0, vizActiveIndex - 1);
+      vizDragProgress = 0;
+      updateVizCards();
+    } else if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+      e.preventDefault();
+      vizActiveIndex = Math.min(filteredGraphs.length - 1, vizActiveIndex + 1);
+      vizDragProgress = 0;
+      updateVizCards();
+    }
+  }
+
   async function loadVisualizaciones() {
     if (visualizacionesLoading) return;
-    if (!graphsGrid) return;
 
     if (!sessionId) {
       showVisualizacionesEmpty(
@@ -179,7 +536,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     visualizacionesLoading = true;
     if (runInfo) runInfo.textContent = "Cargando gráficos...";
     if (emptyState) emptyState.classList.add("hidden");
-    graphsGrid.innerHTML = "";
 
     let res;
     try {
@@ -220,67 +576,53 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
+    // Filter valid images and sort by catalog_id
+    allGraphs = graphs
+      .filter(g => isValidDataImageUrl(g?.grafico_data))
+      .sort((a, b) => (a.catalog_id || 0) - (b.catalog_id || 0));
+
+    if (allGraphs.length === 0) {
+      showVisualizacionesEmpty("Sin gráficos válidos", "Los gráficos obtenidos no tienen formato válido.");
+      visualizacionesLoading = false;
+      return;
+    }
+
     if (emptyState) emptyState.classList.add("hidden");
     if (runInfo) runInfo.textContent = lastRunAt ? `Última corrida: ${lastRunAt}` : "";
 
-    for (const g of graphs) {
-      const src = g?.grafico_data;
-      if (!isValidDataImageUrl(src)) continue;
+    // Populate filters
+    populateFilters();
 
-      const card = document.createElement("div");
-      card.className = "glass-card p-6 rounded-xl overflow-hidden";
+    // Apply initial filters (none)
+    filteredGraphs = [...allGraphs];
+    vizActiveIndex = 0;
 
-      const header = document.createElement("div");
-      header.className = "flex items-start justify-between gap-4 mb-4";
+    // Render views
+    renderVizCards();
+    renderVizTimeline();
+    renderVizList();
 
-      const headerText = document.createElement("div");
+    // Set initial view
+    setVizView(vizCurrentView);
 
-      const title = document.createElement("h3");
-      title.className = "text-white font-semibold text-lg";
-      title.textContent =
-        g?.test_titulo ||
-        g?.nombre_interno ||
-        (g?.catalog_id ? `Prueba ${g.catalog_id}` : "Prueba");
-
-      const subtitle = document.createElement("p");
-      subtitle.className = "text-gray-400 text-sm";
-      const subtitleParts = [];
-      if (g?.analito) subtitleParts.push(`Analito: ${g.analito}`);
-      if (g?.nivel != null) subtitleParts.push(`Nivel: ${g.nivel}`);
-      subtitle.textContent = subtitleParts.join(" · ");
-
-      headerText.appendChild(title);
-      if (subtitle.textContent) headerText.appendChild(subtitle);
-
-      const badge = document.createElement("span");
-      badge.className =
-        "text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full font-medium shrink-0";
-      badge.textContent = g?.catalog_id ? `#${g.catalog_id}` : "#";
-
-      header.appendChild(headerText);
-      header.appendChild(badge);
-
-      const imgWrap = document.createElement("div");
-      imgWrap.className = "bg-black/20 rounded-lg overflow-hidden border border-white/10";
-
-      const img = document.createElement("img");
-      img.alt = "Gráfico";
-      img.className = "w-full h-auto block";
-      img.decoding = "async";
-      img.loading = "lazy";
-      img.referrerPolicy = "no-referrer";
-      img.src = src;
-
-      imgWrap.appendChild(img);
-
-      card.appendChild(header);
-      card.appendChild(imgWrap);
-
-      graphsGrid.appendChild(card);
+    // Attach event listeners
+    if (vizRolodexView) {
+      vizRolodexView.addEventListener("wheel", handleVizWheel, { passive: false });
     }
 
     visualizacionesLoading = false;
   }
+
+  // Filter event listeners
+  filterNivel?.addEventListener("change", applyFilters);
+  filterAnalito?.addEventListener("change", applyFilters);
+
+  // View toggle event listeners
+  btnVizRolodex?.addEventListener("click", () => setVizView("rolodex"));
+  btnVizList?.addEventListener("click", () => setVizView("list"));
+
+  // Keyboard navigation
+  document.addEventListener("keydown", handleVizKeydown);
 
   function setActiveView(nextView) {
     activeView = nextView === "visualizaciones" ? "visualizaciones" : "evaluaciones";

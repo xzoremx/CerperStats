@@ -14,6 +14,10 @@
   
   /* Accent */
   --accent: #f97316;
+
+  /* Card overlay (for chart focus) */
+  --card-meta-overlay-from: rgba(242, 241, 238, 0.96);
+  --card-meta-overlay-to: rgba(242, 241, 238, 0);
   
   /* Spacing */
   --header-height: 64px;
@@ -28,6 +32,10 @@
   --border-color: #282828;
   --hover-bg: #1c1c1c;
   --background: #0a0a0a;
+
+  /* Card overlay (for chart focus) */
+  --card-meta-overlay-from: rgba(23, 23, 23, 0.92);
+  --card-meta-overlay-to: rgba(23, 23, 23, 0);
 }
 
 /* ========================================
@@ -226,8 +234,8 @@ html:not(.dark) .icon-moon {
 .cards-container {
   position: relative;
   width: 100%;
-  max-width: 768px;
-  height: 500px;
+  max-width: 960px;
+  height: min(66vh, 640px);
   transform-style: preserve-3d;
 }
 
@@ -248,6 +256,7 @@ html:not(.dark) .icon-moon {
 .card-inner {
   display: block;
   height: 100%;
+  position: relative;
   background-color: var(--warm-cream);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   overflow: hidden;
@@ -256,7 +265,7 @@ html:not(.dark) .icon-moon {
 
 .card-image {
   position: relative;
-  height: 60%;
+  height: 100%;
   background-color: var(--hover-bg);
   overflow: hidden;
 }
@@ -264,7 +273,8 @@ html:not(.dark) .icon-moon {
 .card-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
 }
 
 .card-image-placeholder {
@@ -282,26 +292,32 @@ html:not(.dark) .icon-moon {
 }
 
 .card-content {
-  padding: 1.5rem;
-  height: 40%;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.875rem 1rem;
+  height: auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-end;
+  gap: 0.375rem;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--card-meta-overlay-from) 0%, var(--card-meta-overlay-to) 100%);
 }
 
 .card-title {
-  font-size: 1.5rem;
-  font-weight: 300;
+  font-size: 1.0625rem;
+  font-weight: 500;
   color: var(--heading);
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  line-height: 1.25;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-subtitle {
-  margin-top: 0.5rem;
+  display: none;
   font-size: 0.9375rem;
   color: var(--subtitle);
   white-space: nowrap;
@@ -310,9 +326,16 @@ html:not(.dark) .icon-moon {
 }
 
 .card-date {
-  margin-top: 0.75rem;
+  display: none;
   font-size: 0.875rem;
   color: var(--faded);
+}
+
+.card.active .card-inner:hover .card-subtitle,
+.card.active .card-inner:hover .card-date,
+.card.active .card-inner:focus-visible .card-subtitle,
+.card.active .card-inner:focus-visible .card-date {
+  display: block;
 }
 
 /* ========================================
