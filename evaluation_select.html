@@ -715,6 +715,259 @@
     .viz-hidden {
       display: none !important;
     }
+
+    /* ========================================
+       Settings UI Styles
+       ======================================== */
+
+    .settings-section {
+      margin-bottom: 2rem;
+    }
+
+    .settings-section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+
+    .settings-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .settings-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .settings-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 0.625rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .settings-card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .settings-card-subtitle {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 0.125rem;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .settings-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .settings-row:first-child {
+      padding-top: 0;
+    }
+
+    .settings-label {
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .settings-sublabel {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 0.125rem;
+    }
+
+    /* Custom Select Dropdown */
+    .settings-select {
+      appearance: none;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 0.5rem;
+      padding: 0.5rem 2rem 0.5rem 0.75rem;
+      color: #e0e0e0;
+      font-size: 0.875rem;
+      font-family: inherit;
+      cursor: pointer;
+      min-width: 180px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='rgba(255,255,255,0.5)' viewBox='0 0 24 24'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      transition: all 0.2s ease;
+    }
+
+    .settings-select:hover {
+      background-color: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .settings-select:focus {
+      outline: none;
+      border-color: rgba(139, 92, 246, 0.5);
+      box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+    }
+
+    .settings-select option {
+      background: #1a1a2e;
+      color: #e0e0e0;
+    }
+
+    /* Custom Range Slider */
+    .settings-slider-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 200px;
+    }
+
+    .settings-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 120px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .settings-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .settings-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      box-shadow: 0 3px 10px rgba(139, 92, 246, 0.5);
+    }
+
+    .settings-slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+    }
+
+    .settings-slider-value {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.7);
+      min-width: 45px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Toggle Switch */
+    .settings-toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.25s ease;
+    }
+
+    .settings-toggle.active {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    }
+
+    .settings-toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.25s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .settings-toggle.active::after {
+      transform: translateX(20px);
+    }
+
+    /* Reset Button */
+    .settings-reset-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: 0.5rem;
+      color: #fca5a5;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .settings-reset-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    /* Mode Pills */
+    .settings-mode-selector {
+      display: flex;
+      gap: 0.375rem;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.25rem;
+      border-radius: 0.5rem;
+    }
+
+    .settings-mode-pill {
+      padding: 0.375rem 0.75rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: capitalize;
+    }
+
+    .settings-mode-pill:hover {
+      color: rgba(255, 255, 255, 0.8);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .settings-mode-pill.active {
+      background: rgba(139, 92, 246, 0.3);
+      color: #c4b5fd;
+    }
   </style>
 </head>
 
@@ -758,7 +1011,7 @@
                   <span class="font-medium">Visualizaciones</span>
                 </a>
 
-                <a href="#"
+                <a href="#" id="menu-configuracion"
                   class="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/8 transition-all duration-200 group">
                   <i data-lucide="settings" class="w-5 h-5"></i>
                   <span class="font-medium">Configuración</span>
@@ -956,6 +1209,165 @@
                 </div>
               </section>
             </div>
+
+            <!-- Configuration View -->
+            <div id="view-configuracion" class="hidden">
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <!-- Regional Settings Card -->
+                <div class="settings-card">
+                  <div class="settings-card-header">
+                    <div class="settings-card-icon"
+                      style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                      <i data-lucide="globe" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                      <div class="settings-card-title">Regional</div>
+                      <div class="settings-card-subtitle">Zona horaria y formato de fecha</div>
+                    </div>
+                  </div>
+
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Zona Horaria</div>
+                      <div class="settings-sublabel">Para visualizaciones y reportes</div>
+                    </div>
+                    <select id="setting-timezone" class="settings-select">
+                      <!-- Options populated by JS -->
+                    </select>
+                  </div>
+
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Formato de Fecha</div>
+                      <div class="settings-sublabel">Cómo se muestran las fechas</div>
+                    </div>
+                    <select id="setting-dateformat" class="settings-select">
+                      <!-- Options populated by JS -->
+                    </select>
+                  </div>
+
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Vista previa</div>
+                    </div>
+                    <div id="setting-date-preview" class="text-sm text-purple-300 font-medium"></div>
+                  </div>
+                </div>
+
+                <!-- Glass Effect Card - Full Width -->
+                <div class="settings-card lg:col-span-2">
+                  <div class="settings-card-header">
+                    <div class="settings-card-icon"
+                      style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);">
+                      <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                      <div class="settings-card-title">Efecto Liquid Glass</div>
+                      <div class="settings-card-subtitle">Personaliza el efecto de vidrio del panel principal</div>
+                    </div>
+                    <button id="btn-reset-glass" class="settings-reset-btn">
+                      <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                      Restablecer
+                    </button>
+                  </div>
+
+                  <!-- Glass Mode -->
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Modo</div>
+                      <div class="settings-sublabel">Patrón de distorsión del efecto</div>
+                    </div>
+                    <div id="setting-glass-mode" class="settings-mode-selector">
+                      <div class="settings-mode-pill" data-value="standard">Standard</div>
+                      <div class="settings-mode-pill" data-value="polar">Polar</div>
+                      <div class="settings-mode-pill" data-value="prominent">Prominent</div>
+                      <div class="settings-mode-pill" data-value="shader">Shader</div>
+                      <div class="settings-mode-pill" data-value="edge">Edge</div>
+                    </div>
+                  </div>
+
+                  <!-- Blur Amount -->
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Desenfoque</div>
+                      <div class="settings-sublabel">Intensidad del blur de fondo</div>
+                    </div>
+                    <div class="settings-slider-container">
+                      <input type="range" id="setting-glass-blur" class="settings-slider" min="0" max="20" step="0.5"
+                        value="0.1">
+                      <span id="setting-glass-blur-value" class="settings-slider-value">0.1 px</span>
+                    </div>
+                  </div>
+
+                  <!-- Saturation -->
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Saturación</div>
+                      <div class="settings-sublabel">Intensidad de los colores</div>
+                    </div>
+                    <div class="settings-slider-container">
+                      <input type="range" id="setting-glass-saturation" class="settings-slider" min="50" max="200"
+                        step="5" value="140">
+                      <span id="setting-glass-saturation-value" class="settings-slider-value">140%</span>
+                    </div>
+                  </div>
+
+                  <!-- Displacement Scale -->
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Desplazamiento</div>
+                      <div class="settings-sublabel">Escala de distorsión del vidrio</div>
+                    </div>
+                    <div class="settings-slider-container">
+                      <input type="range" id="setting-glass-displacement" class="settings-slider" min="0" max="200"
+                        step="10" value="120">
+                      <span id="setting-glass-displacement-value" class="settings-slider-value">120</span>
+                    </div>
+                  </div>
+
+                  <!-- Aberration Intensity -->
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Aberración Cromática</div>
+                      <div class="settings-sublabel">Separación de canales RGB</div>
+                    </div>
+                    <div class="settings-slider-container">
+                      <input type="range" id="setting-glass-aberration" class="settings-slider" min="0" max="10"
+                        step="0.5" value="2">
+                      <span id="setting-glass-aberration-value" class="settings-slider-value">2</span>
+                    </div>
+                  </div>
+
+                  <!-- Elasticity -->
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Elasticidad</div>
+                      <div class="settings-sublabel">Suavidad del efecto de animación</div>
+                    </div>
+                    <div class="settings-slider-container">
+                      <input type="range" id="setting-glass-elasticity" class="settings-slider" min="0.05" max="0.5"
+                        step="0.05" value="0.15">
+                      <span id="setting-glass-elasticity-value" class="settings-slider-value">0.15</span>
+                    </div>
+                  </div>
+
+                  <!-- Center Distortion -->
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Distorsión Central</div>
+                      <div class="settings-sublabel">Intensidad del efecto en el centro</div>
+                    </div>
+                    <div class="settings-slider-container">
+                      <input type="range" id="setting-glass-center" class="settings-slider" min="0" max="1" step="0.1"
+                        value="1">
+                      <span id="setting-glass-center-value" class="settings-slider-value">1</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -968,28 +1380,136 @@
   <script src="js/auth_guard.js"></script>
   <script src="js/security/icon_safety.js"></script>
   <script src="js/liquid_glass.js"></script>
+  <script src="js/settings_manager.js"></script>
   <script src="js/evaluation_select.js" defer></script>
   <script>
     // Initialize Lucide icons
     if (window.lucide) lucide.createIcons();
 
-    // Initialize Liquid Glass effect on main content panel
+    // Initialize Liquid Glass effect on main content panel using saved settings
     document.addEventListener('DOMContentLoaded', function () {
       const mainPanel = document.getElementById('main-content-panel');
-      if (mainPanel && window.LiquidGlass) {
-        LiquidGlass.apply(mainPanel, {
-          cornerRadius: 28,
-          displacementScale: 120,
-          aberrationIntensity: 2,
-          saturation: 140,
-          blurAmount: 0.1, // blur en px (ej: 8)
-          elasticity: 0.15,
-          centerDistortion: 1,
-          // modes: 'standard' | 'polar' | 'prominent' | 'shader' (aliases: 'edge', 'edges')
-          mode: 'standard'
+      if (mainPanel && window.LiquidGlass && window.SettingsManager) {
+        // Apply glass effect with saved settings
+        SettingsManager.applyGlassSettings();
+      }
+
+      // Initialize settings UI
+      initSettingsUI();
+    });
+
+    function initSettingsUI() {
+      if (!window.SettingsManager) return;
+
+      // Populate timezone dropdown
+      const tzSelect = document.getElementById('setting-timezone');
+      if (tzSelect) {
+        SettingsManager.TIMEZONES.forEach(tz => {
+          const opt = document.createElement('option');
+          opt.value = tz.value;
+          opt.textContent = tz.label;
+          if (tz.value === SettingsManager.get('timezone')) opt.selected = true;
+          tzSelect.appendChild(opt);
+        });
+        tzSelect.addEventListener('change', (e) => {
+          SettingsManager.set('timezone', e.target.value);
+          updateDatePreview();
         });
       }
-    });
+
+      // Populate date format dropdown
+      const dfSelect = document.getElementById('setting-dateformat');
+      if (dfSelect) {
+        SettingsManager.DATE_FORMATS.forEach(df => {
+          const opt = document.createElement('option');
+          opt.value = df.value;
+          opt.textContent = df.label;
+          if (df.value === SettingsManager.get('dateFormat')) opt.selected = true;
+          dfSelect.appendChild(opt);
+        });
+        dfSelect.addEventListener('change', (e) => {
+          SettingsManager.set('dateFormat', e.target.value);
+          updateDatePreview();
+        });
+      }
+
+      // Date preview
+      function updateDatePreview() {
+        const preview = document.getElementById('setting-date-preview');
+        if (preview) {
+          preview.textContent = SettingsManager.formatDate(new Date());
+        }
+      }
+      updateDatePreview();
+
+      // Glass mode pills
+      const modeSelector = document.getElementById('setting-glass-mode');
+      if (modeSelector) {
+        const currentMode = SettingsManager.get('glassMode');
+        modeSelector.querySelectorAll('.settings-mode-pill').forEach(pill => {
+          if (pill.dataset.value === currentMode) {
+            pill.classList.add('active');
+          }
+          pill.addEventListener('click', () => {
+            modeSelector.querySelectorAll('.settings-mode-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            SettingsManager.set('glassMode', pill.dataset.value);
+          });
+        });
+      }
+
+      // Glass sliders
+      const sliders = [
+        { id: 'setting-glass-blur', key: 'glassBlur', suffix: ' px' },
+        { id: 'setting-glass-saturation', key: 'glassSaturation', suffix: '%' },
+        { id: 'setting-glass-displacement', key: 'glassDisplacement', suffix: '' },
+        { id: 'setting-glass-aberration', key: 'glassAberration', suffix: '' },
+        { id: 'setting-glass-elasticity', key: 'glassElasticity', suffix: '' },
+        { id: 'setting-glass-center', key: 'glassCenterDistortion', suffix: '' }
+      ];
+
+      sliders.forEach(({ id, key, suffix }) => {
+        const slider = document.getElementById(id);
+        const valueEl = document.getElementById(id + '-value');
+        if (slider && valueEl) {
+          const savedValue = SettingsManager.get(key);
+          slider.value = savedValue;
+          valueEl.textContent = savedValue + suffix;
+
+          slider.addEventListener('input', () => {
+            const val = parseFloat(slider.value);
+            valueEl.textContent = val + suffix;
+            SettingsManager.set(key, val);
+          });
+        }
+      });
+
+      // Reset glass button
+      const resetBtn = document.getElementById('btn-reset-glass');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          SettingsManager.resetGlass();
+          // Update UI to reflect defaults
+          sliders.forEach(({ id, key, suffix }) => {
+            const slider = document.getElementById(id);
+            const valueEl = document.getElementById(id + '-value');
+            if (slider && valueEl) {
+              const defVal = SettingsManager.DEFAULTS[key];
+              slider.value = defVal;
+              valueEl.textContent = defVal + suffix;
+            }
+          });
+          // Reset mode pills
+          const defaultMode = SettingsManager.DEFAULTS.glassMode;
+          modeSelector?.querySelectorAll('.settings-mode-pill').forEach(pill => {
+            pill.classList.toggle('active', pill.dataset.value === defaultMode);
+          });
+        });
+      }
+
+      // Re-initialize icons for new elements
+      if (window.lucide) lucide.createIcons();
+    }
   </script>
 </body>
 

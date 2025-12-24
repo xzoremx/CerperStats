@@ -5,11 +5,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnVolver = document.getElementById("go-back");
   const menuEvaluaciones = document.getElementById("menu-evaluaciones");
   const menuVisualizaciones = document.getElementById("menu-visualizaciones");
+  const menuConfiguracion = document.getElementById("menu-configuracion");
   const progressBar = document.getElementById("progress-bar");
   const progressPercent = document.getElementById("progress-percent");
   const progressStatus = document.getElementById("progress-status");
   const viewEvaluaciones = document.getElementById("view-evaluaciones");
   const viewVisualizaciones = document.getElementById("view-visualizaciones");
+  const viewConfiguracion = document.getElementById("view-configuracion");
   const emptyState = document.getElementById("empty-state");
   const emptyTitle = document.getElementById("empty-title");
   const emptyText = document.getElementById("empty-text");
@@ -717,15 +719,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.addEventListener("keydown", handleVizKeydown);
 
   function setActiveView(nextView) {
-    activeView = nextView === "visualizaciones" ? "visualizaciones" : "evaluaciones";
+    const validViews = ["evaluaciones", "visualizaciones", "configuracion"];
+    activeView = validViews.includes(nextView) ? nextView : "evaluaciones";
     sessionStorage.setItem("evalSelectView", activeView);
 
     if (viewEvaluaciones) viewEvaluaciones.classList.toggle("hidden", activeView !== "evaluaciones");
     if (viewVisualizaciones)
       viewVisualizaciones.classList.toggle("hidden", activeView !== "visualizaciones");
+    if (viewConfiguracion) viewConfiguracion.classList.toggle("hidden", activeView !== "configuracion");
 
     setMenuActiveState(menuEvaluaciones, activeView === "evaluaciones");
     setMenuActiveState(menuVisualizaciones, activeView === "visualizaciones");
+    setMenuActiveState(menuConfiguracion, activeView === "configuracion");
 
     if (activeView === "visualizaciones") {
       loadVisualizaciones();
@@ -742,7 +747,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     setActiveView("visualizaciones");
   });
 
-  setActiveView(sessionStorage.getItem("evalSelectView") === "visualizaciones" ? "visualizaciones" : "evaluaciones");
+  menuConfiguracion?.addEventListener("click", (e) => {
+    e.preventDefault();
+    setActiveView("configuracion");
+  });
+
+  // Restore last view (but not configuracion on page load to avoid confusion)
+  const savedView = sessionStorage.getItem("evalSelectView");
+  setActiveView(savedView === "visualizaciones" ? "visualizaciones" : "evaluaciones");
 
   if (!sessionId) {
     notify("Faltan datos de sesión. Regresa al paso anterior.", "error");
