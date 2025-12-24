@@ -650,7 +650,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (emptyState) emptyState.classList.add("hidden");
-    if (runInfo) runInfo.textContent = lastRunAt ? `Última corrida: ${lastRunAt}` : "";
+
+    // Format last run date to Lima-Peru local time
+    let formattedDate = "";
+    if (lastRunAt) {
+      try {
+        // Parse the timestamp (assumed UTC from backend)
+        const date = new Date(lastRunAt.replace(" ", "T") + "Z");
+        formattedDate = date.toLocaleString("es-PE", {
+          timeZone: "America/Lima",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true
+        });
+      } catch (e) {
+        formattedDate = lastRunAt;
+      }
+    }
+    if (runInfo) runInfo.textContent = formattedDate ? `Última corrida: ${formattedDate}` : "";
 
     // Populate filters
     populateFilters();
