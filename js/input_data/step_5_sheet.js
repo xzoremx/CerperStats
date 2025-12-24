@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const labNameEl = document.getElementById("lab-name");
   const labTitleEl = document.getElementById("lab-title");
   if (labNameEl) labNameEl.textContent = labName;
-  if (labTitleEl) labTitleEl.textContent = "Ingreso de Lecturas";
+  if (labTitleEl) labTitleEl.textContent = "Ingreso de Datos";
 
   const headerProcedureIcon = document.getElementById("header-procedure-icon");
   if (headerProcedureIcon) {
@@ -105,8 +105,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   // --- Texto descriptivo para parámetros ---
   const resumenLecturas =
     lecturas.every(v => v === lecturas[0])
-      ? `${K} ${parametro} × ${lecturasPromedio} lecturas`
-      : `${K} ${parametro} (${lecturas.join(", ")} lecturas)`;
+      ? `${K} ${parametro} × ${lecturasPromedio} datos`
+      : `${K} ${parametro} (${lecturas.join(", ")} datos)`;
 
   // --- Tipo de dato y modo ---
   const tipoDato = (sessionStorage.getItem("tipoDato") || "cuantitativo").toLowerCase();
