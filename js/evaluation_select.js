@@ -15,11 +15,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const emptyText = document.getElementById("empty-text");
   const runInfo = document.getElementById("run-info");
 
-  // New visualization UI elements
-  const filterNivel = document.getElementById("filter-nivel");
-  const filterAnalito = document.getElementById("filter-analito");
+  // New visualization UI elements - Custom Dropdowns
+  const dropdownNivel = document.getElementById("dropdown-nivel");
+  const dropdownAnalito = document.getElementById("dropdown-analito");
   const btnVizRolodex = document.getElementById("btn-viz-rolodex");
   const btnVizList = document.getElementById("btn-viz-list");
+  const btnCardTheme = document.getElementById("btn-card-theme");
   const vizRolodexView = document.getElementById("viz-rolodex-view");
   const vizListView = document.getElementById("viz-list-view");
   const vizCardsContainer = document.getElementById("viz-cards-container");
@@ -42,6 +43,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   let vizDragProgress = 0;
   let vizScrollAccumulator = 0;
   let vizCurrentView = "rolodex"; // 'rolodex' or 'list'
+  let vizCardTheme = "dark"; // 'dark' or 'light'
+  let filterNivelValue = "";
+  let filterAnalitoValue = "";
 
   // === Obtener y mostrar el usuario actual ===
   try {
@@ -195,12 +199,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function applyFilters() {
-    const nivelFilter = filterNivel?.value || "";
-    const analitoFilter = filterAnalito?.value || "";
-
     filteredGraphs = allGraphs.filter(g => {
-      if (nivelFilter && String(g.nivel) !== nivelFilter) return false;
-      if (analitoFilter && g.analito !== analitoFilter) return false;
+      if (filterNivelValue && String(g.nivel) !== filterNivelValue) return false;
+      if (filterAnalitoValue && g.analito !== filterAnalitoValue) return false;
       return true;
     });
 
@@ -208,6 +209,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderVizCards();
     renderVizTimeline();
     renderVizList();
+  }
+
+  function populateDropdown(dropdown, items, allLabel) {
+    if (!dropdown) return;
+    const menu = dropdown.querySelector(".viz-dropdown-menu");
+    if (!menu) return;
+
+    menu.innerHTML = `<div class="viz-dropdown-item active" data-value="">${allLabel}</div>`;
+    items.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "viz-dropdown-item";
+      div.dataset.value = item.value;
+      div.textContent = item.label;
+      menu.appendChild(div);
+    });
   }
 
   function populateFilters() {
@@ -219,28 +235,74 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (g.analito) analitos.add(g.analito);
     });
 
-    if (filterNivel) {
-      const currentVal = filterNivel.value;
-      filterNivel.innerHTML = '<option value="">Todos los niveles</option>';
-      [...niveles].sort((a, b) => Number(a) - Number(b)).forEach(n => {
-        const opt = document.createElement("option");
-        opt.value = n;
-        opt.textContent = `Nivel ${n}`;
-        filterNivel.appendChild(opt);
-      });
-      filterNivel.value = currentVal;
-    }
+    const nivelItems = [...niveles].sort((a, b) => Number(a) - Number(b)).map(n => ({
+      value: n,
+      label: `Nivel ${n}`
+    }));
 
-    if (filterAnalito) {
-      const currentVal = filterAnalito.value;
-      filterAnalito.innerHTML = '<option value="">Todos los analitos</option>';
-      [...analitos].sort().forEach(a => {
-        const opt = document.createElement("option");
-        opt.value = a;
-        opt.textContent = a;
-        filterAnalito.appendChild(opt);
+    const analitoItems = [...analitos].sort().map(a => ({
+      value: a,
+      label: a
+    }));
+
+    populateDropdown(dropdownNivel, nivelItems, "Todos los niveles");
+    populateDropdown(dropdownAnalito, analitoItems, "Todos los analitos");
+  }
+
+  // Custom dropdown functionality
+  function initDropdown(dropdown, onSelect) {
+    if (!dropdown) return;
+
+    const trigger = dropdown.querySelector(".viz-dropdown-trigger");
+    const menu = dropdown.querySelector(".viz-dropdown-menu");
+    const textEl = dropdown.querySelector(".viz-dropdown-text");
+
+    if (!trigger || !menu) return;
+
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      // Close other dropdowns
+      document.querySelectorAll(".viz-dropdown.open").forEach(d => {
+        if (d !== dropdown) d.classList.remove("open");
       });
-      filterAnalito.value = currentVal;
+      dropdown.classList.toggle("open");
+    });
+
+    menu.addEventListener("click", (e) => {
+      const item = e.target.closest(".viz-dropdown-item");
+      if (!item) return;
+
+      const value = item.dataset.value || "";
+      const label = item.textContent;
+
+      // Update active state
+      menu.querySelectorAll(".viz-dropdown-item").forEach(i => i.classList.remove("active"));
+      item.classList.add("active");
+
+      // Update trigger text
+      if (textEl) textEl.textContent = label;
+
+      // Close dropdown
+      dropdown.classList.remove("open");
+
+      // Callback
+      if (onSelect) onSelect(value);
+    });
+  }
+
+  // Close dropdowns when clicking outside
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".viz-dropdown.open").forEach(d => d.classList.remove("open"));
+  });
+
+  // Card theme toggle
+  function toggleCardTheme() {
+    vizCardTheme = vizCardTheme === "dark" ? "light" : "dark";
+    if (vizCardsContainer) {
+      vizCardsContainer.classList.toggle("viz-cards-light", vizCardTheme === "light");
+    }
+    if (viewVisualizaciones) {
+      viewVisualizaciones.classList.toggle("viz-cards-light", vizCardTheme === "light");
     }
   }
 
@@ -613,9 +675,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     visualizacionesLoading = false;
   }
 
-  // Filter event listeners
-  filterNivel?.addEventListener("change", applyFilters);
-  filterAnalito?.addEventListener("change", applyFilters);
+  // Initialize custom dropdowns
+  initDropdown(dropdownNivel, (value) => {
+    filterNivelValue = value;
+    applyFilters();
+  });
+
+  initDropdown(dropdownAnalito, (value) => {
+    filterAnalitoValue = value;
+    applyFilters();
+  });
+
+  // Card theme toggle
+  btnCardTheme?.addEventListener("click", toggleCardTheme);
 
   // View toggle event listeners
   btnVizRolodex?.addEventListener("click", () => setVizView("rolodex"));
