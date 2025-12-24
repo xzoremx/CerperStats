@@ -454,6 +454,18 @@ ipcMain.handle("db-get-evaluaciones-progress", async (_event, session_id) => {
   }
 });
 
+// === Gráficos de la última corrida de evaluaciones ===
+ipcMain.handle("db-get-evaluaciones-graficos", async (_event, session_id) => {
+  try {
+    const payload = await proxyFetch(`/evaluaciones/graficos/${session_id}`);
+    return { ok: true, data: payload.data || [], meta: payload.meta };
+  } catch (err) {
+    const status = err?.status;
+    console.error("[PROXY] Error obteniendo gráficos:", err);
+    return { ok: false, error: err.message, status: status || 500 };
+  }
+});
+
 
 
 // === Obtener pruebas con metadatos (usa la metadata calculada arriba) ===

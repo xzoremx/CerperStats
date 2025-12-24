@@ -3,15 +3,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnEvaluar = document.getElementById("btn-evaluar");
   const btnContinuar = document.getElementById("btn-continuar");
   const btnVolver = document.getElementById("go-back");
+  const menuEvaluaciones = document.getElementById("menu-evaluaciones");
   const menuVisualizaciones = document.getElementById("menu-visualizaciones");
   const progressBar = document.getElementById("progress-bar");
   const progressPercent = document.getElementById("progress-percent");
   const progressStatus = document.getElementById("progress-status");
+  const viewEvaluaciones = document.getElementById("view-evaluaciones");
+  const viewVisualizaciones = document.getElementById("view-visualizaciones");
+  const graphsGrid = document.getElementById("graphs-grid");
+  const emptyState = document.getElementById("empty-state");
+  const emptyTitle = document.getElementById("empty-title");
+  const emptyText = document.getElementById("empty-text");
+  const runInfo = document.getElementById("run-info");
 
   const PROGRESS_POLL_INTERVAL_MS = 700;
   let progressPollTimer = null;
   let stopProgressPolling = false;
   let isEvaluating = false;
+  let activeView = "evaluaciones";
+  let visualizacionesLoading = false;
 
   // === Obtener y mostrar el usuario actual ===
   try {
@@ -30,6 +40,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   // --- Boton Volver ---
   if (btnVolver) {
     btnVolver.addEventListener("click", () => {
+      const returnTo = sessionStorage.getItem("evalSelectReturnTo");
+      if (returnTo) {
+        try {
+          sessionStorage.removeItem("evalSelectReturnTo");
+        } catch (_) {}
+        if (window.cerper && window.cerper.openPage) {
+          window.cerper.openPage(returnTo);
+        } else {
+          window.location.href = returnTo;
+        }
+        return;
+      }
       if (window.cerper && window.cerper.openPage) {
         window.cerper.openPage("input_data/input_data_sheet.html");
       } else {
@@ -39,15 +61,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // === Obtener contexto de sesión ===
-  const labKey =
+  let labKey =
     sessionStorage.getItem("labSeleccionado") ||
     localStorage.getItem("labSeleccionado");
-  const tipoAnalisis =
+  let tipoAnalisis =
     sessionStorage.getItem("tipoAnalisis") ||
     sessionStorage.getItem("modoAnalito");
-  const tipoDato = sessionStorage.getItem("tipoDato");
-  const modoCualitativo = sessionStorage.getItem("modoCualitativo");
-  const sessionId = sessionStorage.getItem("sessionID");
+  let tipoDato = sessionStorage.getItem("tipoDato");
+  let modoCualitativo = sessionStorage.getItem("modoCualitativo");
+  let sessionId =
+    sessionStorage.getItem("sessionID") || sessionStorage.getItem("sessionSeleccionada");
+
+  if (sessionId && !sessionStorage.getItem("sessionID")) {
+    sessionStorage.setItem("sessionID", sessionId);
+  }
 
   // Normalizar alias históricos para evitar perder contexto entre páginas
   if (tipoAnalisis && !sessionStorage.getItem("tipoAnalisis")) {
@@ -57,7 +84,233 @@ document.addEventListener("DOMContentLoaded", async () => {
     sessionStorage.setItem("labSeleccionado", labKey);
   }
 
-  if (!labKey || !tipoAnalisis || !tipoDato || !sessionId) {
+  // Intentar hidratar el contexto desde la sesión (útil si se entra desde "Ver Resultados")
+  if (
+    sessionId &&
+    (!labKey || !tipoAnalisis || !tipoDato) &&
+    window.cerper &&
+    typeof window.cerper.getSessionInfo === "function"
+  ) {
+    try {
+      const sessionRes = await window.cerper.getSessionInfo(sessionId);
+      if (sessionRes?.ok && sessionRes.data) {
+        labKey = labKey || sessionRes.data.lab_key;
+        tipoAnalisis = tipoAnalisis || sessionRes.data.tipo_analisis;
+        tipoDato = tipoDato || sessionRes.data.tipo_dato;
+        if (!modoCualitativo && sessionRes.data.modo_cualitativo != null) {
+          modoCualitativo = sessionRes.data.modo_cualitativo;
+        }
+
+        if (labKey && !sessionStorage.getItem("labSeleccionado")) {
+          sessionStorage.setItem("labSeleccionado", labKey);
+        }
+        if (tipoAnalisis && !sessionStorage.getItem("tipoAnalisis")) {
+          sessionStorage.setItem("tipoAnalisis", tipoAnalisis);
+        }
+        if (tipoDato && !sessionStorage.getItem("tipoDato")) {
+          sessionStorage.setItem("tipoDato", tipoDato);
+        }
+        if (modoCualitativo != null && !sessionStorage.getItem("modoCualitativo")) {
+          sessionStorage.setItem("modoCualitativo", modoCualitativo);
+        }
+      }
+    } catch (err) {
+      console.warn("[EvalSelect] No se pudo hidratar sesión:", err);
+    }
+  }
+
+  const MENU_ACTIVE_CLASSES = [
+    "bg-blue-500/15",
+    "border",
+    "border-blue-500/20",
+    "text-blue-200",
+    "hover:bg-blue-500/25",
+  ];
+  const MENU_INACTIVE_CLASSES = ["text-gray-300", "hover:text-white", "hover:bg-white/8"];
+
+  function setMenuActiveState(el, isActive) {
+    if (!el) return;
+    if (isActive) {
+      el.classList.add(...MENU_ACTIVE_CLASSES);
+      el.classList.remove(...MENU_INACTIVE_CLASSES);
+    } else {
+      el.classList.remove(...MENU_ACTIVE_CLASSES);
+      el.classList.add(...MENU_INACTIVE_CLASSES);
+      el.classList.remove("border", "border-blue-500/20");
+    }
+  }
+
+  function showVisualizacionesEmpty(title, message) {
+    if (graphsGrid) graphsGrid.innerHTML = "";
+    if (runInfo) runInfo.textContent = "";
+    if (emptyTitle) emptyTitle.textContent = title || "";
+    if (emptyText) emptyText.textContent = message || "";
+    if (emptyState) emptyState.classList.remove("hidden");
+  }
+
+  function isValidDataImageUrl(value) {
+    return (
+      typeof value === "string" &&
+      value.startsWith("data:image/") &&
+      value.includes(";base64,")
+    );
+  }
+
+  async function loadVisualizaciones() {
+    if (visualizacionesLoading) return;
+    if (!graphsGrid) return;
+
+    if (!sessionId) {
+      showVisualizacionesEmpty(
+        "No hay sesión activa",
+        "Regresa al flujo de sesión y ejecuta las evaluaciones para ver gráficos."
+      );
+      return;
+    }
+
+    if (!window.cerper || typeof window.cerper.getEvaluacionesGraficos !== "function") {
+      showVisualizacionesEmpty(
+        "Visualizaciones no disponibles",
+        "Falta la función para cargar gráficos. Reinicia la app o revisa la integración de IPC."
+      );
+      return;
+    }
+
+    visualizacionesLoading = true;
+    if (runInfo) runInfo.textContent = "Cargando gráficos...";
+    if (emptyState) emptyState.classList.add("hidden");
+    graphsGrid.innerHTML = "";
+
+    let res;
+    try {
+      res = await window.cerper.getEvaluacionesGraficos(sessionId);
+    } catch (err) {
+      console.error("[EvalSelect] Error obteniendo gráficos:", err);
+      showVisualizacionesEmpty("Error al cargar visualizaciones", "No se pudieron obtener los gráficos.");
+      visualizacionesLoading = false;
+      return;
+    }
+
+    if (!res?.ok) {
+      showVisualizacionesEmpty(
+        "Error al cargar visualizaciones",
+        "No se pudieron obtener los gráficos desde el backend."
+      );
+      visualizacionesLoading = false;
+      return;
+    }
+
+    const graphs = Array.isArray(res.data) ? res.data : [];
+    const lastRunAt = res?.meta?.last_run_at || null;
+
+    if (graphs.length === 0) {
+      if (!lastRunAt) {
+        showVisualizacionesEmpty(
+          "No hay nada que ver aquí aún",
+          "Ejecuta las evaluaciones para ver algo."
+        );
+        visualizacionesLoading = false;
+        return;
+      }
+      showVisualizacionesEmpty(
+        "Aún no hay gráficos para mostrar",
+        "Se encontró una corrida previa, pero no hay gráficos generados en la última ejecución."
+      );
+      visualizacionesLoading = false;
+      return;
+    }
+
+    if (emptyState) emptyState.classList.add("hidden");
+    if (runInfo) runInfo.textContent = lastRunAt ? `Última corrida: ${lastRunAt}` : "";
+
+    for (const g of graphs) {
+      const src = g?.grafico_data;
+      if (!isValidDataImageUrl(src)) continue;
+
+      const card = document.createElement("div");
+      card.className = "glass-card p-6 rounded-xl overflow-hidden";
+
+      const header = document.createElement("div");
+      header.className = "flex items-start justify-between gap-4 mb-4";
+
+      const headerText = document.createElement("div");
+
+      const title = document.createElement("h3");
+      title.className = "text-white font-semibold text-lg";
+      title.textContent =
+        g?.test_titulo ||
+        g?.nombre_interno ||
+        (g?.catalog_id ? `Prueba ${g.catalog_id}` : "Prueba");
+
+      const subtitle = document.createElement("p");
+      subtitle.className = "text-gray-400 text-sm";
+      const subtitleParts = [];
+      if (g?.analito) subtitleParts.push(`Analito: ${g.analito}`);
+      if (g?.nivel != null) subtitleParts.push(`Nivel: ${g.nivel}`);
+      subtitle.textContent = subtitleParts.join(" · ");
+
+      headerText.appendChild(title);
+      if (subtitle.textContent) headerText.appendChild(subtitle);
+
+      const badge = document.createElement("span");
+      badge.className =
+        "text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full font-medium shrink-0";
+      badge.textContent = g?.catalog_id ? `#${g.catalog_id}` : "#";
+
+      header.appendChild(headerText);
+      header.appendChild(badge);
+
+      const imgWrap = document.createElement("div");
+      imgWrap.className = "bg-black/20 rounded-lg overflow-hidden border border-white/10";
+
+      const img = document.createElement("img");
+      img.alt = "Gráfico";
+      img.className = "w-full h-auto block";
+      img.decoding = "async";
+      img.loading = "lazy";
+      img.referrerPolicy = "no-referrer";
+      img.src = src;
+
+      imgWrap.appendChild(img);
+
+      card.appendChild(header);
+      card.appendChild(imgWrap);
+
+      graphsGrid.appendChild(card);
+    }
+
+    visualizacionesLoading = false;
+  }
+
+  function setActiveView(nextView) {
+    activeView = nextView === "visualizaciones" ? "visualizaciones" : "evaluaciones";
+    sessionStorage.setItem("evalSelectView", activeView);
+
+    if (viewEvaluaciones) viewEvaluaciones.classList.toggle("hidden", activeView !== "evaluaciones");
+    if (viewVisualizaciones)
+      viewVisualizaciones.classList.toggle("hidden", activeView !== "visualizaciones");
+
+    setMenuActiveState(menuEvaluaciones, activeView === "evaluaciones");
+    setMenuActiveState(menuVisualizaciones, activeView === "visualizaciones");
+
+    if (activeView === "visualizaciones") {
+      loadVisualizaciones();
+    }
+  }
+
+  menuEvaluaciones?.addEventListener("click", (e) => {
+    e.preventDefault();
+    setActiveView("evaluaciones");
+  });
+
+  menuVisualizaciones?.addEventListener("click", (e) => {
+    e.preventDefault();
+    setActiveView("visualizaciones");
+  });
+
+  setActiveView(sessionStorage.getItem("evalSelectView") === "visualizaciones" ? "visualizaciones" : "evaluaciones");
+
+  if (!sessionId) {
     notify("Faltan datos de sesión. Regresa al paso anterior.", "error");
     if (window.cerper && typeof window.cerper.openPage === "function") {
       window.cerper.openPage("input_data/input_data_sheet.html");
@@ -65,6 +318,22 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.location.href = "input_data/input_data_sheet.html";
     }
     return;
+  }
+
+  if (!labKey || !tipoAnalisis || !tipoDato) {
+    if (activeView === "visualizaciones") {
+      if (btnEvaluar) btnEvaluar.disabled = true;
+      if (btnContinuar) btnContinuar.disabled = true;
+      return;
+    } else {
+      notify("Faltan datos de sesión. Regresa al paso anterior.", "error");
+      if (window.cerper && typeof window.cerper.openPage === "function") {
+        window.cerper.openPage("input_data/input_data_sheet.html");
+      } else {
+        window.location.href = "input_data/input_data_sheet.html";
+      }
+      return;
+    }
   }
 
   function clampPercent(value) {
@@ -367,13 +636,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         onTerminal: (finalProgress) => {
           isEvaluating = false;
           bloquearBotones(false);
-          if (
-            finalProgress &&
-            (finalProgress.status === "completed" || finalProgress.status === "completed_with_errors") &&
-            menuVisualizaciones
-          ) {
-            menuVisualizaciones.classList.add("active");
-          }
+          if (finalProgress && activeView === "visualizaciones") loadVisualizaciones();
         },
       });
     } else {
@@ -403,11 +666,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!result.ok) throw new Error(result.error || "Error desconocido");
 
       notify("Evaluaciones completadas y guardadas correctamente.", "success");
-
-      // Activar menú “Visualizaciones”
-      if (menuVisualizaciones) {
-        menuVisualizaciones.classList.add("active");
-      }
 
     } catch (err) {
       console.error("[EvalSelect] Error al evaluar:", err);

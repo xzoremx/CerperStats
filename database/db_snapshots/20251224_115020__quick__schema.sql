@@ -2,9 +2,9 @@
 -- PostgreSQL database dump
 --
 
-\restrict X1cAL3Eo6BsExrFsXl8MqldwQK7wdSil3oLQXxcmOrgeBhBw6OUxSsFEJbw9Yki
+\restrict vzVfaVEKsfphqSo05EdAIQxGsYqmi1me8frOPMceVeSJRnCLRusRqnSZcUb7JeD
 
--- Dumped from database version 16.10 (Ubuntu 16.10-0ubuntu0.24.04.1)
+-- Dumped from database version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
 -- Dumped by pg_dump version 18.0
 
 SET statement_timeout = 0;
@@ -253,7 +253,8 @@ CREATE TABLE public.inputs_monoanalito (
     tipo_dato text,
     modo_cualitativo text,
     valido boolean DEFAULT true,
-    comentario text
+    comentario text,
+    nivel integer DEFAULT 1 NOT NULL
 );
 
 
@@ -296,7 +297,8 @@ CREATE TABLE public.inputs_multianalito (
     tipo_dato text,
     modo_cualitativo text,
     valido boolean DEFAULT true,
-    comentario text
+    comentario text,
+    nivel integer DEFAULT 1 NOT NULL
 );
 
 
@@ -334,7 +336,8 @@ CREATE TABLE public.lab_data_modes (
     tipo_dato text,
     modo_cualitativo text,
     valores_permitidos text,
-    activo boolean DEFAULT true
+    activo boolean DEFAULT true,
+    icon_lucide text
 );
 
 
@@ -378,7 +381,8 @@ CREATE TABLE public.labs (
     expediente_demo text,
     activo boolean DEFAULT true,
     creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    color text
+    color text,
+    icon_lucide text DEFAULT 'bar-chart-2'::text
 );
 
 
@@ -568,7 +572,9 @@ CREATE TABLE public.results_general (
     resultado_pc jsonb NOT NULL,
     creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     grafico_data text,
-    actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    nivel integer DEFAULT 1 NOT NULL,
+    analito text DEFAULT 'Analito'::text NOT NULL
 );
 
 
@@ -948,6 +954,22 @@ ALTER TABLE ONLY public.test_modules
 
 ALTER TABLE ONLY public.tests_catalog
     ADD CONSTRAINT tests_catalog_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: inputs_monoanalito uq_inputs_monoanalito; Type: CONSTRAINT; Schema: public; Owner: cerper_user
+--
+
+ALTER TABLE ONLY public.inputs_monoanalito
+    ADD CONSTRAINT uq_inputs_monoanalito UNIQUE (session_id, parametro, nivel, lectura_idx);
+
+
+--
+-- Name: inputs_multianalito uq_inputs_multianalito; Type: CONSTRAINT; Schema: public; Owner: cerper_user
+--
+
+ALTER TABLE ONLY public.inputs_multianalito
+    ADD CONSTRAINT uq_inputs_multianalito UNIQUE (session_id, parametro, analito, nivel, lectura_idx);
 
 
 --
@@ -1406,5 +1428,5 @@ ALTER TABLE ONLY public.session_selected_tests
 -- PostgreSQL database dump complete
 --
 
-\unrestrict X1cAL3Eo6BsExrFsXl8MqldwQK7wdSil3oLQXxcmOrgeBhBw6OUxSsFEJbw9Yki
+\unrestrict vzVfaVEKsfphqSo05EdAIQxGsYqmi1me8frOPMceVeSJRnCLRusRqnSZcUb7JeD
 

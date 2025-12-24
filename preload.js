@@ -32,6 +32,8 @@ contextBridge.exposeInMainWorld('cerper', {
   runEvaluations: (args) => ipcRenderer.invoke("db-run-evaluaciones", args),
   getEvaluacionesProgress: (session_id) =>
     ipcRenderer.invoke("db-get-evaluaciones-progress", session_id),
+  getEvaluacionesGraficos: (session_id) =>
+    ipcRenderer.invoke("db-get-evaluaciones-graficos", session_id),
   deleteSessionDeep: (session_id) =>
     ipcRenderer.invoke("db-delete-session-deep", session_id),
   getCurrentUser: () => ipcRenderer.invoke("auth-get-current-user"),

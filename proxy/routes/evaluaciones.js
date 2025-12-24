@@ -188,6 +188,77 @@ router.get('/progress/:session_id', (req, res) => {
   return res.json({ ok: true, data: getProgressSnapshot(entry) });
 });
 
+// Obtener gráficos (grafico_data) usando results_general (últimos gráficos disponibles por prueba)
+router.get('/graficos/:session_id', async (req, res) => {
+  const sessionId = Number(req.params.session_id);
+  if (!sessionId) {
+    return res.status(400).json({ ok: false, error: 'invalid_session_id' });
+  }
+
+  const maxTestsRaw = Number(process.env.CERPER_GRAFICOS_MAX_TESTS || 50);
+  const maxTests = Number.isFinite(maxTestsRaw) ? Math.max(1, Math.min(200, Math.trunc(maxTestsRaw))) : 50;
+
+  try {
+    const { rows: metaRows } = await pool.query(
+      `SELECT MAX(creado_en)::text AS last_run_at
+       FROM results_general
+       WHERE session_id = $1
+         AND catalog_id IS NOT NULL
+         AND btrim(grafico_data) LIKE 'data:image/%;base64,%'`,
+      [sessionId]
+    );
+    const lastRunAt = metaRows?.[0]?.last_run_at || null;
+
+    const { rows: latestRows } = await pool.query(
+      `WITH latest_tests AS (
+         SELECT
+           rg.catalog_id,
+           MAX(rg.creado_en) AS last_creado_en
+         FROM results_general rg
+         WHERE rg.session_id = $1
+           AND rg.catalog_id IS NOT NULL
+           AND btrim(rg.grafico_data) LIKE 'data:image/%;base64,%'
+         GROUP BY rg.catalog_id
+         ORDER BY last_creado_en DESC
+         LIMIT $2
+       )
+       SELECT DISTINCT ON (rg.catalog_id, rg.nivel, rg.analito)
+         rg.catalog_id,
+         rg.nivel,
+         rg.analito,
+         btrim(rg.grafico_data) AS grafico_data,
+         rg.creado_en,
+         tc.titulo AS test_titulo,
+         tc.nombre_interno
+       FROM results_general rg
+       LEFT JOIN tests_catalog tc ON tc.id = rg.catalog_id
+       JOIN latest_tests lt ON lt.catalog_id = rg.catalog_id
+       WHERE rg.session_id = $1
+         AND btrim(rg.grafico_data) LIKE 'data:image/%;base64,%'
+       ORDER BY rg.catalog_id ASC, rg.nivel ASC, rg.analito ASC, rg.creado_en DESC`,
+      [sessionId, maxTests]
+    );
+
+    const data = latestRows || [];
+    const selectedCatalogIds = [...new Set(data.map((r) => Number(r.catalog_id)).filter((n) => Number.isFinite(n)))].sort(
+      (a, b) => a - b
+    );
+
+    return res.json({
+      ok: true,
+      data,
+      meta: {
+        session_id: sessionId,
+        last_run_at: data.length ? lastRunAt : null,
+        selected_catalog_ids: selectedCatalogIds,
+      },
+    });
+  } catch (err) {
+    console.error('[API] Error obteniendo gráficos', err);
+    return res.status(500).json({ ok: false, error: 'db_error' });
+  }
+});
+
 router.post('/run', async (req, res) => {
   console.log('[EVAL-ROUTE] POST /run recibido:', { session_id: req.body?.session_id, catalog_ids: req.body?.catalog_ids });
   
@@ -227,7 +298,8 @@ router.post('/run', async (req, res) => {
       `INSERT INTO session_selected_tests (session_id, catalog_id, selected_at)
        SELECT $1, cid, NOW()
        FROM UNNEST($2::int[]) AS cid
-       ON CONFLICT (session_id, catalog_id) DO NOTHING`,
+       ON CONFLICT (session_id, catalog_id)
+       DO UPDATE SET selected_at = EXCLUDED.selected_at`,
       [session_id, catalog_ids]
     );
 
