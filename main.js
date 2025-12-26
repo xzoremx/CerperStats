@@ -24,6 +24,7 @@ const ROUTES = new Set([
   // Evaluación y reporte
   'evaluation_select.html',
   'pdf_config.html',
+  'reports_browser.html',
   'postinfo.html',
   // Otros
   'index.html'
@@ -514,4 +515,234 @@ ipcMain.handle("window-close", () => {
 
 ipcMain.handle("window-is-maximized", () => {
   return mainWindow ? mainWindow.isMaximized() : false;
+});
+
+// === PDF Report Generation ===
+const { spawn } = require('child_process');
+const os = require('os');
+
+/**
+ * Generate PDF reports locally using Python subprocess
+ * Body: { sessionId, config: { group_by, include_graphs, include_tables } }
+ */
+ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
+  try {
+    console.log("[REPORTS] Starting report generation for session:", sessionId);
+
+    // 1. Fetch results and graphs from server
+    const [resultsRes, graphsRes, sessionRes] = await Promise.all([
+      proxyFetch(`/evaluaciones/resultados/${sessionId}`),
+      proxyFetch(`/evaluaciones/graficos/${sessionId}`),
+      proxyFetch(`/sessions/${sessionId}`)
+    ]);
+
+    if (!resultsRes.data || resultsRes.data.length === 0) {
+      return { ok: false, error: "no_results", message: "No hay resultados para generar reportes" };
+    }
+
+    // 2. Prepare input data for Python script
+    const inputData = {
+      session_id: sessionId,
+      session_info: sessionRes.data || {},
+      config: {
+        group_by: config?.group_by || "unified",
+        include_graphs: config?.include_graphs !== false,
+        include_tables: config?.include_tables !== false
+      },
+      results: resultsRes.data || [],
+      graphs: graphsRes.data || []
+    };
+
+    // 3. Create temporary files
+    const tempDir = os.tmpdir();
+    const timestamp = Date.now();
+    const inputJsonPath = path.join(tempDir, `cerper_report_input_${timestamp}.json`);
+    const outputDir = path.join(tempDir, `cerper_reports_${timestamp}`);
+    const logoPath = path.join(__dirname, 'assets', 'logos', 'cerper_logo.png');
+
+    // Write input JSON
+    fs.writeFileSync(inputJsonPath, JSON.stringify(inputData, null, 2), 'utf8');
+
+    // Create output directory
+    fs.mkdirSync(outputDir, { recursive: true });
+
+    // 4. Execute report generator (prefer bundled .exe, fallback to Python script)
+    const bundledExe = path.join(__dirname, 'modules', 'python', 'reports', 'dist', 'report_generator.exe');
+    const pythonScript = path.join(__dirname, 'modules', 'python', 'reports', 'report_generator.py');
+
+    // Determine which executable to use
+    const useBundled = fs.existsSync(bundledExe);
+    const executable = useBundled ? bundledExe : 'python';
+    const args = useBundled
+      ? [inputJsonPath, outputDir]
+      : [pythonScript, inputJsonPath, outputDir];
+
+    if (fs.existsSync(logoPath)) {
+      args.push('--logo', logoPath);
+    }
+
+    console.log(`[REPORTS] Using ${useBundled ? 'bundled executable' : 'Python script'}`);
+
+    const pythonResult = await new Promise((resolve, reject) => {
+      const reportProcess = spawn(executable, args, {
+        cwd: __dirname,
+        env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      reportProcess.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      reportProcess.stderr.on('data', (data) => {
+        stderr += data.toString();
+        console.log("[REPORTS:Generator]", data.toString());
+      });
+
+      reportProcess.on('close', (code) => {
+        if (code === 0) {
+          try {
+            const result = JSON.parse(stdout.trim());
+            resolve(result);
+          } catch (e) {
+            reject(new Error(`Failed to parse output: ${stdout}`));
+          }
+        } else {
+          reject(new Error(`Report generator failed with code ${code}: ${stderr}`));
+        }
+      });
+
+      reportProcess.on('error', (err) => {
+        reject(new Error(`Failed to start report generator: ${err.message}`));
+      });
+    });
+
+    console.log("[REPORTS] Generated:", pythonResult.length, "PDFs");
+
+    // 5. Upload each PDF to server
+    const uploadedReports = [];
+    const userId = currentUser?.id || null;
+
+    for (const pdfInfo of pythonResult) {
+      try {
+        const pdfPath = pdfInfo.path;
+        const pdfBuffer = fs.readFileSync(pdfPath);
+        const pdfBase64 = pdfBuffer.toString('base64');
+
+        // Determine tests included from results
+        const testsIncluded = [...new Set(
+          resultsRes.data
+            .filter(r => {
+              if (config.group_by === 'by_analito' && pdfInfo.analito) {
+                return r.analito === pdfInfo.analito;
+              }
+              if (config.group_by === 'by_nivel' && pdfInfo.nivel) {
+                return r.nivel === pdfInfo.nivel;
+              }
+              return true;
+            })
+            .map(r => r.catalog_id)
+            .filter(Boolean)
+        )];
+
+        const uploadPayload = {
+          session_id: sessionId,
+          tipo_informe: config.group_by,
+          version_informe: 'v1.0',
+          plan_json: {
+            ...config,
+            analito: pdfInfo.analito,
+            nivel: pdfInfo.nivel,
+            generated_at: new Date().toISOString()
+          },
+          pdf_base64: pdfBase64,
+          hash_documento: pdfInfo.hash,
+          usuario_id: userId,
+          tests_included: testsIncluded
+        };
+
+        const uploadResult = await proxyFetch('/reports', {
+          method: 'POST',
+          body: JSON.stringify(uploadPayload)
+        });
+
+        uploadedReports.push({
+          report_id: uploadResult.report_id,
+          filename: pdfInfo.filename,
+          analito: pdfInfo.analito,
+          nivel: pdfInfo.nivel,
+          tests_count: pdfInfo.tests_count
+        });
+
+        // Clean up local PDF after upload
+        try { fs.unlinkSync(pdfPath); } catch (_) { }
+      } catch (uploadErr) {
+        console.error("[REPORTS] Failed to upload PDF:", pdfInfo.filename, uploadErr);
+      }
+    }
+
+    // 6. Cleanup temp files
+    try {
+      fs.unlinkSync(inputJsonPath);
+      fs.rmdirSync(outputDir, { recursive: true });
+    } catch (_) { }
+
+    console.log("[REPORTS] Successfully uploaded:", uploadedReports.length, "reports");
+    return { ok: true, reports: uploadedReports };
+  } catch (err) {
+    console.error("[REPORTS] Error generating reports:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+/**
+ * Get list of reports for a session
+ */
+ipcMain.handle("get-session-reports", async (_event, sessionId) => {
+  try {
+    const payload = await proxyFetch(`/reports/session/${sessionId}`);
+    return { ok: true, data: payload.data || [] };
+  } catch (err) {
+    console.error("[PROXY] Error listing reports:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+/**
+ * Download a report PDF (returns base64)
+ */
+ipcMain.handle("download-report-pdf", async (_event, reportId) => {
+  try {
+    const url = new URL(`/reports/${reportId}/pdf`, PROXY_BASE_URL);
+    const response = await fetch(url, {
+      headers: buildProxyHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error(`Download failed: ${response.status}`);
+    }
+
+    const buffer = await response.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString('base64');
+
+    return { ok: true, pdf_base64: base64, report_id: reportId };
+  } catch (err) {
+    console.error("[PROXY] Error downloading report:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+/**
+ * Delete a report
+ */
+ipcMain.handle("delete-report", async (_event, reportId) => {
+  try {
+    await proxyFetch(`/reports/${reportId}`, { method: 'DELETE' });
+    return { ok: true };
+  } catch (err) {
+    console.error("[PROXY] Error deleting report:", err);
+    return { ok: false, error: err.message };
+  }
 });

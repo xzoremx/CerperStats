@@ -45,6 +45,15 @@ contextBridge.exposeInMainWorld('cerper', {
   windowMaximize: () => ipcRenderer.invoke("window-maximize"),
   windowClose: () => ipcRenderer.invoke("window-close"),
   windowIsMaximized: () => ipcRenderer.invoke("window-is-maximized"),
+  // PDF Report Generation
+  generateReports: (sessionId, config) =>
+    ipcRenderer.invoke("generate-reports", { sessionId, config }),
+  getSessionReports: (sessionId) =>
+    ipcRenderer.invoke("get-session-reports", sessionId),
+  downloadReportPdf: (reportId) =>
+    ipcRenderer.invoke("download-report-pdf", reportId),
+  deleteReport: (reportId) =>
+    ipcRenderer.invoke("delete-report", reportId),
 });
 
 // Exponer configuración de iconos (leer archivos locales de forma segura)

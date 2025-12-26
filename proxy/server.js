@@ -7,6 +7,7 @@ const labsRouter = require('./routes/labs');
 const inputsRouter = require('./routes/inputs');
 const sessionsRouter = require('./routes/sessions');
 const evaluacionesRouter = require('./routes/evaluaciones');
+const reportsRouter = require('./routes/reports');
 const authRouter = require('./routes/auth');
 const runEvaluator = require('./lib/runEvaluator');
 
@@ -14,12 +15,13 @@ const SECRET_PATH = path.resolve(__dirname, '../secrets/token_secret.txt');
 const SECRET = fs.readFileSync(SECRET_PATH, 'utf8').trim();
 
 const app = express();
-app.use(bodyParser.json({ limit: '2mb' }));
+app.use(bodyParser.json({ limit: '50mb' })); // Increased for PDF uploads
 app.use('/auth', authRouter);
 app.use('/labs', verifyToken, labsRouter);
 app.use('/inputs', verifyToken, inputsRouter);
 app.use('/sessions', verifyToken, sessionsRouter);
 app.use('/evaluaciones', verifyToken, evaluacionesRouter);
+app.use('/reports', verifyToken, reportsRouter);
 
 function verifyToken(req, res, next) {
   const header = req.headers.authorization || '';
