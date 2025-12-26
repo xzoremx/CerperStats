@@ -729,6 +729,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (viewConfiguracion) viewConfiguracion.classList.toggle("hidden", activeView !== "configuracion");
     if (viewResultados) viewResultados.classList.toggle("hidden", activeView !== "resultados");
 
+    // Hide Evaluar and Continuar buttons when not in evaluaciones view
+    const showActionButtons = activeView === "evaluaciones";
+    if (btnEvaluar) btnEvaluar.classList.toggle("hidden", !showActionButtons);
+    if (btnContinuar) btnContinuar.classList.toggle("hidden", !showActionButtons);
+
     setMenuActiveState(menuEvaluaciones, activeView === "evaluaciones");
     setMenuActiveState(menuVisualizaciones, activeView === "visualizaciones");
     setMenuActiveState(menuConfiguracion, activeView === "configuracion");
