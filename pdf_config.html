@@ -160,7 +160,7 @@
 
     <!-- Main Content -->
     <div class="flex-1 flex px-4 sm:px-6 pb-16 pt-8 items-start justify-center relative">
-        <div
+        <div id="main-panel"
             class="relative w-full max-w-4xl mt-6 glass-container rounded-3xl flex flex-col overflow-hidden shadow-2xl">
 
             <!-- Header -->
@@ -319,9 +319,26 @@
 
     <script src="js/auth_guard.js"></script>
     <script src="js/security/icon_safety.js"></script>
+    <script src="js/liquid_glass.js"></script>
     <script src="js/pdf_config.js" defer></script>
     <script>
         if (window.lucide) lucide.createIcons();
+
+        // Apply Liquid Glass effect to main panel
+        document.addEventListener('DOMContentLoaded', () => {
+            const mainPanel = document.getElementById('main-panel');
+            if (mainPanel && window.LiquidGlass) {
+                window.LiquidGlass.apply(mainPanel, {
+                    mode: 'standard',
+                    displacementScale: 120,
+                    aberrationIntensity: 2,
+                    saturation: 140,
+                    blurAmount: 15,
+                    cornerRadius: 24,
+                    elasticity: 0.15
+                });
+            }
+        });
     </script>
 </body>
 
