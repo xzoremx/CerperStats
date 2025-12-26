@@ -1480,9 +1480,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // === Botón CONTINUAR ===
-  btnContinuar.addEventListener("click", () => {
-    notify("Redirigiendo a configuración de PDF...", "info");
-    window.cerper.openPage("pdf_config.html");
+  btnContinuar.addEventListener("click", async () => {
+    // Validate that there are evaluation results before proceeding
+    if (!sessionId) {
+      notify("No hay sesión activa.", "error");
+      return;
+    }
+
+    try {
+      const resultsRes = await window.cerper.getResultadosPreliminares(sessionId);
+
+      if (!resultsRes?.ok || !Array.isArray(resultsRes.data) || resultsRes.data.length === 0) {
+        notify("No hay resultados de evaluación. Ejecuta las pruebas primero.", "warning");
+        return;
+      }
+
+      notify("Redirigiendo a configuración de PDF...", "info");
+      window.cerper.openPage("pdf_config.html");
+    } catch (err) {
+      console.error("[EvalSelect] Error checking results:", err);
+      notify("Error verificando resultados. Intenta de nuevo.", "error");
+    }
   });
 });
 
