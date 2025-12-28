@@ -44,11 +44,11 @@ router.post('/', async (req, res) => {
         // Insert report
         const { rows } = await client.query(
             `INSERT INTO reports (
-        session_id, catalog_id, tipo_informe, version_informe, estado,
+        session_id, tipo_informe, version_informe, estado,
         plan_json, pdf_data, hash_documento, observaciones, usuario_id,
         creado_en, actualizado_en
       )
-      VALUES ($1, NULL, $2, $3, 'generado', $4, $5, $6, $7, $8, NOW(), NOW())
+      VALUES ($1, $2, $3, 'generado', $4, $5, $6, $7, $8, NOW(), NOW())
       RETURNING id`,
             [
                 session_id,

@@ -617,15 +617,16 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
 
     console.log("[REPORTS] Generated:", pythonResult.length, "PDFs");
 
-    // 5. Upload each PDF to server
-    const uploadedReports = [];
-    const userId = currentUser?.id || null;
+    // 5. Return generated PDFs (without uploading to server)
+    // User will explicitly save via 'save-report-to-db' handler
+    const generatedReports = [];
 
     for (const pdfInfo of pythonResult) {
       try {
         const pdfPath = pdfInfo.path;
         const pdfBuffer = fs.readFileSync(pdfPath);
         const pdfBase64 = pdfBuffer.toString('base64');
+        const pdfSizeBytes = pdfBuffer.length;
 
         // Determine tests included from results
         const testsIncluded = [...new Set(
@@ -643,39 +644,31 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
             .filter(Boolean)
         )];
 
-        const uploadPayload = {
-          session_id: sessionId,
+        generatedReports.push({
+          // Unique temp ID for frontend tracking
+          temp_id: `temp_${Date.now()}_${generatedReports.length}`,
+          filename: pdfInfo.filename,
+          analito: pdfInfo.analito || null,
+          nivel: pdfInfo.nivel || null,
+          tests_count: pdfInfo.tests_count,
+          hash: pdfInfo.hash,
+          pdf_base64: pdfBase64,
+          pdf_size_bytes: pdfSizeBytes,
           tipo_informe: config.group_by,
-          version_informe: 'v1.0',
           plan_json: {
             ...config,
             analito: pdfInfo.analito,
             nivel: pdfInfo.nivel,
             generated_at: new Date().toISOString()
           },
-          pdf_base64: pdfBase64,
-          hash_documento: pdfInfo.hash,
-          usuario_id: userId,
-          tests_included: testsIncluded
-        };
-
-        const uploadResult = await proxyFetch('/reports', {
-          method: 'POST',
-          body: JSON.stringify(uploadPayload)
+          tests_included: testsIncluded,
+          saved: false  // Not yet saved to DB
         });
 
-        uploadedReports.push({
-          report_id: uploadResult.report_id,
-          filename: pdfInfo.filename,
-          analito: pdfInfo.analito,
-          nivel: pdfInfo.nivel,
-          tests_count: pdfInfo.tests_count
-        });
-
-        // Clean up local PDF after upload
+        // Clean up local PDF file
         try { fs.unlinkSync(pdfPath); } catch (_) { }
-      } catch (uploadErr) {
-        console.error("[REPORTS] Failed to upload PDF:", pdfInfo.filename, uploadErr);
+      } catch (readErr) {
+        console.error("[REPORTS] Failed to read PDF:", pdfInfo.filename, readErr);
       }
     }
 
@@ -685,10 +678,47 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
       fs.rmdirSync(outputDir, { recursive: true });
     } catch (_) { }
 
-    console.log("[REPORTS] Successfully uploaded:", uploadedReports.length, "reports");
-    return { ok: true, reports: uploadedReports };
+    console.log("[REPORTS] Prepared:", generatedReports.length, "reports for user review");
+    return { ok: true, reports: generatedReports };
   } catch (err) {
     console.error("[REPORTS] Error generating reports:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+/**
+ * Save a single report to database (explicit user action)
+ * Body: { sessionId, report: { pdf_base64, tipo_informe, plan_json, hash, tests_included } }
+ */
+ipcMain.handle("save-report-to-db", async (_event, { sessionId, report }) => {
+  try {
+    console.log("[REPORTS] Saving report to DB for session:", sessionId);
+
+    const uploadPayload = {
+      session_id: sessionId,
+      tipo_informe: report.tipo_informe || 'unified',
+      version_informe: 'v1.0',
+      plan_json: report.plan_json || {},
+      pdf_base64: report.pdf_base64,
+      hash_documento: report.hash || '',
+      usuario_id: currentUser?.id || null,
+      tests_included: report.tests_included || [],
+      observaciones: report.observaciones || null
+    };
+
+    const uploadResult = await proxyFetch('/reports', {
+      method: 'POST',
+      body: JSON.stringify(uploadPayload)
+    });
+
+    console.log("[REPORTS] Saved to DB with ID:", uploadResult.report_id);
+    return {
+      ok: true,
+      report_id: uploadResult.report_id,
+      message: "Reporte guardado exitosamente"
+    };
+  } catch (err) {
+    console.error("[REPORTS] Error saving to DB:", err);
     return { ok: false, error: err.message };
   }
 });

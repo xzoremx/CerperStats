@@ -54,6 +54,8 @@ contextBridge.exposeInMainWorld('cerper', {
     ipcRenderer.invoke("download-report-pdf", reportId),
   deleteReport: (reportId) =>
     ipcRenderer.invoke("delete-report", reportId),
+  saveReportToDb: (sessionId, report) =>
+    ipcRenderer.invoke("save-report-to-db", { sessionId, report }),
 });
 
 // Exponer configuración de iconos (leer archivos locales de forma segura)

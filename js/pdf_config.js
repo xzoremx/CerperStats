@@ -1,6 +1,8 @@
 /**
  * PDF Config Page - JavaScript Logic
  * Handles section navigation, mode selection, options, report generation, and inbox
+ * 
+ * PDFs generados se mantienen localmente hasta que el usuario los guarda explícitamente.
  */
 document.addEventListener('DOMContentLoaded', async () => {
     // Get session ID from sessionStorage
@@ -39,6 +41,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const inboxStats = document.getElementById('inbox-stats');
     const inboxEmpty = document.getElementById('inbox-empty');
 
+    // DOM Elements - Filters and Bulk Actions
+    const filterTipo = document.getElementById('filter-tipo');
+    const searchInput = document.getElementById('search-input');
+    const selectionInfo = document.getElementById('selection-info');
+    const selectionCount = document.getElementById('selection-count');
+    const bulkActionsBar = document.getElementById('bulk-actions-bar');
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    const bulkSaveForm = document.getElementById('bulk-save-form');
+    const bulkComment = document.getElementById('bulk-comment');
+
     // State
     let activeView = 'config';
     let selectedMode = 'unified';
@@ -46,8 +58,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     let resultsData = [];
     let analitos = new Set();
     let niveles = new Set();
-    let inboxReports = [];
 
+    // LOCAL (unsaved) PDFs - kept in memory
+    let localReports = [];
+    // SAVED PDFs - from database
+    let savedReports = [];
+    // Selected items (Set of temp_id for local, id for saved)
+    let selectedItems = new Set();
     // === NAVIGATION ===
     function setActiveView(view) {
         activeView = view;
@@ -62,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Refresh inbox when switching to it
         if (view === 'buzon') {
-            loadInboxReports();
+            renderInboxList();
         }
     }
 
@@ -137,6 +154,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Load saved reports from DB
+    async function loadSavedReports() {
+        if (!sessionId) return;
+        try {
+            const result = await window.cerper.getSessionReports(sessionId);
+            if (result?.ok && Array.isArray(result.data)) {
+                savedReports = result.data;
+            }
+        } catch (err) {
+            console.error('[PDFConfig] Error loading saved reports:', err);
+        }
+    }
+
+    // Initial load
+    await loadSavedReports();
+    updateInboxBadge();
+
     // Mode selection
     modeCards.forEach(card => {
         card.addEventListener('click', () => {
@@ -190,7 +224,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Generate reports
+    // Generate reports (LOCAL only - no auto-upload)
     btnGenerate?.addEventListener('click', async () => {
         if (isGenerating || !sessionId) return;
 
@@ -210,7 +244,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         try {
-            setProgress(10, 'Enviando a generador Python...');
+            setProgress(10, 'Generando PDFs localmente...');
 
             const result = await window.cerper.generateReports(sessionId, config);
 
@@ -218,15 +252,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 throw new Error(result.error || result.message || 'Error desconocido');
             }
 
-            setProgress(80, 'Subiendo PDFs al servidor...');
+            setProgress(90, 'Preparando vista previa...');
 
             const reportCount = result.reports?.length || 0;
 
+            // Add to local reports (NOT saved yet) - with timestamp
+            const now = Date.now();
+            const reportsWithTimestamp = result.reports.map(r => ({
+                ...r,
+                createdAt: now
+            }));
+            localReports = [...localReports, ...reportsWithTimestamp];
+
             setProgress(100, `¡Listo! ${reportCount} reporte${reportCount !== 1 ? 's' : ''} generado${reportCount !== 1 ? 's' : ''}.`);
 
-            // Refresh inbox and switch to it
-            setTimeout(async () => {
-                await loadInboxReports();
+            // Switch to inbox after a moment
+            setTimeout(() => {
                 setActiveView('buzon');
 
                 // Reset button
@@ -236,7 +277,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (window.lucide) lucide.createIcons();
                 document.body.classList.remove('generating');
                 if (progressSection) progressSection.classList.add('hidden');
-            }, 1500);
+            }, 1000);
 
         } catch (err) {
             console.error('[PDFConfig] Generation error:', err);
@@ -262,91 +303,85 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // === INBOX FUNCTIONALITY ===
 
-    async function loadInboxReports() {
-        if (!sessionId) return;
-
-        try {
-            const result = await window.cerper.getSessionReports(sessionId);
-            if (result?.ok && Array.isArray(result.data)) {
-                inboxReports = result.data;
-                renderInboxList();
-                updateInboxBadge();
-            }
-        } catch (err) {
-            console.error('[PDFConfig] Error loading inbox:', err);
-        }
-    }
-
     function updateInboxBadge() {
-        const count = inboxReports.length;
+        const totalCount = localReports.length + savedReports.length;
+        const unsavedCount = localReports.length;
+
         if (inboxBadge) {
-            inboxBadge.textContent = count > 99 ? '99+' : count;
-            inboxBadge.classList.toggle('hidden', count === 0);
+            // Show unsaved count if any, otherwise total
+            const displayCount = unsavedCount > 0 ? unsavedCount : totalCount;
+            inboxBadge.textContent = displayCount > 99 ? '99+' : displayCount;
+            inboxBadge.classList.toggle('hidden', totalCount === 0);
+            // Orange badge for unsaved, normal for saved
+            if (unsavedCount > 0) {
+                inboxBadge.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+            } else {
+                inboxBadge.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+            }
         }
         if (inboxStats) {
-            inboxStats.textContent = `${count} reporte${count !== 1 ? 's' : ''} generado${count !== 1 ? 's' : ''}`;
+            const parts = [];
+            if (localReports.length > 0) {
+                parts.push(`${localReports.length} sin guardar`);
+            }
+            if (savedReports.length > 0) {
+                parts.push(`${savedReports.length} guardado${savedReports.length !== 1 ? 's' : ''}`);
+            }
+            inboxStats.textContent = parts.length > 0 ? parts.join(' • ') : '0 reportes';
         }
     }
 
     function renderInboxList() {
         if (!inboxList) return;
 
-        if (inboxReports.length === 0) {
+        const { local: filteredLocal, saved: filteredSaved } = getFilteredReports();
+        const allEmpty = filteredLocal.length === 0 && filteredSaved.length === 0;
+
+        if (allEmpty) {
             if (inboxEmpty) inboxEmpty.classList.remove('hidden');
-            // Clear all except empty state
             Array.from(inboxList.children).forEach(child => {
                 if (child.id !== 'inbox-empty') child.remove();
             });
             if (window.lucide) lucide.createIcons();
+            updateInboxBadge();
+            updateSelectionUI();
             return;
         }
 
         if (inboxEmpty) inboxEmpty.classList.add('hidden');
 
-        // Build HTML
         let html = '';
-        inboxReports.forEach(report => {
-            const tipoLabel = getTipoLabel(report.tipo_informe);
-            const planInfo = report.plan_json || {};
-            const date = new Date(report.creado_en).toLocaleDateString('es-ES', {
-                day: '2-digit',
-                month: 'short',
-                hour: '2-digit',
-                minute: '2-digit'
+
+        // Render LOCAL (unsaved) reports first - with prominent "GUARDAR" button
+        if (filteredLocal.length > 0) {
+            html += `<div class="mb-4"><h3 class="text-sm font-semibold text-amber-400 mb-3 flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                Sin guardar en servidor (${filteredLocal.length})
+            </h3></div>`;
+
+            // Find original index for each filtered item
+            filteredLocal.forEach(report => {
+                const originalIndex = localReports.indexOf(report);
+                html += renderReportItem(report, 'local', originalIndex);
             });
-            const sizeKb = ((report.pdf_size_bytes || 0) / 1024).toFixed(0);
+        }
 
-            let iconColor = 'from-indigo-500 to-purple-600';
-            if (report.tipo_informe === 'by_analito') iconColor = 'from-blue-500 to-cyan-600';
-            if (report.tipo_informe === 'by_nivel') iconColor = 'from-orange-500 to-amber-600';
-            if (report.tipo_informe === 'unified') iconColor = 'from-emerald-500 to-teal-600';
+        // Render SAVED reports
+        if (filteredSaved.length > 0) {
+            if (filteredLocal.length > 0) {
+                html += `<div class="border-t border-white/10 my-6"></div>`;
+            }
+            html += `<div class="mb-4"><h3 class="text-sm font-semibold text-emerald-400 mb-3 flex items-center gap-2">
+                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                Guardados en servidor (${filteredSaved.length})
+            </h3></div>`;
 
-            let subtitle = '';
-            if (planInfo.analito) subtitle = planInfo.analito;
-            if (planInfo.nivel) subtitle += (subtitle ? ' • ' : '') + `Nv.${planInfo.nivel}`;
+            filteredSaved.forEach(report => {
+                html += renderReportItem(report, 'saved');
+            });
+        }
 
-            html += `
-                <div class="report-item flex items-center gap-4" data-report-id="${report.id}">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${iconColor} flex items-center justify-center flex-shrink-0">
-                        <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="font-medium text-white truncate">${tipoLabel}</div>
-                        <div class="text-sm text-gray-500">${subtitle || date} • ${sizeKb} KB</div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button class="delete-btn w-10 h-10 rounded-lg flex items-center justify-center transition-all" onclick="deleteInboxReport(${report.id})">
-                            <i data-lucide="trash-2" class="w-5 h-5"></i>
-                        </button>
-                        <button class="download-btn w-10 h-10 rounded-lg flex items-center justify-center transition-all" onclick="downloadInboxReport(${report.id})">
-                            <i data-lucide="download" class="w-5 h-5 text-white"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        });
-
-        // Keep empty state element, replace rest
+        // Keep empty state element
         const emptyEl = inboxEmpty?.cloneNode(true);
         inboxList.innerHTML = html;
         if (emptyEl) {
@@ -355,6 +390,106 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (window.lucide) lucide.createIcons();
+        updateInboxBadge();
+        updateSelectionUI();
+    }
+
+    function renderReportItem(report, type, localIndex = null) {
+        const isLocal = type === 'local';
+        const tipoLabel = getTipoLabel(report.tipo_informe);
+        const planInfo = report.plan_json || {};
+        const sizeKb = ((report.pdf_size_bytes || 0) / 1024).toFixed(0);
+
+        let iconColor = 'from-indigo-500 to-purple-600';
+        if (report.tipo_informe === 'by_analito') iconColor = 'from-blue-500 to-cyan-600';
+        if (report.tipo_informe === 'by_nivel') iconColor = 'from-orange-500 to-amber-600';
+        if (report.tipo_informe === 'unified') iconColor = 'from-emerald-500 to-teal-600';
+
+        // Build specific title from analito/nivel
+        let specificTitle = '';
+        if (planInfo.analito) specificTitle = planInfo.analito;
+        if (planInfo.nivel != null) specificTitle += (specificTitle ? ' • ' : '') + `Nivel ${planInfo.nivel}`;
+
+        // Use specific title if available, otherwise use type label
+        const displayTitle = specificTitle || tipoLabel;
+        const displaySubtitle = specificTitle ? tipoLabel : '';
+
+        // For saved reports, use server date; for local, use dynamic timeago
+        let dateDisplay;
+        if (isLocal && report.createdAt) {
+            dateDisplay = `<span class="timeago" data-created-at="${report.createdAt}">${getTimeAgo(report.createdAt)}</span>`;
+        } else if (report.creado_en) {
+            dateDisplay = new Date(report.creado_en).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+        } else {
+            dateDisplay = 'Recién generado';
+        }
+
+        // Selection key and checked state
+        const selectKey = isLocal ? `local_${localIndex}` : `saved_${report.id}`;
+        const isChecked = selectedItems.has(selectKey);
+
+        if (isLocal) {
+            return `
+                <div class="report-item-container border-amber-500/30 bg-amber-500/5 rounded-xl p-4" data-local-index="${localIndex}">
+                    <div class="flex items-center gap-4">
+                        <!-- Checkbox -->
+                        <input type="checkbox" data-select-id="${selectKey}" 
+                            ${isChecked ? 'checked' : ''} 
+                            onchange="toggleSelectItem(${localIndex}, true)"
+                            class="w-5 h-5 rounded accent-indigo-500 flex-shrink-0 cursor-pointer">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${iconColor} flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium text-white truncate">${displayTitle}</div>
+                            <div class="text-sm text-gray-500">${displaySubtitle ? displaySubtitle + ' • ' : ''}${dateDisplay} • ${sizeKb} KB</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="delete-btn w-10 h-10 rounded-lg flex items-center justify-center transition-all" onclick="discardLocalReport(${localIndex})" title="Descartar">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                            <button class="btn-secondary w-10 h-10 rounded-lg flex items-center justify-center transition-all" onclick="downloadLocalReport(${localIndex})" title="Descargar">
+                                <i data-lucide="download" class="w-5 h-5 text-gray-400"></i>
+                            </button>
+                            <button class="save-btn px-4 py-2 rounded-lg flex items-center gap-2 font-semibold text-white transition-all" onclick="saveLocalReport(${localIndex})" 
+                                style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);">
+                                <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                                Guardar
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Save form will be inserted here -->
+                </div>
+            `;
+        } else {
+            return `
+                <div class="report-item flex items-center gap-4 rounded-xl p-4" data-report-id="${report.id}">
+                    <!-- Checkbox -->
+                    <input type="checkbox" data-select-id="${selectKey}" 
+                        ${isChecked ? 'checked' : ''} 
+                        onchange="toggleSelectItem(${report.id}, false)"
+                        class="w-5 h-5 rounded accent-indigo-500 flex-shrink-0 cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${iconColor} flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-medium text-white truncate flex items-center gap-2">
+                            ${displayTitle}
+                            <span class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">Guardado</span>
+                        </div>
+                        <div class="text-sm text-gray-500">${displaySubtitle ? displaySubtitle + ' • ' : ''}${dateDisplay} • ${sizeKb} KB</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button class="delete-btn w-10 h-10 rounded-lg flex items-center justify-center transition-all" onclick="deleteSavedReport(${report.id})" title="Eliminar">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                        <button class="download-btn w-10 h-10 rounded-lg flex items-center justify-center transition-all" onclick="downloadSavedReport(${report.id})" title="Descargar">
+                            <i data-lucide="download" class="w-5 h-5 text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
     }
 
     function getTipoLabel(tipo) {
@@ -367,52 +502,434 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Global functions for inline onclick handlers
-    window.downloadInboxReport = async function (reportId) {
+    // === GLOBAL FUNCTIONS ===
+
+    // Download a LOCAL (unsaved) report
+    window.downloadLocalReport = function (index) {
+        const report = localReports[index];
+        if (!report || !report.pdf_base64) return;
+
+        downloadBase64Pdf(report.pdf_base64, report.filename || `reporte_local_${index}.pdf`);
+    };
+
+    // Discard a LOCAL report (remove from memory)
+    window.discardLocalReport = function (index) {
+        if (!confirm('¿Descartar este reporte? No se ha guardado en el servidor.')) return;
+        localReports.splice(index, 1);
+        renderInboxList();
+    };
+
+    // Save a LOCAL report to database - shows inline form for comment
+    window.saveLocalReport = function (index) {
+        const report = localReports[index];
+        if (!report) return;
+
+        const itemEl = document.querySelector(`[data-local-index="${index}"]`);
+        if (!itemEl) return;
+
+        // Check if form already exists
+        if (itemEl.querySelector('.save-form')) return;
+
+        // Create inline save form
+        const formHtml = `
+            <div class="save-form mt-3 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+                <label class="block text-sm font-medium text-white mb-2">
+                    <i data-lucide="message-square" class="w-4 h-4 inline mr-1"></i>
+                    Observaciones (opcional)
+                </label>
+                <textarea id="save-comment-${index}" rows="2" 
+                    class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-gray-500 resize-none focus:outline-none focus:border-emerald-500/50"
+                    placeholder="Escribe un comentario o nota sobre este reporte..."></textarea>
+                <div class="flex items-center justify-end gap-2 mt-3">
+                    <button onclick="cancelSaveForm(${index})" class="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all">
+                        Cancelar
+                    </button>
+                    <button onclick="confirmSaveReport(${index})" class="px-4 py-2 rounded-lg text-sm font-semibold text-white flex items-center gap-2 transition-all"
+                        style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);">
+                        <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                        Confirmar y Guardar
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Insert form after the item
+        itemEl.insertAdjacentHTML('beforeend', formHtml);
+        if (window.lucide) lucide.createIcons();
+
+        // Focus textarea
+        const textarea = document.getElementById(`save-comment-${index}`);
+        if (textarea) textarea.focus();
+    };
+
+    // Cancel save form
+    window.cancelSaveForm = function (index) {
+        const itemEl = document.querySelector(`[data-local-index="${index}"]`);
+        const form = itemEl?.querySelector('.save-form');
+        if (form) form.remove();
+    };
+
+    // Confirm and save with comment
+    window.confirmSaveReport = async function (index) {
+        const report = localReports[index];
+        if (!report) return;
+
+        const textarea = document.getElementById(`save-comment-${index}`);
+        const observaciones = textarea?.value?.trim() || '';
+
+        // Show saving state
+        const btn = document.querySelector(`[data-local-index="${index}"] .save-form button:last-child`);
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Guardando...';
+            if (window.lucide) lucide.createIcons();
+        }
+
+        try {
+            const result = await window.cerper.saveReportToDb(sessionId, {
+                pdf_base64: report.pdf_base64,
+                tipo_informe: report.tipo_informe,
+                plan_json: report.plan_json,
+                hash: report.hash,
+                tests_included: report.tests_included,
+                observaciones: observaciones  // Include comment
+            });
+
+            if (!result.ok) {
+                throw new Error(result.error || 'Error desconocido');
+            }
+
+            // Remove from local, reload saved
+            localReports.splice(index, 1);
+            await loadSavedReports();
+            renderInboxList();
+
+            // Show success feedback
+            alert('✓ Reporte guardado exitosamente en el servidor');
+
+        } catch (err) {
+            console.error('[PDFConfig] Save error:', err);
+            alert('Error guardando: ' + err.message);
+
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="upload-cloud" class="w-4 h-4"></i> Confirmar y Guardar';
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+    };
+
+    // Download a SAVED report from database
+    window.downloadSavedReport = async function (reportId) {
         try {
             const result = await window.cerper.downloadReportPdf(reportId);
             if (!result.ok) throw new Error(result.error);
 
-            // Convert base64 to blob and download
-            const byteCharacters = atob(result.pdf_base64);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            const blob = new Blob([byteArray], { type: 'application/pdf' });
-
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `reporte_${reportId}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            downloadBase64Pdf(result.pdf_base64, `reporte_${reportId}.pdf`);
         } catch (err) {
             console.error('[PDFConfig] Download error:', err);
             alert('Error descargando: ' + err.message);
         }
     };
 
-    window.deleteInboxReport = async function (reportId) {
-        if (!confirm('¿Eliminar este reporte?')) return;
+    // Delete a SAVED report from database
+    window.deleteSavedReport = async function (reportId) {
+        if (!confirm('¿Eliminar este reporte del servidor? Esta acción no se puede deshacer.')) return;
 
         try {
             const result = await window.cerper.deleteReport(reportId);
             if (!result.ok) throw new Error(result.error);
 
-            // Refresh list
-            await loadInboxReports();
+            await loadSavedReports();
+            renderInboxList();
         } catch (err) {
             console.error('[PDFConfig] Delete error:', err);
             alert('Error eliminando: ' + err.message);
         }
     };
 
-    // Load inbox on page load
-    loadInboxReports();
+    // Helper: download base64 as file
+    function downloadBase64Pdf(base64, filename) {
+        const byteCharacters = atob(base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // === FILTERS ===
+    filterTipo?.addEventListener('change', () => {
+        renderInboxList();
+    });
+
+    // Search input - debounced for performance
+    let searchTimeout;
+    searchInput?.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            renderInboxList();
+        }, 200); // 200ms debounce
+    });
+
+    function getFilteredReports() {
+        const tipoFilter = filterTipo?.value || '';
+        const searchQuery = (searchInput?.value || '').toLowerCase().trim();
+
+        let filteredLocal = localReports;
+        let filteredSaved = savedReports;
+
+        // Filter by tipo
+        if (tipoFilter) {
+            filteredLocal = filteredLocal.filter(r => r.tipo_informe === tipoFilter);
+            filteredSaved = filteredSaved.filter(r => r.tipo_informe === tipoFilter);
+        }
+
+        // Filter by search text (analito, nivel, tipo)
+        if (searchQuery) {
+            const matchesSearch = (report) => {
+                const planInfo = report.plan_json || {};
+                const searchableText = [
+                    planInfo.analito || '',
+                    planInfo.nivel != null ? `nivel ${planInfo.nivel}` : '',
+                    report.tipo_informe || '',
+                    getTipoLabel(report.tipo_informe) || ''
+                ].join(' ').toLowerCase();
+
+                return searchableText.includes(searchQuery);
+            };
+
+            filteredLocal = filteredLocal.filter(matchesSearch);
+            filteredSaved = filteredSaved.filter(matchesSearch);
+        }
+
+        return { local: filteredLocal, saved: filteredSaved };
+    }
+
+    // === SELECTION ===
+    function updateSelectionUI() {
+        const count = selectedItems.size;
+
+        if (selectionInfo) {
+            selectionInfo.classList.toggle('hidden', count === 0);
+        }
+        if (selectionCount) {
+            selectionCount.textContent = `${count} seleccionado${count !== 1 ? 's' : ''}`;
+        }
+        if (bulkActionsBar) {
+            bulkActionsBar.classList.toggle('hidden', count === 0);
+        }
+
+        // Update select all checkbox
+        const { local, saved } = getFilteredReports();
+        const totalVisible = local.length + saved.length;
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = count > 0 && count === totalVisible;
+            selectAllCheckbox.indeterminate = count > 0 && count < totalVisible;
+        }
+
+        // Hide bulk save form when selection changes
+        if (bulkSaveForm) bulkSaveForm.classList.add('hidden');
+    }
+
+    window.toggleSelectItem = function (itemId, isLocal) {
+        const key = isLocal ? `local_${itemId}` : `saved_${itemId}`;
+        if (selectedItems.has(key)) {
+            selectedItems.delete(key);
+        } else {
+            selectedItems.add(key);
+        }
+        updateSelectionUI();
+
+        // Update checkbox visual
+        const checkbox = document.querySelector(`input[data-select-id="${key}"]`);
+        if (checkbox) checkbox.checked = selectedItems.has(key);
+    };
+
+    window.clearSelection = function () {
+        selectedItems.clear();
+        updateSelectionUI();
+        // Uncheck all checkboxes
+        document.querySelectorAll('[data-select-id]').forEach(cb => cb.checked = false);
+    };
+
+    // Select all checkbox
+    selectAllCheckbox?.addEventListener('change', () => {
+        const { local, saved } = getFilteredReports();
+
+        if (selectAllCheckbox.checked) {
+            // Select all visible
+            local.forEach((r, i) => selectedItems.add(`local_${i}`));
+            saved.forEach(r => selectedItems.add(`saved_${r.id}`));
+        } else {
+            // Deselect all
+            selectedItems.clear();
+        }
+        updateSelectionUI();
+        renderInboxList();
+    });
+
+    // === BULK ACTIONS ===
+    window.bulkDeleteSelected = async function () {
+        if (selectedItems.size === 0) return;
+
+        const localCount = [...selectedItems].filter(k => k.startsWith('local_')).length;
+        const savedCount = [...selectedItems].filter(k => k.startsWith('saved_')).length;
+
+        let msg = `¿Eliminar ${selectedItems.size} reporte${selectedItems.size !== 1 ? 's' : ''}?`;
+        if (savedCount > 0) {
+            msg += `\n\n⚠️ ${savedCount} están guardados en el servidor y se eliminarán permanentemente.`;
+        }
+
+        if (!confirm(msg)) return;
+
+        // Delete saved first
+        for (const key of selectedItems) {
+            if (key.startsWith('saved_')) {
+                const id = parseInt(key.replace('saved_', ''));
+                try {
+                    await window.cerper.deleteReport(id);
+                } catch (err) {
+                    console.error('[PDFConfig] Bulk delete error:', err);
+                }
+            }
+        }
+
+        // Delete local (collect indices, delete from highest to lowest)
+        const localIndices = [...selectedItems]
+            .filter(k => k.startsWith('local_'))
+            .map(k => parseInt(k.replace('local_', '')))
+            .sort((a, b) => b - a); // Reverse order to avoid index shifting
+
+        for (const idx of localIndices) {
+            localReports.splice(idx, 1);
+        }
+
+        selectedItems.clear();
+        await loadSavedReports();
+        renderInboxList();
+        updateSelectionUI();
+    };
+
+    window.showBulkSaveForm = function () {
+        // Check if any local items are selected
+        const hasLocal = [...selectedItems].some(k => k.startsWith('local_'));
+        if (!hasLocal) {
+            alert('Solo puedes guardar reportes que no están guardados.');
+            return;
+        }
+        if (bulkSaveForm) {
+            bulkSaveForm.classList.remove('hidden');
+            bulkComment?.focus();
+        }
+    };
+
+    window.cancelBulkSave = function () {
+        if (bulkSaveForm) bulkSaveForm.classList.add('hidden');
+        if (bulkComment) bulkComment.value = '';
+    };
+
+    window.confirmBulkSave = async function () {
+        const observaciones = bulkComment?.value?.trim() || '';
+
+        // Get local indices to save
+        const localIndices = [...selectedItems]
+            .filter(k => k.startsWith('local_'))
+            .map(k => parseInt(k.replace('local_', '')))
+            .sort((a, b) => b - a); // Reverse order for deletion later
+
+        if (localIndices.length === 0) {
+            alert('No hay reportes sin guardar seleccionados.');
+            return;
+        }
+
+        // Disable button
+        const btn = document.querySelector('#bulk-save-form button:last-child');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Guardando...';
+            if (window.lucide) lucide.createIcons();
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        // Save each, lowest index last (so we can delete properly)
+        for (const idx of [...localIndices].reverse()) {
+            const report = localReports[idx];
+            if (!report) continue;
+
+            try {
+                const result = await window.cerper.saveReportToDb(sessionId, {
+                    pdf_base64: report.pdf_base64,
+                    tipo_informe: report.tipo_informe,
+                    plan_json: report.plan_json,
+                    hash: report.hash,
+                    tests_included: report.tests_included,
+                    observaciones: observaciones
+                });
+
+                if (result.ok) {
+                    successCount++;
+                } else {
+                    errorCount++;
+                }
+            } catch (err) {
+                console.error('[PDFConfig] Bulk save error:', err);
+                errorCount++;
+            }
+        }
+
+        // Remove saved items from localReports (highest index first)
+        for (const idx of localIndices) {
+            localReports.splice(idx, 1);
+        }
+
+        selectedItems.clear();
+        await loadSavedReports();
+        renderInboxList();
+        updateSelectionUI();
+
+        if (bulkSaveForm) bulkSaveForm.classList.add('hidden');
+        if (bulkComment) bulkComment.value = '';
+
+        if (errorCount === 0) {
+            alert(`✓ ${successCount} reporte${successCount !== 1 ? 's' : ''} guardado${successCount !== 1 ? 's' : ''} exitosamente.`);
+        } else {
+            alert(`Guardados: ${successCount}, Errores: ${errorCount}`);
+        }
+    };
+
+    // === TIME AGO FUNCTIONALITY ===
+    function getTimeAgo(timestamp) {
+        const seconds = Math.floor((Date.now() - timestamp) / 1000);
+
+        if (seconds < 30) return 'Recién generado';
+        if (seconds < 60) return `hace ${seconds} segundos`;
+        if (seconds < 120) return 'hace 1 minuto';
+        if (seconds < 3600) return `hace ${Math.floor(seconds / 60)} minutos`;
+        return 'hace más de una hora';
+    }
+
+    // Update timeago elements every 30 seconds
+    setInterval(() => {
+        document.querySelectorAll('.timeago[data-created-at]').forEach(el => {
+            const timestamp = parseInt(el.dataset.createdAt);
+            if (timestamp) {
+                el.textContent = getTimeAgo(timestamp);
+            }
+        });
+    }, 30000); // 30 seconds
 
     // Initialize icons
     if (window.lucide) lucide.createIcons();

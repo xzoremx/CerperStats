@@ -181,6 +181,90 @@
             background: rgba(239, 68, 68, 0.25);
         }
 
+        /* Select dropdown styles */
+        select.filter-select,
+        #filter-tipo,
+        #filter-estado {
+            appearance: none;
+            -webkit-appearance: none;
+            background-color: rgba(30, 30, 40, 0.9);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+
+        #filter-tipo option,
+        #filter-estado option {
+            background-color: #1e1e28;
+            color: #ffffff;
+            padding: 8px 12px;
+        }
+
+        #filter-tipo:focus,
+        #filter-estado:focus {
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+        }
+
+        /* Custom Checkbox Styles */
+        input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        input[type="checkbox"]:hover {
+            border-color: rgba(99, 102, 241, 0.5);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        input[type="checkbox"]:checked {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            border-color: transparent;
+        }
+
+        input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 6px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        input[type="checkbox"]:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+        }
+
+        input[type="checkbox"]:indeterminate {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            border-color: transparent;
+        }
+
+        input[type="checkbox"]:indeterminate::after {
+            content: '';
+            position: absolute;
+            top: 7px;
+            left: 4px;
+            width: 10px;
+            height: 2px;
+            background: white;
+            border-radius: 1px;
+        }
+
         /* Badge */
         .inbox-badge {
             min-width: 20px;
@@ -216,9 +300,7 @@
     <!-- Video Background -->
     <div class="fixed inset-0 -z-20">
         <div class="w-full h-full">
-            <video autoplay loop muted playsinline class="w-full h-full object-cover">
-                <source src="assets/videos/pdf_config.mp4" type="video/mp4">
-            </video>
+            <img src="assets/images/pdf_config/background.jpg" alt="Background" class="w-full h-full object-cover">
         </div>
     </div>
 
@@ -405,7 +487,7 @@
                 <div id="view-buzon" class="flex-1 flex flex-col hidden">
                     <!-- Header -->
                     <div class="p-8 border-b border-white/5">
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between mb-4">
                             <div>
                                 <h2 class="text-2xl font-bold text-white mb-1">Buzón de Reportes</h2>
                                 <p id="inbox-stats" class="text-gray-400">0 reportes generados</p>
@@ -415,6 +497,88 @@
                                 <i data-lucide="plus" class="w-4 h-4"></i>
                                 Nuevo Reporte
                             </button>
+                        </div>
+
+                        <!-- Filters and Bulk Actions -->
+                        <div class="flex items-center justify-between gap-4 mt-4">
+                            <!-- Filters -->
+                            <div class="flex items-center gap-3">
+                                <div class="relative">
+                                    <i data-lucide="search"
+                                        class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
+                                    <input type="text" id="search-input" placeholder="Buscar por analito, nivel..."
+                                        class="pl-10 pr-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500/50 w-64"
+                                        autocomplete="off">
+                                </div>
+                                <select id="filter-tipo"
+                                    class="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500/50">
+                                    <option value="">Todos los tipos de informe</option>
+                                    <option value="unified">Unificado</option>
+                                    <option value="by_analito">Por Analito</option>
+                                    <option value="by_nivel">Por Nivel</option>
+                                    <option value="by_analito_nivel">Analito + Nivel</option>
+                                </select>
+                            </div>
+
+                            <!-- Selection Info -->
+                            <div id="selection-info" class="hidden flex items-center gap-3">
+                                <span id="selection-count" class="text-sm text-indigo-400 font-medium">0
+                                    seleccionados</span>
+                                <button onclick="clearSelection()" class="text-xs text-gray-500 hover:text-white">
+                                    Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bulk Actions Bar (shown when items selected) -->
+                    <div id="bulk-actions-bar" class="hidden px-8 py-4 bg-indigo-500/10 border-b border-indigo-500/20">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <label class="flex items-center gap-2 text-sm text-white cursor-pointer">
+                                    <input type="checkbox" id="select-all-checkbox"
+                                        class="w-4 h-4 rounded accent-indigo-500">
+                                    <span>Seleccionar todos</span>
+                                </label>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button id="btn-bulk-delete" onclick="bulkDeleteSelected()"
+                                    class="px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 transition-all"
+                                    style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171;">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    Eliminar
+                                </button>
+                                <button id="btn-bulk-save" onclick="showBulkSaveForm()"
+                                    class="px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 text-white transition-all"
+                                    style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                                    Guardar seleccionados
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Bulk Save Form (hidden by default) -->
+                        <div id="bulk-save-form"
+                            class="hidden mt-4 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+                            <label class="block text-sm font-medium text-white mb-2">
+                                <i data-lucide="message-square" class="w-4 h-4 inline mr-1"></i>
+                                Observaciones para todos (opcional)
+                            </label>
+                            <textarea id="bulk-comment" rows="2"
+                                class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-gray-500 resize-none focus:outline-none focus:border-emerald-500/50"
+                                placeholder="Este comentario se aplicará a todos los reportes seleccionados..."></textarea>
+                            <div class="flex items-center justify-end gap-2 mt-3">
+                                <button onclick="cancelBulkSave()"
+                                    class="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all">
+                                    Cancelar
+                                </button>
+                                <button onclick="confirmBulkSave()"
+                                    class="px-4 py-2 rounded-lg text-sm font-semibold text-white flex items-center gap-2 transition-all"
+                                    style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);">
+                                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                                    Confirmar y Guardar Todos
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -449,11 +613,11 @@
             const mainPanel = document.getElementById('main-panel');
             if (mainPanel && window.LiquidGlass) {
                 window.LiquidGlass.apply(mainPanel, {
-                    mode: 'standard',
+                    mode: 'polar',
                     displacementScale: 120,
                     aberrationIntensity: 2,
                     saturation: 140,
-                    blurAmount: 15,
+                    blurAmount: 1,
                     cornerRadius: 24,
                     elasticity: 0.15
                 });
