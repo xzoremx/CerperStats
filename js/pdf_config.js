@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // DOM Elements - Config
     const btnBack = document.getElementById('btn-back');
     const btnGenerate = document.getElementById('btn-generate');
-    const sessionText = document.getElementById('session-text');
     const modeGrid = document.getElementById('mode-grid');
     const modeCards = modeGrid?.querySelectorAll('.mode-card') || [];
     const optGraphs = document.getElementById('opt-graphs');
@@ -104,11 +103,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    // Get lab name element
+    const labNameEl = document.getElementById('lab-name');
+
     // Validate session
     if (!sessionId) {
-        if (sessionText) {
-            sessionText.textContent = 'Sin sesión activa';
-            sessionText.classList.add('text-yellow-400');
+        if (labNameEl) {
+            labNameEl.textContent = 'Sin sesión';
+            labNameEl.classList.add('text-yellow-400');
         }
         if (btnGenerate) btnGenerate.disabled = true;
         return;
@@ -123,10 +125,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (sessionRes?.ok && sessionRes.data) {
             const s = sessionRes.data;
-            const parts = [];
-            if (s.lab_nombre || s.lab_key) parts.push(s.lab_nombre || s.lab_key);
-            parts.push(`#${sessionId}`);
-            if (sessionText) sessionText.textContent = parts.join(' • ');
+            if (labNameEl) {
+                labNameEl.textContent = s.lab_nombre || s.lab_key || 'Laboratorio';
+            }
+        }
+
+        // Render lab icon (same pattern as input_data_sheet.html)
+        const DEFAULT_LAB_ICON = 'flask-conical';
+        const DEFAULT_LAB_COLOR = '#22d3ee';
+        const iconSlot = document.getElementById('header-lab-icon');
+
+        if (iconSlot) {
+            const storedIcon = sessionStorage.getItem('labIcon') || localStorage.getItem('labIcon') || '';
+            const labIcon = storedIcon || DEFAULT_LAB_ICON;
+
+            const storedColor = sessionStorage.getItem('labColor') || localStorage.getItem('labColor') || '';
+            const labColor = (storedColor || DEFAULT_LAB_COLOR).trim();
+            if (labColor) {
+                iconSlot.style.color = labColor;
+            }
+
+            // Use IconSafety if available, else fallback to direct lucide
+            if (window.IconSafety?.attachIcon) {
+                window.IconSafety.attachIcon(iconSlot, labIcon).then((ok) => {
+                    if (!ok) {
+                        iconSlot.innerHTML = `<i data-lucide="${DEFAULT_LAB_ICON}"></i>`;
+                    }
+                    if (window.lucide?.createIcons) {
+                        window.lucide.createIcons();
+                    }
+                });
+            } else {
+                iconSlot.innerHTML = `<i data-lucide="${labIcon}"></i>`;
+                if (window.lucide?.createIcons) {
+                    window.lucide.createIcons();
+                }
+            }
         }
 
         if (resultsRes?.ok && Array.isArray(resultsRes.data)) {
@@ -400,10 +434,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const planInfo = report.plan_json || {};
         const sizeKb = ((report.pdf_size_bytes || 0) / 1024).toFixed(0);
 
-        let iconColor = 'from-indigo-500 to-purple-600';
-        if (report.tipo_informe === 'by_analito') iconColor = 'from-blue-500 to-cyan-600';
-        if (report.tipo_informe === 'by_nivel') iconColor = 'from-orange-500 to-amber-600';
-        if (report.tipo_informe === 'unified') iconColor = 'from-emerald-500 to-teal-600';
+        // Icon text color (glass style)
+        let iconTextColor = 'text-purple-400';
+        if (report.tipo_informe === 'by_analito') iconTextColor = 'text-cyan-400';
+        if (report.tipo_informe === 'by_nivel') iconTextColor = 'text-amber-400';
+        if (report.tipo_informe === 'unified') iconTextColor = 'text-emerald-400';
 
         // Build specific title from analito/nivel
         let specificTitle = '';
@@ -437,8 +472,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             ${isChecked ? 'checked' : ''} 
                             onchange="toggleSelectItem(${localIndex}, true)"
                             class="w-5 h-5 rounded accent-indigo-500 flex-shrink-0 cursor-pointer">
-                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${iconColor} flex items-center justify-center flex-shrink-0">
-                            <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/15 shadow-lg backdrop-blur-sm flex items-center justify-center flex-shrink-0 ${iconTextColor}">
+                            <i data-lucide="file-text" class="w-6 h-6"></i>
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="font-medium text-white truncate">${displayTitle}</div>
@@ -469,8 +504,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ${isChecked ? 'checked' : ''} 
                         onchange="toggleSelectItem(${report.id}, false)"
                         class="w-5 h-5 rounded accent-indigo-500 flex-shrink-0 cursor-pointer">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${iconColor} flex items-center justify-center flex-shrink-0">
-                        <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/15 shadow-lg backdrop-blur-sm flex items-center justify-center flex-shrink-0 ${iconTextColor}">
+                        <i data-lucide="file-text" class="w-6 h-6"></i>
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="font-medium text-white truncate flex items-center gap-2">

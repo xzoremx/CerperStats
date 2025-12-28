@@ -148,6 +148,13 @@
             color: #a5b4fc;
         }
 
+        /* Lab icon SVG sizing */
+        #header-lab-icon svg {
+            width: 1.25rem;
+            height: 1.25rem;
+            display: block;
+        }
+
         /* Report item styles */
         .report-item {
             background: rgba(255, 255, 255, 0.05);
@@ -181,31 +188,65 @@
             background: rgba(239, 68, 68, 0.25);
         }
 
-        /* Select dropdown styles */
+        /* Select dropdown styles - Glass effect */
         select.filter-select,
         #filter-tipo,
         #filter-estado {
             appearance: none;
             -webkit-appearance: none;
-            background-color: rgba(30, 30, 40, 0.9);
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 12px center;
             padding-right: 36px;
             cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        #filter-tipo:hover,
+        #filter-estado:hover {
+            background-color: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
         #filter-tipo option,
         #filter-estado option {
-            background-color: #1e1e28;
+            background-color: rgba(25, 25, 35, 0.98);
             color: #ffffff;
-            padding: 8px 12px;
+            padding: 10px 14px;
         }
 
         #filter-tipo:focus,
         #filter-estado:focus {
             border-color: rgba(99, 102, 241, 0.5);
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Search input glass style */
+        #search-input {
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.2s ease;
+        }
+
+        #search-input:hover {
+            background-color: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        #search-input:focus {
+            background-color: rgba(255, 255, 255, 0.08);
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        #search-input::placeholder {
+            color: rgba(156, 163, 175, 0.7);
         }
 
         /* Custom Checkbox Styles */
@@ -311,16 +352,24 @@
 
             <!-- Sidebar -->
             <div class="glass-sidebar w-64 flex flex-col relative z-10">
-                <!-- Header -->
+                <!-- Header with dual icons -->
                 <div class="p-6 border-b border-white/10">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                            <i data-lucide="file-text" class="w-5 h-5 text-white"></i>
+                    <div class="flex items-start gap-4">
+                        <!-- Dual icon container (like input_data_sheet.html) -->
+                        <div class="relative w-14 h-14 flex-shrink-0">
+                            <!-- Report icon (upper-left) - glass style -->
+                            <div
+                                class="absolute left-0 top-0 w-10 h-10 rounded-xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center border border-white/15 shadow-lg backdrop-blur-sm z-10 text-indigo-400">
+                                <i data-lucide="file-text" class="w-5 h-5"></i>
+                            </div>
+                            <!-- Lab icon (lower-right) - dynamic -->
+                            <span id="header-lab-icon"
+                                class="absolute right-0 bottom-0 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/15 shadow-lg backdrop-blur-sm z-20 text-cyan-400"></span>
                         </div>
-                        <div>
-                            <h1 class="font-semibold text-white">Reportes PDF</h1>
-                            <p id="session-text" class="text-xs text-gray-400">Sesión activa</p>
+                        <div class="flex flex-col pt-1">
+                            <span id="lab-name"
+                                class="text-xs font-medium text-gray-400 tracking-wide uppercase mb-0.5">Laboratorio</span>
+                            <h1 class="font-semibold text-white text-lg">Reportes PDF</h1>
                         </div>
                     </div>
                 </div>
@@ -330,8 +379,8 @@
                     <h3 class="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-3 px-2">Secciones</h3>
                     <nav class="space-y-1">
                         <a href="#" id="menu-config" class="menu-item active">
-                            <i data-lucide="settings" class="w-5 h-5"></i>
-                            <span class="font-medium">Configuración</span>
+                            <i data-lucide="component" class="w-5 h-5"></i>
+                            <span class="font-medium">Set-up</span>
                         </a>
                         <a href="#" id="menu-buzon" class="menu-item">
                             <i data-lucide="inbox" class="w-5 h-5"></i>
@@ -374,8 +423,8 @@
                                 <div class="mode-card glass-card rounded-xl p-5 selected" data-mode="unified">
                                     <div class="flex items-center gap-3 mb-3">
                                         <div
-                                            class="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                                            <i data-lucide="file-text" class="w-5 h-5 text-white"></i>
+                                            class="w-10 h-10 rounded-lg bg-gradient-to-br from-white/10 to-white/5 border border-white/15 shadow-lg backdrop-blur-sm flex items-center justify-center text-emerald-400">
+                                            <i data-lucide="file-text" class="w-5 h-5"></i>
                                         </div>
                                         <div>
                                             <div class="font-semibold text-white">Todo Unificado</div>
@@ -388,8 +437,8 @@
                                 <div class="mode-card glass-card rounded-xl p-5" data-mode="by_analito">
                                     <div class="flex items-center gap-3 mb-3">
                                         <div
-                                            class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
-                                            <i data-lucide="flask-conical" class="w-5 h-5 text-white"></i>
+                                            class="w-10 h-10 rounded-lg bg-gradient-to-br from-white/10 to-white/5 border border-white/15 shadow-lg backdrop-blur-sm flex items-center justify-center text-cyan-400">
+                                            <i data-lucide="atom" class="w-5 h-5"></i>
                                         </div>
                                         <div>
                                             <div class="font-semibold text-white">Por Analito</div>
@@ -402,8 +451,8 @@
                                 <div class="mode-card glass-card rounded-xl p-5" data-mode="by_nivel">
                                     <div class="flex items-center gap-3 mb-3">
                                         <div
-                                            class="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center">
-                                            <i data-lucide="bar-chart-3" class="w-5 h-5 text-white"></i>
+                                            class="w-10 h-10 rounded-lg bg-gradient-to-br from-white/10 to-white/5 border border-white/15 shadow-lg backdrop-blur-sm flex items-center justify-center text-amber-400">
+                                            <i data-lucide="arrow-up-narrow-wide" class="w-5 h-5"></i>
                                         </div>
                                         <div>
                                             <div class="font-semibold text-white">Por Nivel</div>
@@ -416,8 +465,8 @@
                                 <div class="mode-card glass-card rounded-xl p-5" data-mode="by_analito_nivel">
                                     <div class="flex items-center gap-3 mb-3">
                                         <div
-                                            class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                                            <i data-lucide="grid-3x3" class="w-5 h-5 text-white"></i>
+                                            class="w-10 h-10 rounded-lg bg-gradient-to-br from-white/10 to-white/5 border border-white/15 shadow-lg backdrop-blur-sm flex items-center justify-center text-purple-400">
+                                            <i data-lucide="grid-3x3" class="w-5 h-5"></i>
                                         </div>
                                         <div>
                                             <div class="font-semibold text-white">Analito + Nivel</div>
@@ -505,7 +554,7 @@
                             <div class="flex items-center gap-3">
                                 <div class="relative">
                                     <i data-lucide="search"
-                                        class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
+                                        class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 z-10 pointer-events-none"></i>
                                     <input type="text" id="search-input" placeholder="Buscar por analito, nivel..."
                                         class="pl-10 pr-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500/50 w-64"
                                         autocomplete="off">
