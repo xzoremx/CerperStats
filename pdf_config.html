@@ -27,6 +27,14 @@
             contain: layout style paint;
         }
 
+        .glass-sidebar {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+            backdrop-filter: blur(30px) saturate(150%);
+            -webkit-backdrop-filter: blur(30px) saturate(150%);
+            border-right: 0.5px solid rgba(255, 255, 255, 0.1);
+            contain: layout style;
+        }
+
         .glass-card {
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
             border: 0.5px solid rgba(255, 255, 255, 0.1);
@@ -88,35 +96,8 @@
             border-color: rgba(255, 255, 255, 0.2);
         }
 
-        .checkbox-custom {
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border: 1.5px solid rgba(255, 255, 255, 0.3);
-            border-radius: 0.375rem;
-            background: rgba(255, 255, 255, 0.05);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            position: relative;
-        }
-
-        .checkbox-custom:checked {
-            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-            border-color: #6366f1;
-        }
-
-        .checkbox-custom:checked::after {
-            content: '✓';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
         .progress-bar {
+            height: 8px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 9999px;
             overflow: hidden;
@@ -144,6 +125,89 @@
         .generating .btn-primary {
             animation: pulse-glow 1.5s ease-in-out infinite;
         }
+
+        /* Menu active styles */
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .menu-item:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .menu-item.active {
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+        }
+
+        /* Report item styles */
+        .report-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .report-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+
+        .download-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .delete-btn {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+
+        .delete-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        /* Badge */
+        .inbox-badge {
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: badge-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes badge-pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
     </style>
 </head>
 
@@ -158,161 +222,217 @@
         </div>
     </div>
 
-    <!-- Main Content -->
+    <!-- Main Application Window -->
     <div class="flex-1 flex px-4 sm:px-6 pb-16 pt-8 items-start justify-center relative">
         <div id="main-panel"
-            class="relative w-full max-w-4xl mt-6 glass-container rounded-3xl flex flex-col overflow-hidden shadow-2xl">
+            class="relative w-full max-w-6xl mt-6 glass-container rounded-3xl flex overflow-hidden shadow-2xl min-h-[80vh]">
 
-            <!-- Header -->
-            <div class="p-8 border-b border-white/10">
-                <div class="flex items-center gap-4 mb-4">
-                    <button id="btn-back"
-                        class="btn-secondary px-4 py-2 rounded-lg flex items-center gap-2 text-gray-300 hover:text-white">
-                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
-                        Volver
-                    </button>
+            <!-- Sidebar -->
+            <div class="glass-sidebar w-64 flex flex-col relative z-10">
+                <!-- Header -->
+                <div class="p-6 border-b border-white/10">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                            <i data-lucide="file-text" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-semibold text-white">Reportes PDF</h1>
+                            <p id="session-text" class="text-xs text-gray-400">Sesión activa</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex items-center gap-4">
-                    <div
-                        class="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                        <i data-lucide="file-text" class="w-7 h-7 text-white"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-2xl font-bold text-white">Generar Reportes PDF</h1>
-                        <p class="text-gray-400 mt-1">Configura cómo quieres agrupar los reportes</p>
-                    </div>
+
+                <!-- Navigation -->
+                <div class="flex-1 p-4 space-y-2">
+                    <h3 class="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-3 px-2">Secciones</h3>
+                    <nav class="space-y-1">
+                        <a href="#" id="menu-config" class="menu-item active">
+                            <i data-lucide="settings" class="w-5 h-5"></i>
+                            <span class="font-medium">Configuración</span>
+                        </a>
+                        <a href="#" id="menu-buzon" class="menu-item">
+                            <i data-lucide="inbox" class="w-5 h-5"></i>
+                            <span class="font-medium">Buzón</span>
+                            <span id="inbox-badge" class="inbox-badge ml-auto hidden">0</span>
+                        </a>
+                    </nav>
+                </div>
+
+                <!-- Back Button -->
+                <div class="p-4 border-t border-white/10">
+                    <button id="btn-back"
+                        class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/8 transition-all w-full">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                        <span class="font-medium">Volver</span>
+                    </button>
                 </div>
             </div>
 
-            <!-- Content -->
-            <div class="p-8 space-y-8">
+            <!-- Main Content Area -->
+            <div class="flex-1 flex flex-col min-h-0 relative" style="border-left: 1px solid rgba(255, 255, 255, 0.1);">
 
-                <!-- Session Info -->
-                <div id="session-info" class="glass-card rounded-xl p-4">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="info" class="w-5 h-5 text-indigo-400"></i>
-                        <span id="session-text" class="text-gray-300">Cargando información de sesión...</span>
+                <!-- VIEW: Configuración -->
+                <div id="view-config" class="flex-1 flex flex-col">
+                    <!-- Header -->
+                    <div class="p-8 border-b border-white/5">
+                        <h2 class="text-2xl font-bold text-white mb-1">Generar Reportes PDF</h2>
+                        <p class="text-gray-400">Configura cómo quieres agrupar los reportes</p>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="p-8 space-y-8 overflow-y-auto flex-1">
+                        <!-- Mode Selection -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <i data-lucide="layers" class="w-5 h-5 text-indigo-400"></i>
+                                Modo de Agrupación
+                            </h3>
+                            <div id="mode-grid" class="grid grid-cols-2 gap-4">
+                                <div class="mode-card glass-card rounded-xl p-5 selected" data-mode="unified">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div
+                                            class="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                                            <i data-lucide="file-text" class="w-5 h-5 text-white"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold text-white">Todo Unificado</div>
+                                            <div id="unified-preview" class="text-xs text-gray-400">1 PDF</div>
+                                        </div>
+                                    </div>
+                                    <p class="text-sm text-gray-400">Un solo PDF con todos los resultados</p>
+                                </div>
+
+                                <div class="mode-card glass-card rounded-xl p-5" data-mode="by_analito">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div
+                                            class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
+                                            <i data-lucide="flask-conical" class="w-5 h-5 text-white"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold text-white">Por Analito</div>
+                                            <div id="analito-preview" class="text-xs text-gray-400">1 PDF</div>
+                                        </div>
+                                    </div>
+                                    <p class="text-sm text-gray-400">Un PDF por cada analito</p>
+                                </div>
+
+                                <div class="mode-card glass-card rounded-xl p-5" data-mode="by_nivel">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div
+                                            class="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center">
+                                            <i data-lucide="bar-chart-3" class="w-5 h-5 text-white"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold text-white">Por Nivel</div>
+                                            <div id="nivel-preview" class="text-xs text-gray-400">1 PDF</div>
+                                        </div>
+                                    </div>
+                                    <p class="text-sm text-gray-400">Un PDF por cada nivel</p>
+                                </div>
+
+                                <div class="mode-card glass-card rounded-xl p-5" data-mode="by_analito_nivel">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div
+                                            class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                                            <i data-lucide="grid-3x3" class="w-5 h-5 text-white"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold text-white">Analito + Nivel</div>
+                                            <div id="combined-preview" class="text-xs text-gray-400">1 PDF</div>
+                                        </div>
+                                    </div>
+                                    <p class="text-sm text-gray-400">Un PDF por cada combinación</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Options -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <i data-lucide="sliders-horizontal" class="w-5 h-5 text-indigo-400"></i>
+                                Opciones de Contenido
+                            </h3>
+                            <div class="glass-card rounded-xl p-5 space-y-4">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" id="opt-graphs" checked
+                                        class="w-5 h-5 rounded accent-indigo-500">
+                                    <div>
+                                        <div class="font-medium text-white">Incluir Gráficos</div>
+                                        <div class="text-sm text-gray-400">Embeber visualizaciones en el PDF</div>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" id="opt-tables" checked
+                                        class="w-5 h-5 rounded accent-indigo-500">
+                                    <div>
+                                        <div class="font-medium text-white">Incluir Tablas de Datos</div>
+                                        <div class="text-sm text-gray-400">Mostrar resultados numéricos detallados</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Progress Section -->
+                        <div id="progress-section" class="glass-card rounded-xl p-5 hidden">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="font-semibold text-white">Generando...</span>
+                                <span id="progress-text" class="text-sm text-indigo-400">0%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="progress-fill" class="progress-bar-fill" style="width: 0%"></div>
+                            </div>
+                            <p id="progress-status" class="text-sm text-gray-400 mt-3">Preparando datos...</p>
+                        </div>
+                    </div>
+
+                    <!-- Footer Actions -->
+                    <div class="p-8 border-t border-white/10">
+                        <div class="flex items-center justify-between">
+                            <div id="preview-summary" class="text-gray-400">
+                                <span id="summary-text">Selecciona un modo para ver el resumen</span>
+                            </div>
+                            <button id="btn-generate"
+                                class="btn-primary px-8 py-3 rounded-xl font-semibold text-white flex items-center gap-2">
+                                <i data-lucide="file-output" class="w-5 h-5"></i>
+                                Generar Reportes
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Mode Selection -->
-                <div>
-                    <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <i data-lucide="layers" class="w-5 h-5 text-indigo-400"></i>
-                        Modo de Agrupación
-                    </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="mode-grid">
-
-                        <div class="glass-card mode-card rounded-xl p-5 selected" data-mode="unified">
-                            <div class="flex items-start gap-4">
-                                <div
-                                    class="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
-                                    <i data-lucide="file" class="w-6 h-6 text-white"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <h3 class="font-semibold text-white mb-1">Todo Unificado</h3>
-                                    <p class="text-sm text-gray-400">Un solo PDF con todas las pruebas, analitos y
-                                        niveles.</p>
-                                    <p id="unified-preview" class="text-xs text-indigo-400 mt-2">1 PDF</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="glass-card mode-card rounded-xl p-5" data-mode="by_analito">
-                            <div class="flex items-start gap-4">
-                                <div
-                                    class="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center flex-shrink-0">
-                                    <i data-lucide="flask-conical" class="w-6 h-6 text-white"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <h3 class="font-semibold text-white mb-1">Por Analito</h3>
-                                    <p class="text-sm text-gray-400">Un PDF por cada analito diferente.</p>
-                                    <p id="analito-preview" class="text-xs text-cyan-400 mt-2">- PDFs</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="glass-card mode-card rounded-xl p-5" data-mode="by_nivel">
-                            <div class="flex items-start gap-4">
-                                <div
-                                    class="w-12 h-12 rounded-lg bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center flex-shrink-0">
-                                    <i data-lucide="signal" class="w-6 h-6 text-white"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <h3 class="font-semibold text-white mb-1">Por Nivel</h3>
-                                    <p class="text-sm text-gray-400">Un PDF por cada nivel de concentración.</p>
-                                    <p id="nivel-preview" class="text-xs text-amber-400 mt-2">- PDFs</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="glass-card mode-card rounded-xl p-5" data-mode="by_analito_nivel">
-                            <div class="flex items-start gap-4">
-                                <div
-                                    class="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0">
-                                    <i data-lucide="grid-3x3" class="w-6 h-6 text-white"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <h3 class="font-semibold text-white mb-1">Analito + Nivel</h3>
-                                    <p class="text-sm text-gray-400">Un PDF por cada combinación analito-nivel.</p>
-                                    <p id="combined-preview" class="text-xs text-pink-400 mt-2">- PDFs</p>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <!-- Options -->
-                <div>
-                    <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <i data-lucide="settings-2" class="w-5 h-5 text-indigo-400"></i>
-                        Opciones
-                    </h2>
-                    <div class="glass-card rounded-xl p-5 space-y-4">
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" id="opt-graphs" class="checkbox-custom" checked>
+                <!-- VIEW: Buzón -->
+                <div id="view-buzon" class="flex-1 flex flex-col hidden">
+                    <!-- Header -->
+                    <div class="p-8 border-b border-white/5">
+                        <div class="flex items-center justify-between">
                             <div>
-                                <span class="text-white font-medium">Incluir Gráficos</span>
-                                <p class="text-sm text-gray-400">Añadir visualizaciones generadas a cada sección</p>
+                                <h2 class="text-2xl font-bold text-white mb-1">Buzón de Reportes</h2>
+                                <p id="inbox-stats" class="text-gray-400">0 reportes generados</p>
                             </div>
-                        </label>
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" id="opt-tables" class="checkbox-custom" checked>
-                            <div>
-                                <span class="text-white font-medium">Incluir Tablas de Datos</span>
-                                <p class="text-sm text-gray-400">Mostrar resultados numéricos en formato tabla</p>
+                            <button id="btn-new-report"
+                                class="btn-secondary px-4 py-2 rounded-lg flex items-center gap-2 text-gray-300 hover:text-white">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                                Nuevo Reporte
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="p-8 overflow-y-auto flex-1">
+                        <div id="inbox-list" class="space-y-3">
+                            <!-- Empty state -->
+                            <div id="inbox-empty" class="text-center py-16">
+                                <div
+                                    class="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                                    <i data-lucide="inbox" class="w-8 h-8 text-gray-500"></i>
+                                </div>
+                                <p class="text-gray-400 mb-2">No hay reportes generados</p>
+                                <p class="text-sm text-gray-500">Genera un reporte desde la sección de Configuración</p>
                             </div>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Progress (hidden by default) -->
-                <div id="progress-section" class="hidden">
-                    <div class="glass-card rounded-xl p-5">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-white font-medium">Generando reportes...</span>
-                            <span id="progress-text" class="text-sm text-indigo-400">0%</span>
                         </div>
-                        <div class="progress-bar h-2">
-                            <div id="progress-fill" class="progress-bar-fill" style="width: 0%"></div>
-                        </div>
-                        <p id="progress-status" class="text-sm text-gray-400 mt-3">Preparando datos...</p>
                     </div>
                 </div>
-
-                <!-- Actions -->
-                <div class="flex items-center justify-between pt-4">
-                    <div id="preview-summary" class="text-gray-400">
-                        <span id="summary-text">Selecciona un modo para ver el resumen</span>
-                    </div>
-                    <button id="btn-generate"
-                        class="btn-primary px-8 py-3 rounded-xl font-semibold text-white flex items-center gap-2">
-                        <i data-lucide="file-output" class="w-5 h-5"></i>
-                        Generar Reportes
-                    </button>
-                </div>
-
             </div>
         </div>
     </div>

@@ -23,11 +23,7 @@ const ROUTES = new Set([
   'input_data/input_data_sheet.html',
   // Evaluación y reporte
   'evaluation_select.html',
-  'pdf_config.html',
-  'reports_browser.html',
-  'postinfo.html',
-  // Otros
-  'index.html'
+  'pdf_config.html'
 ]);
 const APP_ICON_PATH = path.join(__dirname, 'assets', 'icons', 'app.ico');
 const appIcon = nativeImage.createFromPath(APP_ICON_PATH);
