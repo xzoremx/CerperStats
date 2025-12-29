@@ -490,12 +490,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const { local: filteredLocal, saved: filteredSaved } = getFilteredReports();
         const allEmpty = filteredLocal.length === 0 && filteredSaved.length === 0;
+        const hasAnyReports = localReports.length > 0 || savedReports.length > 0;
+        const hasActiveFilters = (filterTipo?.value && filterTipo.value !== '') || (searchInput?.value && searchInput.value.trim() !== '');
 
         if (allEmpty) {
-            if (inboxEmpty) inboxEmpty.classList.remove('hidden');
-            Array.from(inboxList.children).forEach(child => {
-                if (child.id !== 'inbox-empty') child.remove();
-            });
+            // Check if it's a filter/search empty result vs no reports at all
+            if (hasAnyReports && hasActiveFilters) {
+                // Show "no search results" message
+                if (inboxEmpty) inboxEmpty.classList.add('hidden');
+                Array.from(inboxList.children).forEach(child => {
+                    if (child.id !== 'inbox-empty') child.remove();
+                });
+
+                const noResultsHtml = `
+                    <div class="text-center py-16">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                            <i data-lucide="search-x" class="w-8 h-8 text-gray-500"></i>
+                        </div>
+                        <p class="text-gray-400 mb-2">No se encontró nada</p>
+                        <p class="text-sm text-gray-500">Intenta con otros términos de búsqueda o filtros</p>
+                    </div>
+                `;
+                inboxList.insertAdjacentHTML('afterbegin', noResultsHtml);
+            } else {
+                // Show default empty inbox message
+                if (inboxEmpty) inboxEmpty.classList.remove('hidden');
+                Array.from(inboxList.children).forEach(child => {
+                    if (child.id !== 'inbox-empty') child.remove();
+                });
+            }
+
             if (window.lucide) lucide.createIcons();
             updateInboxBadge();
             updateSelectionUI();
