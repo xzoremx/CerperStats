@@ -4,6 +4,107 @@
  * 
  * PDFs generados se mantienen localmente hasta que el usuario los guarda explícitamente.
  */
+
+// Custom Dialog Functions (replacement for native alert/confirm)
+function showCustomAlert(message, title = 'Información', type = 'info') {
+    return new Promise((resolve) => {
+        const backdrop = document.getElementById('custom-dialog-backdrop');
+        const dialogTitle = document.getElementById('custom-dialog-title');
+        const dialogMessage = document.getElementById('custom-dialog-message');
+        const dialogButtons = document.getElementById('custom-dialog-buttons');
+
+        if (!backdrop || !dialogTitle || !dialogMessage || !dialogButtons) {
+            // Fallback to native alert if elements don't exist
+            alert(message);
+            resolve();
+            return;
+        }
+
+        // Set icon based on type
+        let icon = 'info';
+        if (type === 'error') icon = 'alert-circle';
+        if (type === 'warning') icon = 'alert-triangle';
+        if (type === 'success') icon = 'check-circle';
+
+        dialogTitle.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i> ${title}`;
+        dialogMessage.textContent = message;
+        
+        dialogButtons.innerHTML = `
+            <button class="custom-dialog-button custom-dialog-button-primary" id="custom-dialog-ok">
+                Aceptar
+            </button>
+        `;
+
+        // Show dialog
+        backdrop.classList.add('visible');
+        if (window.lucide) lucide.createIcons();
+
+        // Handle OK button
+        const okBtn = document.getElementById('custom-dialog-ok');
+        const closeDialog = () => {
+            backdrop.classList.remove('visible');
+            resolve();
+        };
+
+        okBtn.addEventListener('click', closeDialog);
+        
+        // Close on backdrop click
+        backdrop.addEventListener('click', (e) => {
+            if (e.target === backdrop) closeDialog();
+        });
+    });
+}
+
+window.showCustomConfirm = function (message, title = 'Confirmar', confirmText = 'Aceptar', cancelText = 'Cancelar', type = 'warning') {
+    return new Promise((resolve) => {
+        const backdrop = document.getElementById('custom-dialog-backdrop');
+        const dialogTitle = document.getElementById('custom-dialog-title');
+        const dialogMessage = document.getElementById('custom-dialog-message');
+        const dialogButtons = document.getElementById('custom-dialog-buttons');
+
+        if (!backdrop || !dialogTitle || !dialogMessage || !dialogButtons) {
+            // Fallback to native confirm if elements don't exist
+            resolve(confirm(message));
+            return;
+        }
+
+        // Set icon based on type
+        let icon = 'help-circle';
+        if (type === 'danger') icon = 'alert-triangle';
+        if (type === 'warning') icon = 'alert-circle';
+
+        dialogTitle.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i> ${title}`;
+        dialogMessage.textContent = message;
+        
+        dialogButtons.innerHTML = `
+            <button class="custom-dialog-button custom-dialog-button-secondary" id="custom-dialog-cancel">
+                ${cancelText}
+            </button>
+            <button class="custom-dialog-button custom-dialog-button-danger" id="custom-dialog-confirm">
+                ${confirmText}
+            </button>
+        `;
+
+        // Show dialog
+        backdrop.classList.add('visible');
+        if (window.lucide) lucide.createIcons();
+
+        // Handle buttons
+        const closeDialog = (result) => {
+            backdrop.classList.remove('visible');
+            resolve(result);
+        };
+
+        document.getElementById('custom-dialog-cancel').addEventListener('click', () => closeDialog(false));
+        document.getElementById('custom-dialog-confirm').addEventListener('click', () => closeDialog(true));
+        
+        // Close on backdrop click (cancel)
+        backdrop.addEventListener('click', (e) => {
+            if (e.target === backdrop) closeDialog(false);
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     // Get session ID from sessionStorage
     const sessionId = sessionStorage.getItem('sessionID') || sessionStorage.getItem('sessionSeleccionada');
@@ -613,8 +714,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (isLocal) {
             return `
-                <div class="report-item-container border-amber-500/30 bg-amber-500/5 rounded-xl p-4" data-local-index="${localIndex}">
-                    <div class="flex items-center gap-4">
+                <div class="report-item-container border-amber-500/30 bg-amber-500/5 rounded-xl p-4 relative" data-local-index="${localIndex}">
+                    <!-- Delete button in top-right corner -->
+                    <button class="delete-btn absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center transition-all z-10" onclick="discardLocalReport(${localIndex})" title="Descartar">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                    <div class="flex items-center gap-4 pr-8">
                         <!-- Checkbox -->
                         <input type="checkbox" data-select-id="${selectKey}" 
                             ${isChecked ? 'checked' : ''} 
@@ -628,18 +733,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <div class="text-sm text-gray-500">${displaySubtitle ? displaySubtitle + ' • ' : ''}${dateDisplay} • ${sizeKb} KB</div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button class="delete-btn w-10 h-10 rounded-lg flex items-center justify-center transition-all" onclick="discardLocalReport(${localIndex})" title="Descartar">
-                                <i data-lucide="x" class="w-5 h-5"></i>
-                            </button>
                             <button class="btn-secondary w-10 h-10 rounded-lg flex items-center justify-center transition-all" onclick="downloadLocalReport(${localIndex})" title="Descargar">
                                 <i data-lucide="download" class="w-5 h-5 text-gray-400"></i>
                             </button>
                             <!-- Comment toggle -->
                             <button id="comment-toggle-${localIndex}" 
-                                class="comment-toggle w-10 h-10 rounded-lg flex items-center justify-center transition-all bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white" 
+                                class="comment-toggle w-10 h-10 rounded-lg flex items-center justify-center transition-all ${commentEnabled.has(localIndex) ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'}" 
                                 onclick="toggleCommentOption(${localIndex})" 
                                 title="Agregar comentario">
                                 <i data-lucide="message-square" class="w-5 h-5"></i>
+                            </button>
+                            <!-- Important/Urgent toggle -->
+                            <button id="important-toggle-${localIndex}" 
+                                class="important-toggle w-10 h-10 rounded-lg flex items-center justify-center transition-all ${importantReports.has(localIndex) ? 'bg-amber-500/20 border-amber-500/40 text-amber-400 hover:bg-amber-500/30' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'}" 
+                                onclick="toggleImportantOption(${localIndex})" 
+                                title="Marcar como importante/urgente">
+                                <i data-lucide="alert-circle" class="w-5 h-5"></i>
                             </button>
                             <button class="save-btn px-4 py-2 rounded-lg flex items-center gap-2 font-semibold text-white transition-all" onclick="saveLocalReport(${localIndex})" 
                                 style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);">
@@ -653,7 +762,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
         } else {
             return `
-                <div class="report-item flex items-center gap-4 rounded-xl p-4" data-report-id="${report.id}">
+                <div class="report-item flex items-center gap-4 rounded-xl p-4 relative" data-report-id="${report.id}">
+                    <!-- Delete button in top-right corner -->
+                    <button class="delete-btn absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center transition-all z-10" onclick="deleteSavedReport(${report.id})" title="Eliminar">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
                     <!-- Checkbox -->
                     <input type="checkbox" data-select-id="${selectKey}" 
                         ${isChecked ? 'checked' : ''} 
@@ -662,7 +775,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/15 shadow-lg backdrop-blur-sm flex items-center justify-center flex-shrink-0 ${iconTextColor}">
                         <i data-lucide="file-text" class="w-6 h-6"></i>
                     </div>
-                    <div class="flex-1 min-w-0">
+                    <div class="flex-1 min-w-0 pr-8">
                         <div class="font-medium text-white truncate flex items-center gap-2">
                             ${displayTitle}
                             ${isUrgent ? '<i data-lucide="alert-circle" class="w-4 h-4 text-amber-400 flex-shrink-0" title="Importante/Urgente"></i>' : ''}
@@ -672,9 +785,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="text-sm text-gray-500">${displaySubtitle ? displaySubtitle + ' • ' : ''}${dateDisplay} • ${sizeKb} KB</div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button class="delete-btn w-10 h-10 rounded-lg flex items-center justify-center transition-all" onclick="deleteSavedReport(${report.id})" title="Eliminar">
-                            <i data-lucide="trash-2" class="w-5 h-5"></i>
-                        </button>
                         <button class="download-btn w-10 h-10 rounded-lg flex items-center justify-center transition-all" onclick="downloadSavedReport(${report.id})" title="Descargar">
                             <i data-lucide="download" class="w-5 h-5 text-white"></i>
                         </button>
@@ -727,6 +837,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    // Toggle important/urgent option for a local report
+    window.toggleImportantOption = function (index) {
+        const toggleBtn = document.getElementById(`important-toggle-${index}`);
+        if (!toggleBtn) return;
+
+        if (importantReports.has(index)) {
+            importantReports.delete(index);
+            toggleBtn.classList.remove('bg-amber-500/20', 'border-amber-500/40', 'text-amber-400');
+            toggleBtn.classList.add('bg-white/5', 'border-white/10', 'text-gray-400');
+        } else {
+            importantReports.add(index);
+            toggleBtn.classList.remove('bg-white/5', 'border-white/10', 'text-gray-400');
+            toggleBtn.classList.add('bg-amber-500/20', 'border-amber-500/40', 'text-amber-400');
+        }
+    };
+
     // Save a LOCAL report to database
     window.saveLocalReport = async function (index) {
         const report = localReports[index];
@@ -735,47 +861,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         const itemEl = document.querySelector(`[data-local-index="${index}"]`);
         if (!itemEl) return;
 
+        // Check if both comment and important are enabled - only then show form
+        const hasComment = commentEnabled.has(index);
+        const isImportant = importantReports.has(index);
+
+        // If comment is NOT enabled OR important is NOT enabled, save directly without form
+        if (!hasComment || !isImportant) {
+            // Determine estado based on important flag
+            const estado = isImportant ? 'a_revisar' : 'generado';
+            await doSaveReport(index, '', estado);
+            return;
+        }
+
         // Check if form already exists
         if (itemEl.querySelector('.save-form')) return;
 
-        // Always show form with state selector and comment option
-        const isUrgent = importantReports.has(index);
+        // Show form only when both comment and important are enabled
         const formHtml = `
             <div class="save-form mt-3 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
-                <div class="space-y-4">
-                    <!-- Estado selector -->
-                    <div>
-                        <label class="block text-sm font-medium text-white mb-2">
-                            <i data-lucide="file-check" class="w-4 h-4 inline mr-1"></i>
-                            Estado del Reporte
-                        </label>
-                        <select id="save-estado-${index}" 
-                            class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-emerald-500/50">
-                            <option value="generado">Generado</option>
-                            <option value="a_revisar" ${isUrgent ? 'selected' : ''}>A Revisar (Urgente)</option>
-                        </select>
-                    </div>
-                    
-                    <!-- Important/Urgent toggle -->
-                    <div class="flex items-center gap-3">
-                        <input type="checkbox" id="save-urgent-${index}" ${isUrgent ? 'checked' : ''}
-                            class="w-5 h-5 rounded accent-amber-500">
-                        <label for="save-urgent-${index}" class="text-sm text-white cursor-pointer flex items-center gap-2">
-                            <i data-lucide="alert-circle" class="w-4 h-4 text-amber-400"></i>
-                            Marcar como importante/urgente
-                        </label>
-                    </div>
-                    
-                    <!-- Comment section -->
-                    <div>
-                        <label class="block text-sm font-medium text-white mb-2">
-                            <i data-lucide="message-square" class="w-4 h-4 inline mr-1"></i>
-                            Observaciones (opcional)
-                        </label>
-                        <textarea id="save-comment-${index}" rows="2" 
-                            class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-gray-500 resize-none focus:outline-none focus:border-emerald-500/50"
-                            placeholder="Escribe un comentario o nota sobre este reporte..."></textarea>
-                    </div>
+                <div>
+                    <label class="block text-sm font-medium text-white mb-2">
+                        <i data-lucide="message-square" class="w-4 h-4 inline mr-1"></i>
+                        Observaciones
+                    </label>
+                    <textarea id="save-comment-${index}" rows="3" 
+                        class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-gray-500 resize-none focus:outline-none focus:border-emerald-500/50"
+                        placeholder="Escribe un comentario o nota sobre este reporte..."></textarea>
                 </div>
                 
                 <div class="flex items-center justify-end gap-2 mt-4">
@@ -794,17 +905,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Insert form after the item
         itemEl.insertAdjacentHTML('beforeend', formHtml);
         if (window.lucide) lucide.createIcons();
-        
-        // Update estado selector when urgent checkbox changes
-        const urgentCheckbox = document.getElementById(`save-urgent-${index}`);
-        const estadoSelect = document.getElementById(`save-estado-${index}`);
-        if (urgentCheckbox && estadoSelect) {
-            urgentCheckbox.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    estadoSelect.value = 'a_revisar';
-                }
-            });
-        }
+
+        // Focus textarea
+        const textarea = document.getElementById(`save-comment-${index}`);
+        if (textarea) textarea.focus();
     };
 
     // Cancel save form
@@ -821,8 +925,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const textarea = document.getElementById(`save-comment-${index}`);
         const observaciones = textarea?.value?.trim() || '';
+        
+        // Determine estado based on important flag
+        const estado = importantReports.has(index) ? 'a_revisar' : 'generado';
 
-        await doSaveReport(index, observaciones);
+        await doSaveReport(index, observaciones, estado);
     };
 
     // Core save function (used by both direct save and form save)
@@ -865,7 +972,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         } catch (err) {
             console.error('[PDFConfig] Save error:', err);
-            alert('Error guardando: ' + err.message);
+            await showCustomAlert('Error guardando: ' + err.message, 'Error', 'error');
 
             if (saveBtn) {
                 saveBtn.disabled = false;
@@ -890,7 +997,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Delete a SAVED report from database
     window.deleteSavedReport = async function (reportId) {
-        if (!confirm('¿Eliminar este reporte del servidor? Esta acción no se puede deshacer.')) return;
+        const confirmed = await showCustomConfirm(
+            '¿Eliminar este reporte del servidor? Esta acción no se puede deshacer.',
+            'Eliminar Reporte',
+            'Eliminar',
+            'Cancelar',
+            'danger'
+        );
+        if (!confirmed) return;
 
         try {
             const result = await window.cerper.deleteReport(reportId);
@@ -1047,7 +1161,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             msg += `\n\n⚠️ ${savedCount} están guardados en el servidor y se eliminarán permanentemente.`;
         }
 
-        if (!confirm(msg)) return;
+        const confirmed = await showCustomConfirm(msg, 'Eliminar Reportes', 'Eliminar', 'Cancelar', 'danger');
+        if (!confirmed) return;
 
         // Delete saved first
         for (const key of selectedItems) {
@@ -1079,30 +1194,46 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Mark selected items as important/urgent (set estado to 'a_revisar')
     window.bulkMarkAsImportant = async function () {
-        if (selectedItems.size === 0) return;
+        if (selectedItems.size === 0) {
+            await showCustomAlert('Por favor selecciona al menos un reporte para marcar como importante.', 'Selección Requerida', 'warning');
+            return;
+        }
+
+        console.log('[PDFConfig] Marking as important, selectedItems:', Array.from(selectedItems));
 
         // Mark local reports as important
         const localIndices = [...selectedItems]
             .filter(k => k.startsWith('local_'))
-            .map(k => parseInt(k.replace('local_', '')));
+            .map(k => parseInt(k.replace('local_', '')))
+            .filter(idx => !isNaN(idx) && idx >= 0 && idx < localReports.length);
+
+        console.log('[PDFConfig] Local indices to mark:', localIndices);
 
         localIndices.forEach(idx => {
             importantReports.add(idx);
+            console.log('[PDFConfig] Marked local report at index', idx, 'as important');
         });
 
         // Mark saved reports as urgent via API (set estado to 'a_revisar')
         const savedIds = [...selectedItems]
             .filter(k => k.startsWith('saved_'))
-            .map(k => parseInt(k.replace('saved_', '')));
+            .map(k => parseInt(k.replace('saved_', '')))
+            .filter(id => !isNaN(id) && id > 0);
+
+        console.log('[PDFConfig] Saved IDs to mark:', savedIds);
 
         if (savedIds.length > 0) {
             try {
                 const result = await window.cerper.markReportsAsUrgent(savedIds);
                 if (!result.ok) {
                     console.error('[PDFConfig] Error marking saved reports as urgent:', result.error);
+                    await showCustomAlert('Error al marcar algunos reportes guardados como importantes: ' + (result.error || 'Error desconocido'), 'Error', 'error');
+                } else {
+                    console.log('[PDFConfig] Successfully marked', savedIds.length, 'saved reports as urgent');
                 }
             } catch (err) {
                 console.error('[PDFConfig] Error marking saved reports as urgent:', err);
+                await showCustomAlert('Error al marcar reportes guardados como importantes: ' + err.message, 'Error', 'error');
             }
         }
 
@@ -1110,14 +1241,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (savedIds.length > 0) {
             await loadSavedReports();
         }
+        
+        // Re-render to show updated visual state
         renderInboxList();
+        
+        // Ensure Lucide icons are recreated after re-render
+        if (window.lucide && window.lucide.createIcons) {
+            window.lucide.createIcons();
+        }
+        
+        // Show success message
+        const totalMarked = localIndices.length + savedIds.length;
+        if (totalMarked > 0) {
+            console.log('[PDFConfig] Successfully marked', totalMarked, 'reports as important');
+            // Optionally show a brief success message
+            // You can uncomment this if you want user feedback
+            // alert(`✓ ${totalMarked} reporte${totalMarked !== 1 ? 's' : ''} marcado${totalMarked !== 1 ? 's' : ''} como importante${totalMarked !== 1 ? 's' : ''}.`);
+        } else {
+            console.warn('[PDFConfig] No reports were marked as important');
+            await showCustomAlert('No se pudo marcar ningún reporte como importante. Verifica que hayas seleccionado reportes válidos.', 'Advertencia', 'warning');
+        }
     };
 
-    window.showBulkSaveForm = function () {
+    window.showBulkSaveForm = async function () {
         // Check if any local items are selected
         const hasLocal = [...selectedItems].some(k => k.startsWith('local_'));
         if (!hasLocal) {
-            alert('Solo puedes guardar reportes que no están guardados.');
+            await showCustomAlert('Solo puedes guardar reportes que no están guardados.', 'Información', 'info');
             return;
         }
         if (bulkSaveForm) {
@@ -1170,7 +1320,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             .sort((a, b) => b - a); // Reverse order for deletion later
 
         if (localIndices.length === 0) {
-            alert('No hay reportes sin guardar seleccionados.');
+            await showCustomAlert('No hay reportes sin guardar seleccionados.', 'Información', 'info');
             return;
         }
 
@@ -1229,9 +1379,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (urgentCheckbox) urgentCheckbox.checked = false;
 
         if (errorCount === 0) {
-            alert(`✓ ${successCount} reporte${successCount !== 1 ? 's' : ''} guardado${successCount !== 1 ? 's' : ''} exitosamente.`);
+            await showCustomAlert(
+                `${successCount} reporte${successCount !== 1 ? 's' : ''} guardado${successCount !== 1 ? 's' : ''} exitosamente.`,
+                'Éxito',
+                'success'
+            );
         } else {
-            alert(`Guardados: ${successCount}, Errores: ${errorCount}`);
+            await showCustomAlert(
+                `Guardados: ${successCount}, Errores: ${errorCount}`,
+                'Resultado',
+                'warning'
+            );
         }
     };
 
