@@ -15,6 +15,7 @@
     }
   </style>
   <title>Ingreso de Lecturas - CerperStats</title>
+  <link rel="stylesheet" href="../css/global.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
@@ -404,65 +405,7 @@
 
     /* El badge de copiado mantiene siempre el look "dark" (no cambia con body.excel-light). */
 
-    /* Notification styles */
-    .notify {
-      position: fixed;
-      bottom: 25px;
-      right: 25px;
-      padding: 12px 22px;
-      border-radius: 12px;
-      font-size: 0.95rem;
-      font-weight: 500;
-      opacity: 0;
-      transform: translateY(20px);
-      transition: all 0.35s ease;
-      z-index: 9999;
-      color: #00ffff;
-      backdrop-filter: blur(8px);
-      background: rgba(0, 255, 255, 0.08);
-      border: 1.5px solid rgba(0, 255, 255, 0.35);
-      box-shadow: 0 0 20px rgba(0, 255, 255, 0.12);
-      pointer-events: none;
-    }
-
-    .notify.show {
-      opacity: 1;
-      transform: translateY(0);
-      animation: fadeSlideIn 0.4s ease forwards;
-    }
-
-    .notify.success {
-      border-color: #00ffb3;
-      color: #00ffb3;
-      background: rgba(0, 255, 179, 0.1);
-      box-shadow: 0 0 20px rgba(0, 255, 179, 0.15);
-    }
-
-    .notify.error {
-      border-color: #ff4d4d;
-      color: #ff8080;
-      background: rgba(255, 77, 77, 0.08);
-      box-shadow: 0 0 20px rgba(255, 77, 77, 0.1);
-    }
-
-    .notify.info {
-      border-color: #00aaff;
-      color: #80e4ff;
-      background: rgba(0, 170, 255, 0.08);
-      box-shadow: 0 0 20px rgba(0, 170, 255, 0.15);
-    }
-
-    @keyframes fadeSlideIn {
-      from {
-        opacity: 0;
-        transform: translateY(25px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+    /* NOTE: .notify styles are now in css/global.css */
 
     #data-entry {
       display: none;

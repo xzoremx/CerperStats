@@ -9,6 +9,7 @@
   <title>CerperStats – Selección de Evaluación</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link rel="stylesheet" href="css/global.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -90,54 +91,7 @@
 
 
 
-    /* Notification styles */
-    .notify {
-      position: fixed;
-      bottom: 25px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      padding: 14px 28px;
-      border-radius: 16px;
-      font-size: 0.95rem;
-      font-weight: 500;
-      opacity: 0;
-      transition: all 0.35s ease;
-      z-index: 9999;
-      pointer-events: none;
-    }
-
-    .notify.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    .notify.success {
-      background: linear-gradient(135deg, rgba(52, 211, 153, 0.2) 0%, rgba(16, 185, 129, 0.15) 100%);
-      border: 1px solid rgba(52, 211, 153, 0.4);
-      color: #6ee7b7;
-      box-shadow: 0 0 30px rgba(52, 211, 153, 0.15);
-    }
-
-    .notify.error {
-      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.15) 100%);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      color: #fca5a5;
-      box-shadow: 0 0 30px rgba(239, 68, 68, 0.15);
-    }
-
-    .notify.warning {
-      background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.15) 100%);
-      border: 1px solid rgba(251, 191, 36, 0.4);
-      color: #fcd34d;
-      box-shadow: 0 0 30px rgba(251, 191, 36, 0.15);
-    }
-
-    .notify.info {
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.15) 100%);
-      border: 1px solid rgba(59, 130, 246, 0.4);
-      color: #93c5fd;
-      box-shadow: 0 0 30px rgba(59, 130, 246, 0.15);
-    }
+    /* NOTE: .notify styles are now in css/global.css */
 
     /* Button styles - Minimalist */
     .btn-glass {
