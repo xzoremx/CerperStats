@@ -107,17 +107,42 @@ for col in df_ingreso.columns:
 df_resultado = pd.DataFrame(rows)
 df_resultado = df_resultado.sort_values("parametro").reset_index(drop=True)
 
+# Inferir el tipo de parámetro desde los nombres de columnas (ej: "Analista 1" → "Analistas")
+def inferir_tipo_parametro(columnas):
+    """Extrae el tipo de parámetro de los nombres de columnas y lo pluraliza."""
+    if not columnas:
+        return "parámetros"
+    # Tomar el primer nombre de columna y extraer la parte textual
+    primera_col = str(list(columnas)[0])
+    # Remover números y espacios finales (ej: "Analista 1" → "Analista")
+    import re
+    tipo = re.sub(r'\s*\d+\s*$', '', primera_col).strip()
+    if not tipo:
+        return "parámetros"
+    # Pluralizar (reglas básicas del español)
+    if tipo.endswith('a'):
+        return tipo + 's'  # Analista → Analistas
+    elif tipo.endswith('e') or tipo.endswith('o'):
+        return tipo + 's'  # Equipo → Equipos
+    elif tipo.endswith('í') or tipo.endswith('ía'):
+        return tipo + 's'  # Día → Días
+    else:
+        return tipo + 'es'  # Valor → Valores
+
+tipo_param = inferir_tipo_parametro(df_ingreso.columns)
+
 # Generar conclusión general
 normales = [r for r in rows if r.get("normalidad") is True]
 no_normales = [r for r in rows if r.get("normalidad") is False]
 no_evaluables = [r for r in rows if r.get("normalidad") is None]
 
 if len(no_normales) == 0 and len(normales) > 0:
-    conclusion = f"Los {len(normales)} parámetros evaluados siguen una distribución normal al 95% de confianza."
+    conclusion = f"Los {len(normales)} {tipo_param} evaluados siguen una distribución normal al 95% de confianza."
 elif len(normales) == 0 and len(no_normales) > 0:
-    conclusion = f"Ninguno de los {len(no_normales)} parámetros evaluados sigue una distribución normal al 95% de confianza."
+    conclusion = f"Ninguno de los {len(no_normales)} {tipo_param} evaluados sigue una distribución normal al 95% de confianza."
 elif len(normales) > 0 and len(no_normales) > 0:
     no_normal_names = ", ".join([r["parametro"] for r in no_normales])
-    conclusion = f"De {len(normales) + len(no_normales)} parámetros, {len(no_normales)} NO siguen distribución normal ({no_normal_names}) al 95% de confianza."
+    conclusion = f"De {len(normales) + len(no_normales)} {tipo_param}, {len(no_normales)} NO siguen distribución normal ({no_normal_names}) al 95% de confianza."
 else:
-    conclusion = "No se pudo evaluar normalidad en ningún parámetro."
+    conclusion = f"No se pudo evaluar normalidad en ningún {tipo_param[:-1] if tipo_param.endswith('s') else tipo_param}."
+
