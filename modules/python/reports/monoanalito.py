@@ -95,6 +95,31 @@ class MonoReportGenerator:
         """Map database category to display header."""
         return CATEGORY_HEADER_MAP.get(categoria, categoria.upper() if categoria else 'OTROS')
     
+    def _get_test_names_by_category(self, results):
+        """
+        Extract unique test names grouped by category header.
+        Used for the cover page.
+        """
+        test_names_by_category = {}
+        seen_tests = set()
+        
+        for r in results:
+            catalog_id = r.get('catalog_id')
+            test_name = r.get('test_nombre') or r.get('nombre_interno') or f"Prueba #{catalog_id}"
+            categoria = r.get('categoria', 'Tratamiento de Resultados')
+            header = self._get_category_header(categoria)
+            
+            # Avoid duplicates
+            if (header, test_name) in seen_tests:
+                continue
+            seen_tests.add((header, test_name))
+            
+            if header not in test_names_by_category:
+                test_names_by_category[header] = []
+            test_names_by_category[header].append(test_name)
+        
+        return test_names_by_category
+    
     def _generate_pdf(self, filename, results_subset, nivel=None):
         """
         Generate a single PDF file.
@@ -116,7 +141,11 @@ class MonoReportGenerator:
             config=self.config
         )
         
-        # Header
+        # ===== COVER PAGE (mandatory first page) =====
+        test_names_by_category = self._get_test_names_by_category(results_subset)
+        builder.add_cover_page(test_names_by_category)
+        
+        # ===== CONTENT HEADER =====
         lab_nombre = self.session_info.get('lab_nombre', self.session_info.get('lab_key', 'CerperStats'))
         metodo = self.session_info.get('metodo', '')
         

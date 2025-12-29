@@ -433,6 +433,197 @@ class CerperPDFBuilder:
         self.elements.append(HRFlowable(width="100%", thickness=1, color=COLOR_BORDER))
         self.elements.append(Spacer(1, 12))
     
+    def add_cover_page(self, test_names_by_category, supervisor_name=None):
+        """
+        Add mandatory cover page with:
+        - Logo and title
+        - Session info (Laboratorio, Fecha, Ensayo, Método, Producto, Unidad, Parámetro)
+        - List of tests organized by category
+        - Conclusiones Generales (empty placeholder)
+        - Signature table
+        
+        Args:
+            test_names_by_category: Dict mapping category header -> list of test names
+            supervisor_name: Name of the supervisor
+        """
+        elements = self.elements
+        
+        # ==========================================
+        # HEADER: Logo + Title
+        # ==========================================
+        if self.logo_path and os.path.exists(self.logo_path):
+            try:
+                logo = Image(self.logo_path, height=2*cm, width=6*cm)
+                elements.append(logo)
+                elements.append(Spacer(1, 16))
+            except:
+                pass
+        
+        # Main title
+        elements.append(Paragraph(
+            "INFORME ESTADÍSTICO",
+            ParagraphStyle(
+                'CoverTitle',
+                parent=self.styles['Heading1'],
+                fontSize=24,
+                textColor=colors.HexColor('#0f172a'),
+                alignment=TA_CENTER,
+                spaceAfter=24,
+                fontName='Helvetica-Bold'
+            )
+        ))
+        
+        # ==========================================
+        # SESSION INFO
+        # ==========================================
+        info = self.session_info
+        exec_date = self.config.get('execution_date') or datetime.now().strftime('%d/%m/%Y')
+        
+        # Base info items
+        info_items = [
+            ("Laboratorio", info.get('lab_nombre') or info.get('lab_key', '')),
+            ("Fecha de Ejecución", exec_date),
+            ("Ensayo", info.get('ensayo', '')),
+            ("Método", info.get('metodo', '')),
+            ("Producto", info.get('producto', '')),
+            ("Unidad de medida", info.get('unidad', '')),
+        ]
+        
+        for label, value in info_items:
+            if value:
+                elements.append(Paragraph(
+                    f"• <b>{label}:</b> {value}",
+                    self.styles['CerperBodyText']
+                ))
+        
+        # Handle Participantes/Parámetro specially
+        parametro = info.get('parametro', '')
+        analyst_names = self.config.get('analyst_names', [])
+        
+        if parametro and parametro.lower() == 'analista' and analyst_names:
+            # Show list of analyst names
+            analyst_list = ', '.join(analyst_names)
+            elements.append(Paragraph(
+                f"• <b>Participantes:</b> {analyst_list}",
+                self.styles['CerperBodyText']
+            ))
+        elif parametro:
+            # Show the parameter value (e.g., "Equipos")
+            elements.append(Paragraph(
+                f"• <b>Parámetro:</b> {parametro}",
+                self.styles['CerperBodyText']
+            ))
+        
+        elements.append(Spacer(1, 20))
+        
+        # ==========================================
+        # TEST LIST BY CATEGORY
+        # ==========================================
+        # "Prueba Estadística Aplicada a los Resultados" section
+        if 'PRUEBAS ESTADÍSTICAS APLICADAS A LOS RESULTADOS' in test_names_by_category:
+            tests = test_names_by_category['PRUEBAS ESTADÍSTICAS APLICADAS A LOS RESULTADOS']
+            if tests:
+                elements.append(Paragraph(
+                    "<b>Prueba Estadística Aplicada a los Resultados:</b>",
+                    self.styles['CerperBodyText']
+                ))
+                for i, test_name in enumerate(tests, 1):
+                    elements.append(Paragraph(
+                        f"    {i}. {test_name}",
+                        self.styles['CerperBodyText']
+                    ))
+                elements.append(Spacer(1, 12))
+        
+        # "PARAMETROS DE DESEMPEÑO SELECCIONADOS" section
+        veracidad_tests = test_names_by_category.get('VERACIDAD', [])
+        precision_tests = test_names_by_category.get('PRECISIÓN', [])
+        
+        if veracidad_tests or precision_tests:
+            elements.append(Paragraph(
+                "<b>PARÁMETROS DE DESEMPEÑO SELECCIONADOS:</b>",
+                self.styles['CerperBodyText']
+            ))
+            
+            param_num = 1
+            if veracidad_tests:
+                elements.append(Paragraph(
+                    f"    {param_num}. VERACIDAD: {', '.join(veracidad_tests)}",
+                    self.styles['CerperBodyText']
+                ))
+                param_num += 1
+            
+            if precision_tests:
+                elements.append(Paragraph(
+                    f"    {param_num}. PRECISIÓN: {', '.join(precision_tests)}",
+                    self.styles['CerperBodyText']
+                ))
+            
+            elements.append(Spacer(1, 20))
+        
+        # ==========================================
+        # CONCLUSIONES GENERALES (empty placeholder)
+        # ==========================================
+        elements.append(Paragraph(
+            "<b>Conclusiones Generales:</b>",
+            self.styles['CerperBodyText']
+        ))
+        elements.append(Spacer(1, 40))  # Space for manual writing
+        
+        elements.append(Spacer(1, 40))
+        
+        # ==========================================
+        # SIGNATURE TABLE
+        # ==========================================
+        # Get supervisor name from session or parameter
+        sup_name = supervisor_name or info.get('supervisor_nombre') or info.get('supervisor') or '_________________'
+        
+        # Analyst names from config
+        analyst_names = self.config.get('analyst_names', [])
+        analyst_display = ', '.join(analyst_names) if analyst_names else '_________________'
+        
+        # Signature table structure
+        sig_data = [
+            [sup_name, 'Soraya Guzman'],
+            ['Supervisor / Responsable de laboratorio', 'Subgerente de laboratorios/Jefe de laboratorio/Jefe de operaciones'],
+        ]
+        
+        sig_table = Table(sig_data, colWidths=[8*cm, 8*cm])
+        sig_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            ('ALIGN', (0, 1), (-1, 1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('TEXTCOLOR', (0, 0), (-1, 0), COLOR_PRIMARY),
+            ('TEXTCOLOR', (0, 1), (-1, 1), COLOR_SECONDARY),
+            ('LINEABOVE', (0, 0), (-1, 0), 1, colors.black),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('TOPPADDING', (0, 1), (-1, 1), 4),
+        ]))
+        elements.append(sig_table)
+        
+        elements.append(Spacer(1, 20))
+        
+        # Revision info
+        revision_data = [
+            ['Revisado por:', '_________________'],
+            ['FECHA DE REVISIÓN:', '_________________'],
+        ]
+        
+        rev_table = Table(revision_data, colWidths=[4*cm, 6*cm])
+        rev_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('TEXTCOLOR', (0, 0), (0, -1), colors.black),
+            ('TEXTCOLOR', (1, 0), (1, -1), COLOR_PRIMARY),
+            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+            ('ALIGN', (1, 0), (1, -1), 'CENTER'),
+            ('LINEBELOW', (1, 0), (1, -1), 0.5, COLOR_PRIMARY),
+        ]))
+        elements.append(rev_table)
+        
+        # Page break after cover
+        elements.append(PageBreak())
+    
     def add_test_section(self, test_title, test_data, conclusion=None, graph_data=None, include_graph=True):
         """Add a test result section with table, conclusion, and optional graph."""
         section_elements = []
