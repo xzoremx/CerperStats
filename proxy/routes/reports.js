@@ -70,8 +70,6 @@ router.post('/', async (req, res) => {
 
         const reportId = rows[0]?.id;
 
-        const reportId = rows[0]?.id;
-
         // Insert links to tests if provided
         if (reportId && Array.isArray(tests_included) && tests_included.length > 0) {
             const linkValues = tests_included.map((catalogId, idx) =>
