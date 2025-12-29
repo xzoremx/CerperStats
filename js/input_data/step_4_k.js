@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const shouldScroll = opts.scroll !== false;
     updateLabels(context, setBadgeState);
     toggleLecturas(context);
-    
+
     if (context.section) {
       context.section.classList.remove("hidden");
       if (shouldScroll) {
@@ -219,19 +219,7 @@ function validarEnteroK(field) {
   }
 }
 
-function notify(message, type = "info") {
-  const existing = document.querySelector(".notify");
-  if (existing) existing.remove();
 
-  const div = document.createElement("div");
-  div.className = `notify ${type}`;
-  div.textContent = message;
-  document.body.appendChild(div);
-
-  setTimeout(() => div.classList.add("show"), 50);
-  setTimeout(() => div.classList.remove("show"), 3000);
-  setTimeout(() => div.remove(), 3500);
-}
 
 function capitalize(text) {
   if (!text) return "";

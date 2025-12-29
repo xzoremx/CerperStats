@@ -140,16 +140,4 @@ function getValue(id) {
   return el ? el.value.trim() : "";
 }
 
-function notify(message, type = "info") {
-  const existing = document.querySelector(".notify");
-  if (existing) existing.remove();
 
-  const div = document.createElement("div");
-  div.className = `notify ${type}`;
-  div.textContent = message;
-  document.body.appendChild(div);
-
-  setTimeout(() => div.classList.add("show"), 50);
-  setTimeout(() => div.classList.remove("show"), 3000);
-  setTimeout(() => div.remove(), 3500);
-}

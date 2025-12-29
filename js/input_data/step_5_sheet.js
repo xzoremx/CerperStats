@@ -781,24 +781,7 @@ window.addEventListener("load", () => setTimeout(() => validarVisual(), 150));
 
 
 // === Notificaciones flotantes ===
-window.notify = function (message, type = "info") {
-  // Elimina notificación previa
-  const existing = document.querySelector(".notify");
-  if (existing) existing.remove();
-
-  // Crear elemento
-  const div = document.createElement("div");
-  div.className = `notify ${type}`;
-  div.textContent = message;
-  document.body.appendChild(div);
-
-  // Mostrar con animación
-  requestAnimationFrame(() => div.classList.add("show"));
-
-  // Ocultar y eliminar
-  setTimeout(() => div.classList.remove("show"), 2800);
-  setTimeout(() => div.remove(), 3300);
-};
+// NOTE: notify() is now provided by js/notify.js (centralized module)
 
 
 // --- Mostrar errores uno por uno ---

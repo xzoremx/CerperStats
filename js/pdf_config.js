@@ -400,33 +400,94 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
 
-        // Add input event listeners to save names
+        // Add input event listeners to save names and validate in real-time
         analystInputsContainer.querySelectorAll('.analyst-name-input').forEach(input => {
             input.addEventListener('input', (e) => {
                 const idx = parseInt(e.target.dataset.index);
                 analystNames[idx] = e.target.value.trim();
                 // Save to sessionStorage for persistence
                 sessionStorage.setItem(`analystNames_${sessionId}`, JSON.stringify(analystNames));
-                // Hide validation message when typing
+                // Hide global validation message when typing
                 if (analystValidationMsg) analystValidationMsg.classList.add('hidden');
+
+                // Real-time inline validation
+                validateInputInline(e.target, idx);
+            });
+
+            // Also validate on blur (when user leaves the field)
+            input.addEventListener('blur', (e) => {
+                const idx = parseInt(e.target.dataset.index);
+                validateInputInline(e.target, idx);
             });
         });
+
+        // Inline validation helper - just visual feedback, no inline messages
+        function validateInputInline(inputEl, idx) {
+            const result = validateSingleAnalystName(analystNames[idx]);
+
+            if (!result.valid && analystNames[idx]?.length > 0) {
+                // Just highlight the input with red border
+                inputEl.classList.add('!border-red-500/50');
+            } else {
+                inputEl.classList.remove('!border-red-500/50');
+            }
+        }
 
         if (window.lucide) lucide.createIcons();
     }
 
-    // Validate analyst names (returns true if all filled, or if not Analista mode)
+    // Validate a single analyst name - returns { valid: boolean, error: string|null }
+    function validateSingleAnalystName(name) {
+        if (!name || name.trim().length === 0) {
+            return { valid: false, error: 'El nombre es requerido' };
+        }
+
+        const trimmedName = name.trim();
+
+        // Rule 1: Minimum length of 3 characters
+        if (trimmedName.length < 3) {
+            return { valid: false, error: 'Mínimo 3 caracteres' };
+        }
+
+        // Rule 2: No numbers allowed
+        if (/\d/.test(trimmedName)) {
+            return { valid: false, error: 'No puede contener números' };
+        }
+
+        return { valid: true, error: null };
+    }
+
+    // Validate all analyst names (returns true if all valid, or if not Analista mode)
     function validateAnalystNames() {
         if (sessionParametro.toLowerCase() !== 'analista') return true;
         if (analystNames.length === 0) return false;
 
-        const allFilled = analystNames.every(name => name && name.trim().length > 0);
+        let allValid = true;
+        const errors = [];
 
-        if (!allFilled && analystValidationMsg) {
-            analystValidationMsg.classList.remove('hidden');
+        analystNames.forEach((name, idx) => {
+            const result = validateSingleAnalystName(name);
+            const inputEl = document.getElementById(`analyst-name-${idx}`);
+
+            if (!result.valid) {
+                allValid = false;
+                errors.push(`• Analista ${idx + 1}: ${result.error}`);
+                // Highlight invalid input
+                inputEl?.classList.add('!border-red-500/50', '!bg-red-500/10');
+            } else {
+                inputEl?.classList.remove('!border-red-500/50', '!bg-red-500/10');
+            }
+        });
+
+        if (!allValid) {
+            // Show notification with errors using toast
+            const errorMsg = errors.length === 1
+                ? errors[0].replace('• ', '')
+                : `${errors.length} errores en nombres de analistas`;
+            notify(errorMsg, 'error');
         }
 
-        return allFilled;
+        return allValid;
     }
 
     function updatePreviews() {

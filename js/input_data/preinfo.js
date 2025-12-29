@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       localStorage.getItem("labColor") ||
       "";
     const labColor = (storedColor || DEFAULT_LAB_COLOR).trim();
-    
+
     if (labColor) {
       labSubtitleIcon.style.color = labColor;
     }
@@ -271,16 +271,4 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-function notify(message, type = "info") {
-  const existing = document.querySelector(".notify");
-  if (existing) existing.remove();
 
-  const note = document.createElement("div");
-  note.className = `notify ${type}`;
-  note.innerHTML = message;
-  document.body.appendChild(note);
-
-  requestAnimationFrame(() => note.classList.add("show"));
-  setTimeout(() => note.classList.remove("show"), 2500);
-  setTimeout(() => note.remove(), 3000);
-}
