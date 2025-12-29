@@ -316,13 +316,32 @@ def create_data_table(data_rows, styles):
     if len(table_data) <= 1:
         return Paragraph("No hay datos disponibles.", styles['CerperBodyText'])
     
-    # Calculate column widths
+    # Calculate smart column widths based on content type
     available_width = PAGE_SIZE[0] - 2 * MARGIN
     col_count = len(ordered_keys)
-    col_width = available_width / col_count
     
-    # Create table
-    table = Table(table_data, colWidths=[col_width] * col_count)
+    # Define column width weights (text columns need more space)
+    text_cols = {'parametro', 'prueba_normalidad', 'prueba_homogeneidad', 'prueba_tendencia', 'analito', 'prueba'}
+    numeric_cols = {'n', 'media', 'desviacion', 'asimetria', 'curtosis', 'p_value', 'estadistico'}
+    bool_cols = {'normalidad', 'homogeneidad'}
+    
+    weights = []
+    for key in ordered_keys:
+        lower_key = key.lower()
+        if lower_key in text_cols or 'prueba' in lower_key:
+            weights.append(2.0)  # Wider for text
+        elif lower_key in numeric_cols:
+            weights.append(1.0)  # Normal for numbers
+        elif lower_key in bool_cols:
+            weights.append(0.7)  # Narrow for Sí/No
+        else:
+            weights.append(1.2)  # Default
+    
+    total_weight = sum(weights)
+    col_widths = [(w / total_weight) * available_width for w in weights]
+    
+    # Create table with smart widths
+    table = Table(table_data, colWidths=col_widths)
     
     # Style the table
     table_style = TableStyle([
@@ -482,6 +501,7 @@ class CerperPDFBuilder:
         # Base info items
         info_items = [
             ("Laboratorio", info.get('lab_nombre') or info.get('lab_key', '')),
+            ("Expediente", info.get('expediente', '')),
             ("Fecha de Ejecución", exec_date),
             ("Ensayo", info.get('ensayo', '')),
             ("Método", info.get('metodo', '')),
