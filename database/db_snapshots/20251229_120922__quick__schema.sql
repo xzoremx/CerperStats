@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict dacJNoCgnfr4CJVNAKF3uA1PdxUiGwt9b8OqjqIr3GebIY9Xc2UdY9dFVNTlaD6
+\restrict V7Ce5xTFlHDlNBy2IKJsZOCi2u2fJA1ft2o3uODqsoMugcjchcdyUP00aJmSKSa
 
 -- Dumped from database version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
 -- Dumped by pg_dump version 18.0
@@ -573,7 +573,8 @@ CREATE TABLE public.results_general (
     grafico_data text,
     actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     nivel integer DEFAULT 1 NOT NULL,
-    analito text DEFAULT 'Analito'::text NOT NULL
+    analito text DEFAULT 'Analito'::text NOT NULL,
+    conclusion text
 );
 
 
@@ -1412,5 +1413,5 @@ ALTER TABLE ONLY public.session_selected_tests
 -- PostgreSQL database dump complete
 --
 
-\unrestrict dacJNoCgnfr4CJVNAKF3uA1PdxUiGwt9b8OqjqIr3GebIY9Xc2UdY9dFVNTlaD6
+\unrestrict V7Ce5xTFlHDlNBy2IKJsZOCi2u2fJA1ft2o3uODqsoMugcjchcdyUP00aJmSKSa
 
