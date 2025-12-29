@@ -81,7 +81,7 @@ class MonoReportGenerator:
         
         for r in results:
             catalog_id = r.get('catalog_id')
-            test_name = r.get('test_nombre') or r.get('nombre_interno') or f"Prueba #{catalog_id}"
+            test_name = r.get('titulo') or r.get('test_titulo') or r.get('nombre_interno') or f"Prueba #{catalog_id}"
             categoria = r.get('categoria', 'Tratamiento de Resultados')
             descripcion = r.get('descripcion', '')
             nivel = r.get('nivel', 1)
@@ -105,7 +105,7 @@ class MonoReportGenerator:
         
         for r in results:
             catalog_id = r.get('catalog_id')
-            test_name = r.get('test_nombre') or r.get('nombre_interno') or f"Prueba #{catalog_id}"
+            test_name = r.get('titulo') or r.get('test_titulo') or r.get('nombre_interno') or f"Prueba #{catalog_id}"
             categoria = r.get('categoria', 'Tratamiento de Resultados')
             header = self._get_category_header(categoria)
             
@@ -145,18 +145,7 @@ class MonoReportGenerator:
         test_names_by_category = self._get_test_names_by_category(results_subset)
         builder.add_cover_page(test_names_by_category)
         
-        # ===== CONTENT HEADER =====
-        lab_nombre = self.session_info.get('lab_nombre', self.session_info.get('lab_key', 'CerperStats'))
-        metodo = self.session_info.get('metodo', '')
-        
-        title = "INFORME ESTADÍSTICO"
-        subtitle = f"{lab_nombre} - {metodo}" if metodo else lab_nombre
-        
-        builder.add_header(title, subtitle=subtitle, nivel=nivel)
-        
-        # Add session info section
-        self._add_session_info(builder)
-        
+        # ===== CONTENT (starts after cover page) =====
         # Add results organized by category -> test -> nivel
         self._add_results_structured(builder, results_subset, nivel_filter=nivel)
         

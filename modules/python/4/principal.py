@@ -16,7 +16,7 @@ Reglas:
 - n > 7 : Anderson-Darling (normal_ad)
 
 Campos de salida:
-parametro, n, media, desviacion, asimetria, curtosis,
+parametro, n, media, desviacion, asimetria,
 p_value, normalidad, prueba_normalidad
 """
 
@@ -47,7 +47,6 @@ for col in df_ingreso.columns:
             "media": np.nan,
             "desviacion": np.nan,
             "asimetria": np.nan,
-            "curtosis": np.nan,
             "p_value": None,
             "normalidad": None,
             "prueba_normalidad": None,
@@ -59,9 +58,6 @@ for col in df_ingreso.columns:
     media = float(serie.mean())
     desv = float(serie.std(ddof=1))
     asim = float(serie.skew()) if desv > 0 else np.nan
-
-    kurt_exceso = serie.kurtosis()        # exceso → Fisher
-    curt = float(kurt_exceso + 3) if not np.isnan(kurt_exceso) else np.nan  # Pearson
 
     # --- Evaluación de normalidad ---
     p_value = None
@@ -97,7 +93,6 @@ for col in df_ingreso.columns:
         "media": media,
         "desviacion": desv,
         "asimetria": asim,
-        "curtosis": curt,
         "p_value": p_value,
         "normalidad": normal,
         "prueba_normalidad": prueba,

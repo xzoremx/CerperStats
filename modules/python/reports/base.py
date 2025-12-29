@@ -501,12 +501,42 @@ class CerperPDFBuilder:
         analyst_names = self.config.get('analyst_names', [])
         
         if parametro and parametro.lower() == 'analista' and analyst_names:
-            # Show list of analyst names
-            analyst_list = ', '.join(analyst_names)
+            # Create a professional table for participants
+            elements.append(Spacer(1, 8))
             elements.append(Paragraph(
-                f"• <b>Participantes:</b> {analyst_list}",
+                "<b>Participantes del Estudio:</b>",
                 self.styles['CerperBodyText']
             ))
+            elements.append(Spacer(1, 6))
+            
+            # Build table data: [["Analista 1", "Nombre"], ...]
+            table_data = [["Índice", "Nombre del Participante"]]  # Header
+            for i, name in enumerate(analyst_names, 1):
+                table_data.append([f"Analista {i}", name])
+            
+            # Create styled table
+            participants_table = Table(table_data, colWidths=[4*cm, 10*cm])
+            participants_table.setStyle(TableStyle([
+                # Header row
+                ('BACKGROUND', (0, 0), (-1, 0), COLOR_HEADER_BG),
+                ('TEXTCOLOR', (0, 0), (-1, 0), COLOR_PRIMARY),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                ('TOPPADDING', (0, 0), (-1, 0), 8),
+                # Data rows
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ('ALIGN', (0, 1), (0, -1), 'CENTER'),
+                ('ALIGN', (1, 1), (1, -1), 'LEFT'),
+                ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+                ('TOPPADDING', (0, 1), (-1, -1), 6),
+                # Grid
+                ('GRID', (0, 0), (-1, -1), 0.5, COLOR_BORDER),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ]))
+            elements.append(participants_table)
         elif parametro:
             # Show the parameter value (e.g., "Equipos")
             elements.append(Paragraph(
