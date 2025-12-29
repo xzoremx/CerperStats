@@ -198,7 +198,10 @@ router.get('/:sessionId', async (req, res) => {
   }
   try {
     const { rows } = await pool.query(
-      `SELECT s.*, u.username AS usuario, l.nombre AS lab_nombre
+      `SELECT s.*, u.username AS usuario, l.nombre AS lab_nombre,
+              (SELECT u2.username FROM usuarios u2 
+               WHERE u2.rol = 'supervisor' AND u2.default_lab = s.lab_key 
+               LIMIT 1) AS supervisor_nombre
        FROM sessions s
        LEFT JOIN usuarios u ON s.usuario_id = u.id
        LEFT JOIN labs l ON l.lab_key = s.lab_key

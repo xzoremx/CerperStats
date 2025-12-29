@@ -1,46 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CerperStats PDF Report Generator
+CerperStats PDF Report Generator - Main Module
 
-This file serves as a compatibility wrapper for the modular report generator.
-The actual implementation is split into:
-- base.py: Shared code (constants, styles, helpers, CerperPDFBuilder)
-- monoanalito.py: MonoReportGenerator (unified, by_nivel modes)
-- multianalito.py: MultiReportGenerator (unified, by_nivel, by_analito, by_analito_nivel)
+This is the entry point for the modular report generation system.
+It provides a factory function to select the appropriate generator
+based on the session's analysis type.
 
 Usage:
-    python report_generator.py <input_json> <output_dir> [--logo <logo_path>]
+    python -m modules.python.reports <input_json> <output_dir> [--logo <logo_path>]
 
-Input JSON format:
-{
-    "session_id": 123,
-    "session_info": { "lab_key": "...", "metodo": "...", "tipo_analisis": "..." },
-    "config": {
-        "group_by": "by_analito" | "by_nivel" | "by_analito_nivel" | "unified",
-        "include_graphs": true,
-        "include_tables": true,
-        "execution_date": "29/12/2024"
-    },
-    "results": [...],  // results_general rows with conclusion field
-    "graphs": [...]    // evaluaciones_graficos rows
-}
-
-Output: JSON object with ok, generated (list of PDF info), count
+Structure:
+    - base.py: Shared code (constants, styles, helpers, CerperPDFBuilder)
+    - monoanalito.py: MonoReportGenerator (unified, by_nivel)
+    - multianalito.py: MultiReportGenerator (unified, by_nivel, by_analito, by_analito_nivel)
 """
 
 import sys
 import os
+import json
+import argparse
 
-# Add the reports directory to path to enable relative imports
-reports_dir = os.path.dirname(os.path.abspath(__file__))
-if reports_dir not in sys.path:
-    sys.path.insert(0, reports_dir)
-
-# Import from the modular structure
-from base import CerperPDFBuilder, get_styles, create_data_table, format_value, get_conclusion_color
-from monoanalito import MonoReportGenerator
-from multianalito import MultiReportGenerator
+from .monoanalito import MonoReportGenerator
+from .multianalito import MultiReportGenerator
 
 
 def create_generator(data, config, output_dir, logo_path=None):
@@ -64,15 +46,8 @@ def create_generator(data, config, output_dir, logo_path=None):
         return MonoReportGenerator(data, config, output_dir, logo_path)
 
 
-# Legacy class aliases for backwards compatibility
-PDFReportGenerator = None  # Deprecated - use create_generator instead
-
-
 def main():
     """Main entry point for command-line execution."""
-    import json
-    import argparse
-    
     parser = argparse.ArgumentParser(
         description='CerperStats PDF Report Generator'
     )
@@ -135,13 +110,6 @@ def main():
         
         # Generate PDFs
         generated = generator.generate()
-        
-        # Enrich output with filename for compatibility
-        for pdf in generated:
-            if 'filename' not in pdf and pdf.get('path'):
-                pdf['filename'] = os.path.basename(pdf['path'])
-            if 'tests_count' not in pdf:
-                pdf['tests_count'] = len(data.get('results', []))
         
         # Output result
         output = {

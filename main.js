@@ -543,7 +543,9 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
       config: {
         group_by: config?.group_by || "unified",
         include_graphs: config?.include_graphs !== false,
-        include_tables: config?.include_tables !== false
+        include_tables: config?.include_tables !== false,
+        execution_date: config?.execution_date || null,
+        analyst_names: config?.analyst_names || []
       },
       results: resultsRes.data || [],
       graphs: graphsRes.data || []

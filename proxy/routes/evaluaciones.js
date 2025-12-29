@@ -299,10 +299,12 @@ router.get('/resultados/:session_id', async (req, res) => {
          rg.nivel,
          rg.analito,
          rg.resultado_pc,
+         rg.conclusion,
          rg.creado_en,
          tc.titulo AS test_titulo,
          tc.nombre_interno,
-         tc.categoria
+         tc.categoria,
+         tc.descripcion
        FROM results_general rg
        LEFT JOIN tests_catalog tc ON tc.id = rg.catalog_id
        JOIN latest_tests lt ON lt.catalog_id = rg.catalog_id
