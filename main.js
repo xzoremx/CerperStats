@@ -617,13 +617,19 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
       });
     });
 
-    console.log("[REPORTS] Generated:", pythonResult.length, "PDFs");
+    // Handle the new output format from Python: {ok, generated, count}
+    if (!pythonResult.ok) {
+      throw new Error(pythonResult.error || 'Report generation failed');
+    }
+
+    const generatedPdfs = pythonResult.generated || [];
+    console.log("[REPORTS] Generated:", generatedPdfs.length, "PDFs");
 
     // 5. Return generated PDFs (without uploading to server)
     // User will explicitly save via 'save-report-to-db' handler
     const generatedReports = [];
 
-    for (const pdfInfo of pythonResult) {
+    for (const pdfInfo of generatedPdfs) {
       try {
         const pdfPath = pdfInfo.path;
         const pdfBuffer = fs.readFileSync(pdfPath);
