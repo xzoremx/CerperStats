@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://unpkg.com data:; connect-src 'self';">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://unpkg.com data:; connect-src 'self';">
   <title>Detalles de Sesión | CerperStats</title>
+  <link rel="stylesheet" href="css/global.css">
   <link rel="stylesheet" href="css/session_detail.css">
 </head>
+
 <body>
   <main class="detail-container">
     <h2>Detalles de la Sesión</h2>
@@ -18,13 +22,15 @@
     </div>
 
     <button id="btn-volver" class="btn-return" aria-label="Volver">
-        <i data-lucide="chevron-left"></i>
+      <i data-lucide="chevron-left"></i>
     </button>
   </main>
-  
+
   <script src="js/auth_guard.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script>document.addEventListener('DOMContentLoaded',()=>{ try{ lucide.createIcons(); }catch(e){} });</script>
+  <script>document.addEventListener('DOMContentLoaded', () => { try { lucide.createIcons(); } catch (e) { } });</script>
+  <script src="js/notify.js"></script>
   <script src="js/session_detail.js"></script>
 </body>
+
 </html>
