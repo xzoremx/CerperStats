@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict vzVfaVEKsfphqSo05EdAIQxGsYqmi1me8frOPMceVeSJRnCLRusRqnSZcUb7JeD
+\restrict dacJNoCgnfr4CJVNAKF3uA1PdxUiGwt9b8OqjqIr3GebIY9Xc2UdY9dFVNTlaD6
 
 -- Dumped from database version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
 -- Dumped by pg_dump version 18.0
@@ -491,7 +491,6 @@ ALTER SEQUENCE public.logs_sistema_id_seq OWNED BY public.logs_sistema.id;
 CREATE TABLE public.reports (
     id integer NOT NULL,
     session_id integer NOT NULL,
-    catalog_id integer,
     tipo_informe text DEFAULT 'resultado'::text,
     version_informe text DEFAULT 'v1.0'::text,
     estado text DEFAULT 'generado'::text,
@@ -1048,13 +1047,6 @@ CREATE INDEX idx_logs_usuario_fecha ON public.logs_sistema USING btree (usuario_
 
 
 --
--- Name: idx_reports_catalog_id; Type: INDEX; Schema: public; Owner: cerper_user
---
-
-CREATE INDEX idx_reports_catalog_id ON public.reports USING btree (catalog_id);
-
-
---
 -- Name: idx_reports_parent_id; Type: INDEX; Schema: public; Owner: cerper_user
 --
 
@@ -1281,14 +1273,6 @@ ALTER TABLE ONLY public.inputs_multianalito
 
 
 --
--- Name: reports fk_report_catalog; Type: FK CONSTRAINT; Schema: public; Owner: cerper_user
---
-
-ALTER TABLE ONLY public.reports
-    ADD CONSTRAINT fk_report_catalog FOREIGN KEY (catalog_id) REFERENCES public.tests_catalog(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
 -- Name: reports fk_report_parent; Type: FK CONSTRAINT; Schema: public; Owner: cerper_user
 --
 
@@ -1428,5 +1412,5 @@ ALTER TABLE ONLY public.session_selected_tests
 -- PostgreSQL database dump complete
 --
 
-\unrestrict vzVfaVEKsfphqSo05EdAIQxGsYqmi1me8frOPMceVeSJRnCLRusRqnSZcUb7JeD
+\unrestrict dacJNoCgnfr4CJVNAKF3uA1PdxUiGwt9b8OqjqIr3GebIY9Xc2UdY9dFVNTlaD6
 

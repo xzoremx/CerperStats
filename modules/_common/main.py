@@ -371,8 +371,13 @@ def run_single_module(
                 "module_id": module_id,
                 "catalog_id": catalog_id,
                 "nombre": nombre,
-                "error": "El mรณdulo no produjo df_resultado (DataFrame)",
+                "error": "El módulo no produjo df_resultado (DataFrame)",
             }
+        
+        # Extraer conclusión si el módulo la define
+        conclusion = module_ns.get("conclusion", None)
+        if conclusion is not None and not isinstance(conclusion, str):
+            conclusion = str(conclusion)
 
         # Ejecutar script grรกfico si estรก definido (script_grafico o graph_asset)
         script_grafico = manifest_entry.get("script_grafico") or manifest_entry.get("graph_asset")
@@ -487,6 +492,7 @@ def run_single_module(
             "catalog_id": catalog_id,
             "nombre": nombre,
             "resultado_pc": resultado_pc,
+            "conclusion": conclusion,
             "grafico_data": grafico_data,
         }
 

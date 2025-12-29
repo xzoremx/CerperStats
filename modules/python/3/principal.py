@@ -104,5 +104,6 @@ df_resultado = pd.DataFrame([{
     "prueba_tendencia": prueba,
     "estadistico": None if estadistico is None else round(estadistico, 4),
     "p_value": None if p_value is None else round(p_value, 4),
-    "conclusion": conclusion
 }])
+# conclusion variable ya existe y será exportada por separado
+

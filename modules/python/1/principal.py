@@ -26,6 +26,7 @@ if "df_ingreso" not in globals():
 
 
 rows = []
+conclusions_parts = []
 
 for col in df_ingreso.columns:
     serie = pd.to_numeric(df_ingreso[col], errors="coerce").dropna()
@@ -43,6 +44,7 @@ for col in df_ingreso.columns:
             "normalidad": None,
             "prueba_normalidad": None,
         })
+        conclusions_parts.append(f"{col}: Sin datos disponibles")
         continue
 
     valores = serie.to_numpy(dtype=float)
@@ -64,6 +66,7 @@ for col in df_ingreso.columns:
         p_value = None
         normal = None
         prueba = None
+        conclusions_parts.append(f"{col}: No evaluable (n < 3)")
 
     else:
         try:
@@ -77,10 +80,17 @@ for col in df_ingreso.columns:
             p_value = round(float(p), 4)
             normal = p_value >= 0.05
 
+            # Agregar parte de la conclusión
+            if normal:
+                conclusions_parts.append(f"{col}: Normal (p={p_value:.4f})")
+            else:
+                conclusions_parts.append(f"{col}: NO Normal (p={p_value:.4f})")
+
         except Exception:
             p_value = None
             normal = None
             prueba = None
+            conclusions_parts.append(f"{col}: Error al evaluar")
 
     rows.append({
         "parametro": col,
@@ -97,4 +107,17 @@ for col in df_ingreso.columns:
 df_resultado = pd.DataFrame(rows)
 df_resultado = df_resultado.sort_values("parametro").reset_index(drop=True)
 
+# Generar conclusión general
+normales = [r for r in rows if r.get("normalidad") is True]
+no_normales = [r for r in rows if r.get("normalidad") is False]
+no_evaluables = [r for r in rows if r.get("normalidad") is None]
 
+if len(no_normales) == 0 and len(normales) > 0:
+    conclusion = f"Los {len(normales)} parámetros evaluados siguen una distribución normal al 95% de confianza."
+elif len(normales) == 0 and len(no_normales) > 0:
+    conclusion = f"Ninguno de los {len(no_normales)} parámetros evaluados sigue una distribución normal al 95% de confianza."
+elif len(normales) > 0 and len(no_normales) > 0:
+    no_normal_names = ", ".join([r["parametro"] for r in no_normales])
+    conclusion = f"De {len(normales) + len(no_normales)} parámetros, {len(no_normales)} NO siguen distribución normal ({no_normal_names}) al 95% de confianza."
+else:
+    conclusion = "No se pudo evaluar normalidad en ningún parámetro."

@@ -105,3 +105,29 @@ for col in df_ingreso.columns:
 
 df_resultado = pd.DataFrame(rows)
 df_resultado = df_resultado.sort_values("parametro").reset_index(drop=True)
+
+# --- Generar conclusión conjunta (resumen de todos los parámetros) ---
+parametros_evaluados = [r for r in rows if r.get("normalidad") is not None]
+parametros_normales = [r for r in parametros_evaluados if r.get("normalidad") is True]
+parametros_no_normales = [r for r in parametros_evaluados if r.get("normalidad") is False]
+
+if len(parametros_evaluados) == 0:
+    conclusion = "No se pudo evaluar normalidad en ningún parámetro (datos insuficientes)"
+elif len(parametros_no_normales) == 0:
+    conclusion = (
+        f"Todos los parámetros ({len(parametros_normales)}) siguen una distribución normal "
+        "al 95% de confianza."
+    )
+elif len(parametros_normales) == 0:
+    conclusion = (
+        f"Ninguno de los parámetros ({len(parametros_no_normales)}) sigue una distribución normal "
+        "al 95% de confianza."
+    )
+else:
+    nombres_no_normales = ", ".join([r["parametro"] for r in parametros_no_normales])
+    conclusion = (
+        f"De {len(parametros_evaluados)} parámetros evaluados, "
+        f"{len(parametros_no_normales)} NO siguen distribución normal ({nombres_no_normales}) "
+        "al 95% de confianza."
+    )
+
