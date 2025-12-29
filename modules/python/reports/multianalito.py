@@ -309,21 +309,21 @@ class MultiReportGenerator:
                         # For by_analito: combine conclusions from all niveles shown
                         conclusion = results_for_nivel[0].get('conclusion')
                     
-                    # Get graph (use first available)
-                    graph_data = None
+                    # Get ALL graphs (one per analito)
+                    graphs_list = []
                     if include_graphs:
                         for r in results_for_nivel:
-                            graph = self._get_graph(catalog_id, nivel, r.get('analito'))
+                            analito = r.get('analito')
+                            graph = self._get_graph(catalog_id, nivel, analito)
                             if graph:
-                                graph_data = graph
-                                break
+                                graphs_list.append((analito, graph))
                     
-                    # Add nivel section
+                    # Add nivel section with all graphs
                     builder.add_nivel_section(
                         nivel=nivel,
                         table_data=concatenated_table,
                         conclusion=conclusion,
-                        graph_data=graph_data,
+                        graphs_list=graphs_list if graphs_list else None,
                         include_graph=include_graphs
                     )
     

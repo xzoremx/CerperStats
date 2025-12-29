@@ -527,16 +527,17 @@ class CerperPDFBuilder:
         """Add a nivel subtitle (e.g., '- Nivel 1')."""
         self.elements.append(Paragraph(f"- Nivel {nivel}", self.styles['NivelTitle']))
     
-    def add_nivel_section(self, nivel, table_data, conclusion=None, graph_data=None, include_graph=True):
+    def add_nivel_section(self, nivel, table_data, conclusion=None, graph_data=None, graphs_list=None, include_graph=True):
         """
-        Add a complete nivel section with table, conclusion, and graph.
+        Add a complete nivel section with table, conclusion, and graph(s).
         
         Args:
             nivel: The nivel number
             table_data: Data for the results table (list of dicts or JSON string)
             conclusion: Optional conclusion text
-            graph_data: Optional base64 encoded graph image
-            include_graph: Whether to include the graph
+            graph_data: Optional single base64 encoded graph image (for backwards compatibility)
+            graphs_list: Optional list of (analito, graph_data) tuples for multiple graphs
+            include_graph: Whether to include the graph(s)
         """
         section_elements = []
         
@@ -574,12 +575,28 @@ class CerperPDFBuilder:
             )
             section_elements.append(conclusion_para)
         
-        # Graph
-        if include_graph and graph_data:
-            img = decode_base64_image(graph_data)
-            if img:
-                section_elements.append(Spacer(1, 10))
-                section_elements.append(img)
+        # Graphs - support multiple graphs (one per analito)
+        if include_graph:
+            if graphs_list:
+                # Multiple graphs with analito labels
+                for analito, gdata in graphs_list:
+                    if gdata:
+                        img = decode_base64_image(gdata)
+                        if img:
+                            section_elements.append(Spacer(1, 8))
+                            # Add analito label above the graph
+                            if analito:
+                                section_elements.append(Paragraph(
+                                    f"<b>{analito}</b>",
+                                    self.styles['CerperBodyText']
+                                ))
+                            section_elements.append(img)
+            elif graph_data:
+                # Single graph (backwards compatibility)
+                img = decode_base64_image(graph_data)
+                if img:
+                    section_elements.append(Spacer(1, 10))
+                    section_elements.append(img)
         
         section_elements.append(Spacer(1, 8))
         
