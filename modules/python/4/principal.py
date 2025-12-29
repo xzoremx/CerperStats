@@ -109,7 +109,7 @@ df_resultado = df_resultado.sort_values("parametro").reset_index(drop=True)
 # Inferir el tipo de parámetro desde los nombres de columnas (ej: "Analista 1" → "Analistas")
 def inferir_tipo_parametro(columnas):
     """Extrae el tipo de parámetro de los nombres de columnas y lo pluraliza."""
-    if not columnas:
+    if len(columnas) == 0:
         return "parámetros"
     # Tomar el primer nombre de columna y extraer la parte textual
     primera_col = str(list(columnas)[0])
