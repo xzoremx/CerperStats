@@ -71,6 +71,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     let selectedItems = new Set();
     // Track which local reports have comment enabled
     let commentEnabled = new Set();
+    // Track which local reports are marked as urgent (a_revisar)
+    let urgentReview = new Set();
+    // Track which local reports are marked as important/urgent
+    let importantReports = new Set();
     // Session parameter info
     let sessionParametro = '';
     let sessionNumParametros = 0;
@@ -661,7 +665,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="flex-1 min-w-0">
                         <div class="font-medium text-white truncate flex items-center gap-2">
                             ${displayTitle}
+                            ${isUrgent ? '<i data-lucide="alert-circle" class="w-4 h-4 text-amber-400 flex-shrink-0" title="Importante/Urgente"></i>' : ''}
                             <span class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">Guardado</span>
+                            ${estadoDisplay === 'a_revisar' ? '<span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">A Revisar</span>' : ''}
                         </div>
                         <div class="text-sm text-gray-500">${displaySubtitle ? displaySubtitle + ' • ' : ''}${dateDisplay} • ${sizeKb} KB</div>
                     </div>
@@ -729,26 +735,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         const itemEl = document.querySelector(`[data-local-index="${index}"]`);
         if (!itemEl) return;
 
-        // If comment is NOT enabled, save directly without form
-        if (!commentEnabled.has(index)) {
-            await doSaveReport(index, '');
-            return;
-        }
-
         // Check if form already exists
         if (itemEl.querySelector('.save-form')) return;
 
-        // Create inline save form for comment
+        // Always show form with state selector and comment option
+        const isUrgent = importantReports.has(index);
         const formHtml = `
             <div class="save-form mt-3 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
-                <label class="block text-sm font-medium text-white mb-2">
-                    <i data-lucide="message-square" class="w-4 h-4 inline mr-1"></i>
-                    Observaciones
-                </label>
-                <textarea id="save-comment-${index}" rows="2" 
-                    class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-gray-500 resize-none focus:outline-none focus:border-emerald-500/50"
-                    placeholder="Escribe un comentario o nota sobre este reporte..."></textarea>
-                <div class="flex items-center justify-end gap-2 mt-3">
+                <div class="space-y-4">
+                    <!-- Estado selector -->
+                    <div>
+                        <label class="block text-sm font-medium text-white mb-2">
+                            <i data-lucide="file-check" class="w-4 h-4 inline mr-1"></i>
+                            Estado del Reporte
+                        </label>
+                        <select id="save-estado-${index}" 
+                            class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-emerald-500/50">
+                            <option value="generado">Generado</option>
+                            <option value="a_revisar" ${isUrgent ? 'selected' : ''}>A Revisar (Urgente)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Important/Urgent toggle -->
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" id="save-urgent-${index}" ${isUrgent ? 'checked' : ''}
+                            class="w-5 h-5 rounded accent-amber-500">
+                        <label for="save-urgent-${index}" class="text-sm text-white cursor-pointer flex items-center gap-2">
+                            <i data-lucide="alert-circle" class="w-4 h-4 text-amber-400"></i>
+                            Marcar como importante/urgente
+                        </label>
+                    </div>
+                    
+                    <!-- Comment section -->
+                    <div>
+                        <label class="block text-sm font-medium text-white mb-2">
+                            <i data-lucide="message-square" class="w-4 h-4 inline mr-1"></i>
+                            Observaciones (opcional)
+                        </label>
+                        <textarea id="save-comment-${index}" rows="2" 
+                            class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-gray-500 resize-none focus:outline-none focus:border-emerald-500/50"
+                            placeholder="Escribe un comentario o nota sobre este reporte..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-end gap-2 mt-4">
                     <button onclick="cancelSaveForm(${index})" class="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all">
                         Cancelar
                     </button>
@@ -764,10 +794,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Insert form after the item
         itemEl.insertAdjacentHTML('beforeend', formHtml);
         if (window.lucide) lucide.createIcons();
-
-        // Focus textarea
-        const textarea = document.getElementById(`save-comment-${index}`);
-        if (textarea) textarea.focus();
+        
+        // Update estado selector when urgent checkbox changes
+        const urgentCheckbox = document.getElementById(`save-urgent-${index}`);
+        const estadoSelect = document.getElementById(`save-estado-${index}`);
+        if (urgentCheckbox && estadoSelect) {
+            urgentCheckbox.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    estadoSelect.value = 'a_revisar';
+                }
+            });
+        }
     };
 
     // Cancel save form
@@ -789,7 +826,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // Core save function (used by both direct save and form save)
-    async function doSaveReport(index, observaciones) {
+    async function doSaveReport(index, observaciones, estado = 'generado') {
         const report = localReports[index];
         if (!report) return;
 
@@ -811,7 +848,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 plan_json: report.plan_json,
                 hash: report.hash,
                 tests_included: report.tests_included,
-                observaciones: observaciones
+                observaciones: observaciones,
+                estado: estado
             });
 
             if (!result.ok) {
@@ -821,6 +859,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Remove from local, clear comment state, reload saved
             localReports.splice(index, 1);
             commentEnabled.delete(index);
+            importantReports.delete(index);
             await loadSavedReports();
             renderInboxList();
 
@@ -1038,6 +1077,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateSelectionUI();
     };
 
+    // Mark selected items as important/urgent (set estado to 'a_revisar')
+    window.bulkMarkAsImportant = async function () {
+        if (selectedItems.size === 0) return;
+
+        // Mark local reports as important
+        const localIndices = [...selectedItems]
+            .filter(k => k.startsWith('local_'))
+            .map(k => parseInt(k.replace('local_', '')));
+
+        localIndices.forEach(idx => {
+            importantReports.add(idx);
+        });
+
+        // Mark saved reports as urgent via API (set estado to 'a_revisar')
+        const savedIds = [...selectedItems]
+            .filter(k => k.startsWith('saved_'))
+            .map(k => parseInt(k.replace('saved_', '')));
+
+        if (savedIds.length > 0) {
+            try {
+                const result = await window.cerper.markReportsAsUrgent(savedIds);
+                if (!result.ok) {
+                    console.error('[PDFConfig] Error marking saved reports as urgent:', result.error);
+                }
+            } catch (err) {
+                console.error('[PDFConfig] Error marking saved reports as urgent:', err);
+            }
+        }
+
+        // Refresh the list to show updated icons
+        if (savedIds.length > 0) {
+            await loadSavedReports();
+        }
+        renderInboxList();
+    };
+
     window.showBulkSaveForm = function () {
         // Check if any local items are selected
         const hasLocal = [...selectedItems].some(k => k.startsWith('local_'));
@@ -1047,6 +1122,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (bulkSaveForm) {
             bulkSaveForm.classList.remove('hidden');
+            // Set up event listeners for bulk form
+            const bulkUrgentCheckbox = document.getElementById('bulk-urgent');
+            const bulkEstadoSelect = document.getElementById('bulk-estado');
+            if (bulkUrgentCheckbox && bulkEstadoSelect) {
+                // Remove existing listeners by cloning
+                const newCheckbox = bulkUrgentCheckbox.cloneNode(true);
+                bulkUrgentCheckbox.parentNode.replaceChild(newCheckbox, bulkUrgentCheckbox);
+                const newSelect = bulkEstadoSelect.cloneNode(true);
+                bulkEstadoSelect.parentNode.replaceChild(newSelect, bulkEstadoSelect);
+                
+                // Add new listeners
+                newCheckbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        newSelect.value = 'a_revisar';
+                    }
+                });
+                newSelect.addEventListener('change', (e) => {
+                    if (e.target.value === 'a_revisar') {
+                        newCheckbox.checked = true;
+                    }
+                });
+            }
             bulkComment?.focus();
         }
     };
@@ -1058,6 +1155,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.confirmBulkSave = async function () {
         const observaciones = bulkComment?.value?.trim() || '';
+        const estadoSelect = document.getElementById('bulk-estado');
+        const urgentCheckbox = document.getElementById('bulk-urgent');
+        // Si está marcado como urgente, forzar estado a 'a_revisar'
+        let estado = estadoSelect?.value || 'generado';
+        if (urgentCheckbox?.checked) {
+            estado = 'a_revisar';
+        }
 
         // Get local indices to save
         const localIndices = [...selectedItems]
@@ -1093,7 +1197,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     plan_json: report.plan_json,
                     hash: report.hash,
                     tests_included: report.tests_included,
-                    observaciones: observaciones
+                    observaciones: observaciones,
+                    estado: estado
                 });
 
                 if (result.ok) {
@@ -1110,6 +1215,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Remove saved items from localReports (highest index first)
         for (const idx of localIndices) {
             localReports.splice(idx, 1);
+            importantReports.delete(idx);
         }
 
         selectedItems.clear();
@@ -1119,6 +1225,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (bulkSaveForm) bulkSaveForm.classList.add('hidden');
         if (bulkComment) bulkComment.value = '';
+        if (estadoSelect) estadoSelect.value = 'generado';
+        if (urgentCheckbox) urgentCheckbox.checked = false;
 
         if (errorCount === 0) {
             alert(`✓ ${successCount} reporte${successCount !== 1 ? 's' : ''} guardado${successCount !== 1 ? 's' : ''} exitosamente.`);

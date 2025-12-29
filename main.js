@@ -703,7 +703,8 @@ ipcMain.handle("save-report-to-db", async (_event, { sessionId, report }) => {
       hash_documento: report.hash || '',
       usuario_id: currentUser?.id || null,
       tests_included: report.tests_included || [],
-      observaciones: report.observaciones || null
+      observaciones: report.observaciones || null,
+      estado: report.estado || 'generado'
     };
 
     const uploadResult = await proxyFetch('/reports', {
@@ -769,6 +770,24 @@ ipcMain.handle("delete-report", async (_event, reportId) => {
     return { ok: true };
   } catch (err) {
     console.error("[PROXY] Error deleting report:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+/**
+ * Mark multiple reports as urgent/important (set estado to 'a_revisar')
+ */
+ipcMain.handle("mark-reports-as-urgent", async (_event, reportIds) => {
+  try {
+    const result = await proxyFetch('/reports/bulk/urgent', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        report_ids: reportIds
+      })
+    });
+    return { ok: true, updated: result.updated || reportIds.length };
+  } catch (err) {
+    console.error("[PROXY] Error marking reports as urgent:", err);
     return { ok: false, error: err.message };
   }
 });

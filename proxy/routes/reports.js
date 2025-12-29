@@ -27,12 +27,17 @@ router.post('/', async (req, res) => {
         hash_documento,
         observaciones,
         usuario_id,
-        tests_included
+        tests_included,
+        estado
     } = req.body || {};
 
     if (!session_id || !pdf_base64) {
         return res.status(400).json({ ok: false, error: 'invalid_payload', message: 'session_id and pdf_base64 are required' });
     }
+
+    // Validar estado: debe ser 'generado' o 'a_revisar' al crear
+    const validInitialStates = ['generado', 'a_revisar'];
+    const reportEstado = estado && validInitialStates.includes(estado) ? estado : 'generado';
 
     const client = await pool.connect();
     try {
@@ -48,12 +53,13 @@ router.post('/', async (req, res) => {
         plan_json, pdf_data, hash_documento, observaciones, usuario_id,
         creado_en, actualizado_en
       )
-      VALUES ($1, $2, $3, 'generado', $4, $5, $6, $7, $8, NOW(), NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
       RETURNING id`,
             [
                 session_id,
                 tipo_informe || 'resultado',
                 version_informe || 'v1.0',
+                reportEstado,
                 plan_json ? JSON.stringify(plan_json) : null,
                 pdfBuffer,
                 hash_documento,
@@ -61,6 +67,8 @@ router.post('/', async (req, res) => {
                 usuario_id
             ]
         );
+
+        const reportId = rows[0]?.id;
 
         const reportId = rows[0]?.id;
 
@@ -255,7 +263,7 @@ router.delete('/:reportId', async (req, res) => {
 
 /**
  * PATCH /reports/:reportId/status
- * Update report status (e.g., 'generado' -> 'firmado' -> 'obsoleto')
+ * Update report status (e.g., 'generado' -> 'a_revisar' -> 'aprobado' -> 'archivado')
  */
 router.patch('/:reportId/status', async (req, res) => {
     const reportId = Number(req.params.reportId);
@@ -265,8 +273,8 @@ router.patch('/:reportId/status', async (req, res) => {
         return res.status(400).json({ ok: false, error: 'invalid_report_id' });
     }
 
-    const validStates = ['generado', 'firmado', 'obsoleto'];
-    if (!validStates.includes(estado)) {
+    const validStates = ['generado', 'a_revisar', 'aprobado', 'rechazado', 'archivado'];
+    if (!estado || !validStates.includes(estado)) {
         return res.status(400).json({ ok: false, error: 'invalid_status', valid: validStates });
     }
 
@@ -283,6 +291,30 @@ router.patch('/:reportId/status', async (req, res) => {
         res.json({ ok: true });
     } catch (err) {
         console.error('[API] Error updating report status:', err);
+        res.status(500).json({ ok: false, error: 'db_error' });
+    }
+});
+
+/**
+ * PATCH /reports/bulk/urgent
+ * Mark multiple reports as urgent (set estado to 'a_revisar')
+ */
+router.patch('/bulk/urgent', async (req, res) => {
+    const { report_ids } = req.body || {};
+
+    if (!Array.isArray(report_ids) || report_ids.length === 0) {
+        return res.status(400).json({ ok: false, error: 'invalid_payload', message: 'report_ids array required' });
+    }
+
+    try {
+        await pool.query(
+            `UPDATE reports SET estado = 'a_revisar', actualizado_en = NOW() WHERE id = ANY($1::int[])`,
+            [report_ids]
+        );
+
+        res.json({ ok: true, updated: report_ids.length });
+    } catch (err) {
+        console.error('[API] Error updating bulk urgent status:', err);
         res.status(500).json({ ok: false, error: 'db_error' });
     }
 });
