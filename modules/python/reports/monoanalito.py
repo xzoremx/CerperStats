@@ -22,7 +22,7 @@ import os
 import json
 from collections import defaultdict
 
-from .base import (
+from base import (
     CerperPDFBuilder, 
     get_styles, 
     CATEGORY_HEADER_MAP, 

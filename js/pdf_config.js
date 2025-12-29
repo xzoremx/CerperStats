@@ -150,6 +150,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const analystInputsContainer = document.getElementById('analyst-inputs-container');
     const analystValidationMsg = document.getElementById('analyst-validation-msg');
 
+    // Execution date section elements (MANDATORY)
+    const executionDateInput = document.getElementById('execution-date-input');
+    const executionDateError = document.getElementById('execution-date-error');
+
     // State
     let activeView = 'config';
     let selectedMode = 'unified';
@@ -533,6 +537,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     btnGenerate?.addEventListener('click', async () => {
         if (isGenerating || !sessionId) return;
 
+        // Validate execution date (MANDATORY)
+        const executionDate = executionDateInput?.value;
+        if (!executionDate) {
+            if (executionDateError) executionDateError.classList.remove('hidden');
+            if (executionDateInput) executionDateInput.classList.add('!border-red-500/50');
+            executionDateInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            notify('La fecha de ejecución es obligatoria', 'error');
+            return;
+        } else {
+            if (executionDateError) executionDateError.classList.add('hidden');
+            if (executionDateInput) executionDateInput.classList.remove('!border-red-500/50');
+        }
+
         // Validate analyst names if required
         if (!validateAnalystNames()) {
             // Scroll to analyst section
@@ -549,10 +566,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (progressSection) progressSection.classList.remove('hidden');
         setProgress(0, 'Preparando datos...');
 
+        // Format execution date to DD/MM/YYYY for the PDF
+        const dateObj = new Date(executionDate + 'T12:00:00');
+        const formattedDate = dateObj.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+
         const config = {
             group_by: selectedMode,
             include_graphs: optGraphs?.checked !== false,
             include_tables: optTables?.checked !== false,
+            // Execution date (MANDATORY)
+            execution_date: formattedDate,
             // Include analyst names if parametro is Analista
             analyst_names: sessionParametro.toLowerCase() === 'analista' ? analystNames : null
         };
