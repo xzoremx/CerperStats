@@ -823,7 +823,24 @@
     <script src="js/auth_guard.js"></script>
     <script src="js/security/icon_safety.js"></script>
     <script src="js/liquid_glass.js"></script>
-    <script src="js/pdf_config.js" defer></script>
+    <script>
+        // Initialize custom dialogs immediately
+        (function () {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initCustomDialogs);
+            } else {
+                initCustomDialogs();
+            }
+
+            function initCustomDialogs() {
+                const backdrop = document.getElementById('custom-dialog-backdrop');
+                if (backdrop) {
+                    window.customDialogReady = true;
+                }
+            }
+        })();
+    </script>
+    <script src="js/pdf_config.js"></script>
     <script>
         if (window.lucide) lucide.createIcons();
 

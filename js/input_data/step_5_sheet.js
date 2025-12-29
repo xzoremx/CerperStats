@@ -1025,57 +1025,18 @@ if (btnBack) {
 // --- Modal de confirmación simple ---
 async function mostrarConfirmacion(titulo, mensaje) {
   return new Promise((resolve) => {
-    // === Fondo difuminado y bloqueo ===
     const overlay = document.createElement("div");
-    overlay.className = "modal-overlay";
-    Object.assign(overlay.style, {
-      position: "fixed",
-      top: 0,
-      left: 0,
-      width: "100vw",
-      height: "100vh",
-      background: "rgba(0,0,0,0.3)",
-      backdropFilter: "blur(8px)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 9998,
-      animation: "fadeSlideIn 0.4s ease forwards",
-      pointerEvents: "all",
-      userSelect: "none",
-    });
+    overlay.className = "cs-inline-modal-overlay";
 
-    // === Caja del modal ===
     const modal = document.createElement("div");
-    Object.assign(modal.style, {
-      backdropFilter: "blur(12px)",
-      background: "rgba(0,255,255,0.08)",
-      border: "1.5px solid rgba(0,255,255,0.35)",
-      boxShadow: "0 0 25px rgba(0,255,255,0.15)",
-      borderRadius: "16px",
-      padding: "28px 32px",
-      width: "360px",
-      textAlign: "center",
-      color: "#00ffff",
-      fontFamily: "Segoe UI, sans-serif",
-      fontWeight: "500",
-      animation: "fadeSlideIn 0.45s ease forwards",
-    });
+    modal.className = "cs-inline-modal";
 
     modal.innerHTML = `
-      <h3 style="margin:0; font-size:1.15rem; color:#00ffff;">${titulo}</h3>
-      <p style="margin:14px 0 22px; font-size:0.95rem; color:#80e4ff; line-height:1.4;">
-        ${mensaje}
-      </p>
-      <div style="display:flex; justify-content:center; gap:16px;">
-        <button id="confirm-yes" class="modal-btn yes"
-          style="padding:8px 18px; border-radius:10px; background:rgba(0,255,255,0.15); border:1px solid rgba(0,255,255,0.4); color:#00ffff; cursor:pointer;">
-          Sí
-        </button>
-        <button id="confirm-no" class="modal-btn no"
-          style="padding:8px 18px; border-radius:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.2); color:#80e4ff; cursor:pointer;">
-          No
-        </button>
+      <h3 class="cs-inline-modal__title">${titulo}</h3>
+      <p class="cs-inline-modal__message">${mensaje}</p>
+      <div class="cs-inline-modal__actions">
+        <button id="confirm-yes" class="cs-inline-modal__btn cs-inline-modal__btn--primary">Sí</button>
+        <button id="confirm-no" class="cs-inline-modal__btn cs-inline-modal__btn--secondary">No</button>
       </div>
     `;
 
@@ -1087,8 +1048,8 @@ async function mostrarConfirmacion(titulo, mensaje) {
     const no = modal.querySelector("#confirm-no");
 
     const closeModal = (value) => {
-      overlay.classList.add("closing");
-      setTimeout(() => overlay.remove(), 250);
+      overlay.classList.add("is-closing");
+      setTimeout(() => overlay.remove(), 200);
       resolve(value);
     };
 

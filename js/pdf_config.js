@@ -5,105 +5,99 @@
  * PDFs generados se mantienen localmente hasta que el usuario los guarda explícitamente.
  */
 
-// Custom Dialog Functions (replacement for native alert/confirm)
-function showCustomAlert(message, title = 'Información', type = 'info') {
-    return new Promise((resolve) => {
-        const backdrop = document.getElementById('custom-dialog-backdrop');
-        const dialogTitle = document.getElementById('custom-dialog-title');
-        const dialogMessage = document.getElementById('custom-dialog-message');
-        const dialogButtons = document.getElementById('custom-dialog-buttons');
+// Inline modal dialogs (shared with input_data steps)
+function normalizeModalMessage(message) {
+    if (message == null) return '';
+    return String(message).replace(/\n/g, '<br>');
+}
 
-        if (!backdrop || !dialogTitle || !dialogMessage || !dialogButtons) {
-            // Fallback to native alert if elements don't exist
-            alert(message);
-            resolve();
-            return;
+function showInlineModal({ title, message, confirmText, cancelText }) {
+    return new Promise((resolve) => {
+        const existing = document.querySelector('.cs-inline-modal-overlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'cs-inline-modal-overlay';
+
+        const modal = document.createElement('div');
+        modal.className = 'cs-inline-modal';
+
+        const titleEl = document.createElement('h3');
+        titleEl.className = 'cs-inline-modal__title';
+        titleEl.textContent = title || 'Confirmar';
+
+        const messageEl = document.createElement('p');
+        messageEl.className = 'cs-inline-modal__message';
+        messageEl.innerHTML = normalizeModalMessage(message);
+
+        const buttons = document.createElement('div');
+        buttons.className = 'cs-inline-modal__actions';
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.type = 'button';
+        confirmBtn.textContent = confirmText || 'Aceptar';
+        confirmBtn.className = 'cs-inline-modal__btn cs-inline-modal__btn--primary';
+
+        buttons.appendChild(confirmBtn);
+
+        let cancelBtn = null;
+        if (cancelText) {
+            cancelBtn = document.createElement('button');
+            cancelBtn.type = 'button';
+            cancelBtn.textContent = cancelText;
+            cancelBtn.className = 'cs-inline-modal__btn cs-inline-modal__btn--secondary';
+            buttons.appendChild(cancelBtn);
         }
 
-        // Set icon based on type
-        let icon = 'info';
-        if (type === 'error') icon = 'alert-circle';
-        if (type === 'warning') icon = 'alert-triangle';
-        if (type === 'success') icon = 'check-circle';
+        modal.appendChild(titleEl);
+        modal.appendChild(messageEl);
+        modal.appendChild(buttons);
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
 
-        dialogTitle.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i> ${title}`;
-        dialogMessage.textContent = message;
-        
-        dialogButtons.innerHTML = `
-            <button class="custom-dialog-button custom-dialog-button-primary" id="custom-dialog-ok">
-                Aceptar
-            </button>
-        `;
-
-        // Show dialog
-        backdrop.classList.add('visible');
-        if (window.lucide) lucide.createIcons();
-
-        // Handle OK button
-        const okBtn = document.getElementById('custom-dialog-ok');
-        const closeDialog = () => {
-            backdrop.classList.remove('visible');
-            resolve();
+        const closeModal = (value) => {
+            document.removeEventListener('keydown', keyHandler);
+            overlay.classList.add('is-closing');
+            setTimeout(() => {
+                overlay.remove();
+                resolve(value);
+            }, 200);
         };
 
-        okBtn.addEventListener('click', closeDialog);
-        
-        // Close on backdrop click
-        backdrop.addEventListener('click', (e) => {
-            if (e.target === backdrop) closeDialog();
-        });
+        const keyHandler = (ev) => {
+            if (ev.key === 'Escape') {
+                ev.preventDefault();
+                closeModal(cancelBtn ? false : true);
+            } else if (ev.key === 'Enter') {
+                ev.preventDefault();
+                closeModal(true);
+            }
+        };
+
+        confirmBtn.addEventListener('click', () => closeModal(true));
+        if (cancelBtn) cancelBtn.addEventListener('click', () => closeModal(false));
+
+        document.addEventListener('keydown', keyHandler);
+        confirmBtn.focus();
     });
 }
 
-window.showCustomConfirm = function (message, title = 'Confirmar', confirmText = 'Aceptar', cancelText = 'Cancelar', type = 'warning') {
-    return new Promise((resolve) => {
-        const backdrop = document.getElementById('custom-dialog-backdrop');
-        const dialogTitle = document.getElementById('custom-dialog-title');
-        const dialogMessage = document.getElementById('custom-dialog-message');
-        const dialogButtons = document.getElementById('custom-dialog-buttons');
-
-        if (!backdrop || !dialogTitle || !dialogMessage || !dialogButtons) {
-            // Fallback to native confirm if elements don't exist
-            resolve(confirm(message));
-            return;
-        }
-
-        // Set icon based on type
-        let icon = 'help-circle';
-        if (type === 'danger') icon = 'alert-triangle';
-        if (type === 'warning') icon = 'alert-circle';
-
-        dialogTitle.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i> ${title}`;
-        dialogMessage.textContent = message;
-        
-        dialogButtons.innerHTML = `
-            <button class="custom-dialog-button custom-dialog-button-secondary" id="custom-dialog-cancel">
-                ${cancelText}
-            </button>
-            <button class="custom-dialog-button custom-dialog-button-danger" id="custom-dialog-confirm">
-                ${confirmText}
-            </button>
-        `;
-
-        // Show dialog
-        backdrop.classList.add('visible');
-        if (window.lucide) lucide.createIcons();
-
-        // Handle buttons
-        const closeDialog = (result) => {
-            backdrop.classList.remove('visible');
-            resolve(result);
-        };
-
-        document.getElementById('custom-dialog-cancel').addEventListener('click', () => closeDialog(false));
-        document.getElementById('custom-dialog-confirm').addEventListener('click', () => closeDialog(true));
-        
-        // Close on backdrop click (cancel)
-        backdrop.addEventListener('click', (e) => {
-            if (e.target === backdrop) closeDialog(false);
-        });
+window.showCustomAlert = async function (message, title = 'Información', type = 'info') {
+    await showInlineModal({
+        title: title || 'Información',
+        message,
+        confirmText: 'Aceptar'
     });
-}
+};
+
+window.showCustomConfirm = async function (message, title = 'Confirmar', confirmText = 'Aceptar', cancelText = 'Cancelar', type = 'warning') {
+    return showInlineModal({
+        title: title || 'Confirmar',
+        message,
+        confirmText: confirmText || 'Aceptar',
+        cancelText: cancelText || 'Cancelar'
+    });
+};
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Get session ID from sessionStorage
@@ -711,6 +705,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Selection key and checked state
         const selectKey = isLocal ? `local_${localIndex}` : `saved_${report.id}`;
         const isChecked = selectedItems.has(selectKey);
+        const estadoDisplay = !isLocal ? (report.estado || report.estado_informe || report.status || '') : '';
+        const isUrgent = estadoDisplay === 'a_revisar';
 
         if (isLocal) {
             return `
@@ -762,11 +758,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
         } else {
             return `
-                <div class="report-item flex items-center gap-4 rounded-xl p-4 relative" data-report-id="${report.id}">
-                    <!-- Delete button in top-right corner -->
-                    <button class="delete-btn absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center transition-all z-10" onclick="deleteSavedReport(${report.id})" title="Eliminar">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
+                <div class="report-item flex items-center gap-4 rounded-xl p-4" data-report-id="${report.id}">
                     <!-- Checkbox -->
                     <input type="checkbox" data-select-id="${selectKey}" 
                         ${isChecked ? 'checked' : ''} 
@@ -775,7 +767,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/15 shadow-lg backdrop-blur-sm flex items-center justify-center flex-shrink-0 ${iconTextColor}">
                         <i data-lucide="file-text" class="w-6 h-6"></i>
                     </div>
-                    <div class="flex-1 min-w-0 pr-8">
+                    <div class="flex-1 min-w-0">
                         <div class="font-medium text-white truncate flex items-center gap-2">
                             ${displayTitle}
                             ${isUrgent ? '<i data-lucide="alert-circle" class="w-4 h-4 text-amber-400 flex-shrink-0" title="Importante/Urgente"></i>' : ''}
@@ -787,6 +779,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="flex items-center gap-2">
                         <button class="download-btn w-10 h-10 rounded-lg flex items-center justify-center transition-all" onclick="downloadSavedReport(${report.id})" title="Descargar">
                             <i data-lucide="download" class="w-5 h-5 text-white"></i>
+                        </button>
+                        <button class="delete-btn w-10 h-10 rounded-lg flex items-center justify-center transition-all" onclick="deleteSavedReport(${report.id})" title="Eliminar">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                     </div>
                 </div>
@@ -815,8 +810,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // Discard a LOCAL report (remove from memory)
-    window.discardLocalReport = function (index) {
-        if (!confirm('¿Descartar este reporte? No se ha guardado en el servidor.')) return;
+    window.discardLocalReport = async function (index) {
+        const confirmed = await showCustomConfirm(
+            '¿Descartar este reporte? No se ha guardado en el servidor.',
+            'Descartar reporte',
+            'Descartar',
+            'Cancelar',
+            'warning'
+        );
+        if (!confirmed) return;
         localReports.splice(index, 1);
         renderInboxList();
     };
@@ -925,7 +927,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const textarea = document.getElementById(`save-comment-${index}`);
         const observaciones = textarea?.value?.trim() || '';
-        
+
         // Determine estado based on important flag
         const estado = importantReports.has(index) ? 'a_revisar' : 'generado';
 
@@ -991,7 +993,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             downloadBase64Pdf(result.pdf_base64, `reporte_${reportId}.pdf`);
         } catch (err) {
             console.error('[PDFConfig] Download error:', err);
-            alert('Error descargando: ' + err.message);
+            await showCustomAlert('Error descargando: ' + err.message, 'Error', 'error');
         }
     };
 
@@ -1014,7 +1016,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderInboxList();
         } catch (err) {
             console.error('[PDFConfig] Delete error:', err);
-            alert('Error eliminando: ' + err.message);
+            await showCustomAlert('Error eliminando: ' + err.message, 'Error', 'error');
         }
     };
 
@@ -1241,15 +1243,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (savedIds.length > 0) {
             await loadSavedReports();
         }
-        
+
         // Re-render to show updated visual state
         renderInboxList();
-        
+
         // Ensure Lucide icons are recreated after re-render
         if (window.lucide && window.lucide.createIcons) {
             window.lucide.createIcons();
         }
-        
+
         // Show success message
         const totalMarked = localIndices.length + savedIds.length;
         if (totalMarked > 0) {
@@ -1281,7 +1283,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 bulkUrgentCheckbox.parentNode.replaceChild(newCheckbox, bulkUrgentCheckbox);
                 const newSelect = bulkEstadoSelect.cloneNode(true);
                 bulkEstadoSelect.parentNode.replaceChild(newSelect, bulkEstadoSelect);
-                
+
                 // Add new listeners
                 newCheckbox.addEventListener('change', (e) => {
                     if (e.target.checked) {

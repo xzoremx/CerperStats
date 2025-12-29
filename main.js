@@ -791,3 +791,4 @@ ipcMain.handle("mark-reports-as-urgent", async (_event, reportIds) => {
     return { ok: false, error: err.message };
   }
 });
+
