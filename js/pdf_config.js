@@ -64,6 +64,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let savedReports = [];
     // Selected items (Set of temp_id for local, id for saved)
     let selectedItems = new Set();
+    // Track which local reports have comment enabled
+    let commentEnabled = new Set();
     // === NAVIGATION ===
     function setActiveView(view) {
         activeView = view;
@@ -486,6 +488,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <button class="btn-secondary w-10 h-10 rounded-lg flex items-center justify-center transition-all" onclick="downloadLocalReport(${localIndex})" title="Descargar">
                                 <i data-lucide="download" class="w-5 h-5 text-gray-400"></i>
                             </button>
+                            <!-- Comment toggle -->
+                            <button id="comment-toggle-${localIndex}" 
+                                class="comment-toggle w-10 h-10 rounded-lg flex items-center justify-center transition-all bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white" 
+                                onclick="toggleCommentOption(${localIndex})" 
+                                title="Agregar comentario">
+                                <i data-lucide="message-square" class="w-5 h-5"></i>
+                            </button>
                             <button class="save-btn px-4 py-2 rounded-lg flex items-center gap-2 font-semibold text-white transition-all" onclick="saveLocalReport(${localIndex})" 
                                 style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);">
                                 <i data-lucide="upload-cloud" class="w-5 h-5"></i>
@@ -554,23 +563,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderInboxList();
     };
 
-    // Save a LOCAL report to database - shows inline form for comment
-    window.saveLocalReport = function (index) {
+    // Toggle comment option for a local report
+    window.toggleCommentOption = function (index) {
+        const toggleBtn = document.getElementById(`comment-toggle-${index}`);
+        if (!toggleBtn) return;
+
+        if (commentEnabled.has(index)) {
+            commentEnabled.delete(index);
+            toggleBtn.classList.remove('bg-emerald-500/20', 'border-emerald-500/40', 'text-emerald-400');
+            toggleBtn.classList.add('bg-white/5', 'border-white/10', 'text-gray-400');
+        } else {
+            commentEnabled.add(index);
+            toggleBtn.classList.remove('bg-white/5', 'border-white/10', 'text-gray-400');
+            toggleBtn.classList.add('bg-emerald-500/20', 'border-emerald-500/40', 'text-emerald-400');
+        }
+    };
+
+    // Save a LOCAL report to database
+    window.saveLocalReport = async function (index) {
         const report = localReports[index];
         if (!report) return;
 
         const itemEl = document.querySelector(`[data-local-index="${index}"]`);
         if (!itemEl) return;
 
+        // If comment is NOT enabled, save directly without form
+        if (!commentEnabled.has(index)) {
+            await doSaveReport(index, '');
+            return;
+        }
+
         // Check if form already exists
         if (itemEl.querySelector('.save-form')) return;
 
-        // Create inline save form
+        // Create inline save form for comment
         const formHtml = `
             <div class="save-form mt-3 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
                 <label class="block text-sm font-medium text-white mb-2">
                     <i data-lucide="message-square" class="w-4 h-4 inline mr-1"></i>
-                    Observaciones (opcional)
+                    Observaciones
                 </label>
                 <textarea id="save-comment-${index}" rows="2" 
                     class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-gray-500 resize-none focus:outline-none focus:border-emerald-500/50"
@@ -612,11 +643,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         const textarea = document.getElementById(`save-comment-${index}`);
         const observaciones = textarea?.value?.trim() || '';
 
-        // Show saving state
-        const btn = document.querySelector(`[data-local-index="${index}"] .save-form button:last-child`);
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Guardando...';
+        await doSaveReport(index, observaciones);
+    };
+
+    // Core save function (used by both direct save and form save)
+    async function doSaveReport(index, observaciones) {
+        const report = localReports[index];
+        if (!report) return;
+
+        // Show saving state on save button if exists
+        const itemEl = document.querySelector(`[data-local-index="${index}"]`);
+        const saveBtn = itemEl?.querySelector('.save-btn');
+        const originalHtml = saveBtn?.innerHTML;
+
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Guardando...';
             if (window.lucide) lucide.createIcons();
         }
 
@@ -627,32 +669,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                 plan_json: report.plan_json,
                 hash: report.hash,
                 tests_included: report.tests_included,
-                observaciones: observaciones  // Include comment
+                observaciones: observaciones
             });
 
             if (!result.ok) {
                 throw new Error(result.error || 'Error desconocido');
             }
 
-            // Remove from local, reload saved
+            // Remove from local, clear comment state, reload saved
             localReports.splice(index, 1);
+            commentEnabled.delete(index);
             await loadSavedReports();
             renderInboxList();
-
-            // Show success feedback
-            alert('✓ Reporte guardado exitosamente en el servidor');
 
         } catch (err) {
             console.error('[PDFConfig] Save error:', err);
             alert('Error guardando: ' + err.message);
 
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i data-lucide="upload-cloud" class="w-4 h-4"></i> Confirmar y Guardar';
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalHtml || '<i data-lucide="upload-cloud" class="w-5 h-5"></i> Guardar';
                 if (window.lucide) lucide.createIcons();
             }
         }
-    };
+    }
 
     // Download a SAVED report from database
     window.downloadSavedReport = async function (reportId) {
