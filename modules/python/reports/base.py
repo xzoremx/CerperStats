@@ -329,7 +329,7 @@ def create_data_table(data_rows, styles):
     for key in ordered_keys:
         lower_key = key.lower()
         if lower_key in text_cols or 'prueba' in lower_key:
-            weights.append(2.0)  # Wider for text
+            weights.append(5.0)  # Wider for text
         elif lower_key in numeric_cols:
             weights.append(1.0)  # Normal for numbers
         elif lower_key in bool_cols:

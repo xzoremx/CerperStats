@@ -3,10 +3,10 @@
 
 a = Analysis(
     ['report_generator.py'],
-    pathex=['.'],
+    pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=['base', 'monoanalito', 'multianalito'],
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
