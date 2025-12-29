@@ -504,6 +504,28 @@
                             </div>
                         </div>
 
+                        <!-- Analyst Names Section (only visible when parameter is "Analista") -->
+                        <div id="analyst-names-section" class="hidden">
+                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <i data-lucide="users" class="w-5 h-5 text-cyan-400"></i>
+                                Nombres de Analistas
+                                <span class="text-xs text-red-400 font-normal">(Requerido)</span>
+                            </h3>
+                            <div class="glass-card rounded-xl p-5">
+                                <p class="text-sm text-gray-400 mb-4">
+                                    Ingresa el nombre de cada analista que participó en el estudio. Esta información se
+                                    incluirá en los reportes PDF.
+                                </p>
+                                <div id="analyst-inputs-container" class="space-y-3">
+                                    <!-- Dynamic inputs will be inserted here -->
+                                </div>
+                                <div id="analyst-validation-msg" class="mt-3 text-sm text-amber-400 hidden">
+                                    <i data-lucide="alert-triangle" class="w-4 h-4 inline mr-1"></i>
+                                    Por favor completa todos los nombres de analistas antes de generar los reportes.
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Progress Section -->
                         <div id="progress-section" class="glass-card rounded-xl p-5 hidden">
                             <div class="flex items-center justify-between mb-3">

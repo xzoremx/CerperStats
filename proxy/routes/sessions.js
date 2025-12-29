@@ -70,6 +70,7 @@ async function computeSessionMeta(sessionId) {
     tipo_analisis: tipo,
     tipo_dato,
     n_parametros: parametros.length,
+    parametros_unicos: parametros, // List of unique parameter labels
     n_analitos: analitos.length,
     min_lecturas: minLecturas,
     max_lecturas: maxLecturas,
@@ -266,7 +267,7 @@ router.delete('/:sessionId', async (req, res) => {
   } catch (err) {
     try {
       await client.query('ROLLBACK');
-    } catch (_) {}
+    } catch (_) { }
     console.error('[API] Error eliminando sesión profundamente', err);
     res.status(500).json({ ok: false, error: 'db_error' });
   } finally {

@@ -50,6 +50,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const bulkSaveForm = document.getElementById('bulk-save-form');
     const bulkComment = document.getElementById('bulk-comment');
 
+    // Analyst names section elements
+    const analystNamesSection = document.getElementById('analyst-names-section');
+    const analystInputsContainer = document.getElementById('analyst-inputs-container');
+    const analystValidationMsg = document.getElementById('analyst-validation-msg');
+
     // State
     let activeView = 'config';
     let selectedMode = 'unified';
@@ -66,6 +71,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     let selectedItems = new Set();
     // Track which local reports have comment enabled
     let commentEnabled = new Set();
+    // Session parameter info
+    let sessionParametro = '';
+    let sessionNumParametros = 0;
+    let analystNames = []; // Array of analyst names when parametro === 'Analista'
     // === NAVIGATION ===
     function setActiveView(view) {
         activeView = view;
@@ -130,6 +139,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (labNameEl) {
                 labNameEl.textContent = s.lab_nombre || s.lab_key || 'Laboratorio';
             }
+
+            // Hide analito-based options if monoanalito
+            const tipoAnalisis = s.tipo_analisis?.toLowerCase() || '';
+            const isMonoanalito = tipoAnalisis === 'mono' || tipoAnalisis === 'monoanalito';
+
+            if (isMonoanalito) {
+                // Hide "Por Analito" and "Analito + Nivel" cards
+                const byAnalitoCard = document.querySelector('[data-mode="by_analito"]');
+                const byAnalitoNivelCard = document.querySelector('[data-mode="by_analito_nivel"]');
+
+                if (byAnalitoCard) byAnalitoCard.style.display = 'none';
+                if (byAnalitoNivelCard) byAnalitoNivelCard.style.display = 'none';
+            }
+
+            // Check if parameter is "Analista" -> show analyst names form
+            sessionParametro = s.parametro || '';
+            const isAnalista = sessionParametro.toLowerCase() === 'analista';
+
+            if (isAnalista && analystNamesSection) {
+                // Get count of unique parameters (K) from resultsData
+                // For now, we'll count from results once loaded
+                analystNamesSection.classList.remove('hidden');
+            }
         }
 
         // Render lab icon (same pattern as input_data_sheet.html)
@@ -168,7 +200,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (resultsRes?.ok && Array.isArray(resultsRes.data)) {
             resultsData = resultsRes.data;
 
-            // Extract unique analitos and niveles
+            // Extract unique analitos and niveles from results
             resultsData.forEach(r => {
                 if (r.analito) analitos.add(r.analito);
                 if (r.nivel != null) niveles.add(r.nivel);
@@ -181,6 +213,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 sessionText.classList.add('text-yellow-400');
             }
             if (btnGenerate) btnGenerate.disabled = true;
+        }
+
+        // If parameter is Analista, fetch unique parameter labels from inputs
+        if (sessionParametro.toLowerCase() === 'analista' && analystInputsContainer) {
+            try {
+                const metaRes = await window.cerper?.getTestsWithMetadata(sessionId);
+                if (metaRes?.ok && metaRes.meta?.parametros_unicos?.length > 0) {
+                    renderAnalystInputs(metaRes.meta.parametros_unicos);
+                }
+            } catch (err) {
+                console.warn('[PDFConfig] Error fetching parametros_unicos:', err);
+            }
         }
     } catch (err) {
         console.error('[PDFConfig] Error loading data:', err);
@@ -220,6 +264,71 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateSummary();
         });
     });
+
+    // Render analyst name input fields
+    function renderAnalystInputs(paramLabels) {
+        if (!analystInputsContainer) return;
+
+        // Try to load from sessionStorage first
+        const savedNames = sessionStorage.getItem(`analystNames_${sessionId}`);
+        if (savedNames) {
+            try {
+                analystNames = JSON.parse(savedNames);
+            } catch (e) {
+                analystNames = [];
+            }
+        } else {
+            analystNames = new Array(paramLabels.length).fill('');
+        }
+
+        // Table-like structure: Name input | Analista X
+        analystInputsContainer.innerHTML = `
+            <div class="border border-white/10 rounded-lg overflow-hidden">
+                ${paramLabels.map((label, i) => `
+                    <div class="flex items-center border-b border-white/10 last:border-b-0">
+                        <input type="text" 
+                            id="analyst-name-${i}" 
+                            data-index="${i}"
+                            value="${analystNames[i] || ''}"
+                            placeholder="Nombre del analista"
+                            class="analyst-name-input flex-1 px-4 py-3 bg-transparent text-white text-sm placeholder-gray-500 focus:outline-none focus:bg-white/5 transition-colors border-r border-white/10"
+                        >
+                        <div class="w-32 px-4 py-3 text-sm text-gray-400 text-center bg-white/5 flex-shrink-0">
+                            Analista ${i + 1}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        // Add input event listeners to save names
+        analystInputsContainer.querySelectorAll('.analyst-name-input').forEach(input => {
+            input.addEventListener('input', (e) => {
+                const idx = parseInt(e.target.dataset.index);
+                analystNames[idx] = e.target.value.trim();
+                // Save to sessionStorage for persistence
+                sessionStorage.setItem(`analystNames_${sessionId}`, JSON.stringify(analystNames));
+                // Hide validation message when typing
+                if (analystValidationMsg) analystValidationMsg.classList.add('hidden');
+            });
+        });
+
+        if (window.lucide) lucide.createIcons();
+    }
+
+    // Validate analyst names (returns true if all filled, or if not Analista mode)
+    function validateAnalystNames() {
+        if (sessionParametro.toLowerCase() !== 'analista') return true;
+        if (analystNames.length === 0) return false;
+
+        const allFilled = analystNames.every(name => name && name.trim().length > 0);
+
+        if (!allFilled && analystValidationMsg) {
+            analystValidationMsg.classList.remove('hidden');
+        }
+
+        return allFilled;
+    }
 
     function updatePreviews() {
         const analitoCount = analitos.size || 1;
@@ -264,6 +373,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     btnGenerate?.addEventListener('click', async () => {
         if (isGenerating || !sessionId) return;
 
+        // Validate analyst names if required
+        if (!validateAnalystNames()) {
+            // Scroll to analyst section
+            analystNamesSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
         isGenerating = true;
         btnGenerate.disabled = true;
         btnGenerate.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Generando...';
@@ -276,7 +392,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const config = {
             group_by: selectedMode,
             include_graphs: optGraphs?.checked !== false,
-            include_tables: optTables?.checked !== false
+            include_tables: optTables?.checked !== false,
+            // Include analyst names if parametro is Analista
+            analyst_names: sessionParametro.toLowerCase() === 'analista' ? analystNames : null
         };
 
         try {
