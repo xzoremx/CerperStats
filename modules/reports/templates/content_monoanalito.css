@@ -268,9 +268,7 @@ tr:last-child td {
 }
 
 .conclusion-text {
-  font-family: var(--font-serif);
   font-size: 10pt;
-  font-style: italic;
 }
 
 /* Status colors - aplica a toda la caja */
