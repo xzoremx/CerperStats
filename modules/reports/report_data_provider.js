@@ -238,7 +238,9 @@ class ReportDataProvider {
                 cover: this._buildCoverData(resultsSubset, titleSuffix),
                 sections: this._buildSectionsData(resultsSubset, filterAnalito, filterNivel),
                 // Pass logo_path to template
-                logo_path: this.config.logo_path || null
+                logo_path: this.config.logo_path || null,
+                // Pass tipo_analisis to template for table rendering logic
+                tipo_analisis: this.sessionInfo.tipo_analisis || null
             }
         };
     }

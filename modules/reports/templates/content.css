@@ -186,6 +186,54 @@ tr:last-child td {
 }
 
 /* =========================================
+   Monoanalito Tables - No Page Breaks
+   ========================================= */
+.table-wrapper-monoanalito {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  margin-bottom: var(--s-3);
+}
+
+.table-monoanalito {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* =========================================
+   Multianalito Tables - Paginated
+   ========================================= */
+.table-chunk {
+  margin-bottom: var(--s-4);
+  page-break-after: auto;
+}
+
+.table-multianalito {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--s-2);
+}
+
+.table-multianalito thead {
+  display: table-header-group;
+}
+
+/* Repeat header on each page for multianalito chunks */
+.table-chunk:not(:first-of-type) .table-multianalito thead {
+  display: table-header-group;
+}
+
+.table-continuation {
+  font-size: 8pt;
+  font-style: italic;
+  color: var(--color-mid-grey);
+  text-align: center;
+  padding: var(--s-2) 0;
+  margin-top: var(--s-2);
+  border-top: 1px dashed var(--color-border);
+  page-break-after: always;
+}
+
+/* =========================================
    Conclusion - Styled as "Analyst Note"
    ========================================= */
 .conclusion-box {
