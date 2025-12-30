@@ -129,12 +129,7 @@ h4 {
 }
 
 /* =========================================
-   Test Section - Page Break Logic
-   
-   REGLA:
-   - Primera prueba: fluye después del header
-   - Pruebas siguientes: SIEMPRE en nueva página
-   - Título + Descripción + Nivel 1 → SIEMPRE JUNTOS
+   Test Section
    ========================================= */
 .test-section {
   margin-bottom: var(--s-6);
@@ -146,51 +141,53 @@ h4 {
   break-before: page;
 }
 
-/* Test Title - stays with description and first nivel */
+/* Test Title */
 .test-title {
   font-size: 14pt;
   font-family: var(--font-sans);
   font-weight: 600;
   color: var(--color-accent);
   margin-bottom: var(--s-1);
-  page-break-after: avoid;
 }
 
-/* Test Description - stays with title and first nivel */
+/* Test Description */
 .test-description {
   font-size: 9pt;
   color: var(--color-mid-grey);
   margin-bottom: var(--s-3);
   max-width: 800px;
-  page-break-after: avoid;
 }
 
 /* =========================================
-   Nivel Block - Page Break Logic
+   Test Intro Block - AMARRADO
+   
+   REGLA CLAVE:
+   - Header + Título + Descripción + Nivel 1 → SIEMPRE JUNTOS
+   - Este contenedor usa page-break-inside: avoid (MÁS CONFIABLE)
+   ========================================= */
+.test-intro-block {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  margin-bottom: var(--s-5);
+}
+
+/* Contenido del nivel dentro del intro block */
+.nivel-content {
+  /* Sin page-break, ya está dentro del contenedor amarrado */
+}
+
+/* =========================================
+   Nivel Block - Niveles 2, 3, etc.
    
    REGLA:
-   - Header + Título + Descripción + Nivel 1 → SIEMPRE JUNTOS
-   - Niveles 2, 3, etc. → CADA UNO EN PÁGINA NUEVA
+   - Cada nivel adicional en PÁGINA NUEVA
    ========================================= */
-
-/* Base nivel block - avoid breaking content inside */
 .nivel-block {
   margin-bottom: var(--s-5);
   page-break-inside: avoid;
   break-inside: avoid;
-}
-
-/* First nivel-block stays with title+description (NO page break) */
-.nivel-block:first-of-type {
-  page-break-before: avoid;
-  break-before: avoid;
-}
-
-/* Niveles 2, 3, etc. → ALWAYS start on new page */
-.nivel-block:not(:first-of-type) {
   page-break-before: always;
   break-before: page;
-  margin-top: 0;
 }
 
 .nivel-title {

@@ -32,54 +32,99 @@
             const sectionDiv = document.createElement('div');
             sectionDiv.className = 'category-section';
 
-            sectionDiv.innerHTML = `<h2 class="category-header">${section.header}</h2>`;
-
-            section.tests.forEach(test => {
+            section.tests.forEach((test, testIndex) => {
                 const testDiv = document.createElement('div');
-                testDiv.className = 'test-section avoid-break';
+                testDiv.className = 'test-section';
 
-                testDiv.innerHTML += `
-                    <h3 class="test-title">${test.name}</h3>
-                    ${test.description ? `<div class="test-description">${test.description}</div>` : ''}
-                `;
+                test.niveles.forEach((nivel, nivelIndex) => {
+                    if (nivelIndex === 0) {
+                        // ========================================
+                        // PRIMER NIVEL: Amarrado con header + título + descripción
+                        // Todo dentro de un solo contenedor con page-break-inside: avoid
+                        // ========================================
+                        const introBlock = document.createElement('div');
+                        introBlock.className = 'test-intro-block';
 
-                test.niveles.forEach(nivel => {
-                    const nivelDiv = document.createElement('div');
-                    nivelDiv.className = 'nivel-block';
+                        let introHTML = '';
 
-                    // Only show title if it's explicitly set or relevant
-                    if (nivel.nivel) {
-                        nivelDiv.innerHTML += `<div class="nivel-title">Nivel ${nivel.nivel}</div>`;
-                    }
+                        // Header solo en el primer test de la categoría
+                        if (testIndex === 0) {
+                            introHTML += `<h2 class="category-header">${section.header}</h2>`;
+                        }
 
-                    // Table - Multianalito: split large tables into chunks
-                    if (nivel.table && nivel.table.rows && nivel.table.rows.length > 0) {
-                        nivelDiv.innerHTML += renderTable(nivel.table);
-                    }
-
-                    // Conclusion
-                    if (nivel.conclusion) {
-                        nivelDiv.innerHTML += `
-                            <div class="conclusion-box">
-                                <span style="font-weight: bold;">Conclusión:</span>
-                                <span class="status-${nivel.conclusion.status}">${nivel.conclusion.text}</span>
-                            </div>
+                        // Título y descripción del test
+                        introHTML += `
+                            <h3 class="test-title">${test.name}</h3>
+                            ${test.description ? `<div class="test-description">${test.description}</div>` : ''}
                         `;
-                    }
 
-                    // Graphs (array support)
-                    if (nivel.graphs && nivel.graphs.length > 0) {
-                        nivel.graphs.forEach(g => {
-                            nivelDiv.innerHTML += `
-                                <div class="graph-container">
-                                    ${g.label ? `<div style="font-weight:bold;margin-bottom:4px;">${g.label}</div>` : ''}
-                                    <img src="${g.data}" class="graph-img">
+                        // Nivel 1 content
+                        introHTML += '<div class="nivel-content">';
+                        if (nivel.nivel) {
+                            introHTML += `<div class="nivel-title">Nivel ${nivel.nivel}</div>`;
+                        }
+                        if (nivel.table && nivel.table.rows && nivel.table.rows.length > 0) {
+                            introHTML += renderTable(nivel.table);
+                        }
+                        if (nivel.conclusion) {
+                            introHTML += `
+                                <div class="conclusion-box">
+                                    <span style="font-weight: bold;">Conclusión:</span>
+                                    <span class="status-${nivel.conclusion.status}">${nivel.conclusion.text}</span>
                                 </div>
                             `;
-                        });
-                    }
+                        }
+                        if (nivel.graphs && nivel.graphs.length > 0) {
+                            nivel.graphs.forEach(g => {
+                                introHTML += `
+                                    <div class="graph-container">
+                                        ${g.label ? `<div style="font-weight:bold;margin-bottom:4px;">${g.label}</div>` : ''}
+                                        <img src="${g.data}" class="graph-img">
+                                    </div>
+                                `;
+                            });
+                        }
+                        introHTML += '</div>';
 
-                    testDiv.appendChild(nivelDiv);
+                        introBlock.innerHTML = introHTML;
+                        testDiv.appendChild(introBlock);
+
+                    } else {
+                        // ========================================
+                        // NIVELES 2, 3, etc.: Cada uno en su propia página
+                        // ========================================
+                        const nivelDiv = document.createElement('div');
+                        nivelDiv.className = 'nivel-block';
+
+                        let nivelHTML = '';
+                        if (nivel.nivel) {
+                            nivelHTML += `<div class="nivel-title">Nivel ${nivel.nivel}</div>`;
+                        }
+                        if (nivel.table && nivel.table.rows && nivel.table.rows.length > 0) {
+                            nivelHTML += renderTable(nivel.table);
+                        }
+                        if (nivel.conclusion) {
+                            nivelHTML += `
+                                <div class="conclusion-box">
+                                    <span style="font-weight: bold;">Conclusión:</span>
+                                    <span class="status-${nivel.conclusion.status}">${nivel.conclusion.text}</span>
+                                </div>
+                            `;
+                        }
+                        if (nivel.graphs && nivel.graphs.length > 0) {
+                            nivel.graphs.forEach(g => {
+                                nivelHTML += `
+                                    <div class="graph-container">
+                                        ${g.label ? `<div style="font-weight:bold;margin-bottom:4px;">${g.label}</div>` : ''}
+                                        <img src="${g.data}" class="graph-img">
+                                    </div>
+                                `;
+                            });
+                        }
+
+                        nivelDiv.innerHTML = nivelHTML;
+                        testDiv.appendChild(nivelDiv);
+                    }
                 });
 
                 sectionDiv.appendChild(testDiv);
