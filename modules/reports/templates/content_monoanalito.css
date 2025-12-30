@@ -1,0 +1,252 @@
+/**
+ * CerperStats Content Stylesheet - Monoanalito
+ * Aesthetic: Global Investment Bank (J.P. Morgan / Morgan Stanley style)
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+  /* Palette - Institutional & Sharp */
+  --color-black: #111111;
+  --color-dark-grey: #333333;
+  --color-mid-grey: #666666;
+  --color-light-grey: #999999;
+  --color-border: #e0e0e0;
+  --color-bg-subtle: #f9f9f9;
+
+  /* Accent - Conservative Blue */
+  --color-accent: #002d72;
+
+  /* Status Colors (Muted) */
+  --color-success: #107c10;
+  --color-danger: #d13438;
+  --color-warning: #ffaa44;
+
+  /* Typography */
+  --font-serif: 'Cormorant Garamond', 'Times New Roman', serif;
+  --font-sans: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+
+  /* Spacing System */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 16px;
+  --s-4: 24px;
+  --s-5: 32px;
+  --s-6: 48px;
+  --s-8: 64px;
+}
+
+/* =========================================
+   Base
+   ========================================= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 9pt;
+  color: var(--color-dark-grey);
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  background: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* =========================================
+   Print Settings
+   ========================================= */
+@media print {
+  @page {
+    size: A4;
+    margin: 1.5cm 1.5cm 2cm 1.5cm;
+  }
+
+  body {
+    background: none;
+  }
+
+  .avoid-break {
+    page-break-inside: avoid;
+  }
+}
+
+/* =========================================
+   Typography
+   ========================================= */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-serif);
+  color: var(--color-black);
+  margin: 0;
+  font-weight: 600;
+}
+
+/* =========================================
+   Content Styles
+   ========================================= */
+
+/* Category Section */
+.category-section {
+  margin-top: var(--s-4);
+}
+
+/* Category Headers - Editorial Style */
+.category-header {
+  font-size: 24pt;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  color: var(--color-black);
+  border-bottom: 1px solid var(--color-black);
+  margin: 0 0 var(--s-3) 0;
+  padding-bottom: var(--s-2);
+  page-break-after: avoid;
+  orphans: 3;
+  widows: 3;
+}
+
+/* Ensure first test stays with header */
+.category-section > .test-section:first-of-type {
+  page-break-before: avoid;
+}
+
+/* Test Section - Clean */
+.test-section {
+  margin-bottom: var(--s-6);
+}
+
+.test-title {
+  font-size: 14pt;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--color-accent);
+  margin-bottom: var(--s-1);
+}
+
+.test-description {
+  font-size: 9pt;
+  color: var(--color-mid-grey);
+  margin-bottom: var(--s-3);
+  max-width: 800px;
+}
+
+/* Nivel Block */
+.nivel-block {
+  margin-bottom: var(--s-5);
+}
+
+.nivel-title {
+  font-size: 10pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  color: var(--color-black);
+  margin-bottom: var(--s-2);
+  background: var(--color-bg-subtle);
+  padding: var(--s-1) var(--s-2);
+  display: inline-block;
+}
+
+/* =========================================
+   Data Tables - "Financial Report" Style
+   ========================================= */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--s-3);
+}
+
+th {
+  text-align: left;
+  font-size: 7.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-mid-grey);
+  padding: var(--s-1) var(--s-2);
+  border-bottom: 1px solid var(--color-black);
+  vertical-align: bottom;
+}
+
+td {
+  padding: var(--s-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 9pt;
+  color: var(--color-dark-grey);
+  font-variant-numeric: tabular-nums;
+}
+
+tr:last-child td {
+  border-bottom: 1px solid var(--color-black);
+}
+
+/* =========================================
+   Monoanalito Tables - No Page Breaks
+   ========================================= */
+.table-wrapper-monoanalito {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  margin-bottom: var(--s-3);
+}
+
+.table-monoanalito {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* =========================================
+   Conclusion - Styled as "Analyst Note"
+   ========================================= */
+.conclusion-box {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
+  padding: var(--s-3);
+  margin-top: var(--s-3);
+  display: flex;
+  align-items: flex-start;
+}
+
+.conclusion-label {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 8pt;
+  margin-right: var(--s-2);
+  color: var(--color-black);
+  min-width: 80px;
+}
+
+.conclusion-text {
+  font-family: var(--font-serif);
+  font-size: 10pt;
+  font-style: italic;
+  color: var(--color-dark-grey);
+}
+
+.status-success {
+  color: var(--color-success);
+}
+
+.status-danger {
+  color: var(--color-danger);
+}
+
+/* =========================================
+   Graphs
+   ========================================= */
+.graph-container {
+  margin: var(--s-4) 0;
+  padding: var(--s-2);
+  border: 1px solid var(--color-border);
+}
+
+.graph-img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}

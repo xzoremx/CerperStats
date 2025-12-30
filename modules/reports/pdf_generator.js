@@ -23,9 +23,19 @@ async function generatePDF(reportData, outputPath, options = {}) {
         
         const page = await browser.newPage();
         
-        // Resolve path to template - always use the specified template type
-        // cover.html for cover page, content.html for content pages
-        const templateName = templateType === 'cover' ? 'cover.html' : 'content.html';
+        // Resolve path to template
+        // cover.html for cover page
+        // content_monoanalito.html for monoanalito content pages
+        // content_multianalito.html for multianalito content pages
+        let templateName;
+        if (templateType === 'cover') {
+            templateName = 'cover.html';
+        } else {
+            // For content, check tipo_analisis to select the right template
+            const tipoAnalisis = reportData.tipo_analisis || '';
+            const isMultianalito = tipoAnalisis.toLowerCase() === 'multi' || tipoAnalisis.toLowerCase() === 'multianalito';
+            templateName = isMultianalito ? 'content_multianalito.html' : 'content_monoanalito.html';
+        }
         const templatePath = path.join(__dirname, 'templates', templateName);
         
         // Check if template exists

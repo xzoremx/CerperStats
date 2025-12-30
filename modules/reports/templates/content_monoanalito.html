@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contenido - Informe Estadístico</title>
-    <link rel="stylesheet" href="content.css">
+    <title>Contenido - Informe Estadístico (Monoanalito)</title>
+    <link rel="stylesheet" href="content_monoanalito.css">
     <script>
-        // Content renderer
+        // Content renderer - Monoanalito only
         window.renderReport = function (data) {
             document.body.innerHTML = ''; // Clear loading state
             
@@ -15,9 +15,6 @@
             if (data.cover && data.cover.title) {
                 document.title = data.cover.title;
             }
-
-            // Store tipo_analisis globally for table rendering
-            window.tipoAnalisis = data.tipo_analisis || null;
 
             // Render Sections
             if (data.sections && data.sections.length > 0) {
@@ -91,51 +88,12 @@
             container.appendChild(sectionDiv);
         }
 
-        function renderTable(tableData, tipoAnalisis) {
+        function renderTable(tableData) {
             if (!tableData.rows || tableData.rows.length === 0) return '';
 
             const cols = tableData.columns || Object.keys(tableData.rows[0]);
-            const isMultianalito = tipoAnalisis && (tipoAnalisis.toLowerCase() === 'multi' || tipoAnalisis.toLowerCase() === 'multianalito');
             
-            // For multianalito: split large tables into chunks
-            if (isMultianalito && tableData.rows.length > 30) {
-                const MAX_ROWS_PER_PAGE = 30;
-                const chunks = [];
-                for (let i = 0; i < tableData.rows.length; i += MAX_ROWS_PER_PAGE) {
-                    chunks.push(tableData.rows.slice(i, i + MAX_ROWS_PER_PAGE));
-                }
-                
-                let html = '';
-                chunks.forEach((chunk, chunkIndex) => {
-                    const isLastChunk = chunkIndex === chunks.length - 1;
-                    html += `
-                        <div class="table-chunk">
-                            <table class="table-multianalito">
-                                <thead>
-                                    <tr>
-                                        ${cols.map(c => `<th>${c.label || c.key || c}</th>`).join('')}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${chunk.map(row => `
-                                        <tr>
-                                            ${cols.map(c => {
-                                                const key = c.key || c;
-                                                return `<td>${row[key] !== undefined ? row[key] : '-'}</td>`;
-                                            }).join('')}
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                            ${!isLastChunk ? '<div class="table-continuation">(Continúa en la siguiente página)</div>' : ''}
-                        </div>
-                    `;
-                });
-                
-                return html;
-            }
-            
-            // For monoanalito or small multianalito tables: single table with no-break
+            // Monoanalito: single table with no-break
             return `
                 <div class="table-wrapper-monoanalito">
                     <table class="table-monoanalito">
