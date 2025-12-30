@@ -49,32 +49,10 @@ async function generatePDF(reportData, outputPath, options = {}) {
         await page.goto(fileUrl, { waitUntil: 'networkidle0' });
         
         // Typographic logo HTML/CSS with Lucide icon
-        // Corporate header using Cinzel font and institutional navy color
+        // Corporate header - smaller, elegant, institutional style
         // Lucide circle-check icon before text
-        const typographicLogo = `
-            <div style="
-                display: flex;
-                align-items: center;
-                justify-content: flex-end;
-                gap: 8px;
-                padding-right: 10px;
-                padding-top: 5px;
-                background: transparent;
-            ">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0B2F56" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="m9 12 2 2 4-4"></path>
-                </svg>
-                <span style="
-                    font-family: 'Cinzel', 'Trajan Pro', 'Times New Roman', serif;
-                    font-size: 40px;
-                    font-weight: 600;
-                    color: #0B2F56;
-                    letter-spacing: 0.02em;
-                    line-height: 1;
-                ">CERPER</span>
-            </div>
-        `;
+        // Size: 12px icon, 11px text - subtle and professional
+        const typographicLogo = `<div style="width:100%;display:flex;align-items:center;justify-content:flex-end;gap:4px;padding-right:20px;padding-top:8px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0B2F56" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg><span style="font-family:'Times New Roman',serif;font-size:11px;font-weight:600;color:#0B2F56;letter-spacing:0.08em;text-transform:uppercase;">CERPER</span></div>`;
         
         // Inject data into the page
         // The template must have a window.renderReport(data) function
@@ -117,12 +95,8 @@ async function generatePDF(reportData, outputPath, options = {}) {
             `;
             
             // Header with typographic logo (HTML/CSS only, no images)
-            pdfOptions.headerTemplate = `
-                <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap');
-                </style>
-                ${typographicLogo}
-            `;
+            // Using fallback fonts since @import may not work in Puppeteer headerTemplate
+            pdfOptions.headerTemplate = typographicLogo;
         } else {
             // No header/footer for cover page
             pdfOptions.headerTemplate = '<div></div>';

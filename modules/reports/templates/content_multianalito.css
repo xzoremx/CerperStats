@@ -92,9 +92,27 @@ h4 {
    Content Styles
    ========================================= */
 
-/* Category Section */
+/* =========================================
+   Category Section - Page Break Logic
+   
+   REGLA:
+   - Primera categoría: fluye desde el inicio
+   - Categorías siguientes: SIEMPRE en nueva página
+   - Header + Primera Prueba (título+desc+nivel1) → JUNTOS
+   ========================================= */
 .category-section {
   margin-top: var(--s-4);
+}
+
+/* First category section should have minimal top margin */
+.category-section:first-of-type {
+  margin-top: var(--s-2);
+}
+
+/* Categorías 2, 3, etc. → ALWAYS start on new page */
+.category-section:not(:first-of-type) {
+  page-break-before: always;
+  break-before: page;
 }
 
 /* Category Headers - Editorial Style */
@@ -107,52 +125,72 @@ h4 {
   margin: 0 0 var(--s-3) 0;
   padding-bottom: var(--s-2);
   page-break-after: avoid;
-  orphans: 3;
-  widows: 3;
+  page-break-inside: avoid;
 }
 
-/* Ensure first test stays with header */
-.category-section > .test-section:first-of-type {
-  page-break-before: avoid;
-}
-
-/* Test Section - Clean */
+/* =========================================
+   Test Section - Page Break Logic
+   
+   REGLA:
+   - Primera prueba: fluye después del header
+   - Pruebas siguientes: SIEMPRE en nueva página
+   - Título + Descripción + Nivel 1 → SIEMPRE JUNTOS
+   ========================================= */
 .test-section {
   margin-bottom: var(--s-6);
 }
 
+/* Pruebas 2, 3, etc. → ALWAYS start on new page */
+.test-section:not(:first-of-type) {
+  page-break-before: always;
+  break-before: page;
+}
+
+/* Test Title - stays with description and first nivel */
 .test-title {
   font-size: 14pt;
   font-family: var(--font-sans);
   font-weight: 600;
   color: var(--color-accent);
   margin-bottom: var(--s-1);
+  page-break-after: avoid;
 }
 
+/* Test Description - stays with title and first nivel */
 .test-description {
   font-size: 9pt;
   color: var(--color-mid-grey);
   margin-bottom: var(--s-3);
   max-width: 800px;
+  page-break-after: avoid;
 }
 
-/* Nivel Block - Each level starts on a new page (except first) */
+/* =========================================
+   Nivel Block - Page Break Logic
+   
+   REGLA:
+   - Header + Título + Descripción + Nivel 1 → SIEMPRE JUNTOS
+   - Niveles 2, 3, etc. → CADA UNO EN PÁGINA NUEVA
+   ========================================= */
+
+/* Base nivel block - avoid breaking content inside */
 .nivel-block {
   margin-bottom: var(--s-5);
   page-break-inside: avoid;
   break-inside: avoid;
 }
 
-/* Each nivel-block starts on a new page (except the first one) */
+/* First nivel-block stays with title+description (NO page break) */
+.nivel-block:first-of-type {
+  page-break-before: avoid;
+  break-before: avoid;
+}
+
+/* Niveles 2, 3, etc. → ALWAYS start on new page */
 .nivel-block:not(:first-of-type) {
   page-break-before: always;
   break-before: page;
-}
-
-/* First nivel-block of first test should stay with header */
-.test-section:first-of-type > .nivel-block:first-of-type {
-  page-break-before: avoid;
-  break-before: avoid;
+  margin-top: 0;
 }
 
 .nivel-title {
