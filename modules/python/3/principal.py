@@ -45,6 +45,7 @@ if k < 2:
     estadistico = None
     p_value = None
     conclusion = "No es posible evaluar tendencia central: se requieren al menos 2 grupos."
+    conclusion_status = "neutral"
 
 else:
     # ----------- PARAMÉTRICAS (todos normales) -----------
@@ -83,18 +84,20 @@ else:
 
 
     # --------------------------------------------------------
-    # 3. Conclusión textual (idéntica a tu Excel)
+    # 3. Conclusión textual
     # --------------------------------------------------------
     if p_value < 0.05:
         conclusion = (
             f"El valor de P-Value = {p_value:.4f} es menor que el alfa = 0.05, "
-            "por lo que se concluye al 95% de confianza que existen diferencias significativas."
+            "por lo que se concluye al 95% de confianza que existen diferencias significativas en la tendencia central."
         )
+        conclusion_status = "danger"
     else:
         conclusion = (
             f"El valor de P-Value = {p_value:.4f} es mayor que el alfa = 0.05, "
-            "por lo que se concluye al 95% de confianza que no existen diferencias significativas."
+            "por lo que se concluye al 95% de confianza que NO existen diferencias significativas en la tendencia central."
         )
+        conclusion_status = "success"
 
 
 # --------------------------------------------------------

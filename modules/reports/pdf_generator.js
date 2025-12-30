@@ -33,6 +33,16 @@ async function generatePDF(reportData, outputPath, options = {}) {
         const fileUrl = 'file://' + templatePath.replace(/\\/g, '/');
         await page.goto(fileUrl, { waitUntil: 'networkidle0' });
         
+        // Resolve logo path and convert to base64 for header template
+        // Header templates in Puppeteer need base64 data URIs, not file paths
+        const logoPath = path.join(__dirname, 'assets', 'logo_informe.png');
+        let logoBase64 = '';
+        if (fs.existsSync(logoPath)) {
+            const logoBuffer = fs.readFileSync(logoPath);
+            logoBase64 = logoBuffer.toString('base64');
+        }
+        const logoDataUri = logoBase64 ? `data:image/png;base64,${logoBase64}` : '';
+        
         // Inject data into the page
         // The template must have a window.renderReport(data) function
         await page.evaluate((data) => {
@@ -47,14 +57,26 @@ async function generatePDF(reportData, outputPath, options = {}) {
             }
         }, reportData);
         
+        // Add CSS to adjust margins for first page to hide header
+        // The first page (cover) should have no top margin to hide the header area
+        await page.addStyleTag({
+            content: `
+                @page:first {
+                    margin-top: 0 !important;
+                }
+                .cover-page {
+                    margin-top: 0 !important;
+                    padding-top: 0 !important;
+                }
+            `
+        });
+        
         // Wait for any rendering images to load if needed (networkidle0 might cover it)
         // But renderReport might inject img tags with data URIs which are instant.
         
-        // Resolve logo path for header
-        const logoPath = path.join(__dirname, 'assets', 'logo_informe.png');
-        const logoUrl = 'file://' + logoPath.replace(/\\/g, '/');
-        
         // Generate PDF
+        // Note: To hide header on first page, we use CSS @page:first with margin-top: 0
+        // The header will still render but won't be visible due to the margin adjustment
         await page.pdf({
             path: outputPath,
             format: 'A4',
@@ -66,11 +88,11 @@ async function generatePDF(reportData, outputPath, options = {}) {
             },
             printBackground: true,
             displayHeaderFooter: true,
-            headerTemplate: `
+            headerTemplate: logoBase64 ? `
                 <div style="width: 100%; text-align: right; padding-right: 10px;">
-                    <img src="${logoUrl}" style="height: 30px; width: auto; max-width: 80px;" alt="CERPER">
+                    <img src="${logoDataUri}" style="height: 30px; width: auto; max-width: 80px; display: block;" alt="CERPER">
                 </div>
-            `,
+            ` : '<div></div>',
             footerTemplate: `
                 <div style="font-size: 8px; font-family: 'Inter', sans-serif; color: #64748b; text-align: center; width: 100%;">
                     Página <span class="pageNumber"></span> | CerperStats

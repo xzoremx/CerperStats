@@ -378,6 +378,16 @@ def run_single_module(
         conclusion = module_ns.get("conclusion", None)
         if conclusion is not None and not isinstance(conclusion, str):
             conclusion = str(conclusion)
+        
+        # Extraer conclusion_status si el módulo la define (success/danger/neutral)
+        conclusion_status = module_ns.get("conclusion_status", None)
+        if conclusion_status is not None:
+            # Validar que sea uno de los valores permitidos
+            if conclusion_status not in ("success", "danger", "neutral"):
+                log_err(f"[EVAL] conclusion_status inválido: {conclusion_status}, usando 'neutral'")
+                conclusion_status = "neutral"
+        else:
+            conclusion_status = None
 
         # Ejecutar script grรกfico si estรก definido (script_grafico o graph_asset)
         script_grafico = manifest_entry.get("script_grafico") or manifest_entry.get("graph_asset")
@@ -493,6 +503,7 @@ def run_single_module(
             "nombre": nombre,
             "resultado_pc": resultado_pc,
             "conclusion": conclusion,
+            "conclusion_status": conclusion_status,
             "grafico_data": grafico_data,
         }
 

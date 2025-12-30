@@ -47,20 +47,16 @@ function formatValue(value) {
 }
 
 /**
- * Determine status (success/danger/neutral) from conclusion text.
- * IMPORTANT: Check negations FIRST to avoid partial matches (e.g., "no cumple" matching "cumple").
+ * Determine status (success/danger/neutral) from conclusion_status.
+ * Uses the status provided by Python modules. Falls back to 'neutral' if not available.
  */
-function getConclusionStatus(text) {
-    if (!text) return 'neutral';
-    const lower = String(text).toLowerCase();
-    // Check negations FIRST to avoid partial matches
-    if (['no cumple', 'no normal', 'rechazado', 'no homogéneo', 'no aprobado'].some(w => lower.includes(w))) {
-        return 'danger';
+function getConclusionStatus(text, conclusionStatus = null) {
+    // Use conclusion_status from Python if available and valid
+    if (conclusionStatus && ['success', 'danger', 'neutral'].includes(conclusionStatus)) {
+        return conclusionStatus;
     }
-    // Then check positive matches
-    if (['cumple', 'normal', 'sí', 'aprobado', 'homogéneo'].some(w => lower.includes(w))) {
-        return 'success';
-    }
+    
+    // Default to neutral if no status provided
     return 'neutral';
 }
 
@@ -416,12 +412,14 @@ class ReportDataProvider {
                         ['by_analito', 'by_analito_nivel'].includes(groupBy);
                     
                     if (showConclusions && rList.length > 0) {
-                        // Try to find conclusion from any result in the list
-                        const cText = rList.find(r => r.conclusion)?.conclusion || rList[0].conclusion;
+                        // Try to find conclusion and conclusion_status from any result in the list
+                        const resultWithConclusion = rList.find(r => r.conclusion) || rList[0];
+                        const cText = resultWithConclusion?.conclusion;
+                        const cStatus = resultWithConclusion?.conclusion_status || null;
                         if (cText) {
                             conclusion = {
                                 text: cText,
-                                status: getConclusionStatus(cText)
+                                status: getConclusionStatus(cText, cStatus)
                             };
                         }
                     }

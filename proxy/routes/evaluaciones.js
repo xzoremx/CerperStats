@@ -586,9 +586,9 @@ router.post('/run', async (req, res) => {
             try {
               const insertResult = await pool.query(
                 `INSERT INTO results_general
-                 (session_id, catalog_id, resultado_pc, grafico_data, creado_en, usuario_id, nivel, analito, conclusion)
-                 VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, $8)
-                 RETURNING id, nivel, analito, conclusion`,
+                 (session_id, catalog_id, resultado_pc, grafico_data, creado_en, usuario_id, nivel, analito, conclusion, conclusion_status)
+                 VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, $8, $9)
+                 RETURNING id, nivel, analito, conclusion, conclusion_status`,
                 [
                   session_id,
                   r.catalog_id,
@@ -597,7 +597,8 @@ router.post('/run', async (req, res) => {
                   usuario_id,
                   nivel,
                   analito, // Usar el analito real
-                  r.conclusion || null // Conclusión del módulo Python
+                  r.conclusion || null, // Conclusión del módulo Python
+                  r.conclusion_status || null // Status de conclusión del módulo Python
                 ]
               );
               const insertedRow = insertResult.rows[0];
@@ -699,9 +700,9 @@ router.post('/run', async (req, res) => {
           try {
             const insertResult = await pool.query(
               `INSERT INTO results_general
-               (session_id, catalog_id, resultado_pc, grafico_data, creado_en, usuario_id, nivel, analito, conclusion)
-               VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, $8)
-               RETURNING id, nivel, conclusion`,
+               (session_id, catalog_id, resultado_pc, grafico_data, creado_en, usuario_id, nivel, analito, conclusion, conclusion_status)
+               VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, $8, $9)
+               RETURNING id, nivel, conclusion, conclusion_status`,
               [
                 session_id,
                 r.catalog_id,
@@ -710,7 +711,8 @@ router.post('/run', async (req, res) => {
                 usuario_id,
                 nivel,
                 'Analito', // Valor por defecto para monoanalito
-                r.conclusion || null // Conclusión del módulo Python
+                r.conclusion || null, // Conclusión del módulo Python
+                r.conclusion_status || null // Status de conclusión del módulo Python
               ]
             );
             const insertedRow = insertResult.rows[0];

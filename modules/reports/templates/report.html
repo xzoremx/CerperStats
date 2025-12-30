@@ -178,7 +178,7 @@
                 testDiv.className = 'test-section avoid-break';
 
                 testDiv.innerHTML += `
-                    <h3 class="test-title">→ ${test.name}</h3>
+                    <h3 class="test-title">${test.name}</h3>
                     ${test.description ? `<div class="test-description">${test.description}</div>` : ''}
                 `;
 
@@ -188,7 +188,7 @@
 
                     // Only show title if it's explicitly set or relevant
                     if (nivel.nivel) {
-                        nivelDiv.innerHTML += `<div class="nivel-title">- Nivel ${nivel.nivel}</div>`;
+                        nivelDiv.innerHTML += `<div class="nivel-title">Nivel ${nivel.nivel}</div>`;
                     }
 
                     // Table

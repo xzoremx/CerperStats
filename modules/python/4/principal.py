@@ -132,16 +132,19 @@ parametros_no_normales = [r for r in parametros_evaluados if r.get("normalidad")
 
 if len(parametros_evaluados) == 0:
     conclusion = f"No se pudo evaluar normalidad en ningún {tipo_param[:-1] if tipo_param.endswith('s') else tipo_param} (datos insuficientes)"
+    conclusion_status = "neutral"
 elif len(parametros_no_normales) == 0:
     conclusion = (
         f"Todos los {tipo_param} ({len(parametros_normales)}) siguen una distribución normal "
         "al 95% de confianza."
     )
+    conclusion_status = "success"
 elif len(parametros_normales) == 0:
     conclusion = (
         f"Ninguno de los {tipo_param} ({len(parametros_no_normales)}) sigue una distribución normal "
         "al 95% de confianza."
     )
+    conclusion_status = "success"
 else:
     nombres_no_normales = ", ".join([r["parametro"] for r in parametros_no_normales])
     conclusion = (
@@ -149,5 +152,6 @@ else:
         f"{len(parametros_no_normales)} NO siguen distribución normal ({nombres_no_normales}) "
         "al 95% de confianza."
     )
+    conclusion_status = "success"
 
 

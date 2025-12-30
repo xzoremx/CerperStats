@@ -46,6 +46,7 @@ if k < 2:
     estadistico = None
     p_value = None
     conclusion = "No es posible evaluar homogeneidad: se requiere al menos 2 grupos."
+    conclusion_status = "neutral"
 else:
 
     if es_normal_todos:
@@ -87,13 +88,15 @@ else:
     if p_value >= 0.05:
         conclusion = (
             f"El valor de P-Value = {p_value:.4f} es mayor que el alfa = 0.05, "
-            "por lo que se concluye al 95% de confianza que las varianzas son iguales."
+            "por lo que se concluye al 95% de confianza que las varianzas son homogéneas (iguales)."
         )
+        conclusion_status = "success"
     else:
         conclusion = (
             f"El valor de P-Value = {p_value:.4f} es menor que el alfa = 0.05, "
-            "por lo que se concluye al 95% de confianza que existen diferencias significativas entre las varianzas."
+            "por lo que se concluye al 95% de confianza que las varianzas NO son homogéneas (existen diferencias significativas)."
         )
+        conclusion_status = "danger"
 
 
 # ----------------------------------------
