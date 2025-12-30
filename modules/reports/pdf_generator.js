@@ -48,18 +48,33 @@ async function generatePDF(reportData, outputPath, options = {}) {
         const fileUrl = 'file://' + templatePath.replace(/\\/g, '/');
         await page.goto(fileUrl, { waitUntil: 'networkidle0' });
         
-        // Resolve logo path and convert to base64 for header template (only if header/footer is enabled)
-        // Header templates in Puppeteer need base64 data URIs, not file paths
-        let logoBase64 = '';
-        let logoDataUri = '';
-        if (includeHeaderFooter) {
-            const logoPath = path.join(__dirname, 'assets', 'logo_encabezado.png');
-            if (fs.existsSync(logoPath)) {
-                const logoBuffer = fs.readFileSync(logoPath);
-                logoBase64 = logoBuffer.toString('base64');
-                logoDataUri = `data:image/png;base64,${logoBase64}`;
-            }
-        }
+        // Typographic logo HTML/CSS with Lucide icon
+        // Corporate header using Cinzel font and institutional navy color
+        // Lucide circle-check icon before text
+        const typographicLogo = `
+            <div style="
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 8px;
+                padding-right: 10px;
+                padding-top: 5px;
+                background: transparent;
+            ">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0B2F56" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="m9 12 2 2 4-4"></path>
+                </svg>
+                <span style="
+                    font-family: 'Cinzel', 'Trajan Pro', 'Times New Roman', serif;
+                    font-size: 40px;
+                    font-weight: 600;
+                    color: #0B2F56;
+                    letter-spacing: 0.02em;
+                    line-height: 1;
+                ">CERPER</span>
+            </div>
+        `;
         
         // Inject data into the page
         // The template must have a window.renderReport(data) function
@@ -101,16 +116,13 @@ async function generatePDF(reportData, outputPath, options = {}) {
                 </div>
             `;
             
-            // Header with logo if logo exists
-            if (logoBase64) {
-                pdfOptions.headerTemplate = `
-                    <div style="width: 100%; text-align: right; padding-right: 10px; padding-top: 5px;">
-                        <img src="${logoDataUri}" style="height: 30px; width: auto; max-width: 80px; display: block; margin-left: auto;" alt="CERPER">
-                    </div>
-                `;
-            } else {
-                pdfOptions.headerTemplate = '<div></div>';
-            }
+            // Header with typographic logo (HTML/CSS only, no images)
+            pdfOptions.headerTemplate = `
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap');
+                </style>
+                ${typographicLogo}
+            `;
         } else {
             // No header/footer for cover page
             pdfOptions.headerTemplate = '<div></div>';

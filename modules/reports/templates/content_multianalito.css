@@ -136,9 +136,23 @@ h4 {
   max-width: 800px;
 }
 
-/* Nivel Block */
+/* Nivel Block - Each level starts on a new page (except first) */
 .nivel-block {
   margin-bottom: var(--s-5);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* Each nivel-block starts on a new page (except the first one) */
+.nivel-block:not(:first-of-type) {
+  page-break-before: always;
+  break-before: page;
+}
+
+/* First nivel-block of first test should stay with header */
+.test-section:first-of-type > .nivel-block:first-of-type {
+  page-break-before: avoid;
+  break-before: avoid;
 }
 
 .nivel-title {

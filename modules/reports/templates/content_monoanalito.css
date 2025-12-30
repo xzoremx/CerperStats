@@ -97,6 +97,11 @@ h4 {
   margin-top: var(--s-4);
 }
 
+/* First category section should have minimal top margin to avoid page breaks */
+.category-section:first-of-type {
+  margin-top: var(--s-2);
+}
+
 /* Category Headers - Editorial Style */
 .category-header {
   font-size: 24pt;
@@ -107,12 +112,19 @@ h4 {
   margin: 0 0 var(--s-3) 0;
   padding-bottom: var(--s-2);
   page-break-after: avoid;
-  orphans: 3;
-  widows: 3;
+  page-break-inside: avoid;
+  orphans: 1;
+  widows: 1;
 }
 
 /* Ensure first test stays with header */
 .category-section > .test-section:first-of-type {
+  page-break-before: avoid;
+  margin-top: 0;
+}
+
+/* Keep header and first test together */
+.category-header + * {
   page-break-before: avoid;
 }
 
@@ -136,9 +148,23 @@ h4 {
   max-width: 800px;
 }
 
-/* Nivel Block */
+/* Nivel Block - Each level on its own page (except first) */
 .nivel-block {
   margin-bottom: var(--s-5);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* Each nivel-block starts on a new page (except the first one) */
+.nivel-block:not(:first-of-type) {
+  page-break-before: always;
+  break-before: page;
+}
+
+/* First nivel-block of first test should stay with header */
+.test-section:first-of-type > .nivel-block:first-of-type {
+  page-break-before: avoid;
+  break-before: avoid;
 }
 
 .nivel-title {
