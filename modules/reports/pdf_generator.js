@@ -41,6 +41,10 @@ async function generatePDF(reportData, outputPath, options = {}) {
             } else {
                 console.error("window.renderReport function missing in template");
             }
+            // Update document title from cover data
+            if (data.cover && data.cover.title) {
+                document.title = data.cover.title;
+            }
         }, reportData);
         
         // Wait for any rendering images to load if needed (networkidle0 might cover it)

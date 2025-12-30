@@ -4,12 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{title}}</title>
+    <title>Informe Estadístico</title>
     <link rel="stylesheet" href="report.css">
     <script>
         // Data renderer script to separate logic from markup
         window.renderReport = function (data) {
             document.body.innerHTML = ''; // Clear loading state
+            
+            // Update document title from cover data
+            if (data.cover && data.cover.title) {
+                document.title = data.cover.title;
+            }
 
             // 1. Render Cover Page (pass logo_path from data)
             renderCoverPage(data.cover, data.logo_path);
