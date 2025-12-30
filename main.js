@@ -516,10 +516,13 @@ ipcMain.handle("window-is-maximized", () => {
 // === PDF Report Generation ===
 const { spawn } = require('child_process');
 const os = require('os');
+const { generatePDF } = require('./modules/reports/pdf_generator');
 
 /**
- * Generate PDF reports locally using Python subprocess
- * Body: { sessionId, config: { group_by, include_graphs, include_tables } }
+ * Generate PDF reports:
+ * 1. Fetch data from backend
+ * 2. Process data with Python (to get structure)
+ * 3. Render PDF with Puppeteer (Node.js)
  */
 ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
   try {
@@ -545,7 +548,8 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
         include_graphs: config?.include_graphs !== false,
         include_tables: config?.include_tables !== false,
         execution_date: config?.execution_date || null,
-        analyst_names: config?.analyst_names || []
+        analyst_names: config?.analyst_names || [],
+        logo_path_url: config?.logo_path_url || null
       },
       results: resultsRes.data || [],
       graphs: graphsRes.data || []
@@ -558,28 +562,27 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
     const outputDir = path.join(tempDir, `cerper_reports_${timestamp}`);
     const logoPath = path.join(__dirname, 'assets', 'logos', 'cerper_logo.png');
 
+    if (fs.existsSync(logoPath)) {
+      inputData.config.logo_path_url = `file://${logoPath.replace(/\\/g, '/')}`;
+    }
+
     // Write input JSON
     fs.writeFileSync(inputJsonPath, JSON.stringify(inputData, null, 2), 'utf8');
 
     // Create output directory
     fs.mkdirSync(outputDir, { recursive: true });
 
-    // 4. Execute report generator (prefer bundled .exe, fallback to Python script)
+    // 4. Execute Python Data Provider
     const bundledExe = path.join(__dirname, 'modules', 'python', 'reports', 'dist', 'report_generator.exe');
     const pythonScript = path.join(__dirname, 'modules', 'python', 'reports', 'report_generator.py');
 
-    // Determine which executable to use
     const useBundled = fs.existsSync(bundledExe);
     const executable = useBundled ? bundledExe : 'python';
     const args = useBundled
       ? [inputJsonPath, outputDir]
       : [pythonScript, inputJsonPath, outputDir];
 
-    if (fs.existsSync(logoPath)) {
-      args.push('--logo', logoPath);
-    }
-
-    console.log(`[REPORTS] Using ${useBundled ? 'bundled executable' : 'Python script'}`);
+    console.log(`[REPORTS] Using ${useBundled ? 'bundled executable' : 'Python script'} for data processing`);
 
     const pythonResult = await new Promise((resolve, reject) => {
       const reportProcess = spawn(executable, args, {
@@ -596,7 +599,7 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
 
       reportProcess.stderr.on('data', (data) => {
         stderr += data.toString();
-        console.log("[REPORTS:Generator]", data.toString());
+        // console.log("[REPORTS:Python]", data.toString());
       });
 
       reportProcess.on('close', (code) => {
@@ -605,78 +608,68 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
             const result = JSON.parse(stdout.trim());
             resolve(result);
           } catch (e) {
-            reject(new Error(`Failed to parse output: ${stdout}`));
+            reject(new Error(`Failed to parse Python output: ${stdout}`));
           }
         } else {
-          reject(new Error(`Report generator failed with code ${code}: ${stderr}`));
+          reject(new Error(`Python data provider failed with code ${code}: ${stderr}`));
         }
       });
 
       reportProcess.on('error', (err) => {
-        reject(new Error(`Failed to start report generator: ${err.message}`));
+        reject(new Error(`Failed to start Python process: ${err.message}`));
       });
     });
 
-    // Handle the new output format from Python: {ok, generated, count}
     if (!pythonResult.ok) {
-      throw new Error(pythonResult.error || 'Report generation failed');
+      throw new Error(pythonResult.error || 'Report data generation failed');
     }
 
-    const generatedPdfs = pythonResult.generated || [];
-    console.log("[REPORTS] Generated:", generatedPdfs.length, "PDFs");
+    const reportsData = pythonResult.reports || [];
+    console.log("[REPORTS] Python prepared data for", reportsData.length, "reports. Rendering PDFs...");
 
-    // 5. Return generated PDFs (without uploading to server)
-    // User will explicitly save via 'save-report-to-db' handler
+    // 5. Render PDFs with Puppeteer
     const generatedReports = [];
 
-    for (const pdfInfo of generatedPdfs) {
+    for (const reportItem of reportsData) {
       try {
-        const pdfPath = pdfInfo.path;
+        const { filename, data } = reportItem;
+        const pdfPath = path.join(outputDir, filename);
+
+        // --- PUPPETEER GENERATION ---
+        await generatePDF(data, pdfPath);
+        // ----------------------------
+
         const pdfBuffer = fs.readFileSync(pdfPath);
         const pdfBase64 = pdfBuffer.toString('base64');
         const pdfSizeBytes = pdfBuffer.length;
 
-        // Determine tests included from results
+        // Simplified tests included logic
         const testsIncluded = [...new Set(
-          resultsRes.data
-            .filter(r => {
-              if (config.group_by === 'by_analito' && pdfInfo.analito) {
-                return r.analito === pdfInfo.analito;
-              }
-              if (config.group_by === 'by_nivel' && pdfInfo.nivel) {
-                return r.nivel === pdfInfo.nivel;
-              }
-              return true;
-            })
-            .map(r => r.catalog_id)
-            .filter(Boolean)
+          resultsRes.data.map(r => r.catalog_id).filter(Boolean)
         )];
 
         generatedReports.push({
-          // Unique temp ID for frontend tracking
           temp_id: `temp_${Date.now()}_${generatedReports.length}`,
-          filename: pdfInfo.filename,
-          analito: pdfInfo.analito || null,
-          nivel: pdfInfo.nivel || null,
-          tests_count: pdfInfo.tests_count,
-          hash: pdfInfo.hash,
+          filename: filename,
+          analito: null, // Could extract if needed
+          nivel: null,
+          tests_count: data.sections ? data.sections.reduce((acc, s) => acc + s.tests.length, 0) : 0,
+          hash: require('crypto').createHash('sha256').update(pdfBuffer).digest('hex'),
           pdf_base64: pdfBase64,
           pdf_size_bytes: pdfSizeBytes,
           tipo_informe: config.group_by,
           plan_json: {
             ...config,
-            analito: pdfInfo.analito,
-            nivel: pdfInfo.nivel,
             generated_at: new Date().toISOString()
           },
           tests_included: testsIncluded,
-          saved: false  // Not yet saved to DB
+          saved: false
         });
 
         // Clean up local PDF file
         try { fs.unlinkSync(pdfPath); } catch (_) { }
-      } catch (readErr) {
-        console.error("[REPORTS] Failed to read PDF:", pdfInfo.filename, readErr);
+      } catch (renderErr) {
+        console.error("[REPORTS] Failed to render PDF:", reportItem.filename, renderErr);
       }
     }
 
@@ -686,7 +679,7 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
       fs.rmdirSync(outputDir, { recursive: true });
     } catch (_) { }
 
-    console.log("[REPORTS] Prepared:", generatedReports.length, "reports for user review");
+    console.log("[REPORTS] Successfully generated:", generatedReports.length, "reports");
     return { ok: true, reports: generatedReports };
   } catch (err) {
     console.error("[REPORTS] Error generating reports:", err);

@@ -1,0 +1,468 @@
+/**
+ * CerperStats Premium Report Stylesheet
+ * Aesthetic: Global Investment Bank (J.P. Morgan / Morgan Stanley style)
+ * 
+ * Design Principles:
+ * - Ultra-clean typography (Serif headings + Sans-serif body)
+ * - Minimalist grid layouts
+ * - High contrast black/grey on white
+ * - Precision lines (1px borders)
+ * - "Quiet" luxury
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+  /* Palette - Institutional & Sharp */
+  --color-black: #111111;
+  --color-dark-grey: #333333;
+  --color-mid-grey: #666666;
+  --color-light-grey: #999999;
+  --color-border: #e0e0e0;
+  --color-bg-subtle: #f9f9f9;
+
+  /* Accent - Conservative Blue */
+  --color-accent: #002d72;
+  /* Deep Navy similar to Chase/Morgan */
+
+  /* Status Colors (Muted) */
+  --color-success: #107c10;
+  --color-danger: #d13438;
+  --color-warning: #ffaa44;
+
+  /* Typography */
+  --font-serif: 'Cormorant Garamond', 'Times New Roman', serif;
+  --font-sans: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+
+  /* Spacing System */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 16px;
+  --s-4: 24px;
+  --s-5: 32px;
+  --s-6: 48px;
+  --s-8: 64px;
+}
+
+/* =========================================
+   Base
+   ========================================= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 9pt;
+  /* Slightly smaller for professional density */
+  color: var(--color-dark-grey);
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  background: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* =========================================
+   Print Settings
+   ========================================= */
+@media print {
+  @page {
+    size: A4;
+    margin: 1.5cm 1.5cm 2cm 1.5cm;
+    /* Tighter margins */
+  }
+
+  body {
+    background: none;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+
+  .avoid-break {
+    page-break-inside: avoid;
+  }
+}
+
+/* =========================================
+   Typography
+   ========================================= */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-serif);
+  color: var(--color-black);
+  margin: 0;
+  font-weight: 600;
+}
+
+/* =========================================
+   Cover Page - Minimalist & Bold
+   ========================================= */
+.cover-page {
+  position: relative;
+  min-height: 95vh;
+  padding-top: var(--s-8);
+}
+
+/* Top Brand Bar - Minimal */
+.cover-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background-color: var(--color-black);
+}
+
+.cover-header {
+  margin-bottom: var(--s-8);
+}
+
+.logo {
+  height: 2.5cm;
+  width: auto;
+  margin: 0 auto var(--s-6) auto;
+  display: block;
+}
+
+h1.report-title {
+  font-size: 38pt;
+  line-height: 1.1;
+  font-weight: 500;
+  letter-spacing: -0.5px;
+  color: var(--color-black);
+  margin-bottom: var(--s-3);
+  border-bottom: 2px solid var(--color-black);
+  padding-bottom: var(--s-4);
+}
+
+.report-subtitle {
+  font-family: var(--font-sans);
+  font-size: 8pt;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--color-mid-grey);
+  font-weight: 600;
+  margin-top: var(--s-2);
+}
+
+/* Session Info - Grid Layout (No background boxes) */
+.session-info {
+  margin-top: var(--s-6);
+  font-family: var(--font-sans);
+}
+
+.section-subtitle {
+  font-family: var(--font-serif);
+  font-size: 11pt;
+  color: var(--color-black);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  border-bottom: 2px solid var(--color-accent);
+  display: inline-block;
+  margin-bottom: var(--s-3);
+  padding-bottom: 2px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: var(--s-2) var(--s-4);
+  margin-bottom: 0;
+}
+
+.info-item {
+  display: contents;
+  /* Allows children to participate in grid */
+}
+
+.info-label {
+  font-size: 8pt;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-mid-grey);
+  font-weight: 600;
+  padding-top: 4px;
+}
+
+.info-value {
+  font-size: 11pt;
+  color: var(--color-black);
+  padding-bottom: var(--s-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Participants Table - Clean horizontal lines */
+.participants-section {
+  margin-top: var(--s-6);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.participants-header {
+  font-size: 9pt;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  margin-bottom: var(--s-3);
+  color: var(--color-black);
+}
+
+.participants-table {
+  width: 100%;
+  border-top: 2px solid var(--color-black);
+}
+
+.participants-table th {
+  text-align: left;
+  font-size: 8pt;
+  text-transform: uppercase;
+  color: var(--color-mid-grey);
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--color-black);
+  font-weight: 600;
+}
+
+.participants-table td {
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 10pt;
+}
+
+/* Tests List on Cover */
+.tests-list-section {
+  margin-top: var(--s-6);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.tests-list-header {
+  font-family: var(--font-serif);
+  font-size: 14pt;
+  margin-bottom: var(--s-2);
+  color: var(--color-black);
+  font-weight: 600;
+}
+
+.tests-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tests-list li {
+  padding: var(--s-1) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 10pt;
+  color: var(--color-dark-grey);
+}
+
+.tests-list li:last-child {
+  border-bottom: none;
+}
+
+
+/* =========================================
+   Content Styles
+   ========================================= */
+
+/* Category Headers - Editorial Style */
+.category-header {
+  font-size: 24pt;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  color: var(--color-black);
+  border-bottom: 1px solid var(--color-black);
+  margin: var(--s-6) 0 var(--s-4) 0;
+  padding-bottom: var(--s-2);
+  page-break-after: avoid;
+}
+
+/* Test Section - Clean */
+.test-section {
+  margin-bottom: var(--s-6);
+}
+
+.test-title {
+  font-size: 14pt;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--color-accent);
+  margin-bottom: var(--s-1);
+}
+
+.test-description {
+  font-size: 9pt;
+  color: var(--color-mid-grey);
+  margin-bottom: var(--s-3);
+  max-width: 800px;
+}
+
+/* Nivel Block */
+.nivel-block {
+  margin-bottom: var(--s-5);
+}
+
+.nivel-title {
+  font-size: 10pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  color: var(--color-black);
+  margin-bottom: var(--s-2);
+  background: var(--color-bg-subtle);
+  padding: var(--s-1) var(--s-2);
+  display: inline-block;
+}
+
+/* =========================================
+   Data Tables - "Financial Report" Style
+   ========================================= */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--s-3);
+}
+
+th {
+  text-align: left;
+  font-size: 7.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-mid-grey);
+  padding: var(--s-1) var(--s-2);
+  border-bottom: 1px solid var(--color-black);
+  /* Strong header line */
+  vertical-align: bottom;
+}
+
+td {
+  padding: var(--s-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 9pt;
+  color: var(--color-dark-grey);
+  font-variant-numeric: tabular-nums;
+  /* Align numbers perfectly */
+}
+
+tr:last-child td {
+  border-bottom: 1px solid var(--color-black);
+  /* Strong footer line */
+}
+
+/* Alternate row styling? No, keep it clean white for high-end look */
+/* align numbers to right if needed, but centering is safe for general data */
+
+/* =========================================
+   Conclusion - Styled as "Analyst Note"
+   ========================================= */
+.conclusion-box {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
+  padding: var(--s-3);
+  margin-top: var(--s-3);
+  display: flex;
+  align-items: flex-start;
+}
+
+.conclusion-label {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 8pt;
+  margin-right: var(--s-2);
+  color: var(--color-black);
+  min-width: 80px;
+}
+
+.conclusion-text {
+  font-family: var(--font-serif);
+  font-size: 10pt;
+  font-style: italic;
+  color: var(--color-dark-grey);
+}
+
+.status-success {
+  color: var(--color-success);
+}
+
+.status-danger {
+  color: var(--color-danger);
+}
+
+/* =========================================
+   Signatures
+   ========================================= */
+.signature-section {
+  margin-top: var(--s-8);
+  page-break-inside: avoid;
+}
+
+.signature-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-6);
+  margin-top: var(--s-5);
+}
+
+.sig-block {
+  text-align: left;
+  /* Signatures often left aligned in formal docs */
+}
+
+.sig-line {
+  border-top: 1px solid var(--color-black);
+  width: 100%;
+  margin-bottom: var(--s-2);
+}
+
+.sig-name {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 9pt;
+  letter-spacing: 0.5px;
+  color: var(--color-black);
+}
+
+.sig-role {
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--color-mid-grey);
+  font-size: 9pt;
+}
+
+/* Revision control - tiny footer style */
+.revision-block {
+  margin-top: var(--s-6);
+  font-size: 7pt;
+  color: var(--color-light-grey);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--s-2);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* =========================================
+   Graphs
+   ========================================= */
+.graph-container {
+  margin: var(--s-4) 0;
+  padding: var(--s-2);
+  border: 1px solid var(--color-border);
+}
+
+.graph-img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}

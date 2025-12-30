@@ -1,0 +1,34 @@
+{
+    "session_id": 999,
+    "session_info": {
+        "lab_key": "LAB123",
+        "lab_nombre": "Laboratorio Test",
+        "metodo": "Método Standard",
+        "producto": "Producto X",
+        "expediente": "EXP-2024",
+        "execution_date": "29/12/2024",
+        "tipo_analisis": "mono",
+        "supervisor": "Ing. Supervisor"
+    },
+    "config": {
+        "group_by": "unified",
+        "include_graphs": true,
+        "include_tables": true,
+        "analyst_names": [
+            "Juan Perez",
+            "Maria Gomez"
+        ]
+    },
+    "results": [
+        {
+            "catalog_id": 101,
+            "titulo": "Prueba de Normalidad",
+            "categoria": "Tratamiento de Resultados",
+            "descripcion": "Shapiro Wilk desc",
+            "nivel": 1,
+            "resultado_pc": "[{\"n\": 10, \"p_value\": 0.051, \"normalidad\": \"Sí\"}]",
+            "conclusion": "Cumple con normalidad"
+        }
+    ],
+    "graphs": []
+}

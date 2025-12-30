@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <link rel="stylesheet" href="report.css">
+    <script>
+        // Data renderer script to separate logic from markup
+        window.renderReport = function (data) {
+            document.body.innerHTML = ''; // Clear loading state
+
+            // 1. Render Cover Page
+            renderCoverPage(data.cover);
+
+            // 2. Render Sections
+            if (data.sections && data.sections.length > 0) {
+                const container = document.createElement('div');
+                container.className = 'content-container';
+                document.body.appendChild(container); // Append after cover
+
+                data.sections.forEach(section => {
+                    renderCategorySection(section, container);
+                });
+            }
+        };
+
+        function renderCoverPage(coverData) {
+            if (!coverData) return;
+
+            const div = document.createElement('div');
+            div.className = 'cover-page page-break';
+
+            // --- GROUP 1: General Info (Expediente, Fecha, Lab) ---
+            const generalInfo = [
+                coverData.lab ? ['Laboratorio', coverData.lab] : null,
+                coverData.expediente ? ['N° Expediente', coverData.expediente] : null,
+                ['Fecha de Ejecución', coverData.fecha],
+            ].filter(Boolean);
+
+            // --- GROUP 2: Technical/Sample Info (Ensayo, Producto, Metodo, etc) ---
+            const technicalInfo = [
+                coverData.ensayo ? ['Ensayo', coverData.ensayo] : null,
+                coverData.producto ? ['Producto', coverData.producto] : null,
+                coverData.metodo ? ['Método de Ensayo', coverData.metodo] : null,
+                coverData.unidad ? ['Unidad de Medida', coverData.unidad] : null,
+                coverData.parametro ? ['Parámetro', coverData.parametro] : null,
+            ].filter(Boolean);
+
+            const renderGridItems = (items) => items.map(([label, value]) => `
+                <div class="info-item">
+                    <span class="info-label">${label}</span>
+                    <span class="info-value">${value}</span>
+                </div>
+            `).join('');
+
+            // --- Participants Section ---
+            let participantsHtml = '';
+            if (coverData.participants && coverData.participants.length > 0) {
+                participantsHtml = `
+                    <div class="participants-section">
+                        <div class="participants-header">Equipo de Análisis</div>
+                        <table class="participants-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 25%">Rol / Índice</th>
+                                    <th>Nombre del Analista</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${coverData.participants.map(p => `
+                                    <tr>
+                                        <td>${p.index}</td>
+                                        <td>${p.name}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            // --- Tests List (Optional, kept compact) ---
+            let testsListHtml = '';
+            if (coverData.tests_list && coverData.tests_list.length > 0) {
+                testsListHtml = `
+                    <div class="tests-list-section">
+                        <div class="tests-list-header">Alcance del Informe</div>
+                        ${coverData.tests_list.map(cat => `
+                            <div style="margin-bottom: 0.5rem;">
+                                <div style="font-weight: 600; font-size: 8pt; color: #666; text-transform:uppercase;">${cat.header}</div>
+                                <ul class="tests-list">
+                                    ${cat.tests.map(t => `<li>${t}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            div.innerHTML = `
+                <!-- BRANDING HEADER -->
+                <div class="cover-header">
+                    <img src="file:///c:/Users/renat/Desktop/Proyectos Electron/CerperStats/assets/logos/logo_informe.png" class="logo" alt="CERPER">
+                    <h1 class="report-title">${coverData.title}</h1>
+                    <div class="report-subtitle">Reporte Generado por CerperStats</div>
+                </div>
+                
+                <!-- MAIN METADATA GRID -->
+                <div class="session-info">
+                    
+                    ${generalInfo.length > 0 ? `
+                        <div style="margin-bottom: 2rem;">
+                            <div class="section-subtitle">Información General</div>
+                            <div class="info-grid">
+                                ${renderGridItems(generalInfo)}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${technicalInfo.length > 0 ? `
+                        <div style="margin-bottom: 2rem;">
+                            <div class="section-subtitle">Detalles de la Muestra y Metodología</div>
+                            <div class="info-grid">
+                                ${renderGridItems(technicalInfo)}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${participantsHtml}
+                    ${testsListHtml}
+                </div>
+
+                <!-- SIGNATURES (Bottom) -->
+                <div class="signature-section">
+                    <div class="signature-grid">
+                        <div class="sig-block">
+                            <div class="sig-line"></div>
+                            <div class="sig-name">${coverData.signatures?.supervisor_name || '_____________'}</div>
+                            <div class="sig-role">${coverData.signatures?.supervisor_role || 'Supervisor / Responsable de Laboratorio'}</div>
+                        </div>
+                        <div class="sig-block">
+                            <div class="sig-line"></div>
+                            <div class="sig-name">Soraya Guzman</div>
+                            <div class="sig-role">Subgerente de laboratorios / Jefe de laboratorio / Jefe de operaciones</div>
+                        </div>
+                    </div>
+                    
+                    <div class="revision-block">
+                        <div>REVISADO POR: _______________________</div>
+                        <div>FECHA: ________________</div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(div);
+        }
+
+        function renderCategorySection(section, container) {
+            const sectionDiv = document.createElement('div');
+            sectionDiv.className = 'category-section';
+
+            sectionDiv.innerHTML = `<h2 class="category-header">${section.header}</h2>`;
+
+            section.tests.forEach(test => {
+                const testDiv = document.createElement('div');
+                testDiv.className = 'test-section avoid-break';
+
+                testDiv.innerHTML += `
+                    <h3 class="test-title">→ ${test.name}</h3>
+                    ${test.description ? `<div class="test-description">${test.description}</div>` : ''}
+                `;
+
+                test.niveles.forEach(nivel => {
+                    const nivelDiv = document.createElement('div');
+                    nivelDiv.className = 'nivel-block';
+
+                    // Only show title if it's explicitly set or relevant
+                    if (nivel.nivel) {
+                        nivelDiv.innerHTML += `<div class="nivel-title">- Nivel ${nivel.nivel}</div>`;
+                    }
+
+                    // Table
+                    if (nivel.table && nivel.table.rows && nivel.table.rows.length > 0) {
+                        nivelDiv.innerHTML += renderTable(nivel.table);
+                    }
+
+                    // Conclusion
+                    if (nivel.conclusion) {
+                        nivelDiv.innerHTML += `
+                            <div class="conclusion-box">
+                                <span style="font-weight: bold;">Conclusión:</span>
+                                <span class="status-${nivel.conclusion.status}">${nivel.conclusion.text}</span>
+                            </div>
+                        `;
+                    }
+
+                    // Graphs (array support)
+                    if (nivel.graphs && nivel.graphs.length > 0) {
+                        nivel.graphs.forEach(g => {
+                            nivelDiv.innerHTML += `
+                                <div class="graph-container">
+                                    ${g.label ? `<div style="font-weight:bold;margin-bottom:4px;">${g.label}</div>` : ''}
+                                    <img src="${g.data}" class="graph-img">
+                                </div>
+                            `;
+                        });
+                    }
+
+                    testDiv.appendChild(nivelDiv);
+                });
+
+                sectionDiv.appendChild(testDiv);
+            });
+
+            container.appendChild(sectionDiv);
+        }
+
+        function renderTable(tableData) {
+            if (!tableData.rows || tableData.rows.length === 0) return '';
+
+            const cols = tableData.columns || Object.keys(tableData.rows[0]);
+
+            return `
+                <table>
+                    <thead>
+                        <tr>
+                            ${cols.map(c => `<th>${c.label || c.key || c}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableData.rows.map(row => `
+                            <tr>
+                                ${cols.map(c => {
+                const key = c.key || c;
+                return `<td>${row[key] !== undefined ? row[key] : '-'}</td>`;
+            }).join('')}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+    </script>
+</head>
+
+<body>
+    <div style="text-align:center; padding: 2rem; color: #666;">
+        Generando reporte...
+    </div>
+</body>
+
+</html>
