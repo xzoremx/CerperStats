@@ -258,29 +258,27 @@ tr:last-child td {
   margin-top: var(--s-3);
   display: flex;
   align-items: flex-start;
+  gap: var(--s-2); /* Espacio entre label y texto */
 }
 
 .conclusion-label {
   font-weight: 700;
-  text-transform: uppercase;
-  font-size: 8pt;
-  margin-right: var(--s-2);
-  color: var(--color-black);
-  min-width: 80px;
+  font-size: 10pt;
+  flex-shrink: 0;
 }
 
 .conclusion-text {
   font-family: var(--font-serif);
   font-size: 10pt;
   font-style: italic;
-  color: var(--color-dark-grey);
 }
 
-.status-success {
+/* Status colors - aplica a toda la caja */
+.conclusion-box.status-success {
   color: var(--color-success);
 }
 
-.status-danger {
+.conclusion-box.status-danger {
   color: var(--color-danger);
 }
 

@@ -48,11 +48,9 @@ async function generatePDF(reportData, outputPath, options = {}) {
         const fileUrl = 'file://' + templatePath.replace(/\\/g, '/');
         await page.goto(fileUrl, { waitUntil: 'networkidle0' });
         
-        // Typographic logo HTML/CSS with Lucide icon
-        // Corporate header - smaller, elegant, institutional style
-        // Lucide circle-check icon before text
-        // Size: 12px icon, 11px text - subtle and professional
-        const typographicLogo = `<div style="width:100%;display:flex;align-items:center;justify-content:flex-end;gap:4px;padding-right:20px;padding-top:8px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0B2F56" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg><span style="font-family:'Times New Roman',serif;font-size:11px;font-weight:600;color:#0B2F56;letter-spacing:0.08em;text-transform:uppercase;">CERPER</span></div>`;
+        // Typographic logo HTML/CSS - text only
+        // Corporate header - elegant, institutional style
+        const typographicLogo = `<div style="width:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:20px;padding-top:8px;"><span style="font-family:'Times New Roman',serif;font-size:11px;font-weight:600;color:#0B2F56;letter-spacing:0.08em;text-transform:uppercase;">CERPER</span></div>`;
         
         // Inject data into the page
         // The template must have a window.renderReport(data) function

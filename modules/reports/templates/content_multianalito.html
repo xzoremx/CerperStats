@@ -68,9 +68,9 @@
                         }
                         if (nivel.conclusion) {
                             introHTML += `
-                                <div class="conclusion-box">
-                                    <span style="font-weight: bold;">Conclusión:</span>
-                                    <span class="status-${nivel.conclusion.status}">${nivel.conclusion.text}</span>
+                                <div class="conclusion-box status-${nivel.conclusion.status}">
+                                    <span class="conclusion-label">Conclusión:</span>
+                                    <span class="conclusion-text">${nivel.conclusion.text}</span>
                                 </div>
                             `;
                         }
@@ -105,9 +105,9 @@
                         }
                         if (nivel.conclusion) {
                             nivelHTML += `
-                                <div class="conclusion-box">
-                                    <span style="font-weight: bold;">Conclusión:</span>
-                                    <span class="status-${nivel.conclusion.status}">${nivel.conclusion.text}</span>
+                                <div class="conclusion-box status-${nivel.conclusion.status}">
+                                    <span class="conclusion-label">Conclusión:</span>
+                                    <span class="conclusion-text">${nivel.conclusion.text}</span>
                                 </div>
                             `;
                         }
