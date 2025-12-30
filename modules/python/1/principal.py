@@ -35,7 +35,7 @@ for col in df_ingreso.columns:
     if n == 0:
         rows.append({
             "parametro": col,
-            "n": 0,
+            "n": "0",
             "media": np.nan,
             "desviacion": np.nan,
             "asimetria": np.nan,
@@ -90,7 +90,7 @@ for col in df_ingreso.columns:
 
     rows.append({
         "parametro": col,
-        "n": n,
+        "n": str(n),
         "media": media,
         "desviacion": desv,
         "asimetria": asim,

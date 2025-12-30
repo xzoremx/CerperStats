@@ -35,12 +35,26 @@ function getCategoryHeader(categoria) {
 
 /**
  * Format a value for display in tables.
+ * Column 'n' comes as string from Python, so it's displayed as-is.
+ * Other numbers are formatted with appropriate decimal places.
  */
-function formatValue(value) {
+function formatValue(value, key = null) {
     if (value === null || value === undefined) return '-';
     if (typeof value === 'boolean') return value ? 'Sí' : 'No';
+    if (typeof value === 'string') {
+        // Column 'n' comes as string from Python, display as-is
+        if (key && key.toLowerCase() === 'n') {
+            return value;
+        }
+        // Other strings displayed as-is
+        return value;
+    }
     if (typeof value === 'number') {
         if (Number.isNaN(value)) return '-';
+        // Integers displayed without decimals
+        if (Number.isInteger(value)) {
+            return String(value);
+        }
         return Math.abs(value) < 1000 ? value.toFixed(4) : value.toFixed(2);
     }
     return String(value);
@@ -366,7 +380,7 @@ class ReportDataProvider {
                         for (const row of rawPc) {
                             const formatted = {};
                             for (const [k, v] of Object.entries(row)) {
-                                formatted[k] = formatValue(v);
+                                formatted[k] = formatValue(v, k);
                                 colsSet.add(k);
                             }
                             tableRows.push(formatted);
