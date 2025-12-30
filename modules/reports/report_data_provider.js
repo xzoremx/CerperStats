@@ -400,13 +400,24 @@ class ReportDataProvider {
                         }
                     }
 
-                    // Conclusion (only for by_analito modes)
+                    // Conclusion logic:
+                    // - For multianalito: only show when grouped by analito (filterAnalito !== null)
+                    // - For monoanalito: always show when it exists
                     let conclusion = null;
+                    const tipoAnalisis = (this.sessionInfo.tipo_analisis || '').toLowerCase();
+                    const isMultianalito = tipoAnalisis === 'multi' || tipoAnalisis === 'multianalito';
                     const groupBy = this.config.group_by || 'unified';
-                    const showConclusions = filterAnalito !== null || ['by_analito', 'by_analito_nivel'].includes(groupBy);
-
+                    
+                    // Show conclusions if:
+                    // 1. It's monoanalito (always show), OR
+                    // 2. It's multianalito AND we're filtering by analito (filterAnalito !== null) OR grouping by analito
+                    const showConclusions = !isMultianalito || 
+                        filterAnalito !== null || 
+                        ['by_analito', 'by_analito_nivel'].includes(groupBy);
+                    
                     if (showConclusions && rList.length > 0) {
-                        const cText = rList[0].conclusion;
+                        // Try to find conclusion from any result in the list
+                        const cText = rList.find(r => r.conclusion)?.conclusion || rList[0].conclusion;
                         if (cText) {
                             conclusion = {
                                 text: cText,

@@ -46,6 +46,10 @@ async function generatePDF(reportData, outputPath, options = {}) {
         // Wait for any rendering images to load if needed (networkidle0 might cover it)
         // But renderReport might inject img tags with data URIs which are instant.
         
+        // Resolve logo path for header
+        const logoPath = path.join(__dirname, 'assets', 'logo_informe.png');
+        const logoUrl = 'file://' + logoPath.replace(/\\/g, '/');
+        
         // Generate PDF
         await page.pdf({
             path: outputPath,
@@ -58,10 +62,14 @@ async function generatePDF(reportData, outputPath, options = {}) {
             },
             printBackground: true,
             displayHeaderFooter: true,
-            headerTemplate: '<div></div>', // Empty header
+            headerTemplate: `
+                <div style="width: 100%; text-align: right; padding-right: 10px;">
+                    <img src="${logoUrl}" style="height: 30px; width: auto; max-width: 80px;" alt="CERPER">
+                </div>
+            `,
             footerTemplate: `
                 <div style="font-size: 8px; font-family: 'Inter', sans-serif; color: #64748b; text-align: center; width: 100%;">
-                    Página <span class="pageNumber"></span> | Generado por CerperStats
+                    Página <span class="pageNumber"></span> | CerperStats
                 </div>
             `,
         });
