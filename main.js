@@ -514,15 +514,15 @@ ipcMain.handle("window-is-maximized", () => {
 });
 
 // === PDF Report Generation ===
-const { spawn } = require('child_process');
 const os = require('os');
 const { generatePDF } = require('./modules/reports/pdf_generator');
+const { ReportDataProvider } = require('./modules/reports/report_data_provider');
 
 /**
  * Generate PDF reports:
  * 1. Fetch data from backend
- * 2. Process data with Python (to get structure)
- * 3. Render PDF with Puppeteer (Node.js)
+ * 2. Transform data with JavaScript (no Python needed)
+ * 3. Render PDF with Puppeteer
  */
 ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
   try {
@@ -539,100 +539,43 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
       return { ok: false, error: "no_results", message: "No hay resultados para generar reportes" };
     }
 
-    // 2. Prepare input data for Python script
-    const inputData = {
-      session_id: sessionId,
-      session_info: sessionRes.data || {},
-      config: {
-        group_by: config?.group_by || "unified",
+    // 2. Setup paths
+    const tempDir = os.tmpdir();
+    const timestamp = Date.now();
+    const outputDir = path.join(tempDir, `cerper_reports_${timestamp}`);
+    // Logo is in modules/reports/assets/logo_informe.png
+    const logoPath = path.join(__dirname, 'modules', 'reports', 'assets', 'logo_informe.png');
+
+    fs.mkdirSync(outputDir, { recursive: true });
+
+    // 3. Use JavaScript Data Provider
+    const dataProvider = new ReportDataProvider(
+      {
+        session_id: sessionId,
+        session_info: sessionRes.data || {},
+        results: resultsRes.data || [],
+        graphs: graphsRes.data || []
+      },
+      {
+        group_by: config?.group_by || 'unified',
         include_graphs: config?.include_graphs !== false,
         include_tables: config?.include_tables !== false,
         execution_date: config?.execution_date || null,
-        analyst_names: config?.analyst_names || [],
-        logo_path_url: config?.logo_path_url || null
-      },
-      results: resultsRes.data || [],
-      graphs: graphsRes.data || []
-    };
+        // Preserve null if not 'analista', otherwise use array (empty or with names)
+        analyst_names: config?.analyst_names ?? [],
+        logo_path: logoPath
+      }
+    );
 
-    // 3. Create temporary files
-    const tempDir = os.tmpdir();
-    const timestamp = Date.now();
-    const inputJsonPath = path.join(tempDir, `cerper_report_input_${timestamp}.json`);
-    const outputDir = path.join(tempDir, `cerper_reports_${timestamp}`);
-    const logoPath = path.join(__dirname, 'assets', 'logos', 'cerper_logo.png');
-
-    if (fs.existsSync(logoPath)) {
-      inputData.config.logo_path_url = `file://${logoPath.replace(/\\/g, '/')}`;
-    }
-
-    // Write input JSON
-    fs.writeFileSync(inputJsonPath, JSON.stringify(inputData, null, 2), 'utf8');
-
-    // Create output directory
-    fs.mkdirSync(outputDir, { recursive: true });
-
-    // 4. Execute Python Data Provider
-    const bundledExe = path.join(__dirname, 'modules', 'python', 'reports', 'dist', 'report_generator.exe');
-    const pythonScript = path.join(__dirname, 'modules', 'python', 'reports', 'report_generator.py');
-
-    const useBundled = fs.existsSync(bundledExe);
-    const executable = useBundled ? bundledExe : 'python';
-    const args = useBundled
-      ? [inputJsonPath, outputDir]
-      : [pythonScript, inputJsonPath, outputDir];
-
-    console.log(`[REPORTS] Using ${useBundled ? 'bundled executable' : 'Python script'} for data processing`);
-
-    const pythonResult = await new Promise((resolve, reject) => {
-      const reportProcess = spawn(executable, args, {
-        cwd: __dirname,
-        env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
-      });
-
-      let stdout = '';
-      let stderr = '';
-
-      reportProcess.stdout.on('data', (data) => {
-        stdout += data.toString();
-      });
-
-      reportProcess.stderr.on('data', (data) => {
-        stderr += data.toString();
-        // console.log("[REPORTS:Python]", data.toString());
-      });
-
-      reportProcess.on('close', (code) => {
-        if (code === 0) {
-          try {
-            const result = JSON.parse(stdout.trim());
-            resolve(result);
-          } catch (e) {
-            reject(new Error(`Failed to parse Python output: ${stdout}`));
-          }
-        } else {
-          reject(new Error(`Python data provider failed with code ${code}: ${stderr}`));
-        }
-      });
-
-      reportProcess.on('error', (err) => {
-        reject(new Error(`Failed to start Python process: ${err.message}`));
-      });
-    });
-
-    if (!pythonResult.ok) {
-      throw new Error(pythonResult.error || 'Report data generation failed');
-    }
-
-    const reportsData = pythonResult.reports || [];
-    console.log("[REPORTS] Python prepared data for", reportsData.length, "reports. Rendering PDFs...");
+    const reportsData = dataProvider.getReportData();
+    console.log("[REPORTS] JS Data Provider prepared", reportsData.length, "reports. Rendering PDFs...");
 
     // 5. Render PDFs with Puppeteer
     const generatedReports = [];
 
     for (const reportItem of reportsData) {
       try {
-        const { filename, data } = reportItem;
+        const { filename, data, _metadata } = reportItem;
         const pdfPath = path.join(outputDir, filename);
 
         // --- PUPPETEER GENERATION ---
@@ -648,11 +591,15 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
           resultsRes.data.map(r => r.catalog_id).filter(Boolean)
         )];
 
+        // Extract analito and nivel from metadata (set by ReportDataProvider)
+        const analito = _metadata?.analito || null;
+        const nivel = _metadata?.nivel != null ? _metadata.nivel : null;
+
         generatedReports.push({
           temp_id: `temp_${Date.now()}_${generatedReports.length}`,
           filename: filename,
-          analito: null, // Could extract if needed
-          nivel: null,
+          analito: analito,
+          nivel: nivel,
           tests_count: data.sections ? data.sections.reduce((acc, s) => acc + s.tests.length, 0) : 0,
           hash: require('crypto').createHash('sha256').update(pdfBuffer).digest('hex'),
           pdf_base64: pdfBase64,
@@ -660,6 +607,8 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
           tipo_informe: config.group_by,
           plan_json: {
             ...config,
+            analito: analito,
+            nivel: nivel,
             generated_at: new Date().toISOString()
           },
           tests_included: testsIncluded,
@@ -673,9 +622,8 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
       }
     }
 
-    // 6. Cleanup temp files
+    // 4. Cleanup temp directory
     try {
-      fs.unlinkSync(inputJsonPath);
       fs.rmdirSync(outputDir, { recursive: true });
     } catch (_) { }
 
