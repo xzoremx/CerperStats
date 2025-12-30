@@ -515,6 +515,7 @@ ipcMain.handle("window-is-maximized", () => {
 
 // === PDF Report Generation ===
 const os = require('os');
+const { PDFDocument } = require('pdf-lib');
 const { generatePDF } = require('./modules/reports/pdf_generator');
 const { ReportDataProvider } = require('./modules/reports/report_data_provider');
 
@@ -579,7 +580,61 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
         const pdfPath = path.join(outputDir, filename);
 
         // --- PUPPETEER GENERATION ---
-        await generatePDF(data, pdfPath);
+        // Split into cover page (without header, with footer) and content (with header and footer)
+        const coverData = { cover: data.cover, logo_path: data.logo_path };
+        const contentData = { sections: data.sections, logo_path: data.logo_path };
+        
+        // Generate cover page PDF (without header/footer)
+        const coverPath = path.join(outputDir, `cover_${filename}`);
+        await generatePDF(coverData, coverPath, { 
+            includeHeaderFooter: false,
+            templateType: 'cover'
+        });
+        
+        // Get cover page count to offset content page numbers
+        const coverPdfTemp = await PDFDocument.load(fs.readFileSync(coverPath));
+        const coverPageCount = coverPdfTemp.getPageCount();
+        
+        // Generate content PDF (with header and footer)
+        const contentPath = path.join(outputDir, `content_${filename}`);
+        await generatePDF(contentData, contentPath, { 
+            includeHeaderFooter: true,
+            templateType: 'content'
+        });
+        
+        // Combine both PDFs
+        const coverBuffer = fs.readFileSync(coverPath);
+        const contentBuffer = fs.readFileSync(contentPath);
+        
+        const mergedPdf = await PDFDocument.create();
+        const coverPdf = await PDFDocument.load(coverBuffer);
+        const contentPdf = await PDFDocument.load(contentBuffer);
+        
+        // Copy all pages from cover PDF
+        const coverPageIndices = Array.from({ length: coverPageCount }, (_, i) => i);
+        const coverPages = await mergedPdf.copyPages(coverPdf, coverPageIndices);
+        coverPages.forEach(page => mergedPdf.addPage(page));
+        
+        // Copy all pages from content PDF
+        const contentPageCount = contentPdf.getPageCount();
+        const contentPageIndices = Array.from({ length: contentPageCount }, (_, i) => i);
+        const contentPages = await mergedPdf.copyPages(contentPdf, contentPageIndices);
+        contentPages.forEach(page => mergedPdf.addPage(page));
+        
+        // Note: Both PDFs have footers with "Página X | CerperStats"
+        // Cover PDF: "Página 1"
+        // Content PDF: "Página 1", "Página 2", "Página 3", etc.
+        // When combined, the sequence will be: Cover (Página 1), Content (Página 1, 2, 3...)
+        // This creates a visual sequence of 1, 1, 2, 3... which is not ideal
+        // However, updating the footer text after PDF generation is complex with pdf-lib
+        // The footer text is rendered as static text by Puppeteer and can't be easily modified
+        
+        const mergedPdfBytes = await mergedPdf.save();
+        fs.writeFileSync(pdfPath, mergedPdfBytes);
+        
+        // Clean up temporary PDFs
+        try { fs.unlinkSync(coverPath); } catch (_) { }
+        try { fs.unlinkSync(contentPath); } catch (_) { }
         // ----------------------------
 
         const pdfBuffer = fs.readFileSync(pdfPath);

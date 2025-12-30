@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Informe Estadístico</title>
-    <link rel="stylesheet" href="report.css">
+    <title>Portada - Informe Estadístico</title>
+    <link rel="stylesheet" href="cover.css">
     <script>
-        // Data renderer script to separate logic from markup
+        // Cover page renderer
         window.renderReport = function (data) {
             document.body.innerHTML = ''; // Clear loading state
             
@@ -16,19 +16,8 @@
                 document.title = data.cover.title;
             }
 
-            // 1. Render Cover Page (pass logo_path from data)
+            // Render Cover Page (pass logo_path from data)
             renderCoverPage(data.cover, data.logo_path);
-
-            // 2. Render Sections
-            if (data.sections && data.sections.length > 0) {
-                const container = document.createElement('div');
-                container.className = 'content-container';
-                document.body.appendChild(container); // Append after cover
-
-                data.sections.forEach(section => {
-                    renderCategorySection(section, container);
-                });
-            }
         };
 
         function renderCoverPage(coverData, logoPath) {
@@ -115,7 +104,7 @@
                 <div class="cover-header">
                     <img src="${logoSrc}" class="logo" alt="CERPER">
                     <h1 class="report-title">${coverData.title}</h1>
-                    <div class="report-subtitle">Reporte Generado por CerperStats</div>
+                    <div class="report-subtitle">CerperStats</div>
                 </div>
                 
                 <!-- MAIN METADATA GRID -->
@@ -166,98 +155,12 @@
             `;
             document.body.appendChild(div);
         }
-
-        function renderCategorySection(section, container) {
-            const sectionDiv = document.createElement('div');
-            sectionDiv.className = 'category-section';
-
-            sectionDiv.innerHTML = `<h2 class="category-header">${section.header}</h2>`;
-
-            section.tests.forEach(test => {
-                const testDiv = document.createElement('div');
-                testDiv.className = 'test-section avoid-break';
-
-                testDiv.innerHTML += `
-                    <h3 class="test-title">${test.name}</h3>
-                    ${test.description ? `<div class="test-description">${test.description}</div>` : ''}
-                `;
-
-                test.niveles.forEach(nivel => {
-                    const nivelDiv = document.createElement('div');
-                    nivelDiv.className = 'nivel-block';
-
-                    // Only show title if it's explicitly set or relevant
-                    if (nivel.nivel) {
-                        nivelDiv.innerHTML += `<div class="nivel-title">Nivel ${nivel.nivel}</div>`;
-                    }
-
-                    // Table
-                    if (nivel.table && nivel.table.rows && nivel.table.rows.length > 0) {
-                        nivelDiv.innerHTML += renderTable(nivel.table);
-                    }
-
-                    // Conclusion
-                    if (nivel.conclusion) {
-                        nivelDiv.innerHTML += `
-                            <div class="conclusion-box">
-                                <span style="font-weight: bold;">Conclusión:</span>
-                                <span class="status-${nivel.conclusion.status}">${nivel.conclusion.text}</span>
-                            </div>
-                        `;
-                    }
-
-                    // Graphs (array support)
-                    if (nivel.graphs && nivel.graphs.length > 0) {
-                        nivel.graphs.forEach(g => {
-                            nivelDiv.innerHTML += `
-                                <div class="graph-container">
-                                    ${g.label ? `<div style="font-weight:bold;margin-bottom:4px;">${g.label}</div>` : ''}
-                                    <img src="${g.data}" class="graph-img">
-                                </div>
-                            `;
-                        });
-                    }
-
-                    testDiv.appendChild(nivelDiv);
-                });
-
-                sectionDiv.appendChild(testDiv);
-            });
-
-            container.appendChild(sectionDiv);
-        }
-
-        function renderTable(tableData) {
-            if (!tableData.rows || tableData.rows.length === 0) return '';
-
-            const cols = tableData.columns || Object.keys(tableData.rows[0]);
-
-            return `
-                <table>
-                    <thead>
-                        <tr>
-                            ${cols.map(c => `<th>${c.label || c.key || c}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${tableData.rows.map(row => `
-                            <tr>
-                                ${cols.map(c => {
-                const key = c.key || c;
-                return `<td>${row[key] !== undefined ? row[key] : '-'}</td>`;
-            }).join('')}
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-        }
     </script>
 </head>
 
 <body>
     <div style="text-align:center; padding: 2rem; color: #666;">
-        Generando reporte...
+        Generando portada...
     </div>
 </body>
 

@@ -300,6 +300,7 @@ router.get('/resultados/:session_id', async (req, res) => {
          rg.analito,
          rg.resultado_pc,
          rg.conclusion,
+         rg.conclusion_status,
          rg.creado_en,
          tc.titulo AS test_titulo,
          tc.nombre_interno,

@@ -27,7 +27,9 @@ export const dataService = {
 
   // --- Validar formato de método ---
   validateMetodo(metodo) {
-    const pattern = /^[A-Za-zÁÉÍÓÚáéíóúñÑ0-9\s\(\)\-\,\.]{3,80}$/;
+    // Permite letras, números, espacios, guiones, puntos, dos puntos, paréntesis, comas
+    // Ejemplos válidos: "NOM-021-RECNAT-2000. 2002. Salinity Specifications...", etc.
+    const pattern = /^[A-Za-zÁÉÍÓÚáéíóúñÑ0-9\s\(\)\-\,\.:]{3,200}$/;
     return pattern.test(metodo);
   },
 
@@ -45,7 +47,9 @@ export const dataService = {
 
   // --- Validar formato de unidad ---
   validateUnidad(valor) {
-  return /^[a-zA-Zµ%/.\s-]+$/.test(valor) && valor.length >= 1 && valor.length <= 20;
+    // Permite letras, números, símbolos comunes de unidades (µ, %, /, ., -, espacios)
+    // Ejemplos válidos: "g/100g", "%", "mg/L", "µg/mL", "g·kg⁻¹", etc.
+    return /^[a-zA-Z0-9µ%/.\s-]+$/.test(valor) && valor.length >= 1 && valor.length <= 20;
   },
 
 
