@@ -520,9 +520,9 @@ const { ReportDataProvider } = require('./modules/reports/report_data_provider')
 
 /**
  * Generate PDF reports:
- * 1. Fetch data from backend
+ * 1. Fetch data from backend (via proxy server)
  * 2. Transform data with JavaScript (no Python needed)
- * 3. Render PDF with Puppeteer
+ * 3. Render PDF with Puppeteer locally
  */
 ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
   try {

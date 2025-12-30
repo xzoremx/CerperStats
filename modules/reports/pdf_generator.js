@@ -1,7 +1,6 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
-const { app } = require('electron');
 
 /**
  * Generate PDF reports from structured data.
