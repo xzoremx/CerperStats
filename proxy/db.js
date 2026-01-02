@@ -13,12 +13,15 @@ const pool = new Pool({
   user: process.env.PGUSER,
   password: process.env.PGPASSWORD,
   ssl: {
-    rejectUnauthorized: false,
+    rejectUnauthorized: true,
     ca:
       fs.existsSync(certPath) && fs.statSync(certPath).isFile()
         ? fs.readFileSync(certPath).toString()
         : undefined,
   },
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
 });
 
 pool.on('error', (err) => {

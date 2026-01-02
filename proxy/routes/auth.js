@@ -24,7 +24,12 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ ok: false, error: 'invalid_user' });
     }
     if (!user.hash_password || user.hash_password.trim() === '') {
-      return res.json({ ok: true, user });
+      await pool.query(
+        `INSERT INTO logs_sistema (usuario_id, accion, detalle)
+         VALUES ($1, 'login_fallido', 'Usuario sin contraseña configurada')`,
+        [user.id]
+      );
+      return res.status(401).json({ ok: false, error: 'password_not_configured' });
     }
     const isValid = await bcrypt.compare(password, user.hash_password);
     if (!isValid) {

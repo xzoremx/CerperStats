@@ -516,10 +516,11 @@ describe('ReportDataProvider', () => {
     // =========================================================================
 
     describe('Conclusion Status Logic', () => {
-        test('marca "no cumple" como danger (verifica negaciones primero)', () => {
-            const result = createMockResult({ 
+        test('usa conclusion_status de Python cuando es "danger"', () => {
+            const result = createMockResult({
                 analito: 'Analito A',
-                conclusion: 'No cumple con los requisitos' 
+                conclusion: 'No cumple con los requisitos',
+                conclusion_status: 'danger'
             });
             const provider = new ReportDataProvider(
                 { session_id: 1, session_info: createMockSessionInfo({ tipo_analisis: 'multianalito' }), results: [result], graphs: [] },
@@ -536,10 +537,11 @@ describe('ReportDataProvider', () => {
             }
         });
 
-        test('marca "cumple" como success', () => {
-            const result = createMockResult({ 
+        test('usa conclusion_status de Python cuando es "success"', () => {
+            const result = createMockResult({
                 analito: 'Analito A',
-                conclusion: 'Cumple con los requisitos' 
+                conclusion: 'Cumple con los requisitos',
+                conclusion_status: 'success'
             });
             const provider = new ReportDataProvider(
                 { session_id: 1, session_info: createMockSessionInfo({ tipo_analisis: 'multianalito' }), results: [result], graphs: [] },
@@ -552,6 +554,27 @@ describe('ReportDataProvider', () => {
                 const nivel = sections[0]?.tests[0]?.niveles[0];
                 if (nivel && nivel.conclusion) {
                     expect(nivel.conclusion.status).toBe('success');
+                }
+            }
+        });
+
+        test('usa "neutral" como fallback si Python no envía conclusion_status', () => {
+            const result = createMockResult({
+                analito: 'Analito A',
+                conclusion: 'Resultado indeterminado'
+                // Sin conclusion_status
+            });
+            const provider = new ReportDataProvider(
+                { session_id: 1, session_info: createMockSessionInfo({ tipo_analisis: 'multianalito' }), results: [result], graphs: [] },
+                { group_by: 'by_analito' }
+            );
+            const reports = provider.getReportData();
+            expect(reports.length).toBeGreaterThan(0);
+            const sections = reports[0].data.sections;
+            if (sections && sections.length > 0) {
+                const nivel = sections[0]?.tests[0]?.niveles[0];
+                if (nivel && nivel.conclusion) {
+                    expect(nivel.conclusion.status).toBe('neutral');
                 }
             }
         });

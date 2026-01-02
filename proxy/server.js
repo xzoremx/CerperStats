@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
+const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
 const labsRouter = require('./routes/labs');
@@ -14,14 +15,30 @@ const runEvaluator = require('./lib/runEvaluator');
 const SECRET_PATH = path.resolve(__dirname, '../secrets/token_secret.txt');
 const SECRET = fs.readFileSync(SECRET_PATH, 'utf8').trim();
 
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'too_many_attempts', message: 'Demasiados intentos de login. Intente en 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  message: { error: 'rate_limit_exceeded' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const app = express();
-app.use(bodyParser.json({ limit: '50mb' })); // Increased for PDF uploads
-app.use('/auth', authRouter);
-app.use('/labs', verifyToken, labsRouter);
-app.use('/inputs', verifyToken, inputsRouter);
-app.use('/sessions', verifyToken, sessionsRouter);
-app.use('/evaluaciones', verifyToken, evaluacionesRouter);
-app.use('/reports', verifyToken, reportsRouter);
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use('/auth', authLimiter, authRouter);
+app.use('/labs', apiLimiter, verifyToken, labsRouter);
+app.use('/inputs', apiLimiter, verifyToken, inputsRouter);
+app.use('/sessions', apiLimiter, verifyToken, sessionsRouter);
+app.use('/evaluaciones', apiLimiter, verifyToken, evaluacionesRouter);
+app.use('/reports', apiLimiter, verifyToken, reportsRouter);
 
 function verifyToken(req, res, next) {
   const header = req.headers.authorization || '';

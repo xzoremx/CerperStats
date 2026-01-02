@@ -25,6 +25,7 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
     "jsonwebtoken": "^9.0.2",
     "lucide": "^0.545.0",
     "pdf-lib": "^1.17.1",
