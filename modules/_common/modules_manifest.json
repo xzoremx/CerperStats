@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-01-05T17:35:35.663Z",
+  "generated_at": "2026-01-05T21:20:26.885Z",
   "entries": [
     {
       "id": 1,
@@ -79,6 +79,32 @@
       "sha256_module": "bf1b44a42551fea1dd62dddfbb5e849b765bf1e76800fe8e374b80a79ffc7507",
       "sha256_script_grafico": "bfe05970a41b2cbb9e3b67d9d4bdc7ea6c9be54b6dca42f0c032b4c191c2ab1c",
       "sha256_graph": "bfe05970a41b2cbb9e3b67d9d4bdc7ea6c9be54b6dca42f0c032b4c191c2ab1c"
+    },
+    {
+      "id": 7,
+      "module_id": 7,
+      "nombre_interno": "atipicos",
+      "version": "1.0.0",
+      "module_asset": "python/7/principal.py",
+      "script_grafico": "python/7/graph.py",
+      "graph_asset": "python/7/graph.py",
+      "runtime": "stats",
+      "sha256_module": "5e2ddf96530707355b92b3acbbf4c8dae13fa82dcae731094fe8563868ea420d",
+      "sha256_script_grafico": "7530eec14a351c84fc52b5e6322b362224f06693a22a724af9f4adfd833f1f06",
+      "sha256_graph": "7530eec14a351c84fc52b5e6322b362224f06693a22a724af9f4adfd833f1f06"
+    },
+    {
+      "id": 8,
+      "module_id": 8,
+      "nombre_interno": "atipicos_multianalito",
+      "version": "1.0.0",
+      "module_asset": "python/8/principal.py",
+      "script_grafico": "python/8/graph.py",
+      "graph_asset": "python/8/graph.py",
+      "runtime": "stats",
+      "sha256_module": "e807e791a36323e83ae8cd5e034663ba531ab0d1d42718e7379e5969120c2755",
+      "sha256_script_grafico": "9936d91ebb71535a672300e0586afa2a8427913c4f4e1c02aee7899636d15bdb",
+      "sha256_graph": "9936d91ebb71535a672300e0586afa2a8427913c4f4e1c02aee7899636d15bdb"
     }
   ]
 }
