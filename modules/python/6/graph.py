@@ -188,8 +188,6 @@ if es_normal_todos:
     
     # Título diferenciado para multianalito
     title = "Intervalos de Confianza (95%) para la Media (Multianalito)"
-    if n_analitos > 1:
-        title += f" - {n_analitos} analitos en sesión"
     ax.set_title(title)
 
 else:
@@ -203,8 +201,6 @@ else:
     
     # Título diferenciado para multianalito
     title = "Boxplot (Datos No Normales) (Multianalito)"
-    if n_analitos > 1:
-        title += f" - {n_analitos} analitos en sesión"
     ax.set_title(title)
 
 

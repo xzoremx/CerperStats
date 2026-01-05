@@ -59,8 +59,6 @@ else:
 
     # Título diferenciado para multianalito
     title = "Histograma de resultados (Multianalito)"
-    if n_analitos > 1:
-        title += f" - {n_analitos} analitos en sesión"
     ax.set_title(title, fontsize=14)
     ax.set_xlabel("Valor observado", fontsize=12)
     ax.set_ylabel("Densidad", fontsize=12)

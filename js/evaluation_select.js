@@ -339,7 +339,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             <img src="${g.grafico_data}" alt="${title}" loading="lazy">
           </div>
           <div class="viz-card-content">
-            <span class="viz-card-badge">#${g?.catalog_id || "?"}</span>
+            <span class="viz-card-badge">#${index + 1}</span>
             <h2 class="viz-card-title">${title}</h2>
             ${subtitle ? `<span class="viz-card-subtitle">${subtitle}</span>` : ""}
           </div>
@@ -395,8 +395,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Update labels
     const topLabel = document.querySelector(".viz-timeline-label-top");
     const bottomLabel = document.querySelector(".viz-timeline-label-bottom");
-    if (topLabel) topLabel.textContent = `#${filteredGraphs[0]?.catalog_id || 1}`;
-    if (bottomLabel) bottomLabel.textContent = `#${filteredGraphs[filteredGraphs.length - 1]?.catalog_id || "?"}`;
+    if (topLabel) topLabel.textContent = `#1`;
+    if (bottomLabel) bottomLabel.textContent = `#${filteredGraphs.length}`;
 
     // Create tick marks
     const tickCount = Math.min(Math.max(filteredGraphs.length, 10), 40);
@@ -417,7 +417,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       marker.style.top = `${position * 100}%`;
 
       marker.innerHTML = `
-        <span class="viz-timeline-id-label">#${g?.catalog_id || "?"}</span>
+        <span class="viz-timeline-id-label">#${index + 1}</span>
         <div class="viz-timeline-marker-bar" style="width: 1.25rem;"></div>
       `;
 
@@ -496,7 +496,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       item.innerHTML = `
         <div class="viz-list-item-inner">
-          <span class="viz-list-id">#${g?.catalog_id || "?"}</span>
+          <span class="viz-list-id">#${index + 1}</span>
           <h2 class="viz-list-title">${title}</h2>
           <p class="viz-list-meta">${metaParts.join(" · ")}</p>
           <span class="viz-list-arrow">
@@ -954,7 +954,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       item.innerHTML = `
         <div class="result-list-item-inner">
-          <span class="result-list-id">#${r.catalog_id || "?"}</span>
+          <span class="result-list-id">#${index + 1}</span>
           <h2 class="result-list-title">${title}</h2>
           <p class="result-list-meta">${metaParts.join(" · ")}</p>
           ${r.categoria ? `<span class="result-list-category">${r.categoria}</span>` : ""}

@@ -122,8 +122,6 @@ else:
 
     # Título diferenciado para multianalito
     title = f"IC Bonferroni — {parametro_base} (Multianalito)"
-    if n_analitos > 1:
-        title += f" - {n_analitos} analitos en sesión"
     ax.set_title(title)
     ax.set_xlabel("Desviación Estándar")
     ax.set_ylabel(parametro_base)
