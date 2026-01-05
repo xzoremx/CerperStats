@@ -195,8 +195,8 @@ router.get('/graficos/:session_id', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'invalid_session_id' });
   }
 
-  const maxTestsRaw = Number(process.env.CERPER_GRAFICOS_MAX_TESTS || 50);
-  const maxTests = Number.isFinite(maxTestsRaw) ? Math.max(1, Math.min(200, Math.trunc(maxTestsRaw))) : 50;
+  const maxTestsRaw = Number(process.env.CERPER_GRAFICOS_MAX_TESTS || 500);
+  const maxTests = Number.isFinite(maxTestsRaw) ? Math.max(1, Math.min(500, Math.trunc(maxTestsRaw))) : 500;
 
   try {
     const { rows: metaRows } = await pool.query(
@@ -267,8 +267,8 @@ router.get('/resultados/:session_id', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'invalid_session_id' });
   }
 
-  const maxTestsRaw = Number(process.env.CERPER_RESULTADOS_MAX_TESTS || 100);
-  const maxTests = Number.isFinite(maxTestsRaw) ? Math.max(1, Math.min(200, Math.trunc(maxTestsRaw))) : 100;
+  const maxTestsRaw = Number(process.env.CERPER_RESULTADOS_MAX_TESTS || 500);
+  const maxTests = Number.isFinite(maxTestsRaw) ? Math.max(1, Math.min(500, Math.trunc(maxTestsRaw))) : 500;
 
   try {
     const { rows: metaRows } = await pool.query(
