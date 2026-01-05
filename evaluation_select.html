@@ -1437,295 +1437,307 @@
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div id="run-info" class="text-sm text-gray-400"></div>
 
-                <div class="flex items-center gap-3">
-                  <!-- Custom Glass Dropdowns -->
-                  <div class="viz-dropdown" id="dropdown-nivel">
-                    <button class="viz-dropdown-trigger" type="button">
-                      <span class="viz-dropdown-text">Todos los niveles</span>
-                      <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                      </svg>
-                    </button>
-                    <div class="viz-dropdown-menu">
-                      <div class="viz-dropdown-item active" data-value="">Todos los niveles</div>
+                <div class="flex flex-col gap-2">
+                  <!-- Row 1: Nivel + Analito -->
+                  <div class="flex items-center gap-3">
+                    <!-- Custom Glass Dropdowns -->
+                    <div class="viz-dropdown" id="dropdown-nivel">
+                      <button class="viz-dropdown-trigger" type="button">
+                        <span class="viz-dropdown-text">Todos los niveles</span>
+                        <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
+                          viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                          </path>
+                        </svg>
+                      </button>
+                      <div class="viz-dropdown-menu">
+                        <div class="viz-dropdown-item active" data-value="">Todos los niveles</div>
+                      </div>
+                    </div>
+
+                    <div class="viz-dropdown" id="dropdown-analito">
+                      <button class="viz-dropdown-trigger" type="button">
+                        <span class="viz-dropdown-text">Todos los analitos</span>
+                        <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
+                          viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                          </path>
+                        </svg>
+                      </button>
+                      <div class="viz-dropdown-menu">
+                        <div class="viz-dropdown-item active" data-value="">Todos los analitos</div>
+                      </div>
                     </div>
                   </div>
 
-                  <div class="viz-dropdown" id="dropdown-analito">
-                    <button class="viz-dropdown-trigger" type="button">
-                      <span class="viz-dropdown-text">Todos los analitos</span>
-                      <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                      </svg>
-                    </button>
-                    <div class="viz-dropdown-menu">
-                      <div class="viz-dropdown-item active" data-value="">Todos los analitos</div>
+                  <!-- Row 2: Prueba -->
+                  <div class="flex items-center gap-3">
+                    <div class="viz-dropdown" id="dropdown-prueba">
+                      <button class="viz-dropdown-trigger" type="button">
+                        <span class="viz-dropdown-text">Todas las pruebas</span>
+                        <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
+                          viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                          </path>
+                        </svg>
+                      </button>
+                      <div class="viz-dropdown-menu">
+                        <div class="viz-dropdown-item active" data-value="">Todas las pruebas</div>
+                      </div>
                     </div>
                   </div>
+                </div>
 
-                  <div class="viz-dropdown" id="dropdown-prueba">
-                    <button class="viz-dropdown-trigger" type="button">
-                      <span class="viz-dropdown-text">Todas las pruebas</span>
-                      <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                      </svg>
-                    </button>
-                    <div class="viz-dropdown-menu">
-                      <div class="viz-dropdown-item active" data-value="">Todas las pruebas</div>
-                    </div>
-                  </div>
+                <!-- Card Theme Toggle -->
+                <button id="btn-card-theme" class="viz-theme-toggle" aria-label="Cambiar tema de cards"
+                  title="Tema claro/oscuro">
+                  <svg class="viz-theme-icon-dark" width="16" height="16" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
+                    </path>
+                  </svg>
+                  <svg class="viz-theme-icon-light" width="16" height="16" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="4"></circle>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 2v2m0 16v2m-8-10H2m20 0h-2m-2.93-6.36l-1.41 1.41m-9.32 9.32l-1.41 1.41m0-12.14l1.41 1.41m9.32 9.32l1.41 1.41">
+                    </path>
+                  </svg>
+                </button>
 
-                  <!-- Card Theme Toggle -->
-                  <button id="btn-card-theme" class="viz-theme-toggle" aria-label="Cambiar tema de cards"
-                    title="Tema claro/oscuro">
-                    <svg class="viz-theme-icon-dark" width="16" height="16" fill="none" stroke="currentColor"
-                      viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
-                      </path>
-                    </svg>
-                    <svg class="viz-theme-icon-light" width="16" height="16" fill="none" stroke="currentColor"
-                      viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="4"></circle>
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 2v2m0 16v2m-8-10H2m20 0h-2m-2.93-6.36l-1.41 1.41m-9.32 9.32l-1.41 1.41m0-12.14l1.41 1.41m9.32 9.32l1.41 1.41">
+                <!-- View Toggle -->
+                <div class="viz-view-toggle">
+                  <button id="btn-viz-rolodex" class="viz-view-btn active" aria-label="Vista Rolodex">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
                       </path>
                     </svg>
                   </button>
+                  <button id="btn-viz-list" class="viz-view-btn" aria-label="Vista Lista">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
 
-                  <!-- View Toggle -->
-                  <div class="viz-view-toggle">
-                    <button id="btn-viz-rolodex" class="viz-view-btn active" aria-label="Vista Rolodex">
-                      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
-                        </path>
-                      </svg>
-                    </button>
-                    <button id="btn-viz-list" class="viz-view-btn" aria-label="Vista Lista">
-                      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                          d="M4 6h16M4 12h16M4 18h16"></path>
-                      </svg>
-                    </button>
-                  </div>
+            <!-- Empty State -->
+            <div id="empty-state" class="glass-card p-8 rounded-xl hidden">
+              <div class="flex items-start gap-4">
+                <div
+                  class="w-12 h-12 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shrink-0">
+                  <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                  <h3 id="empty-title" class="text-xl font-semibold text-white mb-2"></h3>
+                  <p id="empty-text" class="text-gray-300"></p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rolodex View -->
+            <section id="viz-rolodex-view" class="viz-rolodex-view">
+              <div class="viz-perspective-container">
+                <div id="viz-cards-container" class="viz-cards-container">
+                  <!-- Cards will be injected by JS -->
                 </div>
               </div>
 
-              <!-- Empty State -->
-              <div id="empty-state" class="glass-card p-8 rounded-xl hidden">
-                <div class="flex items-start gap-4">
-                  <div
-                    class="w-12 h-12 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shrink-0">
-                    <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
+              <!-- Timeline -->
+              <div id="viz-timeline" class="viz-timeline">
+                <div class="viz-timeline-label viz-timeline-label-top">Prueba 1</div>
+                <div id="viz-timeline-track" class="viz-timeline-track">
+                  <!-- Ticks and markers will be injected by JS -->
+                </div>
+                <div class="viz-timeline-label viz-timeline-label-bottom">Última</div>
+              </div>
+
+              <div class="viz-scroll-hint">Scroll o arrastra timeline</div>
+            </section>
+
+            <!-- List View -->
+            <section id="viz-list-view" class="viz-list-view viz-hidden">
+              <div id="viz-list-container" class="viz-list-container">
+                <!-- List items will be injected by JS -->
+              </div>
+              <!-- Floating image preview -->
+              <div id="viz-hover-preview" class="viz-hover-preview">
+                <img id="viz-hover-image" src="" alt="">
+              </div>
+            </section>
+          </div>
+
+          <!-- Configuration View -->
+          <div id="view-configuracion" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+              <!-- Regional Settings Card -->
+              <div class="settings-card">
+                <div class="settings-card-header">
+                  <div class="settings-card-icon"
+                    style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                    <i data-lucide="globe" class="w-5 h-5 text-white"></i>
                   </div>
                   <div>
-                    <h3 id="empty-title" class="text-xl font-semibold text-white mb-2"></h3>
-                    <p id="empty-text" class="text-gray-300"></p>
+                    <div class="settings-card-title">Regional</div>
+                    <div class="settings-card-subtitle">Zona horaria y formato de fecha</div>
+                  </div>
+                </div>
+
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-label">Zona Horaria</div>
+                    <div class="settings-sublabel">Para visualizaciones y reportes</div>
+                  </div>
+                  <select id="setting-timezone" class="settings-select">
+                    <!-- Options populated by JS -->
+                  </select>
+                </div>
+
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-label">Formato de Fecha</div>
+                    <div class="settings-sublabel">Cómo se muestran las fechas</div>
+                  </div>
+                  <select id="setting-dateformat" class="settings-select">
+                    <!-- Options populated by JS -->
+                  </select>
+                </div>
+
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-label">Vista previa</div>
+                  </div>
+                  <div id="setting-date-preview" class="text-sm text-purple-300 font-medium"></div>
+                </div>
+              </div>
+
+              <!-- Glass Effect Card - Full Width -->
+              <div class="settings-card lg:col-span-2">
+                <div class="settings-card-header">
+                  <div class="settings-card-icon"
+                    style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+                  </div>
+                  <div class="flex-1">
+                    <div class="settings-card-title">Efecto Liquid Glass</div>
+                    <div class="settings-card-subtitle">Personaliza el efecto de vidrio del panel principal</div>
+                  </div>
+                  <button id="btn-reset-glass" class="settings-reset-btn">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    Restablecer
+                  </button>
+                </div>
+
+                <!-- Glass Mode -->
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-label">Modo</div>
+                    <div class="settings-sublabel">Patrón de distorsión del efecto</div>
+                  </div>
+                  <div id="setting-glass-mode" class="settings-mode-selector">
+                    <div class="settings-mode-pill" data-value="standard">Standard</div>
+                    <div class="settings-mode-pill" data-value="polar">Polar</div>
+                    <div class="settings-mode-pill" data-value="prominent">Prominent</div>
+                    <div class="settings-mode-pill" data-value="shader">Shader</div>
+                    <div class="settings-mode-pill" data-value="edge">Edge</div>
+                  </div>
+                </div>
+
+                <!-- Blur Amount -->
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-label">Desenfoque</div>
+                    <div class="settings-sublabel">Intensidad del blur de fondo</div>
+                  </div>
+                  <div class="settings-slider-container">
+                    <input type="range" id="setting-glass-blur" class="settings-slider" min="0" max="20" step="0.5"
+                      value="0.1">
+                    <span id="setting-glass-blur-value" class="settings-slider-value">0.1 px</span>
+                  </div>
+                </div>
+
+                <!-- Saturation -->
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-label">Saturación</div>
+                    <div class="settings-sublabel">Intensidad de los colores</div>
+                  </div>
+                  <div class="settings-slider-container">
+                    <input type="range" id="setting-glass-saturation" class="settings-slider" min="50" max="200"
+                      step="5" value="140">
+                    <span id="setting-glass-saturation-value" class="settings-slider-value">140%</span>
+                  </div>
+                </div>
+
+                <!-- Displacement Scale -->
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-label">Desplazamiento</div>
+                    <div class="settings-sublabel">Escala de distorsión del vidrio</div>
+                  </div>
+                  <div class="settings-slider-container">
+                    <input type="range" id="setting-glass-displacement" class="settings-slider" min="0" max="200"
+                      step="10" value="120">
+                    <span id="setting-glass-displacement-value" class="settings-slider-value">120</span>
+                  </div>
+                </div>
+
+                <!-- Aberration Intensity -->
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-label">Aberración Cromática</div>
+                    <div class="settings-sublabel">Separación de canales RGB</div>
+                  </div>
+                  <div class="settings-slider-container">
+                    <input type="range" id="setting-glass-aberration" class="settings-slider" min="0" max="10"
+                      step="0.5" value="2">
+                    <span id="setting-glass-aberration-value" class="settings-slider-value">2</span>
+                  </div>
+                </div>
+
+                <!-- Elasticity -->
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-label">Elasticidad</div>
+                    <div class="settings-sublabel">Suavidad del efecto de animación</div>
+                  </div>
+                  <div class="settings-slider-container">
+                    <input type="range" id="setting-glass-elasticity" class="settings-slider" min="0.05" max="0.5"
+                      step="0.05" value="0.15">
+                    <span id="setting-glass-elasticity-value" class="settings-slider-value">0.15</span>
+                  </div>
+                </div>
+
+                <!-- Center Distortion -->
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-label">Distorsión Central</div>
+                    <div class="settings-sublabel">Intensidad del efecto en el centro</div>
+                  </div>
+                  <div class="settings-slider-container">
+                    <input type="range" id="setting-glass-center" class="settings-slider" min="0" max="1" step="0.1"
+                      value="1">
+                    <span id="setting-glass-center-value" class="settings-slider-value">1</span>
                   </div>
                 </div>
               </div>
 
-              <!-- Rolodex View -->
-              <section id="viz-rolodex-view" class="viz-rolodex-view">
-                <div class="viz-perspective-container">
-                  <div id="viz-cards-container" class="viz-cards-container">
-                    <!-- Cards will be injected by JS -->
-                  </div>
-                </div>
-
-                <!-- Timeline -->
-                <div id="viz-timeline" class="viz-timeline">
-                  <div class="viz-timeline-label viz-timeline-label-top">Prueba 1</div>
-                  <div id="viz-timeline-track" class="viz-timeline-track">
-                    <!-- Ticks and markers will be injected by JS -->
-                  </div>
-                  <div class="viz-timeline-label viz-timeline-label-bottom">Última</div>
-                </div>
-
-                <div class="viz-scroll-hint">Scroll o arrastra timeline</div>
-              </section>
-
-              <!-- List View -->
-              <section id="viz-list-view" class="viz-list-view viz-hidden">
-                <div id="viz-list-container" class="viz-list-container">
-                  <!-- List items will be injected by JS -->
-                </div>
-                <!-- Floating image preview -->
-                <div id="viz-hover-preview" class="viz-hover-preview">
-                  <img id="viz-hover-image" src="" alt="">
-                </div>
-              </section>
             </div>
+          </div>
 
-            <!-- Configuration View -->
-            <div id="view-configuracion" class="hidden">
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Resultados Preliminares View -->
+          <div id="view-resultados" class="hidden min-h-[60vh]">
+            <!-- Header with Filters -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div id="result-run-info" class="text-sm text-gray-400"></div>
 
-                <!-- Regional Settings Card -->
-                <div class="settings-card">
-                  <div class="settings-card-header">
-                    <div class="settings-card-icon"
-                      style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
-                      <i data-lucide="globe" class="w-5 h-5 text-white"></i>
-                    </div>
-                    <div>
-                      <div class="settings-card-title">Regional</div>
-                      <div class="settings-card-subtitle">Zona horaria y formato de fecha</div>
-                    </div>
-                  </div>
-
-                  <div class="settings-row">
-                    <div>
-                      <div class="settings-label">Zona Horaria</div>
-                      <div class="settings-sublabel">Para visualizaciones y reportes</div>
-                    </div>
-                    <select id="setting-timezone" class="settings-select">
-                      <!-- Options populated by JS -->
-                    </select>
-                  </div>
-
-                  <div class="settings-row">
-                    <div>
-                      <div class="settings-label">Formato de Fecha</div>
-                      <div class="settings-sublabel">Cómo se muestran las fechas</div>
-                    </div>
-                    <select id="setting-dateformat" class="settings-select">
-                      <!-- Options populated by JS -->
-                    </select>
-                  </div>
-
-                  <div class="settings-row">
-                    <div>
-                      <div class="settings-label">Vista previa</div>
-                    </div>
-                    <div id="setting-date-preview" class="text-sm text-purple-300 font-medium"></div>
-                  </div>
-                </div>
-
-                <!-- Glass Effect Card - Full Width -->
-                <div class="settings-card lg:col-span-2">
-                  <div class="settings-card-header">
-                    <div class="settings-card-icon"
-                      style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);">
-                      <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
-                    </div>
-                    <div class="flex-1">
-                      <div class="settings-card-title">Efecto Liquid Glass</div>
-                      <div class="settings-card-subtitle">Personaliza el efecto de vidrio del panel principal</div>
-                    </div>
-                    <button id="btn-reset-glass" class="settings-reset-btn">
-                      <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-                      Restablecer
-                    </button>
-                  </div>
-
-                  <!-- Glass Mode -->
-                  <div class="settings-row">
-                    <div>
-                      <div class="settings-label">Modo</div>
-                      <div class="settings-sublabel">Patrón de distorsión del efecto</div>
-                    </div>
-                    <div id="setting-glass-mode" class="settings-mode-selector">
-                      <div class="settings-mode-pill" data-value="standard">Standard</div>
-                      <div class="settings-mode-pill" data-value="polar">Polar</div>
-                      <div class="settings-mode-pill" data-value="prominent">Prominent</div>
-                      <div class="settings-mode-pill" data-value="shader">Shader</div>
-                      <div class="settings-mode-pill" data-value="edge">Edge</div>
-                    </div>
-                  </div>
-
-                  <!-- Blur Amount -->
-                  <div class="settings-row">
-                    <div>
-                      <div class="settings-label">Desenfoque</div>
-                      <div class="settings-sublabel">Intensidad del blur de fondo</div>
-                    </div>
-                    <div class="settings-slider-container">
-                      <input type="range" id="setting-glass-blur" class="settings-slider" min="0" max="20" step="0.5"
-                        value="0.1">
-                      <span id="setting-glass-blur-value" class="settings-slider-value">0.1 px</span>
-                    </div>
-                  </div>
-
-                  <!-- Saturation -->
-                  <div class="settings-row">
-                    <div>
-                      <div class="settings-label">Saturación</div>
-                      <div class="settings-sublabel">Intensidad de los colores</div>
-                    </div>
-                    <div class="settings-slider-container">
-                      <input type="range" id="setting-glass-saturation" class="settings-slider" min="50" max="200"
-                        step="5" value="140">
-                      <span id="setting-glass-saturation-value" class="settings-slider-value">140%</span>
-                    </div>
-                  </div>
-
-                  <!-- Displacement Scale -->
-                  <div class="settings-row">
-                    <div>
-                      <div class="settings-label">Desplazamiento</div>
-                      <div class="settings-sublabel">Escala de distorsión del vidrio</div>
-                    </div>
-                    <div class="settings-slider-container">
-                      <input type="range" id="setting-glass-displacement" class="settings-slider" min="0" max="200"
-                        step="10" value="120">
-                      <span id="setting-glass-displacement-value" class="settings-slider-value">120</span>
-                    </div>
-                  </div>
-
-                  <!-- Aberration Intensity -->
-                  <div class="settings-row">
-                    <div>
-                      <div class="settings-label">Aberración Cromática</div>
-                      <div class="settings-sublabel">Separación de canales RGB</div>
-                    </div>
-                    <div class="settings-slider-container">
-                      <input type="range" id="setting-glass-aberration" class="settings-slider" min="0" max="10"
-                        step="0.5" value="2">
-                      <span id="setting-glass-aberration-value" class="settings-slider-value">2</span>
-                    </div>
-                  </div>
-
-                  <!-- Elasticity -->
-                  <div class="settings-row">
-                    <div>
-                      <div class="settings-label">Elasticidad</div>
-                      <div class="settings-sublabel">Suavidad del efecto de animación</div>
-                    </div>
-                    <div class="settings-slider-container">
-                      <input type="range" id="setting-glass-elasticity" class="settings-slider" min="0.05" max="0.5"
-                        step="0.05" value="0.15">
-                      <span id="setting-glass-elasticity-value" class="settings-slider-value">0.15</span>
-                    </div>
-                  </div>
-
-                  <!-- Center Distortion -->
-                  <div class="settings-row">
-                    <div>
-                      <div class="settings-label">Distorsión Central</div>
-                      <div class="settings-sublabel">Intensidad del efecto en el centro</div>
-                    </div>
-                    <div class="settings-slider-container">
-                      <input type="range" id="setting-glass-center" class="settings-slider" min="0" max="1" step="0.1"
-                        value="1">
-                      <span id="setting-glass-center-value" class="settings-slider-value">1</span>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-            <!-- Resultados Preliminares View -->
-            <div id="view-resultados" class="hidden min-h-[60vh]">
-              <!-- Header with Filters -->
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div id="result-run-info" class="text-sm text-gray-400"></div>
-
+              <div class="flex flex-col gap-2">
+                <!-- Row 1: Nivel + Analito -->
                 <div class="flex items-center gap-3">
                   <!-- Custom Glass Dropdowns -->
                   <div class="viz-dropdown" id="dropdown-result-nivel">
@@ -1753,7 +1765,10 @@
                       <div class="viz-dropdown-item active" data-value="">Todos los analitos</div>
                     </div>
                   </div>
+                </div>
 
+                <!-- Row 2: Prueba + Danger -->
+                <div class="flex items-center gap-3">
                   <div class="viz-dropdown" id="dropdown-result-prueba">
                     <button class="viz-dropdown-trigger" type="button">
                       <span class="viz-dropdown-text">Todas las pruebas</span>
@@ -1782,25 +1797,25 @@
                   </div>
                 </div>
               </div>
+            </div>
 
-              <!-- List Container -->
-              <div id="result-list-container" class="result-list-container">
-                <!-- Populated by JS -->
-              </div>
+            <!-- List Container -->
+            <div id="result-list-container" class="result-list-container">
+              <!-- Populated by JS -->
+            </div>
 
-              <!-- Empty State -->
-              <div id="result-empty-state" class="glass-card p-8 rounded-xl hidden">
-                <div class="flex items-start gap-4">
-                  <div
-                    class="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shrink-0">
-                    <i data-lucide="table-2" class="w-6 h-6 text-white"></i>
-                  </div>
-                  <div>
-                    <h3 id="result-empty-title" class="text-xl font-semibold text-white mb-2">No hay resultados aún
-                    </h3>
-                    <p id="result-empty-text" class="text-gray-300">Ejecuta las evaluaciones para ver los resultados
-                      preliminares.</p>
-                  </div>
+            <!-- Empty State -->
+            <div id="result-empty-state" class="glass-card p-8 rounded-xl hidden">
+              <div class="flex items-start gap-4">
+                <div
+                  class="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shrink-0">
+                  <i data-lucide="table-2" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                  <h3 id="result-empty-title" class="text-xl font-semibold text-white mb-2">No hay resultados aún
+                  </h3>
+                  <p id="result-empty-text" class="text-gray-300">Ejecuta las evaluaciones para ver los resultados
+                    preliminares.</p>
                 </div>
               </div>
             </div>
@@ -1808,6 +1823,7 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
 
   <!-- Result Modal -->
