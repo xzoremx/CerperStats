@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnVizRolodex = document.getElementById("btn-viz-rolodex");
   const btnVizList = document.getElementById("btn-viz-list");
   const btnCardTheme = document.getElementById("btn-card-theme");
+  const btnVizDangerToggle = document.getElementById("btn-viz-danger-toggle");
   const vizRolodexView = document.getElementById("viz-rolodex-view");
   const vizListView = document.getElementById("viz-list-view");
   const vizCardsContainer = document.getElementById("viz-cards-container");
@@ -50,6 +51,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let filterNivelValue = "";
   let filterAnalitoValue = "";
   let filterPruebaValue = ""; // Filter by test name (test_titulo)
+  let filterDangerValue = ""; // Filter by danger status
 
   // === Obtener y mostrar el usuario actual ===
   try {
@@ -211,6 +213,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         const testName = g.test_titulo || g.nombre_interno || "";
         if (testName !== filterPruebaValue) return false;
       }
+      // Filter by danger status
+      if (filterDangerValue === "danger" && g.conclusion_status !== "danger") return false;
       return true;
     });
 
@@ -753,6 +757,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Card theme toggle
   btnCardTheme?.addEventListener("click", toggleCardTheme);
+
+  // Viz danger toggle button handler
+  btnVizDangerToggle?.addEventListener("click", () => {
+    const isActive = btnVizDangerToggle.classList.toggle("active");
+    filterDangerValue = isActive ? "danger" : "";
+    applyFilters();
+  });
 
   // View toggle event listeners
   btnVizRolodex?.addEventListener("click", () => setVizView("rolodex"));

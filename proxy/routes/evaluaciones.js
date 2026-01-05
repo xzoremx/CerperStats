@@ -228,6 +228,7 @@ router.get('/graficos/:session_id', async (req, res) => {
          rg.analito,
          btrim(rg.grafico_data) AS grafico_data,
          rg.creado_en,
+         rg.conclusion_status,
          tc.titulo AS test_titulo,
          tc.nombre_interno
        FROM results_general rg
