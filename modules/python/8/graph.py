@@ -10,8 +10,8 @@ Entrada (inyectada por el runner):
 - df_ingreso: DataFrame ancho
 
 Salida:
-- grafico_data: PNG base64 con gráfico de barras horizontales mostrando Z-scores.
-  Las líneas de referencia marcan |Z| = 2 (cuestionable) y |Z| = 3 (atípico).
+- grafico_data: PNG base64 con gráfico radial/polar mostrando Z-scores.
+  Los círculos de referencia marcan |Z| = 2 (cuestionable) y |Z| = 3 (atípico).
 """
 
 import io
@@ -38,12 +38,12 @@ def evaluar_normalidad(valores):
     n = len(valores)
     if n < 3:
         return None
-    
+
     if 3 <= n <= 7:
         stat, p = sps.shapiro(valores)
     else:
         stat, p = normal_ad(valores)
-    
+
     return p >= 0.05
 
 
@@ -73,24 +73,24 @@ colors = []
 for col in df_ingreso.columns:
     serie = pd.to_numeric(df_ingreso[col], errors="coerce").dropna()
     n = len(serie)
-    
+
     if n == 0:
         continue
-    
+
     valores = serie.to_numpy(dtype=float)
-    
+
     # Evaluar normalidad para decidir el método
     es_normal = evaluar_normalidad(valores)
-    
+
     if es_normal is None or not es_normal:
         z_values = calcular_zscore_robusto(valores)
     else:
         z_values = calcular_zscore_clasico(valores)
-    
+
     for i, z in enumerate(z_values, start=1):
         labels.append(f"{col} - L{i}")
         zscores.append(float(z))
-        
+
         # Colorear según categoría
         abs_z = abs(z)
         if abs_z > 3:
@@ -104,39 +104,63 @@ for col in df_ingreso.columns:
 if len(zscores) == 0:
     grafico_data = ""
 else:
-    fig, ax = plt.subplots(figsize=(10, max(6, len(zscores) * 0.35)), dpi=100)
-    
-    y_pos = np.arange(len(labels))
-    
-    # Barras horizontales
-    bars = ax.barh(y_pos, zscores, color=colors, edgecolor="white", alpha=0.85)
-    
-    # Líneas de referencia
-    ax.axvline(x=3, color="#e74c3c", linestyle="--", linewidth=1.5, label="Atípico (|Z| > 3)")
-    ax.axvline(x=-3, color="#e74c3c", linestyle="--", linewidth=1.5)
-    ax.axvline(x=2, color="#f39c12", linestyle=":", linewidth=1.5, label="Cuestionable (|Z| > 2)")
-    ax.axvline(x=-2, color="#f39c12", linestyle=":", linewidth=1.5)
-    ax.axvline(x=0, color="#2c3e50", linestyle="-", linewidth=0.8, alpha=0.5)
-    
-    ax.set_yticks(y_pos)
-    ax.set_yticklabels(labels, fontsize=8)
-    ax.set_xlabel("Z-Score", fontsize=12)
-    ax.set_title("Evaluación de Atípicos — Z-Score", fontsize=14)
-    
-    ax.legend(loc="upper right", fontsize=8)
-    ax.grid(True, axis="x", linestyle="--", alpha=0.3)
-    
-    # Ajustar límites para mostrar líneas de referencia
-    max_abs_z = max(abs(min(zscores)), abs(max(zscores)), 3.5)
-    ax.set_xlim(-max_abs_z - 0.5, max_abs_z + 0.5)
-    
+    # Dimensiones estándar consistentes con otros gráficos
+    fig, ax = plt.subplots(figsize=(10, 6), dpi=100, subplot_kw=dict(projection='polar'))
+
+    n_bars = len(labels)
+
+    # Ángulos para cada barra (distribuidos uniformemente en el círculo)
+    angles = np.linspace(0, 2 * np.pi, n_bars, endpoint=False)
+
+    # Ancho de cada barra
+    width = 2 * np.pi / n_bars * 0.8
+
+    # Convertir Z-scores a valores absolutos para el radio (la dirección se indica con color)
+    radii = np.abs(zscores)
+
+    # Barras radiales
+    bars = ax.bar(angles, radii, width=width, color=colors, edgecolor="white", alpha=0.85, linewidth=1)
+
+    # Círculos de referencia
+    max_radius = max(max(radii), 4.0)
+
+    # Círculo Z=2 (cuestionable)
+    theta_circle = np.linspace(0, 2 * np.pi, 100)
+    ax.plot(theta_circle, [2] * 100, color="#f39c12", linestyle=":", linewidth=2, label="Cuestionable (|Z| = 2)")
+
+    # Círculo Z=3 (atípico)
+    ax.plot(theta_circle, [3] * 100, color="#e74c3c", linestyle="--", linewidth=2, label="Atípico (|Z| = 3)")
+
+    # Configurar etiquetas angulares
+    ax.set_xticks(angles)
+    ax.set_xticklabels(labels, fontsize=7)
+
+    # Configurar límites radiales
+    ax.set_ylim(0, max_radius + 0.5)
+    ax.set_yticks([1, 2, 3, 4])
+    ax.set_yticklabels(['1', '2', '3', '4'], fontsize=8)
+
+    ax.set_title("Evaluación de Atípicos — Z-Score (Multianalito)", fontsize=14, pad=20)
+
+    # Leyenda fuera del gráfico
+    legend_elements = [
+        plt.Line2D([0], [0], color="#27ae60", marker='s', linestyle='', markersize=10, label='Normal (|Z| ≤ 2)'),
+        plt.Line2D([0], [0], color="#f39c12", marker='s', linestyle='', markersize=10, label='Cuestionable (2 < |Z| ≤ 3)'),
+        plt.Line2D([0], [0], color="#e74c3c", marker='s', linestyle='', markersize=10, label='Atípico (|Z| > 3)'),
+        plt.Line2D([0], [0], color="#f39c12", linestyle=":", linewidth=2, label='Límite Z=2'),
+        plt.Line2D([0], [0], color="#e74c3c", linestyle="--", linewidth=2, label='Límite Z=3'),
+    ]
+    ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1.05, 1), fontsize=8)
+
+    ax.grid(True, linestyle="--", alpha=0.3)
+
     fig.tight_layout()
-    
+
     buf = io.BytesIO()
-    fig.savefig(buf, format="png")
+    fig.savefig(buf, format="png", bbox_inches='tight')
     plt.close(fig)
     buf.seek(0)
-    
+
     try:
         grafico_data = "data:image/png;base64," + base64.b64encode(buf.read()).decode("ascii")
     except Exception:
