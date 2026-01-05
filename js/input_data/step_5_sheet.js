@@ -7,6 +7,9 @@ const snapshotPorNivel = {};
 window.snapshotPorNivel = snapshotPorNivel;
 let snapshotBase = null;
 
+// Valor genérico para columnas de analitos en multianalito (primera creación)
+const DEFAULT_ANALITOS_COLUMNS = 3;
+
 function setNivelesCount(val) {
   if (typeof guardarSnapshot === "function") {
     guardarSnapshot(paginaActual);
@@ -281,7 +284,7 @@ function selectMode(selected) {
   generarTabla(selected);
 }
 
-function generarTabla(tipo) {
+function generarTabla(tipo, opciones = {}) {
   const tbody = document.querySelector("#excel tbody");
   tbody.innerHTML = "";
 
@@ -334,7 +337,9 @@ function generarTabla(tipo) {
 
   // --- MULTIANALITO ---
   else if (tipo === "multi" || tipo === "multianalito") {
-    const columnas = K + 1; // primera columna = parámetro (ej. analista)
+    // Usar numAnalitos de opciones, o el valor genérico por defecto
+    const numAnalitos = opciones.numAnalitos || DEFAULT_ANALITOS_COLUMNS;
+    const columnas = numAnalitos + 1; // primera columna = parámetro (ej. analista)
     const headerRow = document.createElement("tr");
 
     // Derivar forma singular si termina en "s"
@@ -344,7 +349,7 @@ function generarTabla(tipo) {
     // Encabezado: parámetro + analitos (editables)
     const headers = [
       capitalizeText(singularMulti),
-      ...Array.from({ length: K }, (_, i) => `Analito ${i + 1}`),
+      ...Array.from({ length: numAnalitos }, (_, i) => `Analito ${i + 1}`),
     ];
 
     headers.forEach((h, index) => {
@@ -806,19 +811,39 @@ function mostrarErroresSecuenciales(listaErrores) {
 }
 
 function sincronizarNivelesDesdeDatos(datos) {
-  if (!Array.isArray(datos) || !datos.length) return;
+  if (!Array.isArray(datos) || !datos.length) {
+    console.warn("[Step5] sincronizarNivelesDesdeDatos: datos vacíos o inválidos");
+    return;
+  }
+
+  console.log(`[Step5] Sincronizando ${datos.length} registros desde la base de datos`);
+
+  // Calcular nivel máximo
   const maxNivel = Math.max(...datos.map(d => Number(d.nivel) || 1), 1);
   const nuevo = Math.max(1, maxNivel);
   niveles = nuevo;
   window.niveles = nuevo;
   if (paginaActual > niveles) paginaActual = niveles;
+
   const display = document.getElementById("nivel-display");
   if (display) display.textContent = String(niveles);
   actualizarBadge();
 
-  // Distribuir datos por nivel en snapshots separados
+  // Determinar tipo de análisis
   const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
   const esMulti = (tipoAnalisis === "multi" || tipoAnalisis === "multianalito");
+
+  // Para multianalito: calcular número de analitos desde los datos (necesario para columnas de tabla)
+  let numAnalitosReal = DEFAULT_ANALITOS_COLUMNS;
+  if (esMulti) {
+    const analitosUnicos = [...new Set(
+      datos.map(d => (d.analito ?? "").toString().trim()).filter(Boolean)
+    )];
+    numAnalitosReal = analitosUnicos.length || DEFAULT_ANALITOS_COLUMNS;
+    console.log(`[Step5] Multianalito: ${numAnalitosReal} analitos, ${niveles} niveles`);
+  } else {
+    console.log(`[Step5] Monoanalito: ${niveles} niveles`);
+  }
 
   // Agrupar datos por nivel
   const datosPorNivel = {};
@@ -828,10 +853,11 @@ function sincronizarNivelesDesdeDatos(datos) {
     datosPorNivel[niv].push(d);
   });
 
-  // Para cada nivel, generar la tabla, rellenar y guardar snapshot
+  // Para cada nivel, generar tabla, rellenar y guardar snapshot
   for (let niv = 1; niv <= nuevo; niv++) {
-    generarTabla(tipoAnalisis);
+    generarTabla(tipoAnalisis, { numAnalitos: numAnalitosReal });
     const datosNivel = datosPorNivel[niv] || [];
+
     if (datosNivel.length > 0) {
       if (esMulti) {
         rellenarTablaMultiPorNivel(datosNivel);
@@ -851,19 +877,36 @@ function rellenarTablaMono(datos) {
   const table = document.getElementById("excel");
   if (!table || !table.rows?.length) return;
 
+  // Actualizar encabezados con los nombres de parámetros reales
+  const parametrosUnicos = [...new Set(
+    datos.map(d => (d.parametro ?? "").toString().trim()).filter(Boolean)
+  )];
+
   const headerCells = [...table.rows[0].cells];
-  const headerMap = headerCells.reduce((acc, td, idx) => {
+  for (let i = 0; i < headerCells.length && i < parametrosUnicos.length; i++) {
+    headerCells[i].textContent = parametrosUnicos[i];
+    togglePlaceholder(headerCells[i]);
+  }
+
+  // Reconstruir mapa de encabezados
+  const headerMap = [...table.rows[0].cells].reduce((acc, td, idx) => {
     const name = (td.textContent || "").trim();
     if (name) acc[name] = idx;
     return acc;
   }, {});
 
+  // Llenar datos
   datos.forEach(d => {
-    const colIndex = headerMap[d.parametro];
+    const paramName = (d.parametro ?? "").toString().trim();
+    const colIndex = headerMap[paramName];
     if (colIndex == null) return;
-    const r = Number(d.lectura_idx);
-    const row = table.rows[r];
+
+    const rowIdx = Number(d.lectura_idx);
+    if (!rowIdx || rowIdx < 1) return;
+
+    const row = table.rows[rowIdx];
     if (!row) return;
+
     const cell = row.cells[colIndex];
     if (cell) {
       cell.textContent = (d.valor ?? "").toString();
@@ -873,8 +916,6 @@ function rellenarTablaMono(datos) {
 }
 
 function rellenarTablaMulti(datos) {
-  // Esta función ahora delega a sincronizarNivelesDesdeDatos que maneja niveles
-  // Se mantiene por compatibilidad pero el flujo principal usa sincronizarNivelesDesdeDatos
   rellenarTablaMultiPorNivel(datos);
 }
 
@@ -884,49 +925,76 @@ function rellenarTablaMultiPorNivel(datos) {
 
   const rows = [...table.rows];
   const headerCells = [...rows[0].cells];
+  const numColumnasAnalito = headerCells.length - 1;
 
-  // 1) Setear nombres de analitos en encabezados desde los datos
-  const K = parseInt(sessionStorage.getItem("K")) || (headerCells.length - 1);
+  // 1) Extraer analitos únicos en orden de aparición
   const analitosUnicos = [];
   for (const d of datos) {
     const name = (d.analito ?? "").toString().trim();
-    if (name && !analitosUnicos.includes(name)) analitosUnicos.push(name);
-    if (analitosUnicos.length >= K) break;
-  }
-  for (let i = 0; i < K; i++) {
-    const th = headerCells[i + 1]; // desde la columna 1 (índice 1) en adelante
-    if (!th) continue;
-    if (analitosUnicos[i]) th.textContent = analitosUnicos[i];
-  }
-
-  // Recalcular mapa de encabezados tras actualizar textos
-  const headerMap = [...rows[0].cells].reduce((acc, td, idx) => {
-    const name = (td.textContent || "").trim();
-    if (name) acc[name] = idx;
-    return acc;
-  }, {});
-
-  // 2) Mapear nombre del parámetro a índice inicial de su bloque de filas
-  const paramStartIndex = {};
-  for (let r = 1; r < rows.length; r++) {
-    const name = (rows[r].cells[0]?.textContent || "").trim();
-    if (name && !(name in paramStartIndex)) {
-      paramStartIndex[name] = r; // primera fila del bloque para ese parámetro
+    if (name && !analitosUnicos.includes(name)) {
+      analitosUnicos.push(name);
     }
   }
 
-  // 3) Volcar valores en sus celdas correspondientes
+  // 2) Actualizar encabezados con nombres de analitos
+  for (let i = 0; i < numColumnasAnalito && i < analitosUnicos.length; i++) {
+    const th = headerCells[i + 1];
+    if (th) {
+      th.textContent = analitosUnicos[i];
+      togglePlaceholder(th);
+    }
+  }
+
+  // 3) Reconstruir mapa de encabezados (analito -> índice de columna)
+  const headerMap = {};
+  for (let i = 1; i < headerCells.length; i++) {
+    const name = (headerCells[i].textContent || "").trim();
+    if (name) headerMap[name] = i;
+  }
+
+  // 4) Mapear parámetros de datos a filas de la tabla
+  const paramStartIndex = {};
+  for (let r = 1; r < rows.length; r++) {
+    const cellText = (rows[r].cells[0]?.textContent || "").trim();
+    if (cellText && !(cellText in paramStartIndex)) {
+      paramStartIndex[cellText] = r;
+    }
+  }
+
+  // 5) Crear mapeo de parámetros de datos a parámetros de tabla
+  const parametrosUnicos = [...new Set(
+    datos.map(d => (d.parametro ?? "").toString().trim()).filter(Boolean)
+  )];
+  const tablaParams = Object.keys(paramStartIndex);
+  const paramMapping = {};
+
+  for (const dataParam of parametrosUnicos) {
+    if (paramStartIndex[dataParam] !== undefined) {
+      paramMapping[dataParam] = dataParam;
+    } else {
+      const dataParamIdx = parametrosUnicos.indexOf(dataParam);
+      if (dataParamIdx < tablaParams.length) {
+        paramMapping[dataParam] = tablaParams[dataParamIdx];
+      }
+    }
+  }
+
+  // 6) Volcar valores en celdas
   datos.forEach(d => {
-    const colIndex = headerMap[(d.analito ?? "").toString().trim()];
+    const analitoName = (d.analito ?? "").toString().trim();
+    const colIndex = headerMap[analitoName];
     if (colIndex == null) return;
 
-    const paramName = (d.parametro ?? "").toString().trim();
-    const start = paramStartIndex[paramName];
+    const dataParamName = (d.parametro ?? "").toString().trim();
+    const tablaParamName = paramMapping[dataParamName];
+    const start = tablaParamName ? paramStartIndex[tablaParamName] : null;
     if (start == null) return;
 
-    const li = Number(d.lectura_idx) || 1; // base 1
-    const row = table.rows[start + li - 1];
+    const lecturaIdx = Number(d.lectura_idx) || 1;
+    const rowIdx = start + lecturaIdx - 1;
+    const row = table.rows[rowIdx];
     if (!row) return;
+
     const cell = row.cells[colIndex];
     if (cell) {
       cell.textContent = (d.valor ?? "").toString();
@@ -1123,10 +1191,18 @@ function restaurarPagina(nivel) {
   if (!table) return;
   const tipoActual = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
   const esMulti = (tipoActual === "multi" || tipoActual === "multianalito");
-  generarTabla(tipoActual);
 
   const snap = snapshotPorNivel[nivel];
   const headerFallback = snapshotBase?.[0];
+
+  // Calcular numAnalitos del snapshot para multianalito
+  let numAnalitos = DEFAULT_ANALITOS_COLUMNS;
+  if (esMulti && snap && snap[0]) {
+    // El snapshot tiene [parámetro, analito1, analito2, ...], así que length - 1
+    numAnalitos = snap[0].length - 1;
+  }
+
+  generarTabla(tipoActual, { numAnalitos });
 
   if (snap) {
     [...table.rows].forEach((r, ri) => {

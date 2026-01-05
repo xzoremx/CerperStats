@@ -217,3 +217,200 @@ sudo systemctl restart cerper-proxy
    ```bash
    sudo systemctl restart cerper-proxy
    ```
+
+## Módulos Python de Evaluación
+
+### Estructura de un Módulo
+
+Cada módulo de evaluación estadística tiene la siguiente estructura:
+
+```
+modules/python/{module_id}/
+├── principal.py    # Lógica principal de la evaluación
+└── graph.py        # Generación de gráficos (matplotlib/plotly)
+```
+
+### Manifest de Módulos
+
+El archivo `modules/_common/modules_manifest.json` registra todos los módulos disponibles:
+
+```json
+{
+  "entries": [
+    {
+      "module_id": 1,
+      "catalog_id": 1,
+      "name": "Prueba de Normalidad",
+      "runtime": "python"
+    },
+    {
+      "module_id": 2,
+      "catalog_id": 2,
+      "name": "Prueba de Homogeneidad",
+      "runtime": "python"
+    }
+  ]
+}
+```
+
+### Entorno Virtual Python
+
+El entorno virtual está en `/home/ubuntu/cerper-eval/.env/`:
+
+```bash
+# Activar entorno virtual
+source /home/ubuntu/cerper-eval/.env/bin/activate
+
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Desactivar
+deactivate
+```
+
+**Dependencias típicas:**
+- `pandas` - Manipulación de datos
+- `numpy` - Cálculos numéricos
+- `scipy` - Estadísticas
+- `matplotlib` - Gráficos
+- `plotly` - Gráficos interactivos
+
+## Base de Datos PostgreSQL
+
+### Tablas Principales
+
+| Tabla | Descripción |
+|-------|-------------|
+| `usuarios` | Usuarios del sistema |
+| `sessions` | Sesiones de análisis |
+| `inputs_monoanalito` | Datos de entrada (monoanalito) |
+| `inputs_multianalito` | Datos de entrada (multianalito) |
+| `tests_catalog` | Catálogo de pruebas estadísticas |
+| `test_modules` | Módulos asociados a cada prueba |
+| `results_general` | Resultados de evaluaciones (gráficos, dataframes) |
+| `session_selected_tests` | Pruebas seleccionadas por sesión |
+| `logs_sistema` | Logs de auditoría |
+
+### Campos Importantes en `results_general`
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `id` | serial | ID único del resultado |
+| `session_id` | int | ID de la sesión |
+| `catalog_id` | int | ID del test del catálogo |
+| `nivel` | int | Nivel del análisis |
+| `analito` | varchar | Nombre del analito |
+| `resultado_pc` | jsonb | Dataframe con resultados |
+| `grafico_data` | text | Imagen en base64 |
+| `conclusion` | text | Conclusión del análisis |
+| `conclusion_status` | varchar | Estado: 'ok', 'warning', 'danger' |
+| `creado_en` | timestamp | Fecha de creación |
+
+### Conexión Manual
+
+```bash
+# Conectar a PostgreSQL
+psql -h localhost -U cerper_user -d cerperstats
+
+# Consultas útiles
+\dt                          # Listar tablas
+\d results_general           # Describir tabla
+SELECT COUNT(*) FROM results_general WHERE session_id = 123;
+```
+
+## Seguridad
+
+### Autenticación JWT
+
+El proxy usa JWT para autenticar requests:
+
+1. El cliente hace login en `/auth/login`
+2. Si es válido, el cliente guarda el token
+3. En cada request, envía el header: `Authorization: Bearer <token>`
+4. El proxy valida el token con el secreto en `secrets/token_secret.txt`
+
+### Generación de Token (para desarrollo)
+
+```bash
+cd /home/ubuntu/cerper-eval/proxy
+node gen-token.js
+```
+
+### SSL/TLS
+
+- PostgreSQL usa SSL obligatorio (`ssl = on` en postgresql.conf)
+- El proxy valida el certificado del servidor (`rejectUnauthorized: true`)
+- Los certificados están en `/etc/postgresql/certs/`
+
+## Monitoreo
+
+### Verificar Estado de Servicios
+
+```bash
+# Estado del proxy
+sudo systemctl status cerper-proxy
+
+# Estado de PostgreSQL
+sudo systemctl status postgresql
+
+# Uso de disco
+df -h
+
+# Uso de memoria
+free -h
+
+# Procesos Node.js
+ps aux | grep node
+
+# Procesos PostgreSQL
+ps aux | grep postgres
+```
+
+### Logs
+
+```bash
+# Logs del proxy (tiempo real)
+sudo journalctl -u cerper-proxy -f
+
+# Logs de PostgreSQL
+sudo tail -f /var/log/postgresql/postgresql-*-main.log
+
+# Logs del sistema
+sudo tail -f /var/log/syslog
+```
+
+## Backup
+
+### Backup de Base de Datos
+
+```bash
+# Crear backup
+pg_dump -h localhost -U cerper_user -d cerperstats > backup_$(date +%Y%m%d).sql
+
+# Restaurar backup
+psql -h localhost -U cerper_user -d cerperstats < backup_20260105.sql
+```
+
+### Backup de Archivos
+
+```bash
+# Backup completo del directorio
+tar -czvf cerper-eval-backup.tar.gz /home/ubuntu/cerper-eval/
+```
+
+## IP y Red
+
+- **IP Estática (pública)**: `3.210.242.5`
+- **IP Privada**: `172.26.5.56`
+- **Puerto del Proxy**: `4000`
+- **Puerto PostgreSQL**: `5432` (solo localhost)
+
+### Firewall (si aplica)
+
+```bash
+# Ver reglas
+sudo ufw status
+
+# Permitir puerto del proxy (si es necesario)
+sudo ufw allow 4000/tcp
+```
