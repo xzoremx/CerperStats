@@ -797,7 +797,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const dropdownResultNivel = document.getElementById("dropdown-result-nivel");
   const dropdownResultAnalito = document.getElementById("dropdown-result-analito");
   const dropdownResultPrueba = document.getElementById("dropdown-result-prueba");
-  const dropdownResultDanger = document.getElementById("dropdown-result-danger");
+  const btnDangerToggle = document.getElementById("btn-danger-toggle");
   const resultModalBackdrop = document.getElementById("result-modal-backdrop");
   const resultModalTitle = document.getElementById("result-modal-title");
   const resultModalSubtitle = document.getElementById("result-modal-subtitle");
@@ -1071,8 +1071,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     applyResultFilters();
   });
 
-  initDropdown(dropdownResultDanger, (value) => {
-    resultFilterDanger = value;
+  // Danger toggle button handler
+  btnDangerToggle?.addEventListener("click", () => {
+    const isActive = btnDangerToggle.classList.toggle("active");
+    resultFilterDanger = isActive ? "danger" : "";
     applyResultFilters();
   });
 
