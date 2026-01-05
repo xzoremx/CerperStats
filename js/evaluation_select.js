@@ -538,8 +538,29 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       item.addEventListener("mousemove", (e) => {
         if (vizHoverPreview) {
-          vizHoverPreview.style.left = `${e.clientX + 20}px`;
-          vizHoverPreview.style.top = `${e.clientY - 100}px`;
+          const previewWidth = 455;
+          const previewHeight = 325;
+          const margin = 20;
+
+          // Calculate horizontal position (prefer right, fallback to left)
+          let left = e.clientX + margin;
+          if (left + previewWidth > window.innerWidth) {
+            left = e.clientX - previewWidth - margin;
+          }
+
+          // Calculate vertical position (prefer above cursor, fallback to below)
+          let top = e.clientY - previewHeight - margin;
+          if (top < 0) {
+            // Not enough space above, show below cursor
+            top = e.clientY + margin;
+          }
+          // Also check if it goes below the viewport
+          if (top + previewHeight > window.innerHeight) {
+            top = window.innerHeight - previewHeight - margin;
+          }
+
+          vizHoverPreview.style.left = `${Math.max(0, left)}px`;
+          vizHoverPreview.style.top = `${Math.max(0, top)}px`;
         }
       });
 

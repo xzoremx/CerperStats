@@ -699,9 +699,9 @@
     }
 
     .viz-hover-preview img {
-      width: 280px;
+      width: 455px;
       height: auto;
-      max-height: 200px;
+      max-height: 325px;
       object-fit: contain;
       background: rgba(0, 0, 0, 0.8);
       border: 1px solid rgba(255, 255, 255, 0.15);
@@ -1597,10 +1597,6 @@
                 <div id="viz-list-container" class="viz-list-container">
                   <!-- List items will be injected by JS -->
                 </div>
-                <!-- Floating image preview -->
-                <div id="viz-hover-preview" class="viz-hover-preview">
-                  <img id="viz-hover-image" src="" alt="">
-                </div>
               </section>
             </div>
 
@@ -1848,6 +1844,11 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Floating image preview (outside glass container for proper fixed positioning) -->
+  <div id="viz-hover-preview" class="viz-hover-preview">
+    <img id="viz-hover-image" src="" alt="">
   </div>
 
   <!-- Result Modal -->
