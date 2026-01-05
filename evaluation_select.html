@@ -1262,6 +1262,44 @@
       gap: 0.75rem;
       margin-bottom: 1rem;
     }
+
+    /* Danger/Alert styling for result items */
+    .result-list-item.is-danger {
+      background: linear-gradient(135deg,
+          rgba(239, 68, 68, 0.12) 0%,
+          rgba(220, 38, 38, 0.08) 50%,
+          rgba(185, 28, 28, 0.05) 100%);
+      border-color: rgba(239, 68, 68, 0.25);
+      box-shadow:
+        0 4px 12px rgba(239, 68, 68, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .result-list-item.is-danger:hover {
+      background: linear-gradient(135deg,
+          rgba(239, 68, 68, 0.18) 0%,
+          rgba(220, 38, 38, 0.12) 50%,
+          rgba(185, 28, 28, 0.08) 100%);
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .result-list-item.is-danger .result-list-id {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.15) 100%);
+      color: #fca5a5;
+    }
+
+    .result-danger-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.125rem 0.5rem;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.15) 100%);
+      border-radius: 0.375rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #fca5a5;
+      margin-left: 0.5rem;
+    }
   </style>
 </head>
 
@@ -1424,6 +1462,19 @@
                     </button>
                     <div class="viz-dropdown-menu">
                       <div class="viz-dropdown-item active" data-value="">Todos los analitos</div>
+                    </div>
+                  </div>
+
+                  <div class="viz-dropdown" id="dropdown-prueba">
+                    <button class="viz-dropdown-trigger" type="button">
+                      <span class="viz-dropdown-text">Todas las pruebas</span>
+                      <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </button>
+                    <div class="viz-dropdown-menu">
+                      <div class="viz-dropdown-item active" data-value="">Todas las pruebas</div>
                     </div>
                   </div>
 
@@ -1700,6 +1751,33 @@
                     </button>
                     <div class="viz-dropdown-menu">
                       <div class="viz-dropdown-item active" data-value="">Todos los analitos</div>
+                    </div>
+                  </div>
+
+                  <div class="viz-dropdown" id="dropdown-result-prueba">
+                    <button class="viz-dropdown-trigger" type="button">
+                      <span class="viz-dropdown-text">Todas las pruebas</span>
+                      <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </button>
+                    <div class="viz-dropdown-menu">
+                      <div class="viz-dropdown-item active" data-value="">Todas las pruebas</div>
+                    </div>
+                  </div>
+
+                  <div class="viz-dropdown" id="dropdown-result-danger">
+                    <button class="viz-dropdown-trigger" type="button">
+                      <span class="viz-dropdown-text">Todos los resultados</span>
+                      <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </button>
+                    <div class="viz-dropdown-menu">
+                      <div class="viz-dropdown-item active" data-value="">Todos los resultados</div>
+                      <div class="viz-dropdown-item" data-value="danger">Solo alertas</div>
                     </div>
                   </div>
                 </div>

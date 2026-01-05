@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // New visualization UI elements - Custom Dropdowns
   const dropdownNivel = document.getElementById("dropdown-nivel");
   const dropdownAnalito = document.getElementById("dropdown-analito");
+  const dropdownPrueba = document.getElementById("dropdown-prueba");
   const btnVizRolodex = document.getElementById("btn-viz-rolodex");
   const btnVizList = document.getElementById("btn-viz-list");
   const btnCardTheme = document.getElementById("btn-card-theme");
@@ -48,6 +49,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let vizCardTheme = "dark"; // 'dark' or 'light'
   let filterNivelValue = "";
   let filterAnalitoValue = "";
+  let filterPruebaValue = ""; // Filter by test name (test_titulo)
 
   // === Obtener y mostrar el usuario actual ===
   try {
@@ -204,6 +206,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     filteredGraphs = allGraphs.filter(g => {
       if (filterNivelValue && String(g.nivel) !== filterNivelValue) return false;
       if (filterAnalitoValue && g.analito !== filterAnalitoValue) return false;
+      // Filter by test name (test_titulo or nombre_interno)
+      if (filterPruebaValue) {
+        const testName = g.test_titulo || g.nombre_interno || "";
+        if (testName !== filterPruebaValue) return false;
+      }
       return true;
     });
 
@@ -231,10 +238,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   function populateFilters() {
     const niveles = new Set();
     const analitos = new Set();
+    const pruebas = new Set();
 
     allGraphs.forEach(g => {
       if (g.nivel != null) niveles.add(String(g.nivel));
       if (g.analito) analitos.add(g.analito);
+      // Collect unique test names
+      const testName = g.test_titulo || g.nombre_interno;
+      if (testName) pruebas.add(testName);
     });
 
     const nivelItems = [...niveles].sort((a, b) => Number(a) - Number(b)).map(n => ({
@@ -247,8 +258,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       label: a
     }));
 
+    const pruebaItems = [...pruebas].sort().map(p => ({
+      value: p,
+      label: p
+    }));
+
     populateDropdown(dropdownNivel, nivelItems, "Todos los niveles");
     populateDropdown(dropdownAnalito, analitoItems, "Todos los analitos");
+    populateDropdown(dropdownPrueba, pruebaItems, "Todas las pruebas");
   }
 
   // Custom dropdown functionality
@@ -708,6 +725,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     applyFilters();
   });
 
+  initDropdown(dropdownPrueba, (value) => {
+    filterPruebaValue = value;
+    applyFilters();
+  });
+
   // Card theme toggle
   btnCardTheme?.addEventListener("click", toggleCardTheme);
 
@@ -774,6 +796,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const resultRunInfo = document.getElementById("result-run-info");
   const dropdownResultNivel = document.getElementById("dropdown-result-nivel");
   const dropdownResultAnalito = document.getElementById("dropdown-result-analito");
+  const dropdownResultPrueba = document.getElementById("dropdown-result-prueba");
+  const dropdownResultDanger = document.getElementById("dropdown-result-danger");
   const resultModalBackdrop = document.getElementById("result-modal-backdrop");
   const resultModalTitle = document.getElementById("result-modal-title");
   const resultModalSubtitle = document.getElementById("result-modal-subtitle");
@@ -785,6 +809,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   let resultadosLoading = false;
   let resultFilterNivel = "";
   let resultFilterAnalito = "";
+  let resultFilterPrueba = "";
+  let resultFilterDanger = "";
 
   menuResultados?.addEventListener("click", (e) => {
     e.preventDefault();
@@ -950,12 +976,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const item = document.createElement("div");
       item.className = "result-list-item";
+      // Add danger class if conclusion_status is 'danger'
+      if (r.conclusion_status === "danger") {
+        item.classList.add("is-danger");
+      }
       item.dataset.index = index;
+
+      // Build danger badge HTML if needed
+      const dangerBadge = r.conclusion_status === "danger"
+        ? '<span class="result-danger-badge">⚠️ Alerta</span>'
+        : '';
 
       item.innerHTML = `
         <div class="result-list-item-inner">
           <span class="result-list-id">#${index + 1}</span>
-          <h2 class="result-list-title">${title}</h2>
+          <h2 class="result-list-title">${title}${dangerBadge}</h2>
           <p class="result-list-meta">${metaParts.join(" · ")}</p>
           ${r.categoria ? `<span class="result-list-category">${r.categoria}</span>` : ""}
           <span class="result-list-arrow">
@@ -975,6 +1010,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     filteredResults = allResults.filter(r => {
       if (resultFilterNivel && String(r.nivel) !== resultFilterNivel) return false;
       if (resultFilterAnalito && r.analito !== resultFilterAnalito) return false;
+      // Filter by test name
+      if (resultFilterPrueba) {
+        const testName = r.test_titulo || r.nombre_interno || "";
+        if (testName !== resultFilterPrueba) return false;
+      }
+      // Filter by danger status
+      if (resultFilterDanger === "danger" && r.conclusion_status !== "danger") return false;
       return true;
     });
     renderResultadosList();
@@ -983,10 +1025,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   function populateResultFilters() {
     const niveles = new Set();
     const analitos = new Set();
+    const pruebas = new Set();
 
     allResults.forEach(r => {
       if (r.nivel != null) niveles.add(String(r.nivel));
       if (r.analito) analitos.add(r.analito);
+      // Collect unique test names
+      const testName = r.test_titulo || r.nombre_interno;
+      if (testName) pruebas.add(testName);
     });
 
     const nivelItems = [...niveles].sort((a, b) => Number(a) - Number(b)).map(n => ({
@@ -999,8 +1045,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       label: a
     }));
 
+    const pruebaItems = [...pruebas].sort().map(p => ({
+      value: p,
+      label: p
+    }));
+
     populateDropdown(dropdownResultNivel, nivelItems, "Todos los niveles");
     populateDropdown(dropdownResultAnalito, analitoItems, "Todos los analitos");
+    populateDropdown(dropdownResultPrueba, pruebaItems, "Todas las pruebas");
   }
 
   // Initialize result dropdowns with reused function
@@ -1011,6 +1063,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   initDropdown(dropdownResultAnalito, (value) => {
     resultFilterAnalito = value;
+    applyResultFilters();
+  });
+
+  initDropdown(dropdownResultPrueba, (value) => {
+    resultFilterPrueba = value;
+    applyResultFilters();
+  });
+
+  initDropdown(dropdownResultDanger, (value) => {
+    resultFilterDanger = value;
     applyResultFilters();
   });
 
