@@ -40,5 +40,19 @@
     "nombre_interno": "tendencia_central_multianalito",
     "version": "1.0.0",
     "runtime": "stats"
+  },
+  "python/7": {
+    "id": 7,
+    "module_id": 7,
+    "nombre_interno": "atipicos",
+    "version": "1.0.0",
+    "runtime": "stats"
+  },
+  "python/8": {
+    "id": 8,
+    "module_id": 8,
+    "nombre_interno": "atipicos_multianalito",
+    "version": "1.0.0",
+    "runtime": "stats"
   }
 }

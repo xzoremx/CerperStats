@@ -14,7 +14,6 @@
 -- 1. Insertar en tests_catalog
 -- =====================================================
 
--- Homogeneidad de Varianzas (Multianalito)
 INSERT INTO tests_catalog (
     lab_key,
     tipo_analisis,
@@ -27,18 +26,17 @@ INSERT INTO tests_catalog (
     icon_lib
 ) VALUES (
     'metales',                                    -- Ajustar según tu lab_key
-    'multianalito',                              -- tipo_analisis
+    'mono',                              -- tipo_analisis
     'cuantitativo',                              -- tipo_dato
     NULL,                                        -- modo_cualitativo
-    'homogeneidad_varianzas_multianalito',       -- nombre_interno
-    'Homogeneidad de Varianzas (Multianalito)', -- titulo
-    'Homogeneidad',                              -- categoria
-    'Evalúa si las varianzas son homogéneas entre grupos usando Bartlett, Prueba F o Levene según normalidad de los datos. Versión multianalito.',
-    'lucide:bar-chart-2'                         -- icon_lib
+    'atipicos',       -- nombre_interno
+    'Detección de Atípicos', -- titulo
+    'Tratamiento de Resultados',                              -- categoria
+    'Evalúa si los resultados son atípicos usando Z-Score clásico o robusto.',
+    'lucide:alert-circle'                         -- icon_lib
 )
 ON CONFLICT (lab_key, nombre_interno) DO NOTHING;
 
--- Tendencia Central (Multianalito)
 INSERT INTO tests_catalog (
     lab_key,
     tipo_analisis,
@@ -51,14 +49,14 @@ INSERT INTO tests_catalog (
     icon_lib
 ) VALUES (
     'metales',                                    -- Ajustar según tu lab_key
-    'multianalito',                              -- tipo_analisis
+    'multi',                              -- tipo_analisis
     'cuantitativo',                              -- tipo_dato
     NULL,                                        -- modo_cualitativo
-    'tendencia_central_multianalito',            -- nombre_interno
-    'Tendencia Central (Multianalito)',          -- titulo
-    'Tendencia Central',                         -- categoria
-    'Evalúa diferencias en la tendencia central usando ANOVA, T-Student, Kruskal-Wallis o Mann-Whitney según normalidad de los datos. Versión multianalito.',
-    'lucide:bar-chart-2'                         -- icon_lib
+    'atipicos_multianalito',            -- nombre_interno
+    'Detección de Atípicos (Multianalito)',          -- titulo
+    'Tratamiento de Resultados',                         -- categoria
+    'Evalúa si los resultados son atípicos usando Z-Score clásico o robusto.',
+    'lucide:alert-circle'                         -- icon_lib
 )
 ON CONFLICT (lab_key, nombre_interno) DO NOTHING;
 
@@ -68,7 +66,6 @@ ON CONFLICT (lab_key, nombre_interno) DO NOTHING;
 -- =====================================================
 
 -- Obtener los IDs de los tests recién insertados y crear los módulos
--- Homogeneidad de Varianzas (Multianalito) - module_id = 5
 INSERT INTO test_modules (
     catalog_id,
     version,
@@ -85,10 +82,9 @@ SELECT
     true,
     '{}'::jsonb
 FROM tests_catalog
-WHERE nombre_interno = 'homogeneidad_varianzas_multianalito'
+WHERE nombre_interno = 'atipicos'
 ON CONFLICT (catalog_id, version) DO NOTHING;
 
--- Tendencia Central (Multianalito) - module_id = 6
 INSERT INTO test_modules (
     catalog_id,
     version,
@@ -105,7 +101,7 @@ SELECT
     true,
     '{}'::jsonb
 FROM tests_catalog
-WHERE nombre_interno = 'tendencia_central_multianalito'
+WHERE nombre_interno = 'atipicos_multianalito'
 ON CONFLICT (catalog_id, version) DO NOTHING;
 
 
