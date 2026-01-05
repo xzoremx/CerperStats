@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-01-05T21:34:14.841Z",
+  "tag": "quick",
+  "git_commit": "f8fa551a2871e79890f576039b803c5829a851cb",
+  "connection": {
+    "host": "3.210.242.5",
+    "port": "5432",
+    "db": "cerperstats",
+    "user": "cerper_user"
+  },
+  "files": {
+    "dump": "database\\db_snapshots\\20260105_163316__quick.dump",
+    "schema": "database\\db_snapshots\\20260105_163316__quick__schema.sql"
+  }
+}

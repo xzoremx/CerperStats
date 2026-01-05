@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict V7Ce5xTFlHDlNBy2IKJsZOCi2u2fJA1ft2o3uODqsoMugcjchcdyUP00aJmSKSa
+\restrict 1kyQ3osEZppBOGiRZKKG4mfw2HgU36ghcbuv55diRbhbtyO9tRsvKgHbHgNFbva
 
 -- Dumped from database version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
 -- Dumped by pg_dump version 18.0
@@ -574,11 +574,20 @@ CREATE TABLE public.results_general (
     actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     nivel integer DEFAULT 1 NOT NULL,
     analito text DEFAULT 'Analito'::text NOT NULL,
-    conclusion text
+    conclusion text,
+    conclusion_status character varying(10),
+    CONSTRAINT results_general_conclusion_status_check CHECK (((conclusion_status)::text = ANY ((ARRAY['success'::character varying, 'danger'::character varying, 'neutral'::character varying])::text[])))
 );
 
 
 ALTER TABLE public.results_general OWNER TO cerper_user;
+
+--
+-- Name: COLUMN results_general.conclusion_status; Type: COMMENT; Schema: public; Owner: cerper_user
+--
+
+COMMENT ON COLUMN public.results_general.conclusion_status IS 'Status de la conclusión: success (verde), danger (rojo), neutral (gris). Generado por los módulos Python.';
+
 
 --
 -- Name: results_general_id_seq; Type: SEQUENCE; Schema: public; Owner: cerper_user
@@ -1069,6 +1078,13 @@ CREATE INDEX idx_reports_usuario_id ON public.reports USING btree (usuario_id);
 
 
 --
+-- Name: idx_results_general_conclusion_status; Type: INDEX; Schema: public; Owner: cerper_user
+--
+
+CREATE INDEX idx_results_general_conclusion_status ON public.results_general USING btree (conclusion_status) WHERE (conclusion_status IS NOT NULL);
+
+
+--
 -- Name: idx_rg_catalog; Type: INDEX; Schema: public; Owner: cerper_user
 --
 
@@ -1413,5 +1429,5 @@ ALTER TABLE ONLY public.session_selected_tests
 -- PostgreSQL database dump complete
 --
 
-\unrestrict V7Ce5xTFlHDlNBy2IKJsZOCi2u2fJA1ft2o3uODqsoMugcjchcdyUP00aJmSKSa
+\unrestrict 1kyQ3osEZppBOGiRZKKG4mfw2HgU36ghcbuv55diRbhbtyO9tRsvKgHbHgNFbva
 
