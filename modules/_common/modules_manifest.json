@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2025-12-30T17:53:51.274Z",
+  "generated_at": "2026-01-05T16:36:26.477Z",
   "entries": [
     {
       "id": 1,
@@ -53,6 +53,32 @@
       "sha256_module": "50456b80fbcf84de376145e8f86b96f567ff22cf4667e1e8427fb49d47280e2d",
       "sha256_script_grafico": "e5420c0af7b78cf229d70de497455f91a62ec3edc189afe148801e9cedd8774b",
       "sha256_graph": "e5420c0af7b78cf229d70de497455f91a62ec3edc189afe148801e9cedd8774b"
+    },
+    {
+      "id": 5,
+      "module_id": 5,
+      "nombre_interno": "homogeneidad_varianzas_multianalito",
+      "version": "1.0.0",
+      "module_asset": "python/5/principal.py",
+      "script_grafico": "python/5/graph.py",
+      "graph_asset": "python/5/graph.py",
+      "runtime": "stats",
+      "sha256_module": "4a718b8b3ab0ffcee214f636b7f6dd899455f51473ec07e680e1d3f9619acfab",
+      "sha256_script_grafico": "62fe10f7875136a3dc540c0fcf8d46043084f51df56567fb1df738d6853b8f96",
+      "sha256_graph": "62fe10f7875136a3dc540c0fcf8d46043084f51df56567fb1df738d6853b8f96"
+    },
+    {
+      "id": 6,
+      "module_id": 6,
+      "nombre_interno": "tendencia_central_multianalito",
+      "version": "1.0.0",
+      "module_asset": "python/6/principal.py",
+      "script_grafico": "python/6/graph.py",
+      "graph_asset": "python/6/graph.py",
+      "runtime": "stats",
+      "sha256_module": "bf1b44a42551fea1dd62dddfbb5e849b765bf1e76800fe8e374b80a79ffc7507",
+      "sha256_script_grafico": "3706352577fa3a3a93c074efa453ab2986dc83fcbd9ba22fe6915eb59bf4932d",
+      "sha256_graph": "3706352577fa3a3a93c074efa453ab2986dc83fcbd9ba22fe6915eb59bf4932d"
     }
   ]
 }
