@@ -139,7 +139,7 @@ else:
 
     # Leyenda fuera del gráfico
     legend_elements = [
-        plt.Line2D([0], [0], color="#27ae60", marker='s', linestyle='', markersize=10, label='Normal (|Z| ≤ 2)'),
+        plt.Line2D([0], [0], color="#27ae60", marker='s', linestyle='', markersize=10, label='Aceptable (|Z| ≤ 2)'),
         plt.Line2D([0], [0], color="#f39c12", marker='s', linestyle='', markersize=10, label='Cuestionable (2 < |Z| ≤ 3)'),
         plt.Line2D([0], [0], color="#e74c3c", marker='s', linestyle='', markersize=10, label='Atípico (|Z| > 3)'),
         plt.Line2D([0], [0], color="#f39c12", linestyle=":", linewidth=2, label='Límite Z=2'),

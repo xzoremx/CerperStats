@@ -86,16 +86,19 @@ else:
     # --------------------------------------------------------
     # 3. Conclusión textual
     # --------------------------------------------------------
+    # Usar "medias" para pruebas paramétricas (normales) y "medianas" para no paramétricas
+    termino = "medias" if es_normal_todos else "medianas"
+
     if p_value < 0.05:
         conclusion = (
             f"El valor de P-Value = {p_value:.4f} es menor que el alfa = 0.05, "
-            "por lo que se concluye al 95% de confianza que existen diferencias significativas en la tendencia central."
+            f"por lo que se concluye al 95% de confianza que existen diferencias significativas en las {termino}."
         )
         conclusion_status = "danger"
     else:
         conclusion = (
             f"El valor de P-Value = {p_value:.4f} es mayor que el alfa = 0.05, "
-            "por lo que se concluye al 95% de confianza que NO existen diferencias significativas en la tendencia central."
+            f"por lo que se concluye al 95% de confianza que NO existen diferencias significativas en las {termino}."
         )
         conclusion_status = "success"
 
