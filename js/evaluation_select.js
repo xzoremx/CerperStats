@@ -1355,30 +1355,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // Color palette for card icons
-  const iconColors = ['blue', 'purple', 'pink', 'emerald', 'orange', 'cyan', 'rose', 'indigo'];
+  // Color palette for card icons (neon/intense variants)
+  const iconColors = ['cyan', 'fuchsia', 'lime', 'amber', 'violet', 'rose', 'sky', 'yellow'];
   let colorIndex = 0;
 
   for (const test of res.data) {
     const card = document.createElement("div");
-    card.className = "glass-card rounded-2xl overflow-hidden group cursor-pointer h-72";
+    card.className = "glass-card pokemon-card rounded-2xl overflow-hidden group cursor-pointer";
     card.dataset.catalogId = test.id;
 
     // Pick a color for this card
     const color = iconColors[colorIndex % iconColors.length];
     colorIndex++;
 
-    // --- Build card HTML structure matching the glass UI design
+    // --- Build Pokemon-style card: title + large centered icon
     card.innerHTML = `
-      <div class="p-6 flex flex-col h-full">
-        <div class="flex items-center justify-between mb-4">
-          <div class="icon-container p-3 rounded-xl">
-            <div class="card-icon w-6 h-6 text-${color}-400"></div>
-          </div>
-          <span class="status-badge text-xs px-3 py-1 rounded-full font-medium bg-blue-500/20 text-blue-400">Disponible</span>
+      <div class="pokemon-card-inner">
+        <span class="status-badge badge-available">Disponible</span>
+        <h3 class="pokemon-card-title group-hover:text-${color}-300">${test.titulo}</h3>
+        <div class="pokemon-card-icon-wrapper">
+          <div class="card-icon text-${color}-400"></div>
         </div>
-        <h3 class="text-xl font-bold text-white mb-2 group-hover:text-${color}-300 transition-colors">${test.titulo}</h3>
-        <p class="text-gray-400 text-sm mb-4 flex-1">${test.descripcion}</p>
       </div>
     `;
 
@@ -1387,7 +1384,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const iconSlot = card.querySelector('.card-icon');
     const ok = await window.IconSafety.attachIcon(iconSlot, rawIcon);
     if (!ok) {
-      iconSlot.innerHTML = `<i data-lucide="bar-chart-2" class="w-6 h-6"></i>`;
+      iconSlot.innerHTML = `<i data-lucide="bar-chart-2"></i>`;
     }
 
     // === Verificar si es aplicable según metadata ===
@@ -1397,7 +1394,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const statusBadge = card.querySelector('.status-badge');
     if (!aplicable) {
       card.classList.add("blocked");
-      statusBadge.className = "status-badge text-xs px-3 py-1 rounded-full font-medium bg-red-500/20 text-red-400";
+      statusBadge.className = "status-badge badge-blocked";
       statusBadge.textContent = "No aplicable";
     }
 
@@ -1413,12 +1410,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (seleccionadas.has(id)) {
         seleccionadas.delete(id);
         card.classList.remove("selected");
-        statusBadge.className = "status-badge text-xs px-3 py-1 rounded-full font-medium bg-blue-500/20 text-blue-400";
+        statusBadge.className = "status-badge badge-available";
         statusBadge.textContent = "Disponible";
       } else {
         seleccionadas.add(id);
         card.classList.add("selected");
-        statusBadge.className = "status-badge text-xs px-3 py-1 rounded-full font-medium bg-emerald-500/20 text-emerald-400";
+        statusBadge.className = "status-badge badge-selected";
         statusBadge.textContent = "Seleccionada";
       }
     });

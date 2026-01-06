@@ -88,6 +88,92 @@
       background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.12) 100%);
     }
 
+    /* Pokemon-style cards */
+    .pokemon-card {
+      width: 180px;
+      height: 220px;
+      padding: 0;
+    }
+
+    .pokemon-card-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 1rem;
+      position: relative;
+    }
+
+    .pokemon-card .status-badge {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.65rem;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-weight: 500;
+    }
+
+    .pokemon-card .badge-available {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+    }
+
+    .pokemon-card .badge-selected {
+      background: rgba(52, 211, 153, 0.2);
+      color: #34d399;
+    }
+
+    .pokemon-card .badge-blocked {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+
+    .pokemon-card-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: white;
+      text-align: center;
+      margin-bottom: 0.75rem;
+      line-height: 1.2;
+      max-height: 2.4em;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      transition: color 0.2s ease;
+    }
+
+    .pokemon-card-icon-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      width: 100%;
+    }
+
+    .pokemon-card .card-icon {
+      width: 80px;
+      height: 80px;
+    }
+
+    .pokemon-card .card-icon svg,
+    .pokemon-card .card-icon i {
+      width: 80px !important;
+      height: 80px !important;
+      stroke-width: 1.5;
+    }
+
+    /* Adjust grid for Pokemon cards */
+    .analysis-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+
 
 
 
@@ -1458,7 +1544,7 @@
               </div>
 
               <!-- Evaluations Grid - Dynamically populated -->
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 analysis-grid">
+              <div class="analysis-grid">
                 <!-- Cards are inserted dynamically from evaluation_select.js -->
               </div>
             </div>
