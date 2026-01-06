@@ -29,6 +29,8 @@ contextBridge.exposeInMainWorld('cerper', {
   getEvaluaciones: (args) => ipcRenderer.invoke("db-get-evaluaciones", args),
   getTestsWithMetadata: (session_id) =>
     ipcRenderer.invoke("db-get-tests-with-metadata", session_id),
+  getTestsFormattingConfig: () =>
+    ipcRenderer.invoke("db-get-tests-formatting-config"),
   runEvaluations: (args) => ipcRenderer.invoke("db-run-evaluaciones", args),
   getEvaluacionesProgress: (session_id) =>
     ipcRenderer.invoke("db-get-evaluaciones-progress", session_id),

@@ -67,6 +67,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.warn("[EvalSelect] No se pudo obtener usuario:", err);
   }
 
+  // === Configuración dinámica de formateo (dataframes) ===
+  try {
+    await window.DataframeRenderer?.loadConfig?.();
+  } catch (err) {
+    console.warn("[EvalSelect] No se pudo cargar formatting config:", err);
+  }
+
   // --- Boton Volver ---
   if (btnVolver) {
     btnVolver.addEventListener("click", () => {
@@ -863,86 +870,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (resultListContainer) resultListContainer.classList.remove("hidden");
   }
 
-  function formatDataframeValue(value) {
-    if (value === true) return '<span class="df-value-true">✓ Sí</span>';
-    if (value === false) return '<span class="df-value-false">✗ No</span>';
-    if (typeof value === "number") {
-      const formatted = Number.isInteger(value) ? value.toString() : value.toFixed(4);
-      return `<span class="df-value-number">${formatted}</span>`;
-    }
-    if (typeof value === "string") {
-      return `<span class="df-value-string">${value}</span>`;
-    }
-    return String(value);
-  }
-
-  function getColumnLabel(key) {
-    const labels = {
-      n: "n",
-      media: "Media",
-      desviacion: "Desviación",
-      asimetria: "Asimetría",
-      curtosis: "Curtosis",
-      p_value: "P-Value",
-      normalidad: "Normalidad",
-      prueba_normalidad: "Prueba",
-      parametro: "Parámetro",
-      estadistico: "Estadístico",
-      conclusion: "Conclusión",
-      prueba_homogeneidad: "Prueba",
-      prueba_tendencia: "Prueba"
-    };
-    return labels[key] || key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ");
-  }
-
-  function renderDataframeTable(data) {
-    if (!Array.isArray(data) || data.length === 0) {
-      return '<p class="text-gray-400">No hay datos disponibles.</p>';
-    }
-
-    // Get all unique keys from all rows
-    const allKeys = new Set();
-    data.forEach(row => {
-      if (row && typeof row === "object") {
-        Object.keys(row).forEach(key => allKeys.add(key));
-      }
-    });
-
-    // Order columns: parametro first if exists, then the rest
-    const orderedKeys = [];
-    if (allKeys.has("parametro")) {
-      orderedKeys.push("parametro");
-      allKeys.delete("parametro");
-    }
-    // Add prueba fields first
-    ["prueba_normalidad", "prueba_homogeneidad", "prueba_tendencia"].forEach(key => {
-      if (allKeys.has(key)) {
-        orderedKeys.push(key);
-        allKeys.delete(key);
-      }
-    });
-    // Add remaining keys
-    orderedKeys.push(...Array.from(allKeys).sort());
-
-    // Build table HTML
-    let html = '<div class="df-table-container"><table class="df-table"><thead><tr>';
-    orderedKeys.forEach(key => {
-      html += `<th>${getColumnLabel(key)}</th>`;
-    });
-    html += '</tr></thead><tbody>';
-
-    data.forEach(row => {
-      html += '<tr>';
-      orderedKeys.forEach(key => {
-        const value = row[key];
-        html += `<td>${formatDataframeValue(value)}</td>`;
-      });
-      html += '</tr>';
-    });
-
-    html += '</tbody></table></div>';
-    return html;
-  }
+  // Use DataframeRenderer module for formatting
+  const formatDataframeValue = window.DataframeRenderer?.formatValue || (v => String(v));
+  const getColumnLabel = window.DataframeRenderer?.getColumnLabel || (k => k);
+  const renderDataframeTable = window.DataframeRenderer?.renderTable || (() => '<p>Error: DataframeRenderer no disponible</p>');
 
   function openResultModal(result) {
     const title = result.test_titulo || result.nombre_interno || `Prueba #${result.catalog_id}`;

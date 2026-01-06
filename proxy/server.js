@@ -10,6 +10,7 @@ const sessionsRouter = require('./routes/sessions');
 const evaluacionesRouter = require('./routes/evaluaciones');
 const reportsRouter = require('./routes/reports');
 const authRouter = require('./routes/auth');
+const testsRouter = require('./routes/tests');
 const runEvaluator = require('./lib/runEvaluator');
 
 const SECRET_PATH = path.resolve(__dirname, '../secrets/token_secret.txt');
@@ -39,6 +40,7 @@ app.use('/inputs', apiLimiter, verifyToken, inputsRouter);
 app.use('/sessions', apiLimiter, verifyToken, sessionsRouter);
 app.use('/evaluaciones', apiLimiter, verifyToken, evaluacionesRouter);
 app.use('/reports', apiLimiter, verifyToken, reportsRouter);
+app.use('/tests', apiLimiter, verifyToken, testsRouter);
 
 function verifyToken(req, res, next) {
   const header = req.headers.authorization || '';

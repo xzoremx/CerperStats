@@ -95,7 +95,7 @@ for col in df_ingreso.columns:
         "desviacion": desv,
         "asimetria": asim,
         "p_value": p_value,
-        "normalidad": normal,
+        "normalidad": "normal_dist" if normal is True else ("no_normal_dist" if normal is False else None),
         "prueba_normalidad": prueba,
     })
 

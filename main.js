@@ -487,6 +487,17 @@ ipcMain.handle("db-get-tests-with-metadata", async (event, session_id) => {
   }
 });
 
+// === Configuración dinámica de formateo (dataframes) ===
+ipcMain.handle("db-get-tests-formatting-config", async () => {
+  try {
+    const payload = await proxyFetch("/tests/formatting-config");
+    return { ok: true, data: payload.data || { value_mappings: {}, column_labels: {} } };
+  } catch (err) {
+    console.error("[PROXY] Error obteniendo formatting config:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
 // === Control de ventana estilo Apple ===
 ipcMain.handle("window-minimize", () => {
   if (mainWindow) mainWindow.minimize();

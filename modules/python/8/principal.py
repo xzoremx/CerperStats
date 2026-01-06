@@ -108,14 +108,20 @@ for col in df_ingreso.columns:
     for i, zscore in enumerate(zscores, start=1):
         abs_z = abs(zscore)
         
+        # Determinar estado basado en |Z|
         if abs_z > 3:
+            estado = "atipico_outlier"
             total_atipicos += 1
         elif abs_z > 2:
+            estado = "cuestionable_outlier"
             total_cuestionables += 1
+        else:
+            estado = "aceptable_outlier"
         
         rows.append({
             "parametro": f"{col} - Lectura {i}",
             "zscore": round(float(zscore), 4),
+            "estado": estado,
         })
 
 # --- Construir df_resultado ---

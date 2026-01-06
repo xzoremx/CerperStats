@@ -139,6 +139,7 @@ openssl x509 -in /etc/postgresql/certs/server.crt -noout -subject -dates
 | GET/POST | `/inputs/*` | Datos de entrada |
 | GET/POST | `/sessions/*` | Sesiones de usuario |
 | GET/POST | `/reports/*` | Generación de reportes |
+| GET | `/tests/formatting-config` | Configuración dinámica de formateo (value_mappings, column_labels) |
 
 ## Límites Configurables
 
@@ -290,6 +291,14 @@ deactivate
 | `results_general` | Resultados de evaluaciones (gráficos, dataframes) |
 | `session_selected_tests` | Pruebas seleccionadas por sesión |
 | `logs_sistema` | Logs de auditoría |
+
+### Configuración de Formateo (`tests_catalog`)
+
+El frontend puede renderizar etiquetas y estilos desde DB usando:
+- `tests_catalog.column_labels` (JSONB): `{ "p_value": "P-Value", "prueba_normalidad": "Prueba", ... }`
+- `tests_catalog.value_mappings` (JSONB): `{ "normal_dist": { "label": "✓ Sí", "class": "df-value-true", "style": { "text_color": "#059669", "bg_from": "rgba(16,185,129,0.12)", "bg_to": "rgba(5,150,105,0.08)" } } }`
+
+Nota: por seguridad, el cliente solo acepta colores `#hex`, `rgb()`, `rgba()` o `transparent` desde `style`.
 
 ### Campos Importantes en `results_general`
 
