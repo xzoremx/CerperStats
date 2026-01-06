@@ -34,30 +34,74 @@ function getCategoryHeader(categoria) {
 }
 
 /**
- * Format a value for display in tables.
- * Column 'n' comes as string from Python, so it's displayed as-is.
- * Other numbers are formatted with appropriate decimal places.
+ * Escape HTML special characters
  */
-function formatValue(value, key = null) {
-    if (value === null || value === undefined) return '-';
-    if (typeof value === 'boolean') return value ? 'Sí' : 'No';
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
+ * Sanitize CSS class names
+ */
+function safeClassList(value) {
+    return String(value || '')
+        .split(/\s+/)
+        .map(t => t.replace(/[^A-Za-z0-9_-]/g, '').trim())
+        .filter(Boolean)
+        .join(' ');
+}
+
+/**
+ * Format a value for display in tables.
+ * Uses value_mappings from config to apply labels and CSS classes.
+ * @param {*} value - Value to format
+ * @param {string} key - Column key (optional)
+ * @param {Object} valueMappings - Value mappings from config
+ */
+function formatValue(value, key = null, valueMappings = {}) {
+    // Null/undefined
+    if (value === null || value === undefined) {
+        return '<span class="df-value-null">-</span>';
+    }
+
+    // Check for value mappings (strings, booleans converted to string key)
+    const mappingKey = typeof value === 'string' ? value : String(value);
+    const mapping = valueMappings[mappingKey];
+
+    if (mapping && typeof mapping === 'object') {
+        const label = mapping.label != null ? mapping.label : mappingKey;
+        const cls = mapping.class != null ? safeClassList(mapping.class) : '';
+        const safeLabel = escapeHtml(label);
+        const allClasses = safeClassList(`df-value-badge ${cls}`);
+        return `<span class="${allClasses}">${safeLabel}</span>`;
+    }
+
+    // Column 'n' comes as string from Python, display as-is
     if (typeof value === 'string') {
-        // Column 'n' comes as string from Python, display as-is
         if (key && key.toLowerCase() === 'n') {
-            return value;
+            return `<span class="df-value-number">${escapeHtml(value)}</span>`;
         }
-        // Other strings displayed as-is
-        return value;
+        return `<span class="df-value-string">${escapeHtml(value)}</span>`;
     }
+
+    // Numbers
     if (typeof value === 'number') {
-        if (Number.isNaN(value)) return '-';
-        // Integers displayed without decimals
-        if (Number.isInteger(value)) {
-            return String(value);
-        }
-        return Math.abs(value) < 1000 ? value.toFixed(4) : value.toFixed(2);
+        if (Number.isNaN(value)) return '<span class="df-value-null">-</span>';
+        const formatted = Number.isInteger(value) ? String(value) : value.toFixed(4);
+        return `<span class="df-value-number">${formatted}</span>`;
     }
-    return String(value);
+
+    // Booleans (fallback if no mapping)
+    if (typeof value === 'boolean') {
+        return `<span class="df-value-string">${value ? 'Sí' : 'No'}</span>`;
+    }
+
+    return `<span class="df-value-string">${escapeHtml(String(value))}</span>`;
 }
 
 /**
@@ -75,10 +119,10 @@ function getConclusionStatus(text, conclusionStatus = null) {
 }
 
 /**
- * Transform snake_case key to Title Case label.
+ * Transform snake_case key to Title Case label (fallback).
  * Example: 'p_value' → 'P Value', 'desviacion' → 'Desviacion'
  */
-function keyToLabel(key) {
+function keyToLabelFallback(key) {
     if (!key) return '';
     return key
         .replace(/_/g, ' ')
@@ -86,14 +130,136 @@ function keyToLabel(key) {
 }
 
 /**
- * Convert column keys to column objects with dynamic labels.
- * Preserves original order from data.
+ * Get column label from config or fallback to Title Case.
+ * @param {string} key - Column key
+ * @param {Object} columnLabels - Column labels from config
  */
-function orderColumns(keysSet) {
-    return Array.from(keysSet).map(k => ({
+function getColumnLabel(key, columnLabels = {}) {
+    const strKey = String(key || '');
+    const dynamic = columnLabels[strKey];
+    if (typeof dynamic === 'string' && dynamic.trim() !== '') return dynamic;
+    return keyToLabelFallback(strKey);
+}
+
+/**
+ * Priority order for columns (appear first)
+ */
+const PRIORITY_COLUMNS = ["parametro", "n", "prueba_normalidad", "prueba_homogeneidad", "prueba_tendencia"];
+
+/**
+ * Convert column keys to column objects with dynamic labels.
+ * Applies priority ordering and uses column_labels from config.
+ * @param {Set} keysSet - Set of column keys
+ * @param {Object} columnLabels - Column labels from config
+ */
+function orderColumns(keysSet, columnLabels = {}) {
+    const allKeys = new Set(keysSet);
+    const orderedKeys = [];
+
+    // Add priority columns first (in order)
+    for (const key of PRIORITY_COLUMNS) {
+        if (allKeys.has(key)) {
+            orderedKeys.push(key);
+            allKeys.delete(key);
+        }
+    }
+
+    // Add remaining columns alphabetically
+    orderedKeys.push(...Array.from(allKeys).sort());
+
+    return orderedKeys.map(k => ({
         key: k,
-        label: keyToLabel(k)
+        label: getColumnLabel(k, columnLabels)
     }));
+}
+
+/**
+ * Sanitize color value for CSS (security)
+ */
+function sanitizeColor(value) {
+    if (value === null || value === undefined) return null;
+    const raw = String(value).trim();
+    if (raw === '') return null;
+    if (raw.toLowerCase() === 'transparent') return 'transparent';
+
+    // #rgb, #rgba, #rrggbb, #rrggbbaa
+    if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(raw)) {
+        return raw;
+    }
+
+    // rgb()/rgba() with numeric channels only
+    const m = raw.match(
+        /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|1|0?\.\d+)\s*)?\)$/i
+    );
+    if (!m) return null;
+
+    const r = Math.max(0, Math.min(255, Number(m[1])));
+    const g = Math.max(0, Math.min(255, Number(m[2])));
+    const b = Math.max(0, Math.min(255, Number(m[3])));
+    const hasAlpha = typeof m[4] !== 'undefined';
+    if (!hasAlpha) return `rgb(${r}, ${g}, ${b})`;
+
+    const a = Math.max(0, Math.min(1, Number(m[4])));
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+/**
+ * Sanitize angle value for CSS gradients
+ */
+function sanitizeAngle(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    return Math.max(0, Math.min(360, Math.round(n)));
+}
+
+/**
+ * Build dynamic CSS rules from value_mappings (same logic as dataframe_renderer.js)
+ * @param {Object} valueMappings - Value mappings from config
+ * @returns {string} CSS rules
+ */
+function buildDynamicCssRules(valueMappings = {}) {
+    const DYNAMIC_CLASS_PREFIX = 'df-';
+    const classStyles = new Map();
+
+    const mappings = valueMappings && typeof valueMappings === 'object'
+        ? Object.values(valueMappings)
+        : [];
+
+    for (const mapping of mappings) {
+        if (!mapping || typeof mapping !== 'object') continue;
+        const style = mapping.style;
+        if (!style || typeof style !== 'object') continue;
+
+        const classTokens = safeClassList(mapping.class)
+            .split(/\s+/)
+            .filter(t => t.startsWith(DYNAMIC_CLASS_PREFIX));
+        if (classTokens.length === 0) continue;
+
+        const textColor = sanitizeColor(style.text_color ?? style.color ?? null);
+        const bgFrom = sanitizeColor(style.bg_from ?? style.background_from ?? null);
+        const bgTo = sanitizeColor(style.bg_to ?? style.background_to ?? null);
+        const angle = sanitizeAngle(style.bg_angle ?? style.background_angle ?? null) ?? 135;
+
+        for (const token of classTokens) {
+            if (!token.startsWith(DYNAMIC_CLASS_PREFIX)) continue;
+            classStyles.set(token, { textColor, bgFrom, bgTo, angle });
+        }
+    }
+
+    const rules = [];
+    for (const [token, style] of classStyles.entries()) {
+        const decl = [];
+        if (style.textColor) decl.push(`color: ${style.textColor};`);
+        if (style.bgFrom && style.bgTo) {
+            decl.push(`background: linear-gradient(${style.angle}deg, ${style.bgFrom} 0%, ${style.bgTo} 100%);`);
+        } else if (style.bgFrom) {
+            decl.push(`background-color: ${style.bgFrom};`);
+        }
+        if (decl.length === 0) continue;
+        rules.push(`.${token} { ${decl.join(' ')} }`);
+    }
+
+    return rules.join('\n');
 }
 
 /**
@@ -116,7 +282,7 @@ function safeFilename(str) {
 class ReportDataProvider {
     /**
      * @param {Object} data - { session_id, session_info, results, graphs }
-     * @param {Object} config - { group_by, include_graphs, include_tables, analyst_names, execution_date, logo_path }
+     * @param {Object} config - { group_by, include_graphs, include_tables, analyst_names, execution_date, logo_path, value_mappings, column_labels }
      */
     constructor(data, config) {
         this.sessionId = data.session_id;
@@ -227,6 +393,9 @@ class ReportDataProvider {
     // =========================================================================
 
     _buildReportStructure(resultsSubset, titleSuffix, filenameSuffix, filterAnalito = null, filterNivel = null) {
+        // Generate dynamic CSS from value_mappings
+        const dynamicCss = buildDynamicCssRules(this.config.value_mappings || {});
+
         return {
             filename: `informe_sesion_${this.sessionId}_${filenameSuffix}.pdf`,
             // Store metadata for main.js to extract
@@ -240,7 +409,9 @@ class ReportDataProvider {
                 // Pass logo_path to template
                 logo_path: this.config.logo_path || null,
                 // Pass tipo_analisis to template for table rendering logic
-                tipo_analisis: this.sessionInfo.tipo_analisis || null
+                tipo_analisis: this.sessionInfo.tipo_analisis || null,
+                // Dynamic CSS for badge styles (from value_mappings)
+                dynamic_css: dynamicCss
             }
         };
     }
@@ -382,14 +553,14 @@ class ReportDataProvider {
                         for (const row of rawPc) {
                             const formatted = {};
                             for (const [k, v] of Object.entries(row)) {
-                                formatted[k] = formatValue(v, k);
+                                formatted[k] = formatValue(v, k, this.config.value_mappings || {});
                                 colsSet.add(k);
                             }
                             tableRows.push(formatted);
                         }
                     }
 
-                    const columns = orderColumns(colsSet);
+                    const columns = orderColumns(colsSet, this.config.column_labels || {});
 
                     // Build table only if include_tables is enabled
                     let table = null;

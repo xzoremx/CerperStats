@@ -10,7 +10,15 @@
         // Content renderer - Multianalito only
         window.renderReport = function (data) {
             document.body.innerHTML = ''; // Clear loading state
-            
+
+            // Inject dynamic CSS for badge styles (from value_mappings)
+            if (data.dynamic_css) {
+                const styleEl = document.createElement('style');
+                styleEl.type = 'text/css';
+                styleEl.textContent = data.dynamic_css;
+                document.head.appendChild(styleEl);
+            }
+
             // Update document title if available
             if (data.cover && data.cover.title) {
                 document.title = data.cover.title;

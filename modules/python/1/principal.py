@@ -127,8 +127,8 @@ def inferir_tipo_parametro(columnas):
 tipo_param = inferir_tipo_parametro(df_ingreso.columns)
 
 # Generar conclusión general
-normales = [r for r in rows if r.get("normalidad") is True]
-no_normales = [r for r in rows if r.get("normalidad") is False]
+normales = [r for r in rows if r.get("normalidad") == "normal_dist"]
+no_normales = [r for r in rows if r.get("normalidad") == "no_normal_dist"]
 no_evaluables = [r for r in rows if r.get("normalidad") is None]
 
 if len(no_normales) == 0 and len(normales) > 0:

@@ -127,8 +127,8 @@ tipo_param = inferir_tipo_parametro(df_ingreso.columns)
 
 # --- Generar conclusión conjunta (resumen de todos los parámetros) ---
 parametros_evaluados = [r for r in rows if r.get("normalidad") is not None]
-parametros_normales = [r for r in parametros_evaluados if r.get("normalidad") is True]
-parametros_no_normales = [r for r in parametros_evaluados if r.get("normalidad") is False]
+parametros_normales = [r for r in parametros_evaluados if r.get("normalidad") == "normal_dist"]
+parametros_no_normales = [r for r in parametros_evaluados if r.get("normalidad") == "no_normal_dist"]
 
 if len(parametros_evaluados) == 0:
     conclusion = f"No se pudo evaluar normalidad en ningún {tipo_param[:-1] if tipo_param.endswith('s') else tipo_param} (datos insuficientes)"

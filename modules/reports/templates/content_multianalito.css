@@ -235,6 +235,34 @@ tr:last-child td {
 }
 
 /* =========================================
+   Dataframe Value Styles (base structure)
+   Dynamic badge colors are injected via inline <style> from value_mappings
+   ========================================= */
+.df-value-badge {
+  font-weight: 600;
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 8pt;
+  white-space: nowrap;
+}
+
+.df-value-number {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.df-value-string {
+  color: var(--color-dark-grey);
+}
+
+.df-value-null {
+  color: var(--color-light-grey);
+  font-style: italic;
+}
+
+/* =========================================
    Multianalito Tables - Paginated
    ========================================= */
 .table-chunk {

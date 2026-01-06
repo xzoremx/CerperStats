@@ -540,11 +540,12 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
   try {
     console.log("[REPORTS] Starting report generation for session:", sessionId);
 
-    // 1. Fetch results and graphs from server
-    const [resultsRes, graphsRes, sessionRes] = await Promise.all([
+    // 1. Fetch results, graphs, session info, and formatting config from server
+    const [resultsRes, graphsRes, sessionRes, formattingRes] = await Promise.all([
       proxyFetch(`/evaluaciones/resultados/${sessionId}`),
       proxyFetch(`/evaluaciones/graficos/${sessionId}`),
-      proxyFetch(`/sessions/${sessionId}`)
+      proxyFetch(`/sessions/${sessionId}`),
+      proxyFetch(`/tests/formatting-config`)
     ]);
 
     if (!resultsRes.data || resultsRes.data.length === 0) {
@@ -561,6 +562,7 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
     fs.mkdirSync(outputDir, { recursive: true });
 
     // 3. Use JavaScript Data Provider
+    const formattingConfig = formattingRes?.data || { value_mappings: {}, column_labels: {} };
     const dataProvider = new ReportDataProvider(
       {
         session_id: sessionId,
@@ -575,7 +577,10 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
         execution_date: config?.execution_date || null,
         // Preserve null if not 'analista', otherwise use array (empty or with names)
         analyst_names: config?.analyst_names ?? [],
-        logo_path: logoPath
+        logo_path: logoPath,
+        // Formatting config from tests_catalog
+        value_mappings: formattingConfig.value_mappings || {},
+        column_labels: formattingConfig.column_labels || {}
       }
     );
 
@@ -593,7 +598,11 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
         // --- PUPPETEER GENERATION ---
         // Split into cover page (without header, with footer) and content (with header and footer)
         const coverData = { cover: data.cover, logo_path: data.logo_path };
-        const contentData = { sections: data.sections, logo_path: data.logo_path };
+        const contentData = {
+          sections: data.sections,
+          logo_path: data.logo_path,
+          dynamic_css: data.dynamic_css || ''
+        };
         
         // Generate cover page PDF (without header/footer)
         const coverPath = path.join(outputDir, `cover_${filename}`);
