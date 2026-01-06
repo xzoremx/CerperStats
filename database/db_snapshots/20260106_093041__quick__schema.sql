@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 1kyQ3osEZppBOGiRZKKG4mfw2HgU36ghcbuv55diRbhbtyO9tRsvKgHbHgNFbva
+\restrict tk2uWgXmUGSrZT25DSsS6Saa6I4M9OazmafxhqHMhmIq4ZsBqcgO3dfyPPWeiLT
 
 -- Dumped from database version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
 -- Dumped by pg_dump version 18.0
@@ -734,11 +734,27 @@ CREATE TABLE public.tests_catalog (
     creado_en timestamp without time zone DEFAULT now() NOT NULL,
     actualizado_en timestamp without time zone DEFAULT now() NOT NULL,
     icon_lib text DEFAULT 'lucide:bar-chart-2'::text NOT NULL,
+    value_mappings jsonb DEFAULT '{}'::jsonb,
+    column_labels jsonb DEFAULT '{}'::jsonb,
     CONSTRAINT icon_lib_lucide_only CHECK (((icon_lib ~ '^[a-z]*:?lucide:[a-z0-9][a-z0-9-]*$'::text) OR (icon_lib ~ '^lucide:[a-z0-9][a-z0-9-]*$'::text)))
 );
 
 
 ALTER TABLE public.tests_catalog OWNER TO cerper_user;
+
+--
+-- Name: COLUMN tests_catalog.value_mappings; Type: COMMENT; Schema: public; Owner: cerper_user
+--
+
+COMMENT ON COLUMN public.tests_catalog.value_mappings IS 'Mapeo de valores a {label, class, style} para formateo en frontend. style permite colores seguros (solo hex/rgb/rgba) desde DB. Ej: {"normal_dist": {"label":"✓ Sí","class":"df-value-true","style":{"text_color":"#059669","bg_from":"rgba(16,185,129,0.12)","bg_to":"rgba(5,150,105,0.08)"}}}';
+
+
+--
+-- Name: COLUMN tests_catalog.column_labels; Type: COMMENT; Schema: public; Owner: cerper_user
+--
+
+COMMENT ON COLUMN public.tests_catalog.column_labels IS 'Mapeo de claves de columna a etiquetas legibles. Ej: {"p_value": "P-Value"}';
+
 
 --
 -- Name: tests_catalog_id_seq; Type: SEQUENCE; Schema: public; Owner: cerper_user
@@ -1429,5 +1445,5 @@ ALTER TABLE ONLY public.session_selected_tests
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 1kyQ3osEZppBOGiRZKKG4mfw2HgU36ghcbuv55diRbhbtyO9tRsvKgHbHgNFbva
+\unrestrict tk2uWgXmUGSrZT25DSsS6Saa6I4M9OazmafxhqHMhmIq4ZsBqcgO3dfyPPWeiLT
 
