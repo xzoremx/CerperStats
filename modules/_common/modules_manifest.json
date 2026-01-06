@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-01-06T14:27:00.550Z",
+  "generated_at": "2026-01-06T15:21:03.281Z",
   "entries": [
     {
       "id": 1,
@@ -11,7 +11,7 @@
       "script_grafico": "python/1/graph.py",
       "graph_asset": "python/1/graph.py",
       "runtime": "stats",
-      "sha256_module": "d91e5e963a02a43ddc19522b4b8b6884f70a58985b21ac678a8d40df4623aa73",
+      "sha256_module": "be48749d494f1d47c0000c310c3b03c6bc021be72c4c4e5adaf4b84c3792a011",
       "sha256_script_grafico": "5fea0d6c357c500bb2c631a644223242b48516d8cb48c381cf77b8b00f6952b9",
       "sha256_graph": "5fea0d6c357c500bb2c631a644223242b48516d8cb48c381cf77b8b00f6952b9"
     },
@@ -50,7 +50,7 @@
       "script_grafico": "python/4/graph.py",
       "graph_asset": "python/4/graph.py",
       "runtime": "stats",
-      "sha256_module": "17cf15a075015b651b3f5f7d7fb9faa990eede0f5f694d0f672f8f4dba565524",
+      "sha256_module": "a941e2384dea57825ebb17569e7751a673ce8a6aa1ecf6ca640b4d7c4bfe3522",
       "sha256_script_grafico": "db5a912c6e5ea8cb697b1995e0d2f44a2dc507f0a58fc578a9f29fa56daba797",
       "sha256_graph": "db5a912c6e5ea8cb697b1995e0d2f44a2dc507f0a58fc578a9f29fa56daba797"
     },
