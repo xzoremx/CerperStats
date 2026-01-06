@@ -9,6 +9,7 @@ const inputsRouter = require('./routes/inputs');
 const sessionsRouter = require('./routes/sessions');
 const evaluacionesRouter = require('./routes/evaluaciones');
 const reportsRouter = require('./routes/reports');
+const resultsRouter = require('./routes/results');
 const authRouter = require('./routes/auth');
 const testsRouter = require('./routes/tests');
 const runEvaluator = require('./lib/runEvaluator');
@@ -41,6 +42,7 @@ app.use('/sessions', apiLimiter, verifyToken, sessionsRouter);
 app.use('/evaluaciones', apiLimiter, verifyToken, evaluacionesRouter);
 app.use('/reports', apiLimiter, verifyToken, reportsRouter);
 app.use('/tests', apiLimiter, verifyToken, testsRouter);
+app.use('/results', apiLimiter, verifyToken, resultsRouter);
 
 function verifyToken(req, res, next) {
   const header = req.headers.authorization || '';

@@ -598,6 +598,15 @@ async function guardarDataframeTemp() {
       return clear;
     }
 
+    // Invalidar resultados anteriores (ya no son válidos con datos nuevos)
+    const clearRes = await window.cerper.clearResults(session_id);
+    if (!clearRes?.ok) {
+      console.warn(`[CerperStats] No se pudieron eliminar resultados previos: ${clearRes?.error || 'desconocido'}`);
+    } else if (clearRes.deleted > 0) {
+      console.log(`[CerperStats] ${clearRes.deleted} resultados anteriores invalidados.`);
+      notify(`Se eliminaron ${clearRes.deleted} resultados anteriores. Ejecuta las pruebas nuevamente.`, "info");
+    }
+
     const res = await window.cerper.insertInputs(session_id, tipo, datosParaInsertar);
 
     if (res.ok) {
