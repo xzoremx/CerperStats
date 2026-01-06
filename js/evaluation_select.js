@@ -1355,8 +1355,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // Color palette for card icons (neon/intense variants)
-  const iconColors = ['cyan', 'fuchsia', 'lime', 'amber', 'violet', 'rose', 'sky', 'yellow'];
+  // Color palette for card icons (neon/intense variants, no purple-like colors)
+  const iconColors = ['cyan', 'teal', 'lime', 'amber', 'orange', 'rose', 'sky', 'yellow'];
   let colorIndex = 0;
 
   for (const test of res.data) {
