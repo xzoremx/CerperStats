@@ -75,39 +75,62 @@ def calcular_zscore_robusto(valores):
     return 0.6745 * (valores - mediana) / mad
 
 
-# --- Procesar datos ---
-rows = []
-total_atipicos = 0
-total_cuestionables = 0
-metodo_usado = None
+# --- Recolectar TODOS los datos para calcular media y DS global ---
+all_values = []
+col_data = []  # Guardar (columna, valores) para iterar después
 
 for col in df_ingreso.columns:
     serie = pd.to_numeric(df_ingreso[col], errors="coerce").dropna()
-    n = len(serie)
-    
-    if n == 0:
+    if len(serie) == 0:
         continue
-    
     valores = serie.to_numpy(dtype=float)
-    
-    # Evaluar normalidad para decidir el método
-    es_normal, p_value, prueba = evaluar_normalidad(valores)
-    
-    if es_normal is None:
-        # No se puede evaluar normalidad (n < 3), usar robusto por defecto
-        zscores = calcular_zscore_robusto(valores)
-        metodo_usado = "Z-Score Robusto (n < 3)"
-    elif es_normal:
-        zscores = calcular_zscore_clasico(valores)
-        metodo_usado = "Z-Score Clásico"
+    col_data.append((col, valores))
+    all_values.extend(valores.tolist())
+
+# Convertir a array para cálculos globales
+all_values = np.array(all_values, dtype=float)
+
+# Evaluar normalidad con TODOS los datos combinados
+es_normal, p_value, prueba = evaluar_normalidad(all_values)
+
+# Calcular media y DS global (como en Excel con todos los datos)
+if es_normal is None:
+    metodo_usado = "Z-Score Robusto (n < 3)"
+    mediana_global = np.median(all_values)
+    mad_global = np.median(np.abs(all_values - mediana_global))
+elif es_normal:
+    metodo_usado = "Z-Score Clásico"
+    media_global = np.mean(all_values)
+    ds_global = np.std(all_values, ddof=1)  # DESVEST() de Excel
+else:
+    metodo_usado = "Z-Score Robusto"
+    mediana_global = np.median(all_values)
+    mad_global = np.median(np.abs(all_values - mediana_global))
+
+# --- Procesar datos usando estadísticos globales ---
+rows = []
+total_atipicos = 0
+total_cuestionables = 0
+
+for col, valores in col_data:
+    # Calcular Z-scores usando estadísticos GLOBALES
+    if es_normal is None or not es_normal:
+        # Z-Score robusto con mediana y MAD globales
+        if mad_global == 0:
+            zscores = np.zeros_like(valores)
+        else:
+            zscores = 0.6745 * (valores - mediana_global) / mad_global
     else:
-        zscores = calcular_zscore_robusto(valores)
-        metodo_usado = "Z-Score Robusto"
-    
+        # Z-Score clásico con media y DS globales
+        if ds_global == 0:
+            zscores = np.zeros_like(valores)
+        else:
+            zscores = (valores - media_global) / ds_global
+
     # Generar filas para cada lectura
     for i, zscore in enumerate(zscores, start=1):
         abs_z = abs(zscore)
-        
+
         # Determinar estado basado en |Z|
         if abs_z > 3:
             estado = "atipico_outlier"
@@ -117,7 +140,7 @@ for col in df_ingreso.columns:
             total_cuestionables += 1
         else:
             estado = "aceptable_outlier"
-        
+
         rows.append({
             "parametro": f"{col} - Lectura {i}",
             "zscore": round(float(zscore), 4),

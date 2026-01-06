@@ -65,27 +65,49 @@ def calcular_zscore_robusto(valores):
     return 0.6745 * (valores - mediana) / mad
 
 
-# --- Procesar datos para el gráfico ---
+# --- Recolectar TODOS los datos para calcular media y DS global ---
+all_values = []
+col_data = []  # Guardar (columna, valores) para iterar después
+
+for col in df_ingreso.columns:
+    serie = pd.to_numeric(df_ingreso[col], errors="coerce").dropna()
+    if len(serie) == 0:
+        continue
+    valores = serie.to_numpy(dtype=float)
+    col_data.append((col, valores))
+    all_values.extend(valores.tolist())
+
+# Convertir a array para cálculos globales
+all_values = np.array(all_values, dtype=float)
+
+# Evaluar normalidad con TODOS los datos combinados
+es_normal = evaluar_normalidad(all_values)
+
+# Calcular estadísticos globales
+if es_normal is None or not es_normal:
+    mediana_global = np.median(all_values)
+    mad_global = np.median(np.abs(all_values - mediana_global))
+else:
+    media_global = np.mean(all_values)
+    ds_global = np.std(all_values, ddof=1)  # DESVEST() de Excel
+
+# --- Procesar datos para el gráfico usando estadísticos globales ---
 labels = []
 zscores = []
 colors = []
 
-for col in df_ingreso.columns:
-    serie = pd.to_numeric(df_ingreso[col], errors="coerce").dropna()
-    n = len(serie)
-
-    if n == 0:
-        continue
-
-    valores = serie.to_numpy(dtype=float)
-
-    # Evaluar normalidad para decidir el método
-    es_normal = evaluar_normalidad(valores)
-
+for col, valores in col_data:
+    # Calcular Z-scores usando estadísticos GLOBALES
     if es_normal is None or not es_normal:
-        z_values = calcular_zscore_robusto(valores)
+        if mad_global == 0:
+            z_values = np.zeros_like(valores)
+        else:
+            z_values = 0.6745 * (valores - mediana_global) / mad_global
     else:
-        z_values = calcular_zscore_clasico(valores)
+        if ds_global == 0:
+            z_values = np.zeros_like(valores)
+        else:
+            z_values = (valores - media_global) / ds_global
 
     for i, z in enumerate(z_values, start=1):
         labels.append(f"{col} - L{i}")
@@ -98,7 +120,7 @@ for col in df_ingreso.columns:
         elif abs_z > 2:
             colors.append("#f39c12")  # Naranja - Cuestionable
         else:
-            colors.append("#27ae60")  # Verde - Normal
+            colors.append("#27ae60")  # Verde - Aceptable
 
 
 if len(zscores) == 0:
