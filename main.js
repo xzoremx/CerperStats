@@ -211,7 +211,7 @@ ipcMain.handle('open-page', async (_event, page) => {
 
 // === Proxy REST (reemplaza acceso directo a PostgreSQL) ===
 // Load .env from extraResources when packaged, or from project root in dev
-const envPath = app.isPackaged 
+const envPath = app.isPackaged
   ? path.join(process.resourcesPath, '.env')
   : path.join(__dirname, '.env');
 require('dotenv').config({ path: envPath });
@@ -575,7 +575,11 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
     const timestamp = Date.now();
     const outputDir = path.join(tempDir, `cerper_reports_${timestamp}`);
     // Logo is in modules/reports/assets/logo_informe.png
-    const logoPath = path.join(__dirname, 'modules', 'reports', 'assets', 'logo_informe.png');
+    // In packaged app: use extraResources path; in dev: use __dirname
+    const isPackaged = app.isPackaged;
+    const logoPath = isPackaged
+      ? path.join(process.resourcesPath, 'modules', 'reports', 'assets', 'logo_informe.png')
+      : path.join(__dirname, 'modules', 'reports', 'assets', 'logo_informe.png');
 
     fs.mkdirSync(outputDir, { recursive: true });
 
@@ -616,12 +620,12 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
         // --- PUPPETEER GENERATION ---
         // Split into cover page (without header, with footer) and content (with header and footer)
         const coverData = { cover: data.cover, logo_path: data.logo_path };
-         const contentData = {
-           sections: data.sections,
-           logo_path: data.logo_path,
-           tipo_analisis: data.tipo_analisis || null,
-           dynamic_css: data.dynamic_css || ''
-         };
+        const contentData = {
+          sections: data.sections,
+          logo_path: data.logo_path,
+          tipo_analisis: data.tipo_analisis || null,
+          dynamic_css: data.dynamic_css || ''
+        };
 
         // Generate cover page PDF (without header/footer)
         const coverPath = path.join(outputDir, `cover_${filename}`);

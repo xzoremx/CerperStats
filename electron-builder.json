@@ -36,6 +36,10 @@
         {
             "from": "chrome-bundled",
             "to": "chrome-win64"
+        },
+        {
+            "from": "modules/reports",
+            "to": "modules/reports"
         }
     ],
     "win": {

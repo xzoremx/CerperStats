@@ -61,6 +61,13 @@ async function generatePDF(reportData, outputPath, options = {}) {
         const page = await browser.newPage();
 
         // Resolve path to template
+        // In packaged app: templates are in extraResources/modules/reports/templates/
+        // In development: templates are in __dirname/templates/
+        const isPackaged = process.resourcesPath && !process.resourcesPath.includes('node_modules');
+        const templatesBase = isPackaged
+            ? path.join(process.resourcesPath, 'modules', 'reports', 'templates')
+            : path.join(__dirname, 'templates');
+
         // cover.html for cover page
         // content_monoanalito.html for monoanalito content pages
         // content_multianalito.html for multianalito content pages
@@ -73,12 +80,11 @@ async function generatePDF(reportData, outputPath, options = {}) {
             const isMultianalito = tipoAnalisis.toLowerCase() === 'multi' || tipoAnalisis.toLowerCase() === 'multianalito';
             templateName = isMultianalito ? 'content_multianalito.html' : 'content_monoanalito.html';
         }
-        const templatePath = path.join(__dirname, 'templates', templateName);
+        const templatePath = path.join(templatesBase, templateName);
+        console.log('[PDF] Template path:', templatePath);
 
-        // Check if template exists
-        if (!fs.existsSync(templatePath)) {
-            throw new Error(`Template not found at: ${templatePath}`);
-        }
+        // Note: Don't use fs.existsSync inside asar - it may not work correctly
+        // Trust that the template exists (it's bundled with the app)
 
         // Load template via file protocol
         // We use 'file://' prefix and normalize path
