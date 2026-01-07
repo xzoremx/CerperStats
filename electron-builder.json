@@ -1,0 +1,51 @@
+{
+    "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+    "appId": "com.cerper.cerperstats",
+    "productName": "CerperStats",
+    "directories": {
+        "output": "dist"
+    },
+    "files": [
+        "main.js",
+        "preload.js",
+        "renderer.js",
+        "*.html",
+        "assets/**/*",
+        "css/**/*",
+        "js/**/*",
+        "database/**/*",
+        "config/**/*",
+        "input_data/**/*",
+        "modules/reports/**/*",
+        "modules/_common/**/*",
+        "!**/.env",
+        "!**/modules/python/**",
+        "!**/proxy/**",
+        "!**/tests/**",
+        "!**/node_modules/.cache"
+    ],
+    "extraResources": [
+        {
+            "from": "assets",
+            "to": "assets"
+        },
+        {
+            "from": ".env",
+            "to": ".env"
+        }
+    ],
+    "win": {
+        "target": [
+            {
+                "target": "portable",
+                "arch": [
+                    "x64"
+                ]
+            }
+        ],
+        "icon": "assets/icons/app.ico"
+    },
+    "portable": {
+        "artifactName": "${productName}-Portable-${version}.${ext}"
+    }
+}

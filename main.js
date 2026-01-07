@@ -210,7 +210,11 @@ ipcMain.handle('open-page', async (_event, page) => {
 
 
 // === Proxy REST (reemplaza acceso directo a PostgreSQL) ===
-require('dotenv').config();
+// Load .env from extraResources when packaged, or from project root in dev
+const envPath = app.isPackaged 
+  ? path.join(process.resourcesPath, '.env')
+  : path.join(__dirname, '.env');
+require('dotenv').config({ path: envPath });
 
 const DEFAULT_PROXY_RUN_URL = "http://localhost:4000/run-eval"; //fallback local 
 const PROXY_RUN_URL =

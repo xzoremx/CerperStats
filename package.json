@@ -7,13 +7,18 @@
     "start": "electron .",
     "dev": "vite",
     "build": "vite build && powershell -Command \"Copy-Item -Path 'assets' -Destination 'dist-react\\' -Recurse -Force\"",
-    "test": "jest"
+    "test": "jest",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "postinstall": "electron-builder install-app-deps"
   },
   "author": "Renato Huamani",
   "license": "MIT",
   "devDependencies": {
     "autoprefixer": "^10.4.22",
     "electron": "^32.0.0",
+    "electron-builder": "^24.13.3",
     "jest": "^30.2.0",
     "postcss": "^8.5.6",
     "tailwindcss": "https://registry.npmjs.org/tailwindcss/-/tailwindcss-3.4.14.tgz",
@@ -30,8 +35,6 @@
     "lucide": "^0.545.0",
     "pdf-lib": "^1.17.1",
     "pg": "^8.16.3",
-    "puppeteer": "^23.11.1",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7"
+    "puppeteer": "^23.11.1"
   }
 }
