@@ -612,11 +612,12 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
         // --- PUPPETEER GENERATION ---
         // Split into cover page (without header, with footer) and content (with header and footer)
         const coverData = { cover: data.cover, logo_path: data.logo_path };
-        const contentData = {
-          sections: data.sections,
-          logo_path: data.logo_path,
-          dynamic_css: data.dynamic_css || ''
-        };
+         const contentData = {
+           sections: data.sections,
+           logo_path: data.logo_path,
+           tipo_analisis: data.tipo_analisis || null,
+           dynamic_css: data.dynamic_css || ''
+         };
 
         // Generate cover page PDF (without header/footer)
         const coverPath = path.join(outputDir, `cover_${filename}`);
