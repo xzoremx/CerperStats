@@ -35,7 +35,20 @@ const apiLimiter = rateLimit({
 
 const app = express();
 app.use(bodyParser.json({ limit: '50mb' }));
+
+// Auth routes (login doesn't need token verification)
 app.use('/auth', authLimiter, authRouter);
+
+// Token verification endpoint (needs token to verify it's valid)
+app.get('/auth/verify', verifyToken, (req, res) => {
+  // If we reach here, token is valid (verifyToken middleware passed)
+  return res.json({
+    ok: true,
+    valid: true,
+    client: req.client?.client || 'unknown',
+    exp: req.client?.exp ? new Date(req.client.exp * 1000).toISOString() : null
+  });
+});
 app.use('/labs', apiLimiter, verifyToken, labsRouter);
 app.use('/inputs', apiLimiter, verifyToken, inputsRouter);
 app.use('/sessions', apiLimiter, verifyToken, sessionsRouter);

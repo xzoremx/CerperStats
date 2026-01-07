@@ -210,20 +210,32 @@ ipcMain.handle('open-page', async (_event, page) => {
 
 
 // === Proxy REST (reemplaza acceso directo a PostgreSQL) ===
-// Load .env from extraResources when packaged, or from project root in dev
-const envPath = app.isPackaged
-  ? path.join(process.resourcesPath, '.env')
-  : path.join(__dirname, '.env');
-require('dotenv').config({ path: envPath });
+// In dev: use dotenv; in packaged: use embedded config (generated at build time)
+let CERPER_PROXY_URL, CERPER_EVAL_URL, CERPER_PROXY_TOKEN;
 
-const DEFAULT_PROXY_RUN_URL = "http://localhost:4000/run-eval"; //fallback local 
-const PROXY_RUN_URL =
-  process.env.CERPER_PROXY_URL ||
-  process.env.CERPER_EVAL_URL ||
-  DEFAULT_PROXY_RUN_URL;
-const PROXY_TOKEN = process.env.CERPER_PROXY_TOKEN || "";
-const PROXY_BASE_URL =
-  PROXY_RUN_URL.replace(/\/run-eval\/?$/, "") || PROXY_RUN_URL;
+if (app.isPackaged) {
+  // Use embedded config (config/embedded-env.js is bundled into the asar)
+  try {
+    const embeddedConfig = require('./config/embedded-env.js');
+    CERPER_PROXY_URL = embeddedConfig.CERPER_PROXY_URL;
+    CERPER_EVAL_URL = embeddedConfig.CERPER_EVAL_URL;
+    CERPER_PROXY_TOKEN = embeddedConfig.CERPER_PROXY_TOKEN;
+    console.log('[CONFIG] Loaded embedded config');
+  } catch (e) {
+    console.error('[CONFIG] Failed to load embedded config:', e.message);
+  }
+} else {
+  // Development: use dotenv from project root
+  require('dotenv').config({ path: path.join(__dirname, '.env') });
+  CERPER_PROXY_URL = process.env.CERPER_PROXY_URL;
+  CERPER_EVAL_URL = process.env.CERPER_EVAL_URL;
+  CERPER_PROXY_TOKEN = process.env.CERPER_PROXY_TOKEN;
+}
+
+const DEFAULT_PROXY_RUN_URL = "http://localhost:4000/run-eval"; // fallback local
+const PROXY_RUN_URL = CERPER_PROXY_URL || CERPER_EVAL_URL || DEFAULT_PROXY_RUN_URL;
+const PROXY_TOKEN = CERPER_PROXY_TOKEN || "";
+const PROXY_BASE_URL = PROXY_RUN_URL.replace(/\/run-eval\/?$/, "") || PROXY_RUN_URL;
 
 const buildProxyHeaders = (additional = {}) => ({
   "Content-Type": "application/json",
@@ -244,10 +256,37 @@ async function proxyFetch(endpoint, options = {}) {
       `Proxy request failed: ${response.status} ${response.statusText} ${details}`
     );
     err.status = response.status;
+
+    // Detectar token expirado o inválido (401 Unauthorized)
+    if (response.status === 401) {
+      console.warn('[AUTH] Token inválido o expirado - notificando al renderer');
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('auth:session-expired', {
+          reason: 'token_expired',
+          message: 'La sesión ha expirado. Por favor, inicie sesión nuevamente.'
+        });
+      }
+    }
+
     throw err;
   }
   return response.json();
 }
+
+// === Verificar validez del token del proxy ===
+ipcMain.handle("auth-verify-token", async () => {
+  try {
+    // Intenta hacer una llamada simple al proxy para verificar el token
+    await proxyFetch("/auth/verify", { method: "GET" });
+    return { ok: true, valid: true };
+  } catch (err) {
+    if (err.status === 401) {
+      return { ok: true, valid: false, reason: 'token_expired' };
+    }
+    // Otros errores (red, servidor caído, etc.)
+    return { ok: false, error: err.message };
+  }
+});
 
 // === LOGIN DE USUARIO (bcryptjs) ===
 const bcrypt = require("bcryptjs");

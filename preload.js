@@ -2,6 +2,20 @@ const { contextBridge, ipcRenderer } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
+// === Auth session expired listeners ===
+const authListeners = new Set();
+
+ipcRenderer.on('auth:session-expired', (_event, data) => {
+  console.warn('[AUTH] Sesión expirada:', data);
+  authListeners.forEach(callback => {
+    try {
+      callback(data);
+    } catch (e) {
+      console.error('[AUTH] Error en listener:', e);
+    }
+  });
+});
+
 contextBridge.exposeInMainWorld('cerper', {
   openPage: (page) => ipcRenderer.invoke('open-page', page),
   getLabs: async () => {
@@ -11,6 +25,14 @@ contextBridge.exposeInMainWorld('cerper', {
   },
   login: (username, password) =>
     ipcRenderer.invoke("db-login", { username, password }),
+  // Verificar validez del token (para uso al cargar páginas protegidas)
+  verifyToken: () => ipcRenderer.invoke("auth-verify-token"),
+  // Listener para sesión expirada
+  onSessionExpired: (callback) => {
+    authListeners.add(callback);
+    // Retorna función para remover el listener
+    return () => authListeners.delete(callback);
+  },
   getLabByKey: (labKey) => ipcRenderer.invoke("db-get-lab-by-key", labKey),
   getLabModules: (labKey) => ipcRenderer.invoke("db-get-lab-modes", labKey),
   insertSession: (data) => ipcRenderer.invoke("db-insert-session", data),

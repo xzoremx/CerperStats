@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build && powershell -Command \"Copy-Item -Path 'assets' -Destination 'dist-react\\' -Recurse -Force\"",
     "test": "jest",
-    "prebuild": "node scripts/copy-chrome.js",
+    "prebuild": "node scripts/copy-chrome.js && node scripts/embed-config.js",
     "pack": "npm run prebuild && electron-builder --dir",
     "dist": "npm run prebuild && electron-builder",
     "dist:win": "npm run prebuild && electron-builder --win",

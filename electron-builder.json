@@ -30,10 +30,6 @@
             "to": "assets"
         },
         {
-            "from": ".env",
-            "to": ".env"
-        },
-        {
             "from": "chrome-bundled",
             "to": "chrome-win64"
         },

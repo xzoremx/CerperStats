@@ -25,6 +25,9 @@ icon_signing_private.pem
 
 # Postgresql credentials
 .env
+
+# Embedded config (generated at build time)
+config/embedded-env.js
    
 #Libraries
 modules/.env/
