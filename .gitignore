@@ -18,6 +18,7 @@ Thumbs.db
 
 # Electron
 *.asar
+chrome-bundled/
 
 # Security
 icon_signing_private.pem
