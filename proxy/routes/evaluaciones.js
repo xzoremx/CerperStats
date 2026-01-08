@@ -353,6 +353,10 @@ router.post('/run', async (req, res) => {
 
   console.log(`[EVAL-ROUTE] Procesando sesión ${session_id} con ${catalog_ids.length} tests`);
 
+  // === VALIDATION PHASE (synchronous - must complete before response) ===
+  let session, tipo_analisis, usuario_id, dfIngresoConNivel, isMultianalito;
+  let niveles, analitos, totalAnalitos, nivelesPorAnalito, verified, nivelesConDatos;
+
   try {
     const { rows: sessionRows } = await pool.query(
       `SELECT tipo_analisis, lab_key, usuario_id
@@ -364,9 +368,9 @@ router.post('/run', async (req, res) => {
       finishProgress(session_id, 'failed', { message: 'session_not_found' });
       return res.status(404).json({ ok: false, error: 'session_not_found' });
     }
-    const session = sessionRows[0];
-    const tipo_analisis = session.tipo_analisis;
-    const usuario_id = session.usuario_id;
+    session = sessionRows[0];
+    tipo_analisis = session.tipo_analisis;
+    usuario_id = session.usuario_id;
 
     updateProgress(session_id, { message: 'cargando_inputs', tipo_analisis });
 
@@ -383,7 +387,7 @@ router.post('/run', async (req, res) => {
     console.log(`[EVAL-ROUTE] Tipo análisis: ${tipo_analisis}, Usuario: ${usuario_id}`);
 
     // Obtener datos con nivel para identificar niveles únicos
-    let dfIngresoConNivel = [];
+    dfIngresoConNivel = [];
     console.log(`[EVAL-ROUTE] Consultando datos para sesión ${session_id}...`);
     if (tipo_analisis === 'multi' || tipo_analisis === 'multianalito') {
       const { rows } = await pool.query(
@@ -408,16 +412,16 @@ router.post('/run', async (req, res) => {
     console.log(`[EVAL-ROUTE] Total registros obtenidos: ${dfIngresoConNivel.length}`);
 
     // Determinar si es multianalito
-    const isMultianalito = (tipo_analisis === 'multi' || tipo_analisis === 'multianalito');
+    isMultianalito = (tipo_analisis === 'multi' || tipo_analisis === 'multianalito');
 
     // Obtener niveles únicos (convertir a número para asegurar tipo consistente)
-    const niveles = [...new Set(dfIngresoConNivel.map(d => Number(d.nivel) || 1))].sort((a, b) => a - b);
+    niveles = [...new Set(dfIngresoConNivel.map(d => Number(d.nivel) || 1))].sort((a, b) => a - b);
     if (niveles.length === 0) niveles.push(1);
 
     // Para multianalito: obtener analitos únicos y calcular total
-    let analitos = [];
-    let totalAnalitos = 0;
-    let nivelesPorAnalito = null;
+    analitos = [];
+    totalAnalitos = 0;
+    nivelesPorAnalito = null;
     if (isMultianalito) {
       analitos = [...new Set(dfIngresoConNivel.map(d => d.analito).filter(Boolean))].sort();
       totalAnalitos = analitos.length;
@@ -472,7 +476,7 @@ router.post('/run', async (req, res) => {
         .map((entry) => [String(entry.module_id), entry])
     );
 
-    const verified = [];
+    verified = [];
     for (const t of testsRaw) {
       const manifestEntry = byModuleId.get(String(t.module_id));
       if (!manifestEntry) {
@@ -496,7 +500,7 @@ router.post('/run', async (req, res) => {
     }
 
     // Inicializar totales de progreso (tareas = módulos × combinaciones con datos)
-    const nivelesConDatos = isMultianalito
+    nivelesConDatos = isMultianalito
       ? []
       : niveles.filter((nivel) => dfIngresoConNivel.some((d) => (Number(d.nivel) || 1) === nivel));
 
@@ -513,31 +517,158 @@ router.post('/run', async (req, res) => {
       failed_tasks: 0,
     });
 
-    // Procesamiento según tipo de análisis
+  } catch (err) {
+    console.error('[EVAL-ROUTE] Error en fase de validación:', err);
+    finishProgress(session_id, 'failed', { message: 'validation_error' });
+    return res.status(500).json({ ok: false, error: 'validation_error' });
+  }
+
+  // === RESPOND IMMEDIATELY - Background processing will continue ===
+  res.json({ ok: true, status: 'started', session_id });
+  console.log(`[EVAL-ROUTE] Respuesta enviada, iniciando procesamiento en background para sesión ${session_id}`);
+
+  // === BACKGROUND PROCESSING (async, not awaited) ===
+  (async () => {
     let totalResults = 0;
 
-    if (isMultianalito) {
-      // MULTIANALITO: Iterar por analito × nivel
-      console.log(`[EVAL] Iniciando procesamiento MULTIANALITO: ${analitos.length} analitos × ${niveles.length} niveles`);
+    try {
+      if (isMultianalito) {
+        // MULTIANALITO: Iterar por analito × nivel
+        console.log(`[EVAL] Iniciando procesamiento MULTIANALITO: ${analitos.length} analitos × ${niveles.length} niveles`);
 
-      for (const analito of analitos) {
-        const nivelesDisponibles = [...(nivelesPorAnalito?.get(analito) || [])].sort((a, b) => a - b);
-        for (const nivel of nivelesDisponibles) {
-          console.log(`[EVAL] === INICIO PROCESAMIENTO: analito=${analito}, nivel=${nivel} ===`);
-          updateProgress(session_id, { current: { analito, nivel }, message: 'ejecutando' });
+        for (const analito of analitos) {
+          const nivelesDisponibles = [...(nivelesPorAnalito?.get(analito) || [])].sort((a, b) => a - b);
+          for (const nivel of nivelesDisponibles) {
+            console.log(`[EVAL] === INICIO PROCESAMIENTO: analito=${analito}, nivel=${nivel} ===`);
+            updateProgress(session_id, { current: { analito, nivel }, message: 'ejecutando' });
 
-          // Filtrar datos para este analito y nivel específicos
+            // Filtrar datos para este analito y nivel específicos
+            const dfIngreso = dfIngresoConNivel
+              .filter(d => d.analito === analito && (Number(d.nivel) || 1) === nivel)
+              .map(d => {
+                const { nivel: _, analito: __, ...rest } = d;
+                return rest;
+              });
+
+            console.log(`[EVAL] Procesando analito=${analito}, nivel=${nivel}: ${dfIngreso.length} registros encontrados`);
+
+            if (dfIngreso.length === 0) {
+              console.warn(`[EVAL] No hay datos para analito=${analito}, nivel=${nivel}, saltando...`);
+              continue;
+            }
+
+            const evalPayload = {
+              session_id,
+              tipo_analisis,
+              catalog_ids,
+              df_ingreso: dfIngreso,
+              tests: verified,
+              total_analitos: totalAnalitos, // Pasar cantidad total de analitos
+            };
+
+            let evaluatorOutput;
+            try {
+              console.log(`[EVAL] Ejecutando evaluador para analito=${analito}, nivel=${nivel}...`);
+              evaluatorOutput = await runEvaluator(evalPayload);
+              console.log(`[EVAL] Evaluador completado para analito=${analito}, nivel=${nivel}`);
+            } catch (err) {
+              console.error(`[EVAL] Error en analito=${analito}, nivel=${nivel}:`, err);
+              console.error(`[EVAL] Continuando con siguiente combinación...`);
+              bumpProgress(session_id, { processed_tasks: verified.length, failed_tasks: verified.length });
+              continue;
+            }
+
+            const results = Array.isArray(evaluatorOutput)
+              ? evaluatorOutput
+              : Array.isArray(evaluatorOutput?.results)
+                ? evaluatorOutput.results
+                : null;
+
+            if (!results) {
+              console.error(`[EVAL] Output inválido para analito=${analito}, nivel=${nivel}, tipo: ${typeof evaluatorOutput}`);
+              bumpProgress(session_id, { processed_tasks: verified.length, failed_tasks: verified.length });
+              continue;
+            }
+
+            console.log(`[EVAL] analito=${analito}, nivel=${nivel}: ${results.length} resultados obtenidos`);
+
+            // Guardar resultados con el analito y nivel correspondientes
+            for (const r of results) {
+              bumpProgress(session_id, { processed_tasks: 1 });
+              if (!r.ok) {
+                console.warn(`[EVAL] Falló módulo ${r.nombre || r.catalog_id} en analito=${analito}, nivel=${nivel}: ${r.error}`);
+                bumpProgress(session_id, { failed_tasks: 1 });
+                continue;
+              }
+
+              try {
+                const insertResult = await pool.query(
+                  `INSERT INTO results_general
+                 (session_id, catalog_id, resultado_pc, grafico_data, creado_en, usuario_id, nivel, analito, conclusion, conclusion_status)
+                 VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, $8, $9)
+                 RETURNING id, nivel, analito, conclusion, conclusion_status`,
+                  [
+                    session_id,
+                    r.catalog_id,
+                    r.resultado_pc,
+                    r.grafico_data || '',
+                    usuario_id,
+                    nivel,
+                    analito, // Usar el analito real
+                    r.conclusion || null, // Conclusión del módulo Python
+                    r.conclusion_status || null // Status de conclusión del módulo Python
+                  ]
+                );
+                const insertedRow = insertResult.rows[0];
+                console.log(`[EVAL] ✓ Resultado guardado: id=${insertedRow.id}, catalog_id=${r.catalog_id}, analito=${insertedRow.analito}, nivel=${insertedRow.nivel || nivel}`);
+                bumpProgress(session_id, { saved_results: 1 });
+
+                try {
+                  await pool.query(
+                    `INSERT INTO logs_sistema (usuario_id, accion, detalle)
+                   VALUES ($1, 'modulo_ejecutado', $2)`,
+                    [usuario_id || null, `catalog_id=${r.catalog_id}, analito=${analito}, nivel=${nivel}`]
+                  );
+                } catch (logErr) {
+                  console.warn(`[EVAL] Error insertando log (no crítico):`, logErr.message);
+                }
+
+                totalResults++;
+              } catch (insertErr) {
+                console.error(`[EVAL] Error insertando resultado para catalog_id=${r.catalog_id}, analito=${analito}, nivel=${nivel}:`, insertErr.message);
+                console.error(`[EVAL] Stack del error:`, insertErr.stack);
+                bumpProgress(session_id, { failed_tasks: 1 });
+              }
+            }
+
+            console.log(`[EVAL] === FIN PROCESAMIENTO: analito=${analito}, nivel=${nivel} (${totalResults} resultados guardados hasta ahora) ===`);
+          }
+        }
+
+        console.log(`[EVAL] ==========================================`);
+        console.log(`[EVAL] PROCESAMIENTO MULTIANALITO COMPLETADO: ${totalResults} módulos procesados en ${analitos.length} analitos × ${niveles.length} niveles`);
+        console.log(`[EVAL] ==========================================`);
+
+      } else {
+        // MONOANALITO: Iterar solo por nivel
+        console.log(`[EVAL] Iniciando procesamiento MONOANALITO: ${niveles.length} niveles: [${niveles.join(', ')}]`);
+
+        for (const nivel of nivelesConDatos) {
+          console.log(`[EVAL] === INICIO PROCESAMIENTO NIVEL ${nivel} ===`);
+          updateProgress(session_id, { current: { nivel }, message: 'ejecutando' });
+
+          // Filtrar datos para este nivel (convertir a número para comparación correcta)
           const dfIngreso = dfIngresoConNivel
-            .filter(d => d.analito === analito && (Number(d.nivel) || 1) === nivel)
+            .filter(d => (Number(d.nivel) || 1) === nivel)
             .map(d => {
-              const { nivel: _, analito: __, ...rest } = d;
+              const { nivel: _, ...rest } = d;
               return rest;
             });
 
-          console.log(`[EVAL] Procesando analito=${analito}, nivel=${nivel}: ${dfIngreso.length} registros encontrados`);
+          console.log(`[EVAL] Procesando nivel ${nivel}: ${dfIngreso.length} registros encontrados de ${dfIngresoConNivel.length} totales`);
 
           if (dfIngreso.length === 0) {
-            console.warn(`[EVAL] No hay datos para analito=${analito}, nivel=${nivel}, saltando...`);
+            console.warn(`[EVAL] No hay datos para nivel ${nivel}, saltando...`);
             continue;
           }
 
@@ -547,17 +678,16 @@ router.post('/run', async (req, res) => {
             catalog_ids,
             df_ingreso: dfIngreso,
             tests: verified,
-            total_analitos: totalAnalitos, // Pasar cantidad total de analitos
           };
 
           let evaluatorOutput;
           try {
-            console.log(`[EVAL] Ejecutando evaluador para analito=${analito}, nivel=${nivel}...`);
+            console.log(`[EVAL] Ejecutando evaluador para nivel ${nivel}...`);
             evaluatorOutput = await runEvaluator(evalPayload);
-            console.log(`[EVAL] Evaluador completado para analito=${analito}, nivel=${nivel}`);
+            console.log(`[EVAL] Evaluador completado para nivel ${nivel}`);
           } catch (err) {
-            console.error(`[EVAL] Error en analito=${analito}, nivel=${nivel}:`, err);
-            console.error(`[EVAL] Continuando con siguiente combinación...`);
+            console.error(`[EVAL] Error en nivel ${nivel}:`, err);
+            console.error(`[EVAL] Continuando con siguiente nivel...`);
             bumpProgress(session_id, { processed_tasks: verified.length, failed_tasks: verified.length });
             continue;
           }
@@ -569,18 +699,18 @@ router.post('/run', async (req, res) => {
               : null;
 
           if (!results) {
-            console.error(`[EVAL] Output inválido para analito=${analito}, nivel=${nivel}, tipo: ${typeof evaluatorOutput}`);
+            console.error(`[EVAL] Output inválido para nivel ${nivel}, tipo: ${typeof evaluatorOutput}`);
             bumpProgress(session_id, { processed_tasks: verified.length, failed_tasks: verified.length });
             continue;
           }
 
-          console.log(`[EVAL] analito=${analito}, nivel=${nivel}: ${results.length} resultados obtenidos`);
+          console.log(`[EVAL] Nivel ${nivel}: ${results.length} resultados obtenidos`);
 
-          // Guardar resultados con el analito y nivel correspondientes
+          // Guardar resultados con el nivel correspondiente
           for (const r of results) {
             bumpProgress(session_id, { processed_tasks: 1 });
             if (!r.ok) {
-              console.warn(`[EVAL] Falló módulo ${r.nombre || r.catalog_id} en analito=${analito}, nivel=${nivel}: ${r.error}`);
+              console.warn(`[EVAL] Falló módulo ${r.nombre || r.catalog_id} en nivel ${nivel}: ${r.error}`);
               bumpProgress(session_id, { failed_tasks: 1 });
               continue;
             }
@@ -588,9 +718,9 @@ router.post('/run', async (req, res) => {
             try {
               const insertResult = await pool.query(
                 `INSERT INTO results_general
-                 (session_id, catalog_id, resultado_pc, grafico_data, creado_en, usuario_id, nivel, analito, conclusion, conclusion_status)
-                 VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, $8, $9)
-                 RETURNING id, nivel, analito, conclusion, conclusion_status`,
+               (session_id, catalog_id, resultado_pc, grafico_data, creado_en, usuario_id, nivel, analito, conclusion, conclusion_status)
+               VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, $8, $9)
+               RETURNING id, nivel, conclusion, conclusion_status`,
                 [
                   session_id,
                   r.catalog_id,
@@ -598,20 +728,20 @@ router.post('/run', async (req, res) => {
                   r.grafico_data || '',
                   usuario_id,
                   nivel,
-                  analito, // Usar el analito real
+                  'Analito', // Valor por defecto para monoanalito
                   r.conclusion || null, // Conclusión del módulo Python
                   r.conclusion_status || null // Status de conclusión del módulo Python
                 ]
               );
               const insertedRow = insertResult.rows[0];
-              console.log(`[EVAL] ✓ Resultado guardado: id=${insertedRow.id}, catalog_id=${r.catalog_id}, analito=${insertedRow.analito}, nivel=${insertedRow.nivel || nivel}`);
+              console.log(`[EVAL] ✓ Resultado guardado: id=${insertedRow.id}, catalog_id=${r.catalog_id}, nivel=${insertedRow.nivel || nivel}`);
               bumpProgress(session_id, { saved_results: 1 });
 
               try {
                 await pool.query(
                   `INSERT INTO logs_sistema (usuario_id, accion, detalle)
-                   VALUES ($1, 'modulo_ejecutado', $2)`,
-                  [usuario_id || null, `catalog_id=${r.catalog_id}, analito=${analito}, nivel=${nivel}`]
+                 VALUES ($1, 'modulo_ejecutado', $2)`,
+                  [usuario_id || null, `catalog_id=${r.catalog_id}, nivel=${nivel}`]
                 );
               } catch (logErr) {
                 console.warn(`[EVAL] Error insertando log (no crítico):`, logErr.message);
@@ -619,148 +749,35 @@ router.post('/run', async (req, res) => {
 
               totalResults++;
             } catch (insertErr) {
-              console.error(`[EVAL] Error insertando resultado para catalog_id=${r.catalog_id}, analito=${analito}, nivel=${nivel}:`, insertErr.message);
+              console.error(`[EVAL] Error insertando resultado para catalog_id=${r.catalog_id}, nivel=${nivel}:`, insertErr.message);
               console.error(`[EVAL] Stack del error:`, insertErr.stack);
               bumpProgress(session_id, { failed_tasks: 1 });
             }
           }
 
-          console.log(`[EVAL] === FIN PROCESAMIENTO: analito=${analito}, nivel=${nivel} (${totalResults} resultados guardados hasta ahora) ===`);
+          console.log(`[EVAL] === FIN PROCESAMIENTO NIVEL ${nivel} (${totalResults} resultados guardados hasta ahora) ===`);
         }
+
+        console.log(`[EVAL] ==========================================`);
+        console.log(`[EVAL] PROCESAMIENTO MONOANALITO COMPLETADO: ${totalResults} módulos procesados en ${niveles.length} niveles`);
+        console.log(`[EVAL] ==========================================`);
       }
 
-      console.log(`[EVAL] ==========================================`);
-      console.log(`[EVAL] PROCESAMIENTO MULTIANALITO COMPLETADO: ${totalResults} módulos procesados en ${analitos.length} analitos × ${niveles.length} niveles`);
-      console.log(`[EVAL] ==========================================`);
+      const finalEntry = progressStore.get(String(session_id));
+      const incomplete =
+        finalEntry && finalEntry.total_tasks > 0 && finalEntry.processed_tasks < finalEntry.total_tasks;
+      const finalStatus =
+        !finalEntry || incomplete || finalEntry.failed_tasks > 0 ? 'completed_with_errors' : 'completed';
 
-    } else {
-      // MONOANALITO: Iterar solo por nivel
-      console.log(`[EVAL] Iniciando procesamiento MONOANALITO: ${niveles.length} niveles: [${niveles.join(', ')}]`);
+      finishProgress(session_id, finalStatus, { message: finalStatus });
 
-      for (const nivel of nivelesConDatos) {
-        console.log(`[EVAL] === INICIO PROCESAMIENTO NIVEL ${nivel} ===`);
-        updateProgress(session_id, { current: { nivel }, message: 'ejecutando' });
-
-        // Filtrar datos para este nivel (convertir a número para comparación correcta)
-        const dfIngreso = dfIngresoConNivel
-          .filter(d => (Number(d.nivel) || 1) === nivel)
-          .map(d => {
-            const { nivel: _, ...rest } = d;
-            return rest;
-          });
-
-        console.log(`[EVAL] Procesando nivel ${nivel}: ${dfIngreso.length} registros encontrados de ${dfIngresoConNivel.length} totales`);
-
-        if (dfIngreso.length === 0) {
-          console.warn(`[EVAL] No hay datos para nivel ${nivel}, saltando...`);
-          continue;
-        }
-
-        const evalPayload = {
-          session_id,
-          tipo_analisis,
-          catalog_ids,
-          df_ingreso: dfIngreso,
-          tests: verified,
-        };
-
-        let evaluatorOutput;
-        try {
-          console.log(`[EVAL] Ejecutando evaluador para nivel ${nivel}...`);
-          evaluatorOutput = await runEvaluator(evalPayload);
-          console.log(`[EVAL] Evaluador completado para nivel ${nivel}`);
-        } catch (err) {
-          console.error(`[EVAL] Error en nivel ${nivel}:`, err);
-          console.error(`[EVAL] Continuando con siguiente nivel...`);
-          bumpProgress(session_id, { processed_tasks: verified.length, failed_tasks: verified.length });
-          continue;
-        }
-
-        const results = Array.isArray(evaluatorOutput)
-          ? evaluatorOutput
-          : Array.isArray(evaluatorOutput?.results)
-            ? evaluatorOutput.results
-            : null;
-
-        if (!results) {
-          console.error(`[EVAL] Output inválido para nivel ${nivel}, tipo: ${typeof evaluatorOutput}`);
-          bumpProgress(session_id, { processed_tasks: verified.length, failed_tasks: verified.length });
-          continue;
-        }
-
-        console.log(`[EVAL] Nivel ${nivel}: ${results.length} resultados obtenidos`);
-
-        // Guardar resultados con el nivel correspondiente
-        for (const r of results) {
-          bumpProgress(session_id, { processed_tasks: 1 });
-          if (!r.ok) {
-            console.warn(`[EVAL] Falló módulo ${r.nombre || r.catalog_id} en nivel ${nivel}: ${r.error}`);
-            bumpProgress(session_id, { failed_tasks: 1 });
-            continue;
-          }
-
-          try {
-            const insertResult = await pool.query(
-              `INSERT INTO results_general
-               (session_id, catalog_id, resultado_pc, grafico_data, creado_en, usuario_id, nivel, analito, conclusion, conclusion_status)
-               VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, $8, $9)
-               RETURNING id, nivel, conclusion, conclusion_status`,
-              [
-                session_id,
-                r.catalog_id,
-                r.resultado_pc,
-                r.grafico_data || '',
-                usuario_id,
-                nivel,
-                'Analito', // Valor por defecto para monoanalito
-                r.conclusion || null, // Conclusión del módulo Python
-                r.conclusion_status || null // Status de conclusión del módulo Python
-              ]
-            );
-            const insertedRow = insertResult.rows[0];
-            console.log(`[EVAL] ✓ Resultado guardado: id=${insertedRow.id}, catalog_id=${r.catalog_id}, nivel=${insertedRow.nivel || nivel}`);
-            bumpProgress(session_id, { saved_results: 1 });
-
-            try {
-              await pool.query(
-                `INSERT INTO logs_sistema (usuario_id, accion, detalle)
-                 VALUES ($1, 'modulo_ejecutado', $2)`,
-                [usuario_id || null, `catalog_id=${r.catalog_id}, nivel=${nivel}`]
-              );
-            } catch (logErr) {
-              console.warn(`[EVAL] Error insertando log (no crítico):`, logErr.message);
-            }
-
-            totalResults++;
-          } catch (insertErr) {
-            console.error(`[EVAL] Error insertando resultado para catalog_id=${r.catalog_id}, nivel=${nivel}:`, insertErr.message);
-            console.error(`[EVAL] Stack del error:`, insertErr.stack);
-            bumpProgress(session_id, { failed_tasks: 1 });
-          }
-        }
-
-        console.log(`[EVAL] === FIN PROCESAMIENTO NIVEL ${nivel} (${totalResults} resultados guardados hasta ahora) ===`);
-      }
-
-      console.log(`[EVAL] ==========================================`);
-      console.log(`[EVAL] PROCESAMIENTO MONOANALITO COMPLETADO: ${totalResults} módulos procesados en ${niveles.length} niveles`);
-      console.log(`[EVAL] ==========================================`);
+      console.log(`[EVAL-ROUTE] Background processing finished: ${totalResults} results, status=${finalStatus}`);
+    } catch (err) {
+      console.error('[EVAL-ROUTE] Error en procesamiento background:', err);
+      finishProgress(session_id, 'failed', { message: 'failed' });
     }
-
-    const finalEntry = progressStore.get(String(session_id));
-    const incomplete =
-      finalEntry && finalEntry.total_tasks > 0 && finalEntry.processed_tasks < finalEntry.total_tasks;
-    const finalStatus =
-      !finalEntry || incomplete || finalEntry.failed_tasks > 0 ? 'completed_with_errors' : 'completed';
-
-    finishProgress(session_id, finalStatus, { message: finalStatus });
-
-    res.json({ ok: true, count: totalResults, niveles: niveles.length, ...(isMultianalito && { analitos: analitos.length }) });
-  } catch (err) {
-    console.error('[API] Error ejecutando evaluaciones', err);
-    finishProgress(session_id, 'failed', { message: 'failed' });
-    res.status(500).json({ ok: false, error: 'db_error' });
-  }
+  })();
 });
 
 module.exports = router;
+

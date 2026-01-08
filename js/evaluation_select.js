@@ -1475,7 +1475,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     bloquearBotones(true);
     isEvaluating = true;
     setProgressUi({ percent: 0, badgeVariant: "running", badgeText: "Iniciando..." });
-    startProgressPolling({ stopOnTerminal: false, skipTerminalRender: true });
     notify("Ejecutando evaluaciones seleccionadas...", "info");
 
     try {
@@ -1484,19 +1483,37 @@ document.addEventListener("DOMContentLoaded", async () => {
         catalog_ids: Array.from(seleccionadas)
       });
 
-      if (!result.ok) throw new Error(result.error || "Error desconocido");
+      if (!result.ok) {
+        throw new Error(result.error || "Error desconocido");
+      }
 
-      notify("Evaluaciones completadas y guardadas correctamente.", "success");
+      // Backend starts processing in background - now poll for completion
+      console.log("[EvalSelect] Evaluaciones iniciadas, polling progreso...");
+      startProgressPolling({
+        stopOnTerminal: true,
+        skipTerminalRender: false,
+        onTerminal: (finalProgress) => {
+          isEvaluating = false;
+          bloquearBotones(false);
+
+          if (finalProgress?.status === "completed") {
+            notify("Evaluaciones completadas y guardadas correctamente.", "success");
+          } else if (finalProgress?.status === "completed_with_errors") {
+            notify("Evaluaciones completadas con algunos errores.", "warning");
+          } else {
+            notify("Las evaluaciones finalizaron.", "info");
+          }
+
+          // Refresh visualizations if on that view
+          if (activeView === "visualizaciones") loadVisualizaciones();
+          if (activeView === "resultados") loadResultados();
+        },
+      });
 
     } catch (err) {
-      console.error("[EvalSelect] Error al evaluar:", err);
-      notify("Ocurrió un error durante la ejecución.", "error");
+      console.error("[EvalSelect] Error al iniciar evaluaciones:", err);
+      notify("Ocurrió un error al iniciar las evaluaciones.", "error");
       setProgressUi({ percent: 0, badgeVariant: "error", badgeText: "Error" });
-    } finally {
-      const finalProgressRes = await getEvaluacionesProgressSafe();
-      if (finalProgressRes?.ok && finalProgressRes.data) {
-        renderExecutionProgress(finalProgressRes.data);
-      }
       clearProgressPolling();
       isEvaluating = false;
       bloquearBotones(false);

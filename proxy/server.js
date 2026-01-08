@@ -36,6 +36,22 @@ const apiLimiter = rateLimit({
 const app = express();
 app.use(bodyParser.json({ limit: '50mb' }));
 
+// Health check endpoint (no auth required for monitoring)
+app.get('/health', (req, res) => {
+  const memUsage = process.memoryUsage();
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    memory: {
+      rss: Math.round(memUsage.rss / 1024 / 1024) + ' MB',
+      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + ' MB',
+      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + ' MB'
+    }
+  });
+});
+
+
 // Token verification endpoint (needs token to verify it's valid)
 // Must be defined BEFORE the general /auth router
 app.get('/auth/verify', verifyToken, (req, res) => {
