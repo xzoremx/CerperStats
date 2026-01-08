@@ -20,8 +20,25 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const selLab = document.getElementById('filter-lab');
   const selProc = document.getElementById('filter-proc');
+  const selAnalisis = document.getElementById('filter-analisis');
   const labWrap = document.getElementById('filter-lab-wrap');
   let allSessions = [];
+
+  function normalizeText(value) {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  function normalizeTipoAnalisis(value) {
+    const norm = normalizeText(value);
+    if (!norm) return null;
+    if (norm === 'multi' || norm === 'multianalito' || norm.includes('multi')) return 'multi';
+    if (norm === 'mono' || norm === 'monoanalito' || norm.includes('mono')) return 'mono';
+    return norm;
+  }
 
   // Hide lab filter for supervisors, show and populate for admins
   if (rol === 'supervisor') {
@@ -55,15 +72,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function applyFilters() {
     const proc = (selProc?.value || 'all').toLowerCase();
+    const analisis = (selAnalisis?.value || 'all').toLowerCase();
     let data = allSessions;
     if (proc !== 'all') {
       data = data.filter(s => (s.procedure || '').toLowerCase() === proc);
+    }
+    if (analisis !== 'all') {
+      data = data.filter(s => normalizeTipoAnalisis(s.tipo_analisis) === analisis);
     }
     renderSesiones(data);
   }
 
   selLab?.addEventListener('change', () => { if (rol === 'admin') loadSessions().catch(console.error); });
   selProc?.addEventListener('change', applyFilters);
+  selAnalisis?.addEventListener('change', applyFilters);
 
   try { await loadSessions(); } catch (err) {
     console.error('[SessionsPanel] Error:', err);
@@ -79,6 +101,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 function renderSesiones(sesiones) {
   const contenedor = document.getElementById("sessions-container");
   contenedor.innerHTML = "";
+
+  const normalizeText = (value) => {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  };
+
+  const normalizeTipoAnalisis = (value) => {
+    const norm = normalizeText(value);
+    if (!norm) return null;
+    if (norm === 'multi' || norm === 'multianalito' || norm.includes('multi')) return 'multi';
+    if (norm === 'mono' || norm === 'monoanalito' || norm.includes('mono')) return 'mono';
+    return norm;
+  };
 
   const procInfo = (name) => {
     const k = (name || '').toLowerCase();
@@ -99,13 +137,38 @@ function renderSesiones(sesiones) {
     card.className = "session-card";
     const labName = s.lab_nombre || s.lab_key || '';
     const pInfo = procInfo(s.procedure);
-    const badge = pInfo ? `<span class="proc-badge ${pInfo.cls}" title="${s.procedure}">${pInfo.abbr}</span>` : '';
+    const badges = [];
+    if (pInfo) badges.push(`<span class="proc-badge ${pInfo.cls}" title="${s.procedure}">${pInfo.abbr}</span>`);
+
+    const ta = normalizeTipoAnalisis(s.tipo_analisis);
+    if (ta === 'mono') badges.push(`<span class="proc-badge badge-mono" title="Estructura: ${s.tipo_analisis}">MONO</span>`);
+    if (ta === 'multi') badges.push(`<span class="proc-badge badge-multi" title="Estructura: ${s.tipo_analisis}">MULTI</span>`);
+
+    const td = normalizeText(s.tipo_dato);
+    if (td) {
+      const isCual = td.includes('cual');
+      const label = isCual ? 'CUAL' : 'CUANT';
+      const cls = isCual ? 'badge-cual' : 'badge-cuant';
+      const modo = s.modo_cualitativo && String(s.modo_cualitativo).toLowerCase() !== 'null'
+        ? ` (${s.modo_cualitativo})`
+        : '';
+      badges.push(`<span class="proc-badge ${cls}" title="Tipo de dato: ${s.tipo_dato}${modo}">${label}</span>`);
+    }
+
+    const badgeRow = badges.length ? `<div class="badge-row">${badges.join('')}</div>` : '';
+
+    const tipoAnalisisText = s.tipo_analisis || '-';
+    const tipoDatoText = s.tipo_dato || '-';
+    const modoText = s.modo_cualitativo && String(s.modo_cualitativo).toLowerCase() !== 'null'
+      ? ` (${s.modo_cualitativo})`
+      : '';
     card.innerHTML = `
-      ${badge}
+      ${badgeRow}
       <h3>${labName} | ${s.producto || "Sin producto"}</h3>
       <p><b>ID:</b> ${s.id}</p>
       <p><b>Estado:</b> ${s.estado}</p>
       <p><b>Método:</b> ${s.metodo || "-"}</p>
+      <p><b>Estructura:</b> ${tipoAnalisisText} | <b>Dato:</b> ${tipoDatoText}${modoText}</p>
       <p><b>Creado:</b> ${s.creado_en}</p>
       <p><b>Analista:</b> ${s.usuario || "-"}</p>
     `;
@@ -196,6 +259,8 @@ function renderSesiones(sesiones) {
     try{
       const proc = document.getElementById('filter-proc');
       if (proc) enhanceSelect(proc);
+      const analisis = document.getElementById('filter-analisis');
+      if (analisis) enhanceSelect(analisis);
       const lab = document.getElementById('filter-lab');
       const rol = sessionStorage.getItem('rol');
       if (rol === 'admin' && lab) enhanceSelect(lab);
@@ -204,7 +269,6 @@ function renderSesiones(sesiones) {
   if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(boot, 50);
   else document.addEventListener('DOMContentLoaded', ()=> setTimeout(boot, 50));
 })();
-
 
 
 

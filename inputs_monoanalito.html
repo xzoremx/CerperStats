@@ -15,16 +15,17 @@
         <button id="btn-copy" class="btn-copy btn-icon" aria-label="Copiar tabla" title="Copiar tabla">
           <i data-lucide="copy"></i>
         </button>
+        <div class="level-filter" aria-label="Filtro de nivel">
+          <label for="level-select" class="level-label">Nivel</label>
+          <select id="level-select" class="level-select" aria-label="Seleccionar nivel"></select>
+        </div>
         <div class="unit-badge" id="unit-badge" title="Unidad de medida"></div>
       </div>
     </header>
 
     <section class="sheet-wrap">
       <div class="sheet-scroll">
-        <table class="sheet" id="inputs-table" aria-live="polite">
-          <thead id="sheet-head"></thead>
-          <tbody id="sheet-body"></tbody>
-        </table>
+        <div id="inputs-tables" class="inputs-stack" aria-live="polite"></div>
       </div>
       <p class="sheet-empty" id="empty-msg" hidden>No hay datos de inputs para esta sesión.</p>
     </section>

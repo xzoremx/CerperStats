@@ -140,7 +140,8 @@ router.get('/', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT
          s.id, s.lab_key, l.nombre AS lab_nombre, s.producto, s.metodo,
-         s.estado, s.creado_en, s."procedure", u.username AS usuario
+         s.estado, s.creado_en, s."procedure", u.username AS usuario,
+         s.tipo_analisis, s.tipo_dato, s.modo_cualitativo
        FROM sessions s
        LEFT JOIN usuarios u ON s.usuario_id = u.id
        LEFT JOIN labs l ON l.lab_key = s.lab_key

@@ -93,6 +93,46 @@
                 `;
             }
 
+            // --- Summary Table (Multianalito: Analito/Nivel vs Tests, Monoanalito: Nivel vs Tests) ---
+            let summaryTableHtml = '';
+            if (coverData.summary_table && coverData.summary_table.rows && coverData.summary_table.rows.length > 0) {
+                const { columns, rows, rowHeader } = coverData.summary_table;
+
+                // Map status to display text and CSS class
+                const statusDisplay = (status) => {
+                    switch(status) {
+                        case 'success': return { text: 'Cumplió', cls: 'status-success' };
+                        case 'danger': return { text: 'No Cumplió', cls: 'status-danger' };
+                        default: return { text: 'Revisar', cls: 'status-neutral' };
+                    }
+                };
+
+                summaryTableHtml = `
+                    <div class="summary-table-section">
+                        <div class="summary-table-header">Resumen de Resultados</div>
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th class="row-header">${rowHeader || 'Analito / Nivel'}</th>
+                                    ${columns.map(col => `<th>${col}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows.map(row => `
+                                    <tr>
+                                        <td class="row-label">${row.label}</td>
+                                        ${row.cells.map(status => {
+                                            const { text, cls } = statusDisplay(status);
+                                            return `<td class="status-cell ${cls}">${text}</td>`;
+                                        }).join('')}
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
             // Use logo_path from config, fallback to relative path if not provided
             // Logo is located at modules/reports/assets/logo_informe.png (relative to template)
             const logoSrc = logoPath 
@@ -130,6 +170,7 @@
 
                     ${participantsHtml}
                     ${testsListHtml}
+                    ${summaryTableHtml}
                 </div>
 
                 <!-- SIGNATURES (Bottom) -->

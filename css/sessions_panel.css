@@ -252,6 +252,20 @@ body::after {
   background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.45));
   color: var(--ink);
 }
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.badge-row .proc-badge { margin-bottom: 0; }
+
+.badge-mono  { color: #0b3ea8; border-color: rgba(37,99,235,.55); box-shadow: 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 9999px rgba(37,99,235,.06); }
+.badge-multi { color: #6d28d9; border-color: rgba(109,40,217,.55); box-shadow: 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 9999px rgba(109,40,217,.06); }
+.badge-cuant { color: #047857; border-color: rgba(4,120,87,.55); box-shadow: 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 9999px rgba(4,120,87,.06); }
+.badge-cual  { color: #b45309; border-color: rgba(180,83,9,.55); box-shadow: 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 9999px rgba(180,83,9,.06); }
+
 .proc-aut   { color: #6d28d9; border-color: rgba(109,40,217,.5); box-shadow: 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 9999px rgba(109,40,217,.06); }
 .proc-imp   { color: #047857; border-color: rgba(4,120,87,.5);   box-shadow: 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 9999px rgba(4,120,87,.06); }
 .proc-intra { color: #b45309; border-color: rgba(180,83,9,.5);    box-shadow: 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 9999px rgba(180,83,9,.06); }

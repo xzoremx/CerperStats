@@ -473,6 +473,15 @@ class ReportDataProvider {
             });
         }
 
+        // Build summary table for cover page
+        // Multianalito: Analito-Nivel vs Tests
+        // Monoanalito: Nivel vs Tests (if multiple levels)
+        const summaryTable = this._buildSummaryTable(results);
+
+        // Count unique niveles for template logic
+        const uniqueNiveles = new Set(results.map(r => r.nivel || 1));
+        const totalNiveles = uniqueNiveles.size;
+
         return {
             title: 'INFORME ESTADÍSTICO',
             subtitle: titleSuffix,
@@ -486,11 +495,125 @@ class ReportDataProvider {
             parametro: info.parametro || '',
             participants,
             tests_list: testsList,
+            summary_table: summaryTable,
+            total_niveles: totalNiveles,
             signatures: {
                 supervisor_name: info.supervisor_nombre || info.supervisor || '_________________',
                 supervisor_role: 'Supervisor / Responsable de laboratorio'
             }
         };
+    }
+
+    /**
+     * Build summary table for cover page.
+     * Multianalito: Rows = Analito-Nivel combinations
+     * Monoanalito: Rows = Niveles (only if multiple levels)
+     * Columns: Test names
+     * Cells: conclusion_status (success/danger/neutral)
+     */
+    _buildSummaryTable(results) {
+        const tipoAnalisis = (this.sessionInfo.tipo_analisis || '').toLowerCase();
+        const isMultianalito = tipoAnalisis === 'multi' || tipoAnalisis === 'multianalito';
+
+        // Collect unique tests
+        const testsSet = new Set();
+        const dataMap = new Map();
+
+        if (isMultianalito) {
+            // MULTIANALITO: Rows = Analito-Nivel combinations
+            const rowsMap = new Map(); // key: "analito|nivel" -> { analito, nivel }
+
+            for (const r of results) {
+                const analito = r.analito;
+                const nivel = r.nivel || 1;
+                const testName = r.titulo || r.test_titulo || r.nombre_interno;
+                const status = r.conclusion_status || 'neutral';
+
+                if (!analito) continue;
+
+                const rowKey = `${analito}|${nivel}`;
+                const cellKey = `${rowKey}|${testName}`;
+
+                if (!rowsMap.has(rowKey)) {
+                    rowsMap.set(rowKey, { analito, nivel });
+                }
+
+                testsSet.add(testName);
+                dataMap.set(cellKey, status);
+            }
+
+            // Sort rows by analito, then by nivel
+            const rows = Array.from(rowsMap.entries())
+                .sort((a, b) => {
+                    const cmp = a[1].analito.localeCompare(b[1].analito);
+                    if (cmp !== 0) return cmp;
+                    return a[1].nivel - b[1].nivel;
+                });
+
+            const tests = Array.from(testsSet);
+
+            if (rows.length === 0 || tests.length === 0) {
+                return null;
+            }
+
+            // Check if there are multiple niveles
+            const uniqueNiveles = new Set(rows.map(([_, { nivel }]) => nivel));
+            const showNivel = uniqueNiveles.size > 1;
+
+            return {
+                columns: tests,
+                rowHeader: 'Analito',
+                rows: rows.map(([rowKey, { analito, nivel }]) => ({
+                    label: showNivel ? `${analito} - Nivel ${nivel}` : analito,
+                    cells: tests.map(testName => {
+                        const cellKey = `${rowKey}|${testName}`;
+                        return dataMap.get(cellKey) || 'neutral';
+                    })
+                }))
+            };
+        } else {
+            // MONOANALITO: Rows = Niveles
+            // If only 1 nivel, show single row without "Nivel" label
+            const rowsMap = new Map(); // key: nivel -> nivel
+
+            for (const r of results) {
+                const nivel = r.nivel || 1;
+                const testName = r.titulo || r.test_titulo || r.nombre_interno;
+                const status = r.conclusion_status || 'neutral';
+
+                const rowKey = `${nivel}`;
+                const cellKey = `${rowKey}|${testName}`;
+
+                if (!rowsMap.has(nivel)) {
+                    rowsMap.set(nivel, nivel);
+                }
+
+                testsSet.add(testName);
+                dataMap.set(cellKey, status);
+            }
+
+            // Sort rows by nivel
+            const rows = Array.from(rowsMap.keys()).sort((a, b) => a - b);
+            const tests = Array.from(testsSet);
+
+            if (rows.length === 0 || tests.length === 0) {
+                return null;
+            }
+
+            const hasMultipleNiveles = rows.length > 1;
+
+            return {
+                columns: tests,
+                rowHeader: hasMultipleNiveles ? 'Nivel' : 'Resultado',
+                rows: rows.map(nivel => ({
+                    label: hasMultipleNiveles ? `Nivel ${nivel}` : 'General',
+                    cells: tests.map(testName => {
+                        const cellKey = `${nivel}|${testName}`;
+                        return dataMap.get(cellKey) || 'neutral';
+                    })
+                }))
+            };
+        }
     }
 
     _buildSectionsData(results, filterAnalito, filterNivel) {

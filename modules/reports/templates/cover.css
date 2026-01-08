@@ -340,3 +340,98 @@ h1.report-title {
   display: flex;
   justify-content: space-between;
 }
+
+/* =========================================
+   Summary Table - Bank/Tech Style
+   ========================================= */
+.summary-table-section {
+  margin-top: var(--s-6);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.summary-table-header {
+  font-family: var(--font-serif);
+  font-size: 14pt;
+  margin-bottom: var(--s-3);
+  color: var(--color-black);
+  font-weight: 600;
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8pt;
+  border: 1px solid var(--color-border);
+}
+
+.summary-table thead {
+  background: linear-gradient(180deg, #f8f9fa 0%, #f1f3f4 100%);
+}
+
+.summary-table th {
+  text-align: center;
+  font-size: 7pt;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--color-dark-grey);
+  padding: 8px 6px;
+  border: 1px solid var(--color-border);
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.summary-table th.row-header {
+  text-align: left;
+  width: 140px;
+  min-width: 120px;
+}
+
+.summary-table td {
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.summary-table td.row-label {
+  text-align: left;
+  font-weight: 500;
+  color: var(--color-black);
+  background: #fafbfc;
+}
+
+/* Status cells - Soft, elegant colors */
+.summary-table .status-cell {
+  font-size: 7pt;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  border-radius: 0;
+}
+
+.summary-table .status-success {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  color: #2e7d32;
+}
+
+.summary-table .status-danger {
+  background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+  color: #c62828;
+}
+
+.summary-table .status-neutral {
+  background: linear-gradient(135deg, #f5f5f5 0%, #eeeeee 100%);
+  color: #616161;
+}
+
+/* Zebra striping for rows */
+.summary-table tbody tr:nth-child(even) td.row-label {
+  background: #f5f6f7;
+}
+
+/* Hover effect for print preview */
+@media screen {
+  .summary-table tbody tr:hover td {
+    filter: brightness(0.97);
+  }
+}

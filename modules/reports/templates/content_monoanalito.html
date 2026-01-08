@@ -24,6 +24,11 @@
                 document.title = data.cover.title;
             }
 
+            // Set total niveles for conditional rendering of nivel titles
+            if (data.cover && data.cover.total_niveles) {
+                totalNiveles = data.cover.total_niveles;
+            }
+
             // Render Sections
             if (data.sections && data.sections.length > 0) {
                 const container = document.createElement('div');
@@ -36,9 +41,15 @@
             }
         };
 
+        // Store total_niveles globally for rendering logic
+        let totalNiveles = 1;
+
         function renderCategorySection(section, container) {
             const sectionDiv = document.createElement('div');
             sectionDiv.className = 'category-section';
+
+            // Only show nivel titles if there are multiple niveles
+            const showNivelTitle = totalNiveles > 1;
 
             section.tests.forEach((test, testIndex) => {
                 const testDiv = document.createElement('div');
@@ -68,7 +79,7 @@
 
                         // Nivel 1 content
                         introHTML += '<div class="nivel-content">';
-                        if (nivel.nivel) {
+                        if (nivel.nivel && showNivelTitle) {
                             introHTML += `<div class="nivel-title">Nivel ${nivel.nivel}</div>`;
                         }
                         if (nivel.table && nivel.table.rows && nivel.table.rows.length > 0) {
@@ -105,7 +116,7 @@
                         nivelDiv.className = 'nivel-block';
 
                         let nivelHTML = '';
-                        if (nivel.nivel) {
+                        if (nivel.nivel && showNivelTitle) {
                             nivelHTML += `<div class="nivel-title">Nivel ${nivel.nivel}</div>`;
                         }
                         if (nivel.table && nivel.table.rows && nivel.table.rows.length > 0) {

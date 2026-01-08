@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://unpkg.com data:; connect-src 'self';">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Detalles de Sesión | CerperStats</title>
   <link rel="stylesheet" href="css/global.css">
   <link rel="stylesheet" href="css/session_detail.css">
@@ -16,10 +17,49 @@
     <p id="session-info">Cargando información...</p>
 
     <div class="options">
-      <button id="btn-inputs">Ver Inputs</button>
+      <button id="btn-inputs">Ver Inputs (histórico)</button>
       <button id="btn-results">Ver Resultados</button>
       <button id="btn-report">Ver Reporte</button>
     </div>
+
+    <section class="inputs-panel" id="inputs-panel" aria-label="Inputs guardados">
+      <header class="inputs-header">
+        <div class="inputs-title">
+          <h3>Inputs guardados</h3>
+          <p class="inputs-subtitle" id="inputs-subtitle">Cargando inputs...</p>
+        </div>
+
+        <div class="inputs-actions">
+          <div class="segmented" role="tablist" aria-label="Estructura de inputs">
+            <button id="inputs-tab-mono" type="button" class="segmented-btn" role="tab" aria-selected="false">
+              Monoanalito
+            </button>
+            <button id="inputs-tab-multi" type="button" class="segmented-btn" role="tab" aria-selected="false">
+              Multianalito
+            </button>
+          </div>
+
+          <div class="inputs-filter">
+            <label for="inputs-level" class="inputs-label">Nivel</label>
+            <select id="inputs-level" class="inputs-select" aria-label="Filtro de nivel"></select>
+          </div>
+
+          <button id="btn-copy-inputs" type="button" class="inputs-btn" title="Copiar inputs visibles">
+            <i data-lucide="copy"></i><span>Copiar</span>
+          </button>
+          <button id="btn-open-inputs" type="button" class="inputs-btn" title="Abrir en pantalla completa">
+            <i data-lucide="external-link"></i><span>Abrir</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="inputs-body">
+        <div id="inputs-loading" class="inputs-state">Cargando inputs...</div>
+        <div id="inputs-empty" class="inputs-state hidden">No hay inputs guardados para esta sesión.</div>
+        <div id="inputs-error" class="inputs-state hidden"></div>
+        <div id="inputs-tables" class="inputs-tables"></div>
+      </div>
+    </section>
 
     <button id="btn-volver" class="btn-return" aria-label="Volver">
       <i data-lucide="chevron-left"></i>
