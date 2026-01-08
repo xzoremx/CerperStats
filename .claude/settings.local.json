@@ -3,7 +3,9 @@
     "allow": [
       "Bash(powershell -Command \"Get-Content ''C:\\\\Users\\\\renat\\\\Desktop\\\\Proyectos\\\\CerperStats\\\\procedure_select.html'' | Select-Object -Last 20\")",
       "Bash(del \"C:\\\\Users\\\\renat\\\\Desktop\\\\Proyectos\\\\CerperStats\\\\js\\\\auth-guard.js\")",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "WebFetch(domain:fonts.googleapis.com)",
+      "Bash(curl:*)"
     ]
   }
 }

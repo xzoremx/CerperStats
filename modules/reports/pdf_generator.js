@@ -23,6 +23,50 @@ function getPagedJsPolyfillSource() {
     }
 }
 
+function getTemplateCssText(templatesBase, templateName) {
+    const cssName = String(templateName || '').replace(/\.html$/i, '.css');
+    if (!cssName || cssName === templateName) return null;
+
+    const cssPath = path.join(templatesBase, cssName);
+    try {
+        return fs.readFileSync(cssPath, 'utf8');
+    } catch (err) {
+        console.warn('[PDF] Could not read template CSS:', cssPath, err.message);
+        return null;
+    }
+}
+
+/**
+ * Convert relative font URLs in CSS to inline data URLs (base64).
+ * This prevents Paged.js from making XHR requests that fail in file:// context.
+ * @param {string} cssText - The CSS content
+ * @param {string} templatesBase - Base path to templates directory
+ * @returns {string} CSS with fonts inlined as data URLs
+ */
+function inlineFontUrls(cssText, templatesBase) {
+    if (!cssText) return cssText;
+
+    // Match url('fonts/...') or url("fonts/...") or url(fonts/...)
+    return cssText.replace(/url\(\s*['"]?(fonts\/[^'");\s]+)['"]?\s*\)/gi, (match, fontPath) => {
+        const fullPath = path.join(templatesBase, fontPath);
+        try {
+            const fontBuffer = fs.readFileSync(fullPath);
+            const base64 = fontBuffer.toString('base64');
+            // Determine MIME type from extension
+            const ext = path.extname(fontPath).slice(1).toLowerCase();
+            const mimeType = ext === 'woff2' ? 'font/woff2' :
+                             ext === 'woff' ? 'font/woff' :
+                             ext === 'ttf' ? 'font/ttf' :
+                             ext === 'otf' ? 'font/otf' : 'application/octet-stream';
+            console.log('[PDF] Inlined font:', fontPath, `(${Math.round(fontBuffer.length / 1024)}KB)`);
+            return `url(data:${mimeType};base64,${base64})`;
+        } catch (err) {
+            console.warn('[PDF] Could not inline font:', fontPath, err.message);
+            return match; // Keep original if read fails
+        }
+    });
+}
+
 function parseLengthToMm(value) {
     if (value == null) return null;
     const raw = String(value).trim();
@@ -107,6 +151,33 @@ async function runPagedJsPagination(page) {
 
         await window.PagedPolyfill.preview();
         return { ok: true };
+    });
+}
+
+async function waitForDocumentAssets(page) {
+    return page.evaluate(async () => {
+        // Fonts (best-effort)
+        try {
+            if (document.fonts && document.fonts.ready) {
+                await document.fonts.ready;
+            }
+        } catch (_) { }
+
+        // Images (best-effort)
+        try {
+            const images = Array.from(document.images || []);
+            await Promise.all(
+                images.map(img => {
+                    if (img.complete) return Promise.resolve();
+                    return new Promise(resolve => {
+                        img.addEventListener('load', resolve, { once: true });
+                        img.addEventListener('error', resolve, { once: true });
+                    });
+                })
+            );
+        } catch (_) { }
+
+        return true;
     });
 }
 
@@ -221,6 +292,20 @@ async function generatePDF(reportData, outputPath, options = {}) {
         if (usePagedJs) {
             const pagedSrc = getPagedJsPolyfillSource();
             if (pagedSrc) {
+                // Inline template CSS so Paged.js doesn't try to fetch file:// stylesheets
+                // (which can fail with ProgressEvent/XHR in Chromium).
+                const templateCssText = getTemplateCssText(templatesBase, templateName);
+                if (templateCssText) {
+                    await page.evaluate(() => {
+                        document
+                            .querySelectorAll('link[rel="stylesheet"]')
+                            .forEach(el => el.remove());
+                    });
+                    // Convert font URLs to data URIs to avoid XHR requests in Paged.js
+                    const processedCss = inlineFontUrls(templateCssText, templatesBase);
+                    await page.addStyleTag({ content: processedCss });
+                }
+
                 // Must be injected BEFORE calling renderReport so it can paginate final DOM.
                 // IMPORTANT: Disable auto-preview; we run preview manually after renderReport.
                 await page.addScriptTag({
@@ -259,16 +344,44 @@ async function generatePDF(reportData, outputPath, options = {}) {
 
         // Run pagination after the DOM is fully rendered
         if (templateType === 'content') {
-            try {
-                const result = await runPagedJsPagination(page);
-                if (!result?.ok) {
-                    console.log('[PDF] Paged.js skipped:', result?.reason || 'unknown');
-                } else {
-                    console.log('[PDF] Paged.js pagination complete');
+            const pagedSrc = getPagedJsPolyfillSource();
+            if (pagedSrc) {
+                let pagedOk = false;
+                try {
+                    const result = await runPagedJsPagination(page);
+                    pagedOk = !!result?.ok;
+                    if (!pagedOk) {
+                        console.log('[PDF] Paged.js skipped:', result?.reason || 'unknown');
+                    } else {
+                        console.log('[PDF] Paged.js pagination complete');
+                    }
+                } catch (err) {
+                    console.warn('[PDF] Paged.js pagination failed:', err?.message || String(err));
                 }
-            } catch (err) {
-                console.warn('[PDF] Paged.js pagination failed, continuing without it:', err.message);
+
+                // Fallback: if Paged.js failed, reload and render again without pagination,
+                // because Paged.js may have already moved/cleared the DOM while failing.
+                if (!pagedOk) {
+                    console.warn('[PDF] Falling back to non-paginated render (reload template)');
+                    await page.goto(fileUrl, { waitUntil: 'networkidle0' });
+                    await page.evaluate(async (data) => {
+                        if (window.renderReport) {
+                            const maybePromise = window.renderReport(data);
+                            if (maybePromise && typeof maybePromise.then === 'function') {
+                                await maybePromise;
+                            }
+                        }
+                        if (data.cover && data.cover.title) {
+                            document.title = data.cover.title;
+                        }
+                    }, reportData);
+                    await waitForDocumentAssets(page);
+                }
+            } else {
+                await waitForDocumentAssets(page);
             }
+        } else {
+            await waitForDocumentAssets(page);
         }
 
         // Header and footer only if includeHeaderFooter is true
