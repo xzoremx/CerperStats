@@ -121,8 +121,12 @@ else:
     ax.set_yticks(y_pos)
     ax.set_yticklabels(valid_labels)
 
-    # Título diferenciado para multianalito
-    title = f"IC Bonferroni — {parametro_base} (Multianalito)"
+    # Título con nombre del analito si es multianalito
+    _analito = globals().get("current_analito")
+    if _analito:
+        title = f"IC Bonferroni — {parametro_base} ({_analito})"
+    else:
+        title = f"IC Bonferroni — {parametro_base}"
     ax.set_title(title)
     ax.set_xlabel("Desviación Estándar")
     ax.set_ylabel(parametro_base)

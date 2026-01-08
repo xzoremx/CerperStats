@@ -101,6 +101,11 @@ for col in df_ingreso.columns:
 df_resultado = pd.DataFrame(rows)
 df_resultado = df_resultado.sort_values("parametro").reset_index(drop=True)
 
+# Agregar columna "analito" si es multianalito (current_analito disponible)
+_current_analito = globals().get("current_analito")
+if _current_analito is not None:
+    df_resultado.insert(0, "analito", _current_analito)
+
 # Inferir el tipo de parámetro desde los nombres de columnas (ej: "Analista 1" → "Analistas")
 def inferir_tipo_parametro(columnas):
     """Extrae el tipo de parámetro de los nombres de columnas y lo pluraliza."""

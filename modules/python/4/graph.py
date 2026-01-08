@@ -58,8 +58,12 @@ else:
         y = (1 / (std * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mean) / std) ** 2)
         ax.plot(x, y, color="#e74c3c", linewidth=2, label="N(μ,σ) teórica")
 
-    # Título diferenciado para multianalito
-    title = "Histograma de resultados (Multianalito)"
+    # Título con nombre del analito si es multianalito
+    _analito = globals().get("current_analito")
+    if _analito:
+        title = f"Histograma de resultados ({_analito})"
+    else:
+        title = "Histograma de resultados"
     ax.set_title(title, fontsize=14)
     ax.set_xlabel("Valor observado", fontsize=12)
     ax.set_ylabel("Densidad", fontsize=12)

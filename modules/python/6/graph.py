@@ -186,8 +186,12 @@ if es_normal_todos:
     ax.set_xticklabels(labels, rotation=45)
     ax.set_ylabel("Media")
     
-    # Título diferenciado para multianalito
-    title = "Intervalos de Confianza (95%) para la Media (Multianalito)"
+    # Título con nombre del analito si es multianalito
+    _analito = globals().get("current_analito")
+    if _analito:
+        title = f"Intervalos de Confianza (95%) para la Media ({_analito})"
+    else:
+        title = "Intervalos de Confianza (95%) para la Media"
     ax.set_title(title)
 
 else:
@@ -198,9 +202,13 @@ else:
 
     ax.boxplot(grupos, labels=labels)
     ax.set_ylabel("Valor")
-    
-    # Título diferenciado para multianalito
-    title = "Boxplot (Datos No Normales) (Multianalito)"
+
+    # Título con nombre del analito si es multianalito
+    _analito = globals().get("current_analito")
+    if _analito:
+        title = f"Boxplot (Datos No Normales) ({_analito})"
+    else:
+        title = "Boxplot (Datos No Normales)"
     ax.set_title(title)
 
 

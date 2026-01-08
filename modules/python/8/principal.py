@@ -150,6 +150,11 @@ for col, valores in col_data:
 # --- Construir df_resultado ---
 df_resultado = pd.DataFrame(rows)
 
+# Agregar columna "analito" si es multianalito (current_analito disponible)
+_current_analito = globals().get("current_analito")
+if _current_analito is not None:
+    df_resultado.insert(0, "analito", _current_analito)
+
 # --- Generar conclusión ---
 if total_atipicos == 0 and total_cuestionables <= 2:
     conclusion = (

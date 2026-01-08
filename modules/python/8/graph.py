@@ -65,6 +65,39 @@ def calcular_zscore_robusto(valores):
     return 0.6745 * (valores - mediana) / mad
 
 
+def abreviar_parametro(nombre):
+    """
+    Abrevia nombres de parámetros para etiquetas compactas.
+    Ej: "Analista 1" → "A1", "Equipo 2" → "E2", "Día 3" → "D3"
+    """
+    import re
+    # Extraer la parte textual y el número
+    match = re.match(r'([A-Za-zÁÉÍÓÚáéíóúñÑ]+)\s*(\d+)', nombre.strip())
+    if match:
+        texto = match.group(1)
+        numero = match.group(2)
+        # Primera letra mayúscula + número
+        return f"{texto[0].upper()}{numero}"
+    # Si no hay número, solo la primera letra
+    return nombre[0].upper() if nombre else "?"
+
+
+def obtener_leyenda_abreviaturas(columnas):
+    """
+    Genera una lista de tuplas (abreviatura, nombre_completo) para la leyenda.
+    Solo incluye tipos únicos de parámetros.
+    """
+    import re
+    tipos_vistos = {}
+    for col in columnas:
+        match = re.match(r'([A-Za-zÁÉÍÓÚáéíóúñÑ]+)\s*\d*', col.strip())
+        if match:
+            tipo_texto = match.group(1)
+            if tipo_texto not in tipos_vistos:
+                tipos_vistos[tipo_texto] = tipo_texto[0].upper()
+    return tipos_vistos  # {texto_completo: abreviatura}
+
+
 # --- Recolectar TODOS los datos para calcular media y DS global ---
 all_values = []
 col_data = []  # Guardar (columna, valores) para iterar después
@@ -109,8 +142,10 @@ for col, valores in col_data:
         else:
             z_values = (valores - media_global) / ds_global
 
+    # Abreviar nombre del parámetro para etiquetas compactas
+    param_abrev = abreviar_parametro(col)
     for i, z in enumerate(z_values, start=1):
-        labels.append(f"{col} - L{i}")
+        labels.append(f"{param_abrev}-R{i}")
         zscores.append(float(z))
 
         # Colorear según categoría
@@ -162,7 +197,21 @@ else:
     ax.set_yticks([1, 2, 3, 4])
     ax.set_yticklabels(['1', '2', '3', '4'], fontsize=8)
 
-    ax.set_title("Evaluación de Atípicos — Z-Score (Multianalito)", fontsize=14, pad=20)
+    # Título con nombre del analito si es multianalito
+    _analito = globals().get("current_analito")
+    if _analito:
+        ax.set_title(f"Evaluación de Atípicos — Z-Score ({_analito})", fontsize=14, pad=20)
+    else:
+        ax.set_title("Evaluación de Atípicos — Z-Score", fontsize=14, pad=20)
+
+    # Construir leyenda de abreviaturas de parámetros
+    columnas_originales = [col for col, _ in col_data]
+    abreviaturas = obtener_leyenda_abreviaturas(columnas_originales)
+
+    # Texto explicativo de abreviaturas
+    abbrev_text_parts = [f"{abbr}={nombre}" for nombre, abbr in abreviaturas.items()]
+    abbrev_text_parts.append("R=Resultado")
+    abbrev_text = "  |  ".join(abbrev_text_parts)
 
     # Leyenda: reservar espacio fijo a la derecha para evitar recortes y mantener
     # dimensiones constantes (sin bbox_inches='tight').
@@ -175,6 +224,9 @@ else:
     ]
     fig.tight_layout(rect=[0, 0, 0.78, 1])
     ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1.02, 1), fontsize=8, borderaxespad=0)
+
+    # Agregar texto de abreviaturas en la parte inferior del gráfico
+    fig.text(0.5, 0.02, abbrev_text, ha='center', va='bottom', fontsize=8, style='italic', color='#666666')
 
     ax.grid(True, linestyle="--", alpha=0.3)
 

@@ -250,6 +250,7 @@ def run_single_module(
     modules_common: Path,
     df_base: "DataFrame",
     total_analitos: int = None,
+    current_analito: str = None,
 ) -> dict:
     """
     Ejecuta un mรณdulo especรญfico y devuelve el resultado en el formato requerido.
@@ -349,9 +350,11 @@ def run_single_module(
         "df_raw": df_raw,
     }
     
-    # Agregar total_analitos al namespace si está disponible (para multianalito)
+    # Agregar variables multianalito al namespace si están disponibles
     if total_analitos is not None:
         local_vars["total_analitos"] = int(total_analitos)
+    if current_analito is not None:
+        local_vars["current_analito"] = str(current_analito)
 
     stdout_buffer = io.StringIO()
     try:
@@ -460,9 +463,11 @@ def run_single_module(
                 "df_resultado": df_res,
                 "resultado_pc": resultado_pc,
             }
-            # Agregar total_analitos si está disponible (para multianalito)
+            # Agregar variables multianalito si están disponibles
             if total_analitos is not None:
                 vars_grafico["total_analitos"] = int(total_analitos)
+            if current_analito is not None:
+                vars_grafico["current_analito"] = str(current_analito)
             try:
                 graph_ns = runpy.run_path(str(graph_path), init_globals=vars_grafico)
                 g = graph_ns.get("grafico_data")
@@ -564,6 +569,7 @@ def main(argv=None) -> int:
     df_ingreso_raw = payload.get("df_ingreso", [])
     tests = payload.get("tests", [])
     total_analitos = payload.get("total_analitos")  # Para multianalito: cantidad total de analitos
+    current_analito = payload.get("current_analito")  # Para multianalito: nombre del analito actual
 
     # Log sesiรณn
     try:
@@ -608,6 +614,7 @@ def main(argv=None) -> int:
             modules_common=modules_common,
             df_base=df_base,
             total_analitos=total_analitos,  # Pasar total_analitos para multianalito
+            current_analito=current_analito,  # Pasar nombre del analito actual para multianalito
         )
         results.append(res)
 

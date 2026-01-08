@@ -564,6 +564,7 @@ router.post('/run', async (req, res) => {
               df_ingreso: dfIngreso,
               tests: verified,
               total_analitos: totalAnalitos, // Pasar cantidad total de analitos
+              current_analito: analito, // Nombre del analito actual para etiquetas/tablas
             };
 
             let evaluatorOutput;

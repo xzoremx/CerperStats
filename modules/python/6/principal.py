@@ -133,5 +133,10 @@ df_resultado = pd.DataFrame([{
     "estadistico": None if estadistico is None else round(estadistico, 4),
     "p_value": None if p_value is None else round(p_value, 4),
 }])
+
+# Agregar columna "analito" si es multianalito (current_analito disponible)
+_current_analito = globals().get("current_analito")
+if _current_analito is not None:
+    df_resultado.insert(0, "analito", _current_analito)
 # conclusion variable ya existe y será exportada por separado
 
