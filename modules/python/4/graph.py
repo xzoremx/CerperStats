@@ -49,7 +49,8 @@ else:
     mean = float(arr.mean())
     std = float(arr.std(ddof=1)) if arr.size > 1 else 0.0
 
-    fig, ax = plt.subplots(figsize=(9, 5.4), dpi=100)
+    # Dimensiones estándar (consistentes entre informes)
+    fig, ax = plt.subplots(figsize=(10, 6), dpi=100)
     ax.hist(arr, bins=10, density=True, alpha=0.75, label="Histograma", color="#2ecc71", edgecolor="white")
 
     if std > 0:

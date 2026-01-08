@@ -211,6 +211,20 @@ table {
   margin-bottom: var(--s-3);
 }
 
+/* Deterministic pagination: keep headers, never split rows */
+table thead {
+  display: table-header-group;
+}
+
+table tfoot {
+  display: table-footer-group;
+}
+
+tr {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
 th {
   text-align: left;
   font-size: 7.5pt;
@@ -263,37 +277,12 @@ tr:last-child td {
 }
 
 /* =========================================
-   Multianalito Tables - Paginated
+   Multianalito Tables
    ========================================= */
-.table-chunk {
-  margin-bottom: var(--s-4);
-  page-break-after: auto;
-}
-
 .table-multianalito {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: var(--s-2);
-}
-
-.table-multianalito thead {
-  display: table-header-group;
-}
-
-/* Repeat header on each page for multianalito chunks */
-.table-chunk:not(:first-of-type) .table-multianalito thead {
-  display: table-header-group;
-}
-
-.table-continuation {
-  font-size: 8pt;
-  font-style: italic;
-  color: var(--color-mid-grey);
-  text-align: center;
-  padding: var(--s-2) 0;
-  margin-top: var(--s-2);
-  border-top: 1px dashed var(--color-border);
-  page-break-after: always;
 }
 
 /* =========================================
@@ -335,10 +324,12 @@ tr:last-child td {
   margin: var(--s-4) 0;
   padding: var(--s-2);
   border: 1px solid var(--color-border);
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .graph-img {
-  max-width: 100%;
+  width: 100%;
   height: auto;
   display: block;
   margin: 0 auto;

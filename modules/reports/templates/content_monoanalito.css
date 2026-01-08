@@ -211,6 +211,20 @@ table {
   margin-bottom: var(--s-3);
 }
 
+/* Deterministic pagination: keep headers, never split rows */
+table thead {
+  display: table-header-group;
+}
+
+table tfoot {
+  display: table-footer-group;
+}
+
+tr {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
 th {
   text-align: left;
   font-size: 7.5pt;
@@ -263,17 +277,13 @@ tr:last-child td {
 }
 
 /* =========================================
-   Monoanalito Tables - No Page Breaks
+   Monoanalito Tables
    ========================================= */
 .table-wrapper-monoanalito {
-  page-break-inside: avoid;
-  break-inside: avoid;
   margin-bottom: var(--s-3);
 }
 
 .table-monoanalito {
-  page-break-inside: avoid;
-  break-inside: avoid;
 }
 
 /* =========================================
@@ -315,10 +325,12 @@ tr:last-child td {
   margin: var(--s-4) 0;
   padding: var(--s-2);
   border: 1px solid var(--color-border);
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .graph-img {
-  max-width: 100%;
+  width: 100%;
   height: auto;
   display: block;
   margin: 0 auto;

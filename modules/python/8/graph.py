@@ -164,7 +164,8 @@ else:
 
     ax.set_title("Evaluación de Atípicos — Z-Score (Multianalito)", fontsize=14, pad=20)
 
-    # Leyenda fuera del gráfico
+    # Leyenda: reservar espacio fijo a la derecha para evitar recortes y mantener
+    # dimensiones constantes (sin bbox_inches='tight').
     legend_elements = [
         plt.Line2D([0], [0], color="#27ae60", marker='s', linestyle='', markersize=10, label='Aceptable (|Z| ≤ 2)'),
         plt.Line2D([0], [0], color="#f39c12", marker='s', linestyle='', markersize=10, label='Cuestionable (2 < |Z| ≤ 3)'),
@@ -172,14 +173,13 @@ else:
         plt.Line2D([0], [0], color="#f39c12", linestyle=":", linewidth=2, label='Límite Z=2'),
         plt.Line2D([0], [0], color="#e74c3c", linestyle="--", linewidth=2, label='Límite Z=3'),
     ]
-    ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1.05, 1), fontsize=8)
+    fig.tight_layout(rect=[0, 0, 0.78, 1])
+    ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1.02, 1), fontsize=8, borderaxespad=0)
 
     ax.grid(True, linestyle="--", alpha=0.3)
 
-    fig.tight_layout()
-
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", bbox_inches='tight')
+    fig.savefig(buf, format="png")
     plt.close(fig)
     buf.seek(0)
 

@@ -89,7 +89,8 @@ for col in labels:
 if len(stds) < 2:
     grafico_data = ""
 else:
-    fig, ax = plt.subplots(figsize=(8, 5), dpi=100)
+    # Dimensiones estándar (consistentes entre informes)
+    fig, ax = plt.subplots(figsize=(10, 6), dpi=100)
 
     y_pos = np.arange(1, len(stds) + 1)
 

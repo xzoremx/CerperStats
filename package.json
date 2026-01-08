@@ -34,6 +34,7 @@
     "express-rate-limit": "^8.2.1",
     "jsonwebtoken": "^9.0.2",
     "lucide": "^0.545.0",
+    "pagedjs": "^0.4.3",
     "pdf-lib": "^1.17.1",
     "pg": "^8.16.3",
     "puppeteer": "^23.11.1"
