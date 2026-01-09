@@ -12,6 +12,8 @@ const reportsRouter = require('./routes/reports');
 const resultsRouter = require('./routes/results');
 const authRouter = require('./routes/auth');
 const testsRouter = require('./routes/tests');
+const adminRouter = require('./routes/admin');
+const registerRouter = require('./routes/register');
 const runEvaluator = require('./lib/runEvaluator');
 
 const SECRET_PATH = path.resolve(__dirname, '../secrets/token_secret.txt');
@@ -35,6 +37,14 @@ const apiLimiter = rateLimit({
 
 const app = express();
 app.use(bodyParser.json({ limit: '50mb' }));
+
+// Servir archivos estáticos públicos (registro, etc.)
+// Accesible en: http://tu-servidor:4000/
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Servir panel de administración como archivos estáticos
+// Accesible en: http://tu-servidor:4000/admin-panel/
+app.use('/admin-panel', express.static(path.join(__dirname, 'admin')));
 
 // Health check endpoint (no auth required for monitoring)
 app.get('/health', (req, res) => {
@@ -66,6 +76,9 @@ app.get('/auth/verify', verifyToken, (req, res) => {
 
 // Auth routes (login doesn't need token verification)
 app.use('/auth', authLimiter, authRouter);
+
+// Public registration routes (no token required, rate limited)
+app.use('/register', authLimiter, registerRouter);
 app.use('/labs', apiLimiter, verifyToken, labsRouter);
 app.use('/inputs', apiLimiter, verifyToken, inputsRouter);
 app.use('/sessions', apiLimiter, verifyToken, sessionsRouter);
@@ -73,6 +86,10 @@ app.use('/evaluaciones', apiLimiter, verifyToken, evaluacionesRouter);
 app.use('/reports', apiLimiter, verifyToken, reportsRouter);
 app.use('/tests', apiLimiter, verifyToken, testsRouter);
 app.use('/results', apiLimiter, verifyToken, resultsRouter);
+
+// Admin routes (autenticación propia basada en credenciales de admin)
+// No requieren JWT token, usan X-Admin-Auth header
+app.use('/admin', apiLimiter, adminRouter);
 
 function verifyToken(req, res, next) {
   const header = req.headers.authorization || '';

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administracion - CerperStats</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900" style="font-family: 'Inter', sans-serif;">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal-overlay active">
+        <div class="glass-card rounded-3xl p-8 max-w-md w-full mx-4">
+            <!-- Logo -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl glass-icon mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-white">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-white mb-1">Panel de Administracion</h1>
+                <p class="text-white/60 text-sm">Ingresa con credenciales de administrador</p>
+            </div>
+
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-white/90 mb-2">Usuario</label>
+                    <div class="input-glass">
+                        <input type="text" id="admin-username" required autocomplete="username" placeholder="admin">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-white/90 mb-2">Contrasena</label>
+                    <div class="input-glass">
+                        <input type="password" id="admin-password" required autocomplete="current-password" placeholder="******">
+                    </div>
+                </div>
+                <button type="submit" class="btn-glass w-full py-3 text-white font-semibold mt-6">
+                    Iniciar Sesion
+                </button>
+                <div id="login-error" class="text-red-400 text-sm text-center mt-2 min-h-[20px]"></div>
+            </form>
+
+            <div class="text-center mt-6 pt-4 border-t border-white/10">
+                <a href="/" class="text-white/50 text-sm hover:text-white/70 transition-colors">Volver al inicio</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="hidden">
+        <!-- Header -->
+        <header class="glass-header">
+            <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl glass-icon flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-white">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-semibold text-white">CerperStats Admin</h1>
+                        <p class="text-xs text-white/50">Panel de Administracion</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span id="admin-name" class="text-white/70 text-sm"></span>
+                    <button id="logout-btn" class="btn-glass-sm px-4 py-2 text-white/90 text-sm">
+                        Cerrar Sesion
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-6 py-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-blue-400">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-3xl font-bold text-white" id="total-users">-</p>
+                            <p class="text-white/50 text-sm">Usuarios Totales</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-green-400">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-3xl font-bold text-white" id="active-users">-</p>
+                            <p class="text-white/50 text-sm">Usuarios Activos</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-amber-400">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-3xl font-bold text-white" id="admin-count">-</p>
+                            <p class="text-white/50 text-sm">Administradores</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Table Section -->
+            <div class="glass-card rounded-2xl overflow-hidden">
+                <div class="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-white">Gestion de Usuarios</h2>
+                    <button id="add-user-btn" class="btn-glass px-4 py-2 text-white text-sm flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Nuevo Usuario
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-white/5">
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Usuario</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Nombre</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Rol</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Lab</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Estado</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Creado</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody" class="divide-y divide-white/5">
+                            <tr>
+                                <td colspan="8" class="px-6 py-12 text-center text-white/50">Cargando usuarios...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- User Modal (Create/Edit) -->
+    <div id="user-modal" class="modal-overlay">
+        <div class="glass-card rounded-2xl p-6 max-w-lg w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 id="modal-title" class="text-xl font-semibold text-white">Nuevo Usuario</h2>
+                <button onclick="closeUserModal()" class="text-white/50 hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="user-form" class="space-y-4">
+                <input type="hidden" id="user-id">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-white/90 mb-2">Usuario *</label>
+                        <div class="input-glass">
+                            <input type="text" id="user-username" required minlength="3" placeholder="ej: jperez">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-white/90 mb-2">Contrasena <span id="password-hint" class="text-white/40 text-xs">(min. 6)</span></label>
+                        <div class="input-glass">
+                            <input type="password" id="user-password" minlength="6" placeholder="******">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-white/90 mb-2">Nombre Completo</label>
+                    <div class="input-glass">
+                        <input type="text" id="user-nombre" placeholder="ej: Juan Perez Garcia">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-white/90 mb-2">Email</label>
+                    <div class="input-glass">
+                        <input type="email" id="user-email" placeholder="ej: jperez@empresa.com">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-white/90 mb-2">Rol *</label>
+                        <div class="input-glass select-wrapper">
+                            <select id="user-rol" required>
+                                <option value="analista">Analista</option>
+                                <option value="supervisor">Supervisor</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-white/90 mb-2">Laboratorio</label>
+                        <div class="input-glass select-wrapper">
+                            <select id="user-lab">
+                                <option value="">-- Sin asignar --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="activo-group" class="hidden">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="user-activo" checked class="w-5 h-5 rounded bg-white/10 border-white/20 text-purple-500 focus:ring-purple-500 focus:ring-offset-0">
+                        <span class="text-white/90">Usuario Activo</span>
+                    </label>
+                </div>
+
+                <div id="user-form-error" class="text-red-400 text-sm text-center min-h-[20px]"></div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeUserModal()" class="flex-1 btn-glass-secondary py-3 text-white/70">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="save-user-btn" class="flex-1 btn-glass py-3 text-white font-semibold">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="modal-overlay">
+        <div class="glass-card rounded-2xl p-6 max-w-sm w-full mx-4 text-center">
+            <div class="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-red-400">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+            </div>
+            <h2 class="text-xl font-semibold text-white mb-2">Desactivar Usuario</h2>
+            <p class="text-white/60 mb-1">
+                Estas seguro de desactivar a <strong id="delete-username" class="text-white"></strong>?
+            </p>
+            <p class="text-white/40 text-sm mb-6">El usuario no podra iniciar sesion.</p>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()" class="flex-1 btn-glass-secondary py-3 text-white/70">
+                    Cancelar
+                </button>
+                <button id="confirm-delete-btn" class="flex-1 btn-danger py-3 text-white font-semibold">
+                    Desactivar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

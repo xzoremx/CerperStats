@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - CerperStats</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .glass-filter { filter: url(#glass-distortion); }
+        .backdrop-blur-sm { backdrop-filter: blur(3px); }
+        .transition-custom { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2); }
+
+        .beautiful-shadow {
+            box-shadow: 0 2.8px 2.2px rgba(0, 0, 0, 0.034), 0 6.7px 5.3px rgba(0, 0, 0, 0.048), 0 12.5px 10px rgba(0, 0, 0, 0.06), 0 22.3px 17.9px rgba(0, 0, 0, 0.072), 0 41.8px 33.4px rgba(0, 0, 0, 0.086), 0 100px 80px rgba(0, 0, 0, 0.12);
+        }
+
+        .input-glass {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+
+        .input-glass::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            backdrop-filter: blur(4px);
+            z-index: 0;
+        }
+
+        .input-glass::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: inset 1px 1px 1px 0 rgba(255, 255, 255, 0.3), inset -1px -1px 1px 1px rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            z-index: 1;
+        }
+
+        .input-glass input,
+        .input-glass select {
+            position: relative;
+            z-index: 2;
+            background: transparent;
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 14px;
+            color: white;
+            border: none;
+            outline: none;
+        }
+
+        .input-glass input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .input-glass select {
+            cursor: pointer;
+            appearance: none;
+        }
+
+        .input-glass select option {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .btn-glass {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-glass::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            backdrop-filter: blur(4px);
+            z-index: 0;
+        }
+
+        .btn-glass::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.15));
+            box-shadow: inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5), inset -1px -1px 1px 1px rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            z-index: 1;
+        }
+
+        .btn-glass:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-glass span {
+            position: relative;
+            z-index: 2;
+        }
+
+        .error-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(239, 68, 68, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .error-toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .success-toast {
+            background: rgba(34, 197, 94, 0.9);
+        }
+
+        .loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="flex items-center justify-center min-h-screen font-light bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900" style="font-family: 'Inter', sans-serif;">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="error-toast"></div>
+
+    <!-- Main Container -->
+    <div class="relative flex flex-col overflow-hidden cursor-default beautiful-shadow transition-custom max-w-lg w-full font-semibold text-white rounded-3xl mx-4">
+        <div class="absolute z-0 inset-0 backdrop-blur-md glass-filter overflow-hidden isolate"></div>
+        <div class="z-10 absolute inset-0 bg-white bg-opacity-15"></div>
+        <div class="absolute inset-0 z-20 overflow-hidden shadow-inner" style="box-shadow: inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5), inset -1px -1px 1px 1px rgba(255, 255, 255, 0.5); border-radius: 24px;"></div>
+
+        <!-- Top Section - Welcome -->
+        <div class="z-30 flex flex-col relative text-center bg-black/10 pt-8 px-8 pb-6 items-center justify-center">
+            <!-- Logo -->
+            <div class="mb-4">
+                <div class="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-3 overflow-hidden">
+                    <div class="absolute z-0 inset-0 backdrop-blur-sm glass-filter"></div>
+                    <div class="z-10 absolute inset-0 bg-gradient-to-br from-white/30 to-white/10"></div>
+                    <div class="absolute inset-0 z-20" style="box-shadow: inset 3px 3px 2px 0 rgba(255, 255, 255, 0.6), inset -2px -2px 2px 2px rgba(255, 255, 255, 0.4); border-radius: 16px;"></div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="z-30 text-white">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <h1 class="leading-tight text-3xl font-semibold text-white tracking-tight mb-2">CerperStats</h1>
+                <p class="leading-relaxed text-sm font-light text-white/70">Crea tu cuenta para acceder al sistema</p>
+            </div>
+        </div>
+
+        <!-- Form Section -->
+        <div class="z-30 flex flex-col p-8 pt-4 justify-start">
+            <form id="register-form" class="space-y-4">
+                <!-- Username -->
+                <div>
+                    <label class="block text-sm font-medium text-white/90 mb-2">Usuario *</label>
+                    <div class="input-glass">
+                        <input type="text" id="username" required minlength="3" placeholder="ej: jperez" autocomplete="username">
+                    </div>
+                </div>
+
+                <!-- Full Name -->
+                <div>
+                    <label class="block text-sm font-medium text-white/90 mb-2">Nombre Completo *</label>
+                    <div class="input-glass">
+                        <input type="text" id="nombre" required placeholder="ej: Juan Perez Garcia">
+                    </div>
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label class="block text-sm font-medium text-white/90 mb-2">Correo Electronico</label>
+                    <div class="input-glass">
+                        <input type="email" id="email" placeholder="ej: jperez@empresa.com">
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <label class="block text-sm font-medium text-white/90 mb-2">Contrasena * <span class="font-normal text-white/50">(min. 6 caracteres)</span></label>
+                    <div class="input-glass">
+                        <input type="password" id="password" required minlength="6" placeholder="******" autocomplete="new-password">
+                    </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div>
+                    <label class="block text-sm font-medium text-white/90 mb-2">Confirmar Contrasena *</label>
+                    <div class="input-glass">
+                        <input type="password" id="password-confirm" required minlength="6" placeholder="******" autocomplete="new-password">
+                    </div>
+                </div>
+
+                <!-- Role -->
+                <div>
+                    <label class="block text-sm font-medium text-white/90 mb-2">Rol *</label>
+                    <div class="input-glass" style="position: relative;">
+                        <select id="rol" required>
+                            <option value="analista">Analista</option>
+                            <option value="supervisor">Supervisor / Responsable de Laboratorio</option>
+                        </select>
+                        <svg class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none z-10" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Laboratory (optional) -->
+                <div>
+                    <label class="block text-sm font-medium text-white/90 mb-2">Laboratorio</label>
+                    <div class="input-glass" style="position: relative;">
+                        <select id="lab">
+                            <option value="">-- Seleccionar laboratorio --</option>
+                        </select>
+                        <svg class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none z-10" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-4">
+                    <button type="submit" id="submit-btn" class="btn-glass w-full py-3 text-sm font-semibold text-white flex items-center justify-center gap-2">
+                        <span id="btn-text">Crear Cuenta</span>
+                        <svg id="btn-arrow" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
+                        <span id="btn-spinner" class="spinner hidden"></span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Footer -->
+            <div class="text-center mt-6">
+                <p class="text-sm font-normal text-white/60">
+                    Ya tienes una cuenta?
+                    <a href="/" class="text-white hover:opacity-80 transition-opacity font-semibold ml-1">Inicia sesion</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('register-form');
+        const toast = document.getElementById('toast');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+        const btnArrow = document.getElementById('btn-arrow');
+        const btnSpinner = document.getElementById('btn-spinner');
+        const labSelect = document.getElementById('lab');
+
+        // Load available labs
+        async function loadLabs() {
+            try {
+                const res = await fetch('/register/labs');
+                const data = await res.json();
+                if (data.ok && data.data) {
+                    data.data.forEach(lab => {
+                        const option = document.createElement('option');
+                        option.value = lab.lab_key;
+                        option.textContent = lab.nombre || lab.lab_key;
+                        labSelect.appendChild(option);
+                    });
+                }
+            } catch (err) {
+                console.error('Error loading labs:', err);
+            }
+        }
+
+        function showToast(message, isSuccess = false) {
+            toast.textContent = message;
+            toast.className = isSuccess ? 'error-toast success-toast show' : 'error-toast show';
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }
+
+        function setLoading(loading) {
+            if (loading) {
+                submitBtn.classList.add('loading');
+                btnText.textContent = 'Creando cuenta...';
+                btnArrow.classList.add('hidden');
+                btnSpinner.classList.remove('hidden');
+            } else {
+                submitBtn.classList.remove('loading');
+                btnText.textContent = 'Crear Cuenta';
+                btnArrow.classList.remove('hidden');
+                btnSpinner.classList.add('hidden');
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const nombre = document.getElementById('nombre').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const passwordConfirm = document.getElementById('password-confirm').value;
+            const rol = document.getElementById('rol').value;
+            const lab = document.getElementById('lab').value;
+
+            // Validations
+            if (username.length < 3) {
+                showToast('El usuario debe tener al menos 3 caracteres');
+                return;
+            }
+
+            if (!nombre) {
+                showToast('El nombre completo es requerido');
+                return;
+            }
+
+            if (password.length < 6) {
+                showToast('La contrasena debe tener al menos 6 caracteres');
+                return;
+            }
+
+            if (password !== passwordConfirm) {
+                showToast('Las contrasenas no coinciden');
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                const res = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username,
+                        password,
+                        nombre_completo: nombre,
+                        email: email || null,
+                        rol: rol,
+                        default_lab: lab || null
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.ok) {
+                    showToast('Cuenta creada exitosamente! Redirigiendo...', true);
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else {
+                    let errorMsg = 'Error al crear la cuenta';
+
+                    if (data.error === 'username_exists') {
+                        errorMsg = 'El nombre de usuario ya existe';
+                    } else if (data.error === 'username_password_required') {
+                        errorMsg = 'Usuario y contrasena son requeridos';
+                    } else if (data.error === 'password_too_short') {
+                        errorMsg = 'La contrasena es muy corta';
+                    }
+
+                    showToast(errorMsg);
+                }
+            } catch (err) {
+                showToast('Error de conexion. Intenta de nuevo.');
+                console.error('Register error:', err);
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // Load labs on page load
+        loadLabs();
+    </script>
+</body>
+</html>
