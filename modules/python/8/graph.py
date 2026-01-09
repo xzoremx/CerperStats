@@ -212,6 +212,11 @@ else:
     abbrev_text_parts = [f"{abbr}={nombre}" for nombre, abbr in abreviaturas.items()]
     abbrev_text_parts.append("R=Resultado")
     abbrev_text = "  |  ".join(abbrev_text_parts)
+    abbrev_legend = plt.Line2D(
+                   [0], [0],
+                   color='none',
+                   label=abbrev_text
+                   )
 
     # Leyenda: reservar espacio fijo a la derecha para evitar recortes y mantener
     # dimensiones constantes (sin bbox_inches='tight').
@@ -221,12 +226,12 @@ else:
         plt.Line2D([0], [0], color="#e74c3c", marker='s', linestyle='', markersize=10, label='Atípico (|Z| > 3)'),
         plt.Line2D([0], [0], color="#f39c12", linestyle=":", linewidth=2, label='Límite Z=2'),
         plt.Line2D([0], [0], color="#e74c3c", linestyle="--", linewidth=2, label='Límite Z=3'),
+        abbrev_legend
     ]
     fig.tight_layout(rect=[0, 0, 0.78, 1])
-    ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1.02, 1), fontsize=8, borderaxespad=0)
+    
+    ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1.02, 1), fontsize=8, borderaxespad=0, handlelength=0, labelspacing=0.8)
 
-    # Agregar texto de abreviaturas en la parte inferior del gráfico
-    fig.text(0.5, 0.02, abbrev_text, ha='center', va='bottom', fontsize=8, style='italic', color='#666666')
 
     ax.grid(True, linestyle="--", alpha=0.3)
 
