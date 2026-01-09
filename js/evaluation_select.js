@@ -54,6 +54,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   let filterPruebaValue = ""; // Filter by test name (test_titulo)
   let filterDangerValue = ""; // Filter by danger status
 
+  // === CACHE CONTROL ===
+  // Track which session's data we have cached to avoid refetching
+  let cachedGraphsSessionId = null;
+  let cachedResultsSessionId = null;
+  let cacheVersion = sessionStorage.getItem("evalCacheVersion") || "0";
+
+  // Function to invalidate cache (called after new evaluation or when inputs change)
+  function invalidateCache() {
+    cachedGraphsSessionId = null;
+    cachedResultsSessionId = null;
+    allGraphs = [];
+    allResults = [];
+    cacheVersion = String(Date.now());
+    sessionStorage.setItem("evalCacheVersion", cacheVersion);
+    console.log("[EvalSelect] Cache invalidado");
+  }
+
   // === Obtener y mostrar el usuario actual ===
   try {
     const userRes = await window.cerper.getCurrentUser();
@@ -639,6 +656,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
+    // === CACHE CHECK: Skip fetch if we already have data for this session ===
+    const currentCacheVersion = sessionStorage.getItem("evalCacheVersion") || "0";
+    if (cachedGraphsSessionId === sessionId && cacheVersion === currentCacheVersion && allGraphs.length > 0) {
+      console.log("[EvalSelect] Usando gráficos en cache");
+      applyVizFilters();
+      initVizCards();
+      if (emptyState) emptyState.classList.add("hidden");
+      return;
+    }
+
     if (!window.cerper || typeof window.cerper.getEvaluacionesGraficos !== "function") {
       showVisualizacionesEmpty(
         "Visualizaciones no disponibles",
@@ -648,7 +675,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     visualizacionesLoading = true;
-    if (runInfo) runInfo.textContent = "Cargando gráficos...";
+    const vizSpinner = document.getElementById("viz-loading-spinner");
+    if (vizSpinner) vizSpinner.classList.remove("hidden");
     if (emptyState) emptyState.classList.add("hidden");
 
     let res;
@@ -743,6 +771,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (vizRolodexView) {
       vizRolodexView.addEventListener("wheel", handleVizWheel, { passive: false });
     }
+
+    // Mark cache as valid for this session
+    cachedGraphsSessionId = sessionId;
+    cacheVersion = sessionStorage.getItem("evalCacheVersion") || "0";
+
+    // Hide loading spinner
+    const vizSpinnerEnd = document.getElementById("viz-loading-spinner");
+    if (vizSpinnerEnd) vizSpinnerEnd.classList.add("hidden");
 
     visualizacionesLoading = false;
   }
@@ -1053,6 +1089,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
+    // === CACHE CHECK: Skip fetch if we already have data for this session ===
+    const currentCacheVersion = sessionStorage.getItem("evalCacheVersion") || "0";
+    if (cachedResultsSessionId === sessionId && cacheVersion === currentCacheVersion && allResults.length > 0) {
+      console.log("[EvalSelect] Usando resultados en cache");
+      applyResultFilters();
+      hideResultadosEmpty();
+      return;
+    }
+
     if (!window.cerper || typeof window.cerper.getResultadosPreliminares !== "function") {
       showResultadosEmpty(
         "Resultados no disponibles",
@@ -1062,7 +1107,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     resultadosLoading = true;
-    if (resultRunInfo) resultRunInfo.textContent = "Cargando resultados...";
+    const resultSpinner = document.getElementById("result-loading-spinner");
+    if (resultSpinner) resultSpinner.classList.remove("hidden");
     hideResultadosEmpty();
 
     let res;
@@ -1127,6 +1173,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Apply initial filters
     filteredResults = [...allResults];
     renderResultadosList();
+
+    // Mark cache as valid for this session
+    cachedResultsSessionId = sessionId;
+    cacheVersion = sessionStorage.getItem("evalCacheVersion") || "0";
+
+    // Hide loading spinner
+    const resultSpinnerEnd = document.getElementById("result-loading-spinner");
+    if (resultSpinnerEnd) resultSpinnerEnd.classList.add("hidden");
 
     resultadosLoading = false;
   }
@@ -1496,6 +1550,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         onTerminal: (finalProgress) => {
           isEvaluating = false;
           bloquearBotones(false);
+
+          // Invalidate cache - new results are available
+          invalidateCache();
 
           // Save expected count for validation when clicking Continuar
           if (finalProgress?.total_tasks) {

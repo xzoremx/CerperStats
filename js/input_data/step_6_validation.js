@@ -605,6 +605,8 @@ async function guardarDataframeTemp() {
     } else if (clearRes.deleted > 0) {
       console.log(`[CerperStats] ${clearRes.deleted} resultados anteriores invalidados.`);
       notify(`Se eliminaron ${clearRes.deleted} resultados anteriores. Ejecuta las pruebas nuevamente.`, "info");
+      // Invalidate evaluation cache so stale data isn't shown
+      sessionStorage.setItem("evalCacheVersion", String(Date.now()));
     }
 
     const res = await window.cerper.insertInputs(session_id, tipo, datosParaInsertar);
