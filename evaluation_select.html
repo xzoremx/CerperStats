@@ -1956,14 +1956,14 @@
                 </div>
               </div>
 
-              <!-- Apple Loading Spinner for Results -->
-              <div id="result-loading-spinner" class="apple-spinner hidden" style="position: relative; height: 200px;">
-                <div class="apple-spinner-icon"></div>
-              </div>
-
               <!-- List Container -->
               <div id="result-list-container" class="result-list-container">
-                <!-- Populated by JS -->
+                <!-- Apple Loading Spinner for Results (inside container for proper positioning) -->
+                <div id="result-loading-spinner" class="apple-spinner hidden"
+                  style="height: 200px; display: flex; align-items: center; justify-content: center;">
+                  <div class="apple-spinner-icon"></div>
+                </div>
+                <!-- Results populated by JS -->
               </div>
 
               <!-- Empty State -->

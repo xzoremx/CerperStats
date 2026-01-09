@@ -676,7 +676,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     visualizacionesLoading = true;
     const vizSpinner = document.getElementById("viz-loading-spinner");
-    if (vizSpinner) vizSpinner.classList.remove("hidden");
+    // Show spinner after small delay to avoid flash for quick operations
+    const vizSpinnerTimeout = setTimeout(() => {
+      if (vizSpinner && visualizacionesLoading) vizSpinner.classList.remove("hidden");
+    }, 150);
     if (emptyState) emptyState.classList.add("hidden");
 
     let res;
@@ -894,6 +897,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   function showResultadosEmpty(title, message) {
+    // Hide loading spinner
+    const resultSpinner = document.getElementById("result-loading-spinner");
+    if (resultSpinner) resultSpinner.classList.add("hidden");
+
     if (resultListContainer) resultListContainer.innerHTML = "";
     if (resultEmptyTitle) resultEmptyTitle.textContent = title || "";
     if (resultEmptyText) resultEmptyText.textContent = message || "";
@@ -1107,8 +1114,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     resultadosLoading = true;
-    const resultSpinner = document.getElementById("result-loading-spinner");
-    if (resultSpinner) resultSpinner.classList.remove("hidden");
+    // Show spinner after small delay to avoid flash for quick operations
+    let resultSpinnerTimeout = setTimeout(() => {
+      const rs = document.getElementById("result-loading-spinner");
+      if (rs && resultadosLoading) rs.classList.remove("hidden");
+    }, 150);
+
+    // Helper to cleanup spinner
+    const cleanupResultSpinner = () => {
+      clearTimeout(resultSpinnerTimeout);
+      const rs = document.getElementById("result-loading-spinner");
+      if (rs) rs.classList.add("hidden");
+    };
     hideResultadosEmpty();
 
     let res;
@@ -1116,12 +1133,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       res = await window.cerper.getResultadosPreliminares(sessionId);
     } catch (err) {
       console.error("[EvalSelect] Error obteniendo resultados:", err);
+      cleanupResultSpinner();
       showResultadosEmpty("Error al cargar resultados", "No se pudieron obtener los resultados preliminares.");
       resultadosLoading = false;
       return;
     }
 
     if (!res?.ok) {
+      cleanupResultSpinner();
       showResultadosEmpty(
         "Error al cargar resultados",
         "No se pudieron obtener los resultados desde el backend."
@@ -1134,6 +1153,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const lastRunAt = res?.meta?.last_run_at || null;
 
     if (results.length === 0) {
+      cleanupResultSpinner();
       showResultadosEmpty(
         "No hay resultados aún",
         "Ejecuta las evaluaciones para ver los resultados preliminares."
@@ -1179,8 +1199,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     cacheVersion = sessionStorage.getItem("evalCacheVersion") || "0";
 
     // Hide loading spinner
-    const resultSpinnerEnd = document.getElementById("result-loading-spinner");
-    if (resultSpinnerEnd) resultSpinnerEnd.classList.add("hidden");
+    cleanupResultSpinner();
 
     resultadosLoading = false;
   }

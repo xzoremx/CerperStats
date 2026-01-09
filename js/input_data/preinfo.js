@@ -252,7 +252,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     emitPreinfoState();
     document.dispatchEvent(new CustomEvent("preinfo:ready", { detail: data }));
 
-    if (isNew) notify("Datos validos y guardados temporalmente.", "success");
   }
 
   function debounceValidate() {

@@ -217,7 +217,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
           sessionStorage.setItem("sessionID", resSession.session_id);
           console.log(`[CerperStats] Nueva sesión creada con ID ${resSession.session_id}`);
-          notify("Sesión creada correctamente. Guardando lecturas...", "success");
         }
 
         // --- Guardar lecturas en inputs ---
