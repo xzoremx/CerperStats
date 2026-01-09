@@ -230,7 +230,7 @@
       font-family: inherit;
       cursor: pointer;
       transition: all 0.2s ease;
-      min-width: 140px;
+      width: 185px;
     }
 
     .viz-dropdown-trigger:hover {
@@ -1598,9 +1598,8 @@
 
             <div id="view-visualizaciones" class="hidden min-h-[60vh]">
               <!-- Header with View Toggle and Filters -->
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div id="run-info" class="text-sm text-gray-400"></div>
-
+              <div class="flex flex-col gap-3 mb-6">
+                <!-- Filters Row - aligned left -->
                 <div class="flex items-center gap-3">
                   <!-- Custom Glass Dropdowns -->
                   <div class="viz-dropdown" id="dropdown-nivel">
@@ -1688,6 +1687,9 @@
                     </button>
                   </div>
                 </div>
+
+                <!-- Run Info - below filters -->
+                <div id="run-info" class="text-sm text-gray-400"></div>
               </div>
 
               <!-- Empty State -->
@@ -1899,9 +1901,8 @@
             <!-- Resultados Preliminares View -->
             <div id="view-resultados" class="hidden min-h-[60vh]">
               <!-- Header with Filters -->
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div id="result-run-info" class="text-sm text-gray-400"></div>
-
+              <div class="flex flex-col gap-3 mb-6">
+                <!-- Filters Row - aligned left -->
                 <div class="flex items-center gap-3">
                   <!-- Custom Glass Dropdowns -->
                   <div class="viz-dropdown" id="dropdown-result-nivel">
@@ -1954,6 +1955,9 @@
                     </svg>
                   </button>
                 </div>
+
+                <!-- Run Info - below filters -->
+                <div id="result-run-info" class="text-sm text-gray-400"></div>
               </div>
 
               <!-- List Container -->
