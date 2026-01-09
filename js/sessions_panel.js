@@ -53,8 +53,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         optAll.value = 'all'; optAll.textContent = 'Todos';
         selLab.appendChild(optAll);
         labs.forEach(l => {
+          const key = l.lab_key || l.key;
+          if (!key) return;
+          const name = l.nombre || l.name || key;
           const o = document.createElement('option');
-          o.value = l.key; o.textContent = l.name;
+          o.value = key;
+          o.textContent = name;
           selLab.appendChild(o);
         });
         selLab.value = 'all';
@@ -89,7 +93,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   try { await loadSessions(); } catch (err) {
     console.error('[SessionsPanel] Error:', err);
-    window.notify?.('Error al cargar las sesiones.', 'error');
+    const msg = err?.message ? `Error al cargar las sesiones: ${err.message}` : 'Error al cargar las sesiones.';
+    window.notify?.(msg, 'error');
   }
 
   document.getElementById("btn-volver")?.addEventListener("click", () => {
@@ -101,22 +106,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 function renderSesiones(sesiones) {
   const contenedor = document.getElementById("sessions-container");
   contenedor.innerHTML = "";
-
-  const normalizeText = (value) => {
-    return String(value || '')
-      .trim()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
-  };
-
-  const normalizeTipoAnalisis = (value) => {
-    const norm = normalizeText(value);
-    if (!norm) return null;
-    if (norm === 'multi' || norm === 'multianalito' || norm.includes('multi')) return 'multi';
-    if (norm === 'mono' || norm === 'monoanalito' || norm.includes('mono')) return 'mono';
-    return norm;
-  };
 
   const procInfo = (name) => {
     const k = (name || '').toLowerCase();
@@ -140,36 +129,16 @@ function renderSesiones(sesiones) {
     const badges = [];
     if (pInfo) badges.push(`<span class="proc-badge ${pInfo.cls}" title="${s.procedure}">${pInfo.abbr}</span>`);
 
-    const ta = normalizeTipoAnalisis(s.tipo_analisis);
-    if (ta === 'mono') badges.push(`<span class="proc-badge badge-mono" title="Estructura: ${s.tipo_analisis}">MONO</span>`);
-    if (ta === 'multi') badges.push(`<span class="proc-badge badge-multi" title="Estructura: ${s.tipo_analisis}">MULTI</span>`);
-
-    const td = normalizeText(s.tipo_dato);
-    if (td) {
-      const isCual = td.includes('cual');
-      const label = isCual ? 'CUAL' : 'CUANT';
-      const cls = isCual ? 'badge-cual' : 'badge-cuant';
-      const modo = s.modo_cualitativo && String(s.modo_cualitativo).toLowerCase() !== 'null'
-        ? ` (${s.modo_cualitativo})`
-        : '';
-      badges.push(`<span class="proc-badge ${cls}" title="Tipo de dato: ${s.tipo_dato}${modo}">${label}</span>`);
-    }
-
     const badgeRow = badges.length ? `<div class="badge-row">${badges.join('')}</div>` : '';
-
-    const tipoAnalisisText = s.tipo_analisis || '-';
-    const tipoDatoText = s.tipo_dato || '-';
-    const modoText = s.modo_cualitativo && String(s.modo_cualitativo).toLowerCase() !== 'null'
-      ? ` (${s.modo_cualitativo})`
-      : '';
+    const creadoRaw = s.creado_en ?? '';
+    const creadoText = formatDateTimePeru(creadoRaw);
     card.innerHTML = `
       ${badgeRow}
       <h3>${labName} | ${s.producto || "Sin producto"}</h3>
       <p><b>ID:</b> ${s.id}</p>
       <p><b>Estado:</b> ${s.estado}</p>
       <p><b>Método:</b> ${s.metodo || "-"}</p>
-      <p><b>Estructura:</b> ${tipoAnalisisText} | <b>Dato:</b> ${tipoDatoText}${modoText}</p>
-      <p><b>Creado:</b> ${s.creado_en}</p>
+      <p><b>Creado (Perú):</b> <span title="${creadoRaw}">${creadoText}</span></p>
       <p><b>Analista:</b> ${s.usuario || "-"}</p>
     `;
     card.addEventListener("click", () => {
@@ -179,6 +148,27 @@ function renderSesiones(sesiones) {
     });
     contenedor.appendChild(card);
   });
+}
+
+function formatDateTimePeru(value) {
+  const raw = value == null ? '' : String(value);
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return raw || '—';
+  try {
+    const fmt = new Intl.DateTimeFormat('es-PE', {
+      timeZone: 'America/Lima',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    return fmt.format(d);
+  } catch (_) {
+    return d.toLocaleString('es-PE', { hour12: false });
+  }
 }
 
 // --- Custom glass select popup for filters ---
@@ -269,6 +259,3 @@ function renderSesiones(sesiones) {
   if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(boot, 50);
   else document.addEventListener('DOMContentLoaded', ()=> setTimeout(boot, 50));
 })();
-
-
-

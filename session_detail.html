@@ -13,11 +13,81 @@
 
 <body>
   <main class="detail-container">
-    <h2>Detalles de la Sesión</h2>
-    <p id="session-info">Cargando información...</p>
+    <header class="detail-header">
+      <div class="detail-title">
+        <h2>Detalles de la Sesión</h2>
+        <p class="detail-subtitle" id="session-subtitle">Cargando información...</p>
+      </div>
+      <div class="detail-badges" aria-label="Resumen de sesión">
+        <span class="chip chip-id" id="session-chip-id">Sesión —</span>
+        <span class="chip chip-status" id="session-chip-status">—</span>
+      </div>
+    </header>
+
+    <section class="session-meta" aria-label="Información de la sesión">
+      <div class="meta-chips" aria-label="Contexto">
+        <span class="chip chip-analisis" id="session-chip-analisis">—</span>
+        <span class="chip chip-dato" id="session-chip-dato">—</span>
+        <span class="chip chip-modo hidden" id="session-chip-modo">—</span>
+      </div>
+
+      <dl class="kv-grid" id="session-kv">
+        <div class="kv-row">
+          <dt>ID</dt>
+          <dd id="session-id">—</dd>
+        </div>
+        <div class="kv-row">
+          <dt>Laboratorio</dt>
+          <dd id="session-lab">—</dd>
+        </div>
+        <div class="kv-row">
+          <dt>Procedimiento</dt>
+          <dd id="session-procedure">—</dd>
+        </div>
+        <div class="kv-row">
+          <dt>Método</dt>
+          <dd id="session-metodo">—</dd>
+        </div>
+        <div class="kv-row">
+          <dt>Producto</dt>
+          <dd id="session-producto">—</dd>
+        </div>
+        <div class="kv-row">
+          <dt>Ensayo</dt>
+          <dd id="session-ensayo">—</dd>
+        </div>
+        <div class="kv-row">
+          <dt>Expediente</dt>
+          <dd id="session-expediente">—</dd>
+        </div>
+        <div class="kv-row">
+          <dt>Unidad</dt>
+          <dd id="session-unidad">—</dd>
+        </div>
+        <div class="kv-row">
+          <dt>Estructura</dt>
+          <dd id="session-tipo-analisis">—</dd>
+        </div>
+        <div class="kv-row">
+          <dt>Tipo de dato</dt>
+          <dd id="session-tipo-dato">—</dd>
+        </div>
+        <div class="kv-row hidden" id="row-modo-cualitativo">
+          <dt>Modo cualitativo</dt>
+          <dd id="session-modo-cualitativo">—</dd>
+        </div>
+        <div class="kv-row">
+          <dt>Parámetro</dt>
+          <dd id="session-parametro">—</dd>
+        </div>
+        <div class="kv-row">
+          <dt>Creado</dt>
+          <dd id="session-creado" title="">—</dd>
+        </div>
+      </dl>
+    </section>
 
     <div class="options">
-      <button id="btn-inputs">Ver Inputs (histórico)</button>
       <button id="btn-results">Ver Resultados</button>
       <button id="btn-report">Ver Reporte</button>
     </div>
@@ -46,9 +116,6 @@
 
           <button id="btn-copy-inputs" type="button" class="inputs-btn" title="Copiar inputs visibles">
             <i data-lucide="copy"></i><span>Copiar</span>
-          </button>
-          <button id="btn-open-inputs" type="button" class="inputs-btn" title="Abrir en pantalla completa">
-            <i data-lucide="external-link"></i><span>Abrir</span>
           </button>
         </div>
       </header>

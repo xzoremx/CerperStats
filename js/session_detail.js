@@ -9,19 +9,40 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  const btnInputs = document.getElementById("btn-inputs");
   const btnResults = document.getElementById("btn-results");
   const btnReport = document.getElementById("btn-report");
   const btnVolver = document.getElementById("btn-volver");
 
+  // Session meta elements (new UI)
+  const sessionSubtitle = document.getElementById("session-subtitle");
+  const sessionChipId = document.getElementById("session-chip-id");
+  const sessionChipStatus = document.getElementById("session-chip-status");
+  const sessionChipAnalisis = document.getElementById("session-chip-analisis");
+  const sessionChipDato = document.getElementById("session-chip-dato");
+  const sessionChipModo = document.getElementById("session-chip-modo");
+
+  const sessionIdEl = document.getElementById("session-id");
+  const sessionLabEl = document.getElementById("session-lab");
+  const sessionProcedureEl = document.getElementById("session-procedure");
+  const sessionMetodoEl = document.getElementById("session-metodo");
+  const sessionProductoEl = document.getElementById("session-producto");
+  const sessionEnsayoEl = document.getElementById("session-ensayo");
+  const sessionExpedienteEl = document.getElementById("session-expediente");
+  const sessionUnidadEl = document.getElementById("session-unidad");
+  const sessionTipoAnalisisEl = document.getElementById("session-tipo-analisis");
+  const sessionTipoDatoEl = document.getElementById("session-tipo-dato");
+  const rowModoCualitativo = document.getElementById("row-modo-cualitativo");
+  const sessionModoCualitativoEl = document.getElementById("session-modo-cualitativo");
+  const sessionParametroEl = document.getElementById("session-parametro");
+  const sessionEstadoEl = document.getElementById("session-estado");
+  const sessionCreadoEl = document.getElementById("session-creado");
+
   // Inputs viewer elements
-  const inputsPanel = document.getElementById("inputs-panel");
   const inputsSubtitle = document.getElementById("inputs-subtitle");
   const inputsTabMono = document.getElementById("inputs-tab-mono");
   const inputsTabMulti = document.getElementById("inputs-tab-multi");
   const inputsLevelSelect = document.getElementById("inputs-level");
   const btnCopyInputs = document.getElementById("btn-copy-inputs");
-  const btnOpenInputs = document.getElementById("btn-open-inputs");
   const inputsLoading = document.getElementById("inputs-loading");
   const inputsEmpty = document.getElementById("inputs-empty");
   const inputsError = document.getElementById("inputs-error");
@@ -109,6 +130,49 @@ document.addEventListener("DOMContentLoaded", async () => {
     const isMulti =
       norm === "multi" || norm === "multianalito" || norm.includes("multi");
     return isMulti ? "multi" : "mono";
+  }
+
+  function formatAnalisisLabel(tipoAnalisisRaw) {
+    const norm = normalizeText(tipoAnalisisRaw);
+    const isMulti =
+      norm === "multi" || norm === "multianalito" || norm.includes("multi");
+    const isMono = norm === "mono" || norm === "monoanalito" || norm.includes("mono");
+    if (isMulti) return "Multianalito";
+    if (isMono) return "Monoanalito";
+    const raw = String(tipoAnalisisRaw || "").trim();
+    if (!raw) return "—";
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  }
+
+  function formatDatoLabel(tipoDatoRaw) {
+    const norm = normalizeText(tipoDatoRaw);
+    if (!norm) return "—";
+    if (norm.includes("cual")) return "Cualitativo";
+    if (norm.includes("cuant")) return "Cuantitativo";
+    const raw = String(tipoDatoRaw || "").trim();
+    return raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : "—";
+  }
+
+  function formatDateTimePeru(value) {
+    const raw = value == null ? "" : String(value);
+    const d = new Date(raw);
+    if (!Number.isFinite(d.getTime())) return raw || "—";
+    try {
+      const fmt = new Intl.DateTimeFormat("es-PE", {
+        timeZone: "America/Lima",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      });
+      return `${fmt.format(d)} (Perú)`;
+    } catch (_) {
+      // Fallback to local timezone formatting (still readable)
+      return `${d.toLocaleString("es-PE", { hour12: false })}`;
+    }
   }
 
   function setActiveTab(type) {
@@ -219,11 +283,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       .filter((n) => n > 0)
       .sort((a, b) => a - b);
 
-    const headers = ["Lectura", ...parametros];
+    const headers = ["Resultados", ...parametros];
     const rows = [];
 
     for (const lectura of lecturas) {
-      const row = [`Lectura ${lectura}`];
+      const row = [`Resultado ${lectura}`];
       for (const p of parametros) {
         row.push(byKey.get(`${p}#${lectura}`) ?? "");
       }
@@ -268,12 +332,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       .filter((n) => n > 0)
       .sort((a, b) => a - b);
 
-    const headers = ["Parámetro / Lectura", ...analitos];
+    const headers = ["Resultado / Parámetro", ...analitos];
     const rows = [];
 
     for (const p of parametros) {
       for (const lectura of lecturas) {
-        const row = [`Lectura ${lectura} · ${p}`];
+        const row = [`Resultado ${lectura} · ${p}`];
         for (const a of analitos) {
           row.push(byKey.get(`${p}#${a}#${lectura}`) ?? "");
         }
@@ -345,8 +409,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const multiLvls = inputsState.levels.multi || [];
 
     const parts = [];
-    if (monoCount > 0) parts.push(`Mono: ${monoCount} registros · niveles ${monoLvls.join(", ")}`);
-    if (multiCount > 0) parts.push(`Multi: ${multiCount} registros · niveles ${multiLvls.join(", ")}`);
+    if (monoCount > 0) parts.push(`Monoanalito: ${monoCount} registros · niveles ${monoLvls.join(", ")}`);
+    if (multiCount > 0) parts.push(`Multianalito: ${multiCount} registros · niveles ${multiLvls.join(", ")}`);
     if (parts.length === 0) parts.push("No hay inputs guardados para esta sesión.");
 
     inputsSubtitle.textContent = parts.join(" | ");
@@ -385,8 +449,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!inputsState.available.mono && !inputsState.available.multi) {
       const errors = [];
-      if (!monoRes.ok) errors.push(`Mono: ${monoRes.error}`);
-      if (!multiRes.ok) errors.push(`Multi: ${multiRes.error}`);
+      if (!monoRes.ok) errors.push(`Monoanalito: ${monoRes.error}`);
+      if (!multiRes.ok) errors.push(`Multianalito: ${multiRes.error}`);
       // If both were ok but empty, show empty instead of error.
       if (errors.length > 0) {
         setInputsStateView("error", errors.join(" | "));
@@ -413,33 +477,61 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const info = res.data;
     const labName = info.lab_nombre || info.lab_key || '';
-    const modoLine = (info.modo_cualitativo && String(info.modo_cualitativo).toLowerCase() !== 'null')
-      ? `<br><b>Modo cualitativo:</b> ${info.modo_cualitativo}`
+    const analisisLabel = formatAnalisisLabel(info.tipo_analisis);
+    const datoLabel = formatDatoLabel(info.tipo_dato);
+    const modoCualitativo = info.modo_cualitativo && String(info.modo_cualitativo).toLowerCase() !== 'null'
+      ? String(info.modo_cualitativo)
       : '';
 
-    document.getElementById("session-info").innerHTML = `
-      <b>ID:</b> ${info.id} <br>
-      <b>${labName}</b> <br>
-      <b>Procedimiento:</b> ${info.procedure || "-"} <br>
-      <b>Metodo:</b> ${info.metodo || "-"} <br>
-      <b>Producto:</b> ${info.producto || "-"} <br>
-      <b>Ensayo:</b> ${info.ensayo || "-"} <br>
-      <b>Expediente:</b> ${info.expediente || "-"} <br>
-      <b>Unidad de medida:</b> ${info.unidad || "-"} <br>
-      <b>Estructura de analisis:</b> ${info.tipo_analisis || "-"} <br>
-      <b>Tipo de dato:</b> ${info.tipo_dato || "-"}${modoLine}
-      <br><b>Parametro:</b> ${info.parametro || "-"} <br>
-      <b>Estado:</b> ${info.estado} <br>
-      <b>Creado:</b> ${info.creado_en}
-    `;
+    if (sessionSubtitle) {
+      const producto = info.producto ? String(info.producto) : '';
+      sessionSubtitle.textContent = [labName, producto].filter(Boolean).join(' · ') || '—';
+    }
+    if (sessionChipId) sessionChipId.textContent = `Sesión #${info.id ?? '—'}`;
+    if (sessionChipStatus) sessionChipStatus.textContent = String(info.estado || '—').toUpperCase();
+    if (sessionChipAnalisis) sessionChipAnalisis.textContent = analisisLabel;
+    if (sessionChipDato) sessionChipDato.textContent = datoLabel;
+    if (sessionChipModo) {
+      if (modoCualitativo) {
+        sessionChipModo.textContent = modoCualitativo;
+        sessionChipModo.classList.remove('hidden');
+      } else {
+        sessionChipModo.classList.add('hidden');
+      }
+    }
+
+    if (sessionIdEl) sessionIdEl.textContent = String(info.id ?? '—');
+    if (sessionLabEl) sessionLabEl.textContent = labName || '—';
+    if (sessionProcedureEl) sessionProcedureEl.textContent = String(info.procedure || '—');
+    if (sessionMetodoEl) sessionMetodoEl.textContent = String(info.metodo || '—');
+    if (sessionProductoEl) sessionProductoEl.textContent = String(info.producto || '—');
+    if (sessionEnsayoEl) sessionEnsayoEl.textContent = String(info.ensayo || '—');
+    if (sessionExpedienteEl) sessionExpedienteEl.textContent = String(info.expediente || '—');
+    if (sessionUnidadEl) sessionUnidadEl.textContent = String(info.unidad || '—');
+    if (sessionTipoAnalisisEl) sessionTipoAnalisisEl.textContent = analisisLabel;
+    if (sessionTipoDatoEl) sessionTipoDatoEl.textContent = datoLabel;
+
+    if (rowModoCualitativo && sessionModoCualitativoEl) {
+      if (modoCualitativo) {
+        rowModoCualitativo.classList.remove('hidden');
+        sessionModoCualitativoEl.textContent = modoCualitativo;
+      } else {
+        rowModoCualitativo.classList.add('hidden');
+        sessionModoCualitativoEl.textContent = '—';
+      }
+    }
+
+    if (sessionParametroEl) sessionParametroEl.textContent = String(info.parametro || '—');
+    if (sessionEstadoEl) sessionEstadoEl.textContent = String(info.estado || '—');
+
+    if (sessionCreadoEl) {
+      sessionCreadoEl.textContent = formatDateTimePeru(info.creado_en);
+      sessionCreadoEl.title = info.creado_en ? String(info.creado_en) : '';
+    }
 
     // Prepare inputs viewer (auto-detect based on session tipo_analisis)
     const preferredInputsType = inferPreferredInputsType(info.tipo_analisis);
     await loadInputs(preferredInputsType);
-
-    btnInputs?.addEventListener("click", () => {
-      inputsPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
 
     btnResults?.addEventListener("click", () => {
       const target = "results_general.html";
@@ -460,13 +552,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     inputsLevelSelect?.addEventListener("change", () => {
       inputsState.activeLevel = inputsLevelSelect.value || "all";
       renderInputsTables();
-    });
-
-    btnOpenInputs?.addEventListener("click", () => {
-      const type = inputsState.activeType;
-      const target = type === "multi" ? "inputs_multianalito.html" : "inputs_monoanalito.html";
-      if (window.cerper?.openPage) window.cerper.openPage(target);
-      else window.location.href = target;
     });
 
     btnCopyInputs?.addEventListener("click", async () => {
@@ -520,5 +605,3 @@ function cellText(cell) {
     .replace(/\s+/g, " ")
     .trim();
 }
-
-
