@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' https://unpkg.com https://cdn.tailwindcss.com 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self';">
+  <title>CerperStats – Resultados</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link rel="stylesheet" href="css/global.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="js/dataframe_renderer.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif
+    }
+
+    /* Scrollbar styles inherited from global.css */
+
+    /* Single-Layer Glass Effect - Optimized for Performance */
+    .glass-container {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0.02) 100%);
+      border: 0.5px solid rgba(255, 255, 255, 0.2);
+      box-shadow:
+        0 0 0 0.5px rgba(255, 255, 255, 0.05) inset,
+        0 20px 60px -10px rgba(0, 0, 0, 0.6);
+      position: relative;
+      /* GPU optimizations */
+      will-change: transform;
+      transform: translateZ(0);
+      contain: layout style paint;
+    }
+
+    .glass-sidebar {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+      backdrop-filter: blur(30px) saturate(150%);
+      -webkit-backdrop-filter: blur(30px) saturate(150%);
+      border-right: 0.5px solid rgba(255, 255, 255, 0.1);
+      contain: layout style;
+    }
+
+    .glass-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+      border: 0.5px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+      transition: all 0.2s ease;
+      /* GPU optimizations */
+      will-change: transform, opacity;
+      transform: translateZ(0);
+      contain: layout style paint;
+    }
+
+    .glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+    }
+
+    .glass-card.selected {
+      border-color: rgba(52, 211, 153, 0.6);
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%);
+      box-shadow:
+        0 0 0 1px rgba(52, 211, 153, 0.3) inset,
+        0 8px 16px rgba(0, 0, 0, 0.4),
+        0 0 20px rgba(52, 211, 153, 0.1);
+    }
+
+    .glass-card.blocked {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .glass-card.blocked:hover {
+      border-color: rgba(239, 68, 68, 0.4);
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+    }
+
+    .icon-container {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
+      border: 0.5px solid rgba(255, 255, 255, 0.2);
+      transform: translateZ(0);
+    }
+
+    .icon-container:hover {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.12) 100%);
+    }
+
+    /* Pokemon-style cards */
+    .pokemon-card {
+      width: 180px;
+      height: 220px;
+      padding: 0;
+    }
+
+    .pokemon-card-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 1rem;
+      position: relative;
+    }
+
+    .pokemon-card .status-badge {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.65rem;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-weight: 500;
+    }
+
+    .pokemon-card .badge-available {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+    }
+
+    .pokemon-card .badge-selected {
+      background: rgba(52, 211, 153, 0.2);
+      color: #34d399;
+    }
+
+    .pokemon-card .badge-blocked {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+
+    .pokemon-card-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: white;
+      text-align: center;
+      margin-bottom: 0.75rem;
+      line-height: 1.2;
+      max-height: 2.4em;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      transition: color 0.2s ease;
+    }
+
+    .pokemon-card-icon-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      width: 100%;
+    }
+
+    .pokemon-card .card-icon {
+      width: 80px;
+      height: 80px;
+    }
+
+    .pokemon-card .card-icon svg,
+    .pokemon-card .card-icon i {
+      width: 80px !important;
+      height: 80px !important;
+      stroke-width: 1.5;
+    }
+
+    /* Adjust grid for Pokemon cards */
+    .analysis-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+
+
+
+
+    /* NOTE: .notify styles are now in css/global.css */
+
+    /* Button styles - Minimalist */
+    .btn-glass {
+      transition: all 0.25s ease;
+      transform: translateZ(0);
+      will-change: transform;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .btn-glass:hover {
+      transform: translateY(-2px);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .btn-glass:active {
+      transform: translateY(0);
+    }
+
+    .btn-glass:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ========================================
+       Visualization UI Styles
+       ======================================== */
+
+    /* Custom Glass Dropdown */
+    .viz-dropdown {
+      position: relative;
+      z-index: 50;
+    }
+
+    .viz-dropdown-trigger {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.875rem;
+      border-radius: 0.5rem;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #e8e8f0;
+      font-size: 0.875rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 185px;
+    }
+
+    .viz-dropdown-trigger:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .viz-dropdown.open .viz-dropdown-trigger {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(180, 160, 220, 0.4);
+    }
+
+    .viz-dropdown-text {
+      flex: 1;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 150px;
+    }
+
+    .viz-dropdown-arrow {
+      color: rgba(255, 255, 255, 0.5);
+      transition: transform 0.2s ease;
+    }
+
+    .viz-dropdown.open .viz-dropdown-arrow {
+      transform: rotate(180deg);
+    }
+
+    .viz-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      min-width: 100%;
+      max-height: 200px;
+      overflow-y: auto;
+      background: rgba(30, 28, 45, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-8px);
+      transition: all 0.2s ease;
+    }
+
+    .viz-dropdown.open .viz-dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .viz-dropdown-item {
+      padding: 0.625rem 0.875rem;
+      color: #d0d0e0;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .viz-dropdown-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+
+    .viz-dropdown-item.active {
+      background: rgba(160, 140, 200, 0.2);
+      color: #d8c8f8;
+    }
+
+    /* Theme Toggle Button */
+    .viz-theme-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 0.5rem;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #c0c0d0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .viz-theme-toggle:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #f0f0ff;
+    }
+
+    .viz-theme-icon-light {
+      display: none;
+    }
+
+    .viz-theme-icon-dark {
+      display: block;
+    }
+
+    .viz-cards-light .viz-theme-icon-light {
+      display: block;
+    }
+
+    .viz-cards-light .viz-theme-icon-dark {
+      display: none;
+    }
+
+    /* Danger Toggle Button */
+    .viz-danger-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 0.5rem;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .viz-danger-toggle:hover {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    .viz-danger-toggle.active {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.2) 100%);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #f87171;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+    }
+
+    .viz-danger-toggle.active:hover {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.35) 0%, rgba(220, 38, 38, 0.3) 100%);
+    }
+
+    .viz-danger-icon {
+      transition: transform 0.2s ease;
+    }
+
+    .viz-danger-toggle.active .viz-danger-icon {
+      transform: scale(1.1);
+    }
+
+    /* View Toggle */
+    .viz-view-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem;
+      border-radius: 0.5rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .viz-view-btn {
+      padding: 0.375rem 0.75rem;
+      border-radius: 0.375rem;
+      color: rgba(255, 255, 255, 0.5);
+      transition: all 0.2s ease;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+
+    .viz-view-btn:hover {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .viz-view-btn.active {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Rolodex View */
+    .viz-rolodex-view {
+      position: relative;
+      height: 65vh;
+      min-height: 450px;
+      width: 100%;
+      cursor: ns-resize;
+      overflow: hidden;
+    }
+
+    .viz-perspective-container {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      perspective: 1200px;
+    }
+
+    .viz-cards-container {
+      position: relative;
+      width: 100%;
+      max-width: 650px;
+      height: 463px;
+      transform-style: preserve-3d;
+    }
+
+    /* Visualization Card */
+    .viz-card {
+      position: absolute;
+      inset: 0;
+      transform-origin: center center;
+      transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        opacity 0.4s ease;
+      pointer-events: none;
+    }
+
+    .viz-card.active {
+      pointer-events: auto;
+    }
+
+    .viz-card-inner {
+      display: block;
+      height: 100%;
+      border-radius: 1rem;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    /* Dark Card Theme - Windows Black UI Style */
+    .viz-card-inner {
+      background: linear-gradient(145deg, #202020 0%, #181818 50%, #141414 100%);
+      border: 1px solid #333333;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    .viz-card-title {
+      color: #f5f5f5;
+    }
+
+    .viz-card-subtitle {
+      color: #888888;
+    }
+
+    .viz-card-badge {
+      color: #a0a0a0;
+    }
+
+    /* Light Card Theme - Soft Lilac */
+    .viz-cards-light .viz-card-inner {
+      background: linear-gradient(145deg, #c8b8e8 0%, #b8a8d8 50%, #a898c8 100%);
+      border: 1px solid #d0c0f0;
+      box-shadow: 0 20px 40px -10px rgba(100, 80, 140, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    .viz-cards-light .viz-card-title {
+      color: #2a2040;
+    }
+
+    .viz-cards-light .viz-card-subtitle {
+      color: #4a3a60;
+    }
+
+    .viz-cards-light .viz-card-badge {
+      color: #5a4a70;
+    }
+
+    .viz-cards-light .viz-card-image {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Active card enhancements */
+    .viz-card.active .viz-card-inner {
+      border-color: rgba(180, 160, 220, 0.5);
+      box-shadow: 0 25px 50px -10px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 0 30px rgba(160, 140, 200, 0.15);
+    }
+
+    .viz-cards-light .viz-card.active .viz-card-inner {
+      border-color: rgba(255, 255, 255, 0.6);
+      box-shadow: 0 25px 50px -10px rgba(100, 80, 140, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        0 0 30px rgba(200, 180, 240, 0.3);
+    }
+
+    .viz-card-image {
+      position: relative;
+      height: 90%;
+      background: rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .viz-card-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 0.5rem;
+    }
+
+    .viz-card-content {
+      padding: 0.5rem 1rem;
+      height: 10%;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .viz-card-title {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #ffffff;
+      line-height: 1.2;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .viz-card-subtitle {
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.6);
+      white-space: nowrap;
+    }
+
+    .viz-card-badge {
+      font-size: 0.7rem;
+      color: #f97316;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* Timeline */
+    .viz-timeline {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 70%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      user-select: none;
+    }
+
+    .viz-timeline-label {
+      font-size: 0.625rem;
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .viz-timeline-label-top {
+      position: absolute;
+      top: -1.25rem;
+      right: 0;
+    }
+
+    .viz-timeline-label-bottom {
+      position: absolute;
+      bottom: -1.25rem;
+      right: 0;
+      color: #f97316;
+      font-weight: 500;
+    }
+
+    .viz-timeline-track {
+      position: relative;
+      height: 100%;
+      width: 6rem;
+      cursor: pointer;
+    }
+
+    .viz-timeline-tick {
+      position: absolute;
+      right: 0;
+      width: 0.5rem;
+      height: 1px;
+      background-color: rgba(255, 255, 255, 0.3);
+      opacity: 0.2;
+      transform: translateY(-50%);
+    }
+
+    .viz-timeline-marker {
+      position: absolute;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      transform: translateY(-50%);
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .viz-timeline-marker:hover {
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .viz-timeline-marker-bar {
+      height: 1px;
+      background-color: rgba(255, 255, 255, 0.4);
+      opacity: 0.4;
+      transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .viz-timeline-marker.active .viz-timeline-marker-bar {
+      width: 2rem !important;
+      height: 2px;
+      background-color: #f97316;
+      opacity: 1;
+    }
+
+    .viz-timeline-id-label {
+      position: absolute;
+      right: 2.5rem;
+      font-size: 0.75rem;
+      color: #f97316;
+      font-weight: 500;
+      white-space: nowrap;
+      opacity: 0;
+      transform: translateX(10px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .viz-timeline-marker.active .viz-timeline-id-label {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .viz-scroll-hint {
+      position: absolute;
+      bottom: 1rem;
+      left: 1rem;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    @media (max-width: 768px) {
+      .viz-scroll-hint {
+        display: none;
+      }
+
+      .viz-timeline {
+        display: none;
+      }
+    }
+
+    /* List View */
+    .viz-list-view {
+      position: relative;
+      min-height: 400px;
+    }
+
+    .viz-list-view.viz-hidden {
+      display: none;
+    }
+
+    .viz-rolodex-view.viz-hidden {
+      display: none;
+    }
+
+    .viz-list-container {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .viz-list-item {
+      display: block;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      transition: background-color 0.2s ease;
+      text-decoration: none;
+    }
+
+    .viz-list-item:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .viz-list-item-inner {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+    }
+
+    .viz-list-id {
+      font-size: 0.75rem;
+      color: #f97316;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      width: 4rem;
+      flex-shrink: 0;
+    }
+
+    .viz-list-title {
+      flex: 1;
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color 0.2s ease;
+    }
+
+    .viz-list-item:hover .viz-list-title {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .viz-list-meta {
+      flex: 1;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.4);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @media (max-width: 768px) {
+      .viz-list-meta {
+        display: none;
+      }
+    }
+
+    .viz-list-arrow {
+      color: rgba(255, 255, 255, 0.3);
+      flex-shrink: 0;
+      transition: color 0.2s ease;
+    }
+
+    .viz-list-item:hover .viz-list-arrow {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Hover preview */
+    .viz-hover-preview {
+      position: fixed;
+      pointer-events: none;
+      z-index: 200;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .viz-hover-preview.visible {
+      opacity: 1;
+    }
+
+    .viz-hover-preview img {
+      width: 455px;
+      height: auto;
+      max-height: 325px;
+      object-fit: contain;
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 0.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    }
+
+    .viz-hidden {
+      display: none !important;
+    }
+
+    /* Apple-style Loading Spinner (iOS/macOS) */
+    .apple-spinner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      z-index: 10;
+    }
+
+    .apple-spinner-icon {
+      width: 40px;
+      height: 40px;
+      position: relative;
+    }
+
+    .apple-spinner-icon::before {
+      content: '';
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      border-top-color: rgba(255, 255, 255, 0.8);
+      animation: apple-spin 0.8s linear infinite;
+    }
+
+    @keyframes apple-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .apple-spinner-text {
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 500;
+    }
+
+    .apple-spinner.hidden {
+      display: none;
+    }
+
+    /* ========================================
+       Settings UI Styles
+       ======================================== */
+
+    .settings-section {
+      margin-bottom: 2rem;
+    }
+
+    .settings-section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+
+    .settings-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .settings-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .settings-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 0.625rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .settings-card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .settings-card-subtitle {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 0.125rem;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .settings-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .settings-row:first-child {
+      padding-top: 0;
+    }
+
+    .settings-label {
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .settings-sublabel {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 0.125rem;
+    }
+
+    /* Custom Select Dropdown */
+    .settings-select {
+      appearance: none;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 0.5rem;
+      padding: 0.5rem 2rem 0.5rem 0.75rem;
+      color: #e0e0e0;
+      font-size: 0.875rem;
+      font-family: inherit;
+      cursor: pointer;
+      min-width: 180px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='rgba(255,255,255,0.5)' viewBox='0 0 24 24'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      transition: all 0.2s ease;
+    }
+
+    .settings-select:hover {
+      background-color: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .settings-select:focus {
+      outline: none;
+      border-color: rgba(139, 92, 246, 0.5);
+      box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+    }
+
+    .settings-select option {
+      background: #1a1a2e;
+      color: #e0e0e0;
+    }
+
+    /* Custom Range Slider */
+    .settings-slider-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 200px;
+    }
+
+    .settings-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 120px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .settings-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .settings-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      box-shadow: 0 3px 10px rgba(139, 92, 246, 0.5);
+    }
+
+    .settings-slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+    }
+
+    .settings-slider-value {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.7);
+      min-width: 45px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Toggle Switch */
+    .settings-toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.25s ease;
+    }
+
+    .settings-toggle.active {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    }
+
+    .settings-toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.25s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .settings-toggle.active::after {
+      transform: translateX(20px);
+    }
+
+    /* Reset Button */
+    .settings-reset-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: 0.5rem;
+      color: #fca5a5;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .settings-reset-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    /* Mode Pills */
+    .settings-mode-selector {
+      display: flex;
+      gap: 0.375rem;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.25rem;
+      border-radius: 0.5rem;
+    }
+
+    .settings-mode-pill {
+      padding: 0.375rem 0.75rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: capitalize;
+    }
+
+    .settings-mode-pill:hover {
+      color: rgba(255, 255, 255, 0.8);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .settings-mode-pill.active {
+      background: rgba(139, 92, 246, 0.3);
+      color: #c4b5fd;
+    }
+
+    /* ========================================
+       Resultados Preliminares Styles
+       ======================================== */
+
+    .result-list-container {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .result-list-item {
+      display: block;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      transition: background-color 0.2s ease;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .result-list-item:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .result-list-item-inner {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.875rem 1rem;
+    }
+
+    .result-list-id {
+      font-size: 0.75rem;
+      color: #22d3ee;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      width: 4rem;
+      flex-shrink: 0;
+    }
+
+    .result-list-title {
+      flex: 1;
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color 0.2s ease;
+    }
+
+    .result-list-item:hover .result-list-title {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .result-list-meta {
+      flex: 1;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.4);
+      white-space: nowrap;
+    }
+
+    .result-list-category {
+      font-size: 0.65rem;
+      padding: 0.25rem 0.5rem;
+      background: rgba(139, 92, 246, 0.15);
+      color: #a78bfa;
+      border-radius: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+
+    .result-list-arrow {
+      color: rgba(255, 255, 255, 0.3);
+      flex-shrink: 0;
+      transition: color 0.2s ease;
+    }
+
+    .result-list-item:hover .result-list-arrow {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* ========================================
+       Apple-Inspired White Glass Table Styles
+       ======================================== */
+
+    .df-table-container {
+      overflow-x: auto;
+      margin-top: 1rem;
+      border-radius: 1rem;
+      background: linear-gradient(145deg,
+          rgba(255, 255, 255, 0.95) 0%,
+          rgba(248, 250, 252, 0.92) 50%,
+          rgba(241, 245, 249, 0.90) 100%);
+      backdrop-filter: blur(40px) saturate(180%);
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        0 2px 8px rgba(0, 0, 0, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+    }
+
+    .df-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 0.875rem;
+    }
+
+    .df-table th {
+      padding: 1rem 1.25rem;
+      text-align: left;
+      font-weight: 600;
+      color: #64748b;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: linear-gradient(180deg,
+          rgba(248, 250, 252, 0.8) 0%,
+          rgba(241, 245, 249, 0.6) 100%);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .df-table th:first-child {
+      border-top-left-radius: 1rem;
+    }
+
+    .df-table th:last-child {
+      border-top-right-radius: 1rem;
+    }
+
+    .df-table td {
+      padding: 0.875rem 1.25rem;
+      color: #1e293b;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+      font-weight: 450;
+      transition: background-color 0.15s ease;
+    }
+
+    .df-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .df-table tbody tr:last-child td:first-child {
+      border-bottom-left-radius: 1rem;
+    }
+
+    .df-table tbody tr:last-child td:last-child {
+      border-bottom-right-radius: 1rem;
+    }
+
+    .df-table tr:hover td {
+      background: rgba(99, 102, 241, 0.04);
+    }
+
+    /* Badge structure (colors are injected dynamically from DB) */
+    .df-table .df-value-badge {
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.25rem 0.625rem;
+      border-radius: 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .df-table .df-value-number {
+      font-variant-numeric: tabular-nums;
+      color: #4f46e5;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+      font-size: 0.825rem;
+    }
+
+    .df-table .df-value-string {
+      color: #0369a1;
+      font-weight: 500;
+    }
+
+    /* ========================================
+       Apple-Inspired White Glass Modal
+       ======================================== */
+
+    .result-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(12px) saturate(150%);
+      -webkit-backdrop-filter: blur(12px) saturate(150%);
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .result-modal-backdrop.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .result-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.92);
+      width: 90%;
+      max-width: 1200px;
+      max-height: 80vh;
+      background: linear-gradient(165deg,
+          rgba(255, 255, 255, 0.98) 0%,
+          rgba(250, 251, 252, 0.96) 40%,
+          rgba(248, 250, 252, 0.94) 100%);
+      backdrop-filter: blur(50px) saturate(200%);
+      -webkit-backdrop-filter: blur(50px) saturate(200%);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: 1.25rem;
+      overflow: hidden;
+      z-index: 1001;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.15),
+        0 12px 24px -8px rgba(0, 0, 0, 0.1),
+        0 4px 8px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 1),
+        0 0 0 1px rgba(0, 0, 0, 0.03);
+    }
+
+    .result-modal-backdrop.visible .result-modal {
+      opacity: 1;
+      visibility: visible;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .result-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 1.75rem 1.25rem;
+      background: linear-gradient(180deg,
+          rgba(255, 255, 255, 0.8) 0%,
+          rgba(248, 250, 252, 0.4) 100%);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .result-modal-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+
+    .result-modal-subtitle {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-top: 0.375rem;
+      font-weight: 500;
+    }
+
+    .result-modal-close {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: linear-gradient(145deg,
+          rgba(0, 0, 0, 0.04) 0%,
+          rgba(0, 0, 0, 0.06) 100%);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .result-modal-close:hover {
+      background: linear-gradient(145deg,
+          rgba(239, 68, 68, 0.1) 0%,
+          rgba(220, 38, 38, 0.08) 100%);
+      border-color: rgba(239, 68, 68, 0.2);
+      color: #dc2626;
+      transform: scale(1.05);
+    }
+
+    .result-modal-close:active {
+      transform: scale(0.95);
+    }
+
+    .result-modal-body {
+      padding: 1.5rem 1.75rem 1.75rem;
+      overflow-y: auto;
+      max-height: calc(80vh - 100px);
+      background: linear-gradient(180deg,
+          rgba(248, 250, 252, 0.3) 0%,
+          rgba(255, 255, 255, 0.1) 100%);
+    }
+
+    /* Scrollbar styling for modal body */
+    .result-modal-body::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .result-modal-body::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.02);
+      border-radius: 4px;
+    }
+
+    .result-modal-body::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.12);
+      border-radius: 4px;
+    }
+
+    .result-modal-body::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .result-filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Danger/Alert styling for result items */
+    .result-list-item.is-danger {
+      background: linear-gradient(135deg,
+          rgba(239, 68, 68, 0.12) 0%,
+          rgba(220, 38, 38, 0.08) 50%,
+          rgba(185, 28, 28, 0.05) 100%);
+      border-color: rgba(239, 68, 68, 0.25);
+      box-shadow:
+        0 4px 12px rgba(239, 68, 68, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .result-list-item.is-danger:hover {
+      background: linear-gradient(135deg,
+          rgba(239, 68, 68, 0.18) 0%,
+          rgba(220, 38, 38, 0.12) 50%,
+          rgba(185, 28, 28, 0.08) 100%);
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .result-list-item.is-danger .result-list-id {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.15) 100%);
+      color: #fca5a5;
+    }
+
+    .result-danger-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.125rem 0.5rem;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.15) 100%);
+      border-radius: 0.375rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #fca5a5;
+      margin-left: 0.5rem;
+    }
+  </style>
+</head>
+
+<body
+  class="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 text-white relative overflow-x-hidden">
+
+  <!-- Video Background -->
+  <div class="fixed inset-0 -z-20">
+    <div class="w-full h-full">
+      <video id="bg-video" autoplay loop muted playsinline class="w-full h-full object-cover">
+        <source id="bg-video-source" src="assets/videos/evaluation_results.mp4" type="video/mp4">
+      </video>
+    </div>
+  </div>
+
+  <!-- Main Application Window -->
+  <div class="flex-1 flex px-4 sm:px-6 pb-16 pt-8 items-start justify-center relative">
+    <div
+      class="relative w-full max-w-[80rem] mt-6 glass-container rounded-3xl flex flex-col overflow-hidden shadow-2xl min-h-[85vh]">
+
+      <!-- Main Workspace Content -->
+      <div class="flex flex-1 min-h-0 relative">
+        <!-- Enhanced Sidebar -->
+        <div class="glass-sidebar w-80 lg:w-96 flex flex-col relative z-10">
+
+          <!-- Enhanced Navigation -->
+          <div class="flex-1 p-4 space-y-3 overflow-y-auto">
+            <div class="mb-8">
+              <h3 class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-4 px-3">Dashboard</h3>
+              <nav class="space-y-1.5">
+                <a href="#" id="menu-visualizaciones"
+                  class="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/8 transition-all duration-200 group">
+                  <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                  <span class="font-medium">Visualizaciones</span>
+                </a>
+
+                <a href="#" id="menu-resultados"
+                  class="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/8 transition-all duration-200 group">
+                  <i data-lucide="table-2" class="w-5 h-5"></i>
+                  <span class="font-medium">Resultados Preliminares</span>
+                </a>
+
+                <a href="#" id="menu-configuracion"
+                  class="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/8 transition-all duration-200 group">
+                  <i data-lucide="settings" class="w-5 h-5"></i>
+                  <span class="font-medium">Configuración</span>
+                </a>
+              </nav>
+            </div>
+          </div>
+
+          <!-- Back Button - Fixed at bottom -->
+          <div class="p-4 border-t border-white/10">
+            <button id="go-back"
+              class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/8 transition-all duration-200 w-full">
+              <i data-lucide="arrow-left" class="w-5 h-5"></i>
+              <span class="font-medium">Volver</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Main Content Area with Liquid Glass Effect -->
+        <div id="main-content-panel" class="flex-1 flex flex-col min-h-0 relative"
+          style="border-left: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0 28px 28px 0; background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);">
+          <!-- Content Header -->
+          <div class="p-8 border-b border-white/5">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div>
+                <h2 class="text-3xl font-bold text-white mb-2 tracking-tight">Hola de nuevo</h2>
+                <p id="page-subtitle" class="text-gray-200 text-lg">Recordemos los resultados de esta sesión</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dashboard Content -->
+          <div class="flex-1 p-8 overflow-y-auto">
+            <div id="view-evaluaciones" class="hidden">
+              <!-- Progress Card -->
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <div class="glass-card p-6 rounded-xl group cursor-pointer col-span-full" id="progress-card">
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-4">
+                      <div
+                        class="w-12 h-12 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
+                        <i data-lucide="clipboard-check" class="w-6 h-6 text-white"></i>
+                      </div>
+                      <div>
+                        <h4 class="text-lg font-semibold text-white group-hover:text-orange-300 transition-colors">
+                          Progreso de Evaluación</h4>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <span id="progress-status"
+                        class="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full font-medium">Pendiente</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="w-full bg-gray-700/50 rounded-full h-2 mr-4">
+                      <div id="progress-bar"
+                        class="bg-gradient-to-r from-orange-500 to-red-600 h-2 rounded-full transition-all duration-500"
+                        style="width: 0%"></div>
+                    </div>
+                    <span id="progress-percent" class="text-sm text-gray-400 whitespace-nowrap">0%</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Evaluations Grid - Dynamically populated -->
+              <div class="analysis-grid">
+                <!-- Cards are inserted dynamically from evaluation_select.js -->
+              </div>
+            </div>
+
+            <div id="view-visualizaciones" class="hidden min-h-[60vh]">
+              <!-- Header with View Toggle and Filters -->
+              <div class="flex flex-col gap-3 mb-6">
+                <!-- Filters Row - aligned left -->
+                <div class="flex items-center gap-3">
+                  <!-- Custom Glass Dropdowns -->
+                  <div class="viz-dropdown" id="dropdown-nivel">
+                    <button class="viz-dropdown-trigger" type="button">
+                      <span class="viz-dropdown-text">Todos los niveles</span>
+                      <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </button>
+                    <div class="viz-dropdown-menu">
+                      <div class="viz-dropdown-item active" data-value="">Todos los niveles</div>
+                    </div>
+                  </div>
+
+                  <div class="viz-dropdown" id="dropdown-analito">
+                    <button class="viz-dropdown-trigger" type="button">
+                      <span class="viz-dropdown-text">Todos los analitos</span>
+                      <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </button>
+                    <div class="viz-dropdown-menu">
+                      <div class="viz-dropdown-item active" data-value="">Todos los analitos</div>
+                    </div>
+                  </div>
+
+                  <div class="viz-dropdown" id="dropdown-prueba">
+                    <button class="viz-dropdown-trigger" type="button">
+                      <span class="viz-dropdown-text">Todas las pruebas</span>
+                      <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </button>
+                    <div class="viz-dropdown-menu">
+                      <div class="viz-dropdown-item active" data-value="">Todas las pruebas</div>
+                    </div>
+                  </div>
+
+                  <!-- Danger Toggle Button -->
+                  <button id="btn-viz-danger-toggle" class="viz-danger-toggle" aria-label="Filtrar solo alertas"
+                    title="Mostrar solo alertas">
+                    <svg class="viz-danger-icon" width="18" height="18" fill="none" stroke="currentColor"
+                      viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                      </path>
+                    </svg>
+                  </button>
+
+                  <!-- Card Theme Toggle -->
+                  <button id="btn-card-theme" class="viz-theme-toggle" aria-label="Cambiar tema de cards"
+                    title="Tema claro/oscuro">
+                    <svg class="viz-theme-icon-dark" width="16" height="16" fill="none" stroke="currentColor"
+                      viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
+                      </path>
+                    </svg>
+                    <svg class="viz-theme-icon-light" width="16" height="16" fill="none" stroke="currentColor"
+                      viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="4"></circle>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 2v2m0 16v2m-8-10H2m20 0h-2m-2.93-6.36l-1.41 1.41m-9.32 9.32l-1.41 1.41m0-12.14l1.41 1.41m9.32 9.32l1.41 1.41">
+                      </path>
+                    </svg>
+                  </button>
+
+                  <!-- View Toggle -->
+                  <div class="viz-view-toggle">
+                    <button id="btn-viz-rolodex" class="viz-view-btn active" aria-label="Vista Rolodex">
+                      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                        </path>
+                      </svg>
+                    </button>
+                    <button id="btn-viz-list" class="viz-view-btn" aria-label="Vista Lista">
+                      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M4 6h16M4 12h16M4 18h16"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Run Info - below filters -->
+                <div id="run-info" class="text-sm text-gray-400"></div>
+              </div>
+
+              <!-- Empty State -->
+              <div id="empty-state" class="glass-card p-8 rounded-xl hidden">
+                <div class="flex items-start gap-4">
+                  <div
+                    class="w-12 h-12 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
+                  </div>
+                  <div>
+                    <h3 id="empty-title" class="text-xl font-semibold text-white mb-2"></h3>
+                    <p id="empty-text" class="text-gray-300"></p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Rolodex View -->
+              <section id="viz-rolodex-view" class="viz-rolodex-view">
+                <!-- Apple Loading Spinner -->
+                <div id="viz-loading-spinner" class="apple-spinner hidden">
+                  <div class="apple-spinner-icon"></div>
+                </div>
+
+                <div class="viz-perspective-container">
+                  <div id="viz-cards-container" class="viz-cards-container">
+                    <!-- Cards will be injected by JS -->
+                  </div>
+                </div>
+
+                <!-- Timeline -->
+                <div id="viz-timeline" class="viz-timeline">
+                  <div class="viz-timeline-label viz-timeline-label-top">Prueba 1</div>
+                  <div id="viz-timeline-track" class="viz-timeline-track">
+                    <!-- Ticks and markers will be injected by JS -->
+                  </div>
+                  <div class="viz-timeline-label viz-timeline-label-bottom">Última</div>
+                </div>
+
+                <div class="viz-scroll-hint">Scroll para navegar </div>
+              </section>
+
+              <!-- List View -->
+              <section id="viz-list-view" class="viz-list-view viz-hidden">
+                <div id="viz-list-container" class="viz-list-container">
+                  <!-- List items will be injected by JS -->
+                </div>
+              </section>
+            </div>
+
+            <!-- Configuration View -->
+            <div id="view-configuracion" class="hidden">
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <!-- Regional Settings Card -->
+                <div class="settings-card">
+                  <div class="settings-card-header">
+                    <div class="settings-card-icon"
+                      style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                      <i data-lucide="globe" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                      <div class="settings-card-title">Regional</div>
+                      <div class="settings-card-subtitle">Zona horaria y formato de fecha</div>
+                    </div>
+                  </div>
+
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Zona Horaria</div>
+                      <div class="settings-sublabel">Para visualizaciones y reportes</div>
+                    </div>
+                    <select id="setting-timezone" class="settings-select">
+                      <!-- Options populated by JS -->
+                    </select>
+                  </div>
+
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Formato de Fecha</div>
+                      <div class="settings-sublabel">Cómo se muestran las fechas</div>
+                    </div>
+                    <select id="setting-dateformat" class="settings-select">
+                      <!-- Options populated by JS -->
+                    </select>
+                  </div>
+
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Vista previa</div>
+                    </div>
+                    <div id="setting-date-preview" class="text-sm text-purple-300 font-medium"></div>
+                  </div>
+                </div>
+
+                <!-- Glass Effect Card - Full Width -->
+                <div class="settings-card lg:col-span-2">
+                  <div class="settings-card-header">
+                    <div class="settings-card-icon"
+                      style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);">
+                      <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                      <div class="settings-card-title">Efecto Liquid Glass</div>
+                      <div class="settings-card-subtitle">Personaliza el efecto de vidrio del panel principal</div>
+                    </div>
+                    <button id="btn-reset-glass" class="settings-reset-btn">
+                      <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                      Restablecer
+                    </button>
+                  </div>
+
+                  <!-- Glass Mode -->
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Modo</div>
+                      <div class="settings-sublabel">Patrón de distorsión del efecto</div>
+                    </div>
+                    <div id="setting-glass-mode" class="settings-mode-selector">
+                      <div class="settings-mode-pill" data-value="standard">Standard</div>
+                      <div class="settings-mode-pill" data-value="polar">Polar</div>
+                      <div class="settings-mode-pill" data-value="prominent">Prominent</div>
+                      <div class="settings-mode-pill" data-value="shader">Shader</div>
+                      <div class="settings-mode-pill" data-value="edge">Edge</div>
+                    </div>
+                  </div>
+
+                  <!-- Blur Amount -->
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Desenfoque</div>
+                      <div class="settings-sublabel">Intensidad del blur de fondo</div>
+                    </div>
+                    <div class="settings-slider-container">
+                      <input type="range" id="setting-glass-blur" class="settings-slider" min="0" max="20" step="0.5"
+                        value="0.1">
+                      <span id="setting-glass-blur-value" class="settings-slider-value">0.1 px</span>
+                    </div>
+                  </div>
+
+                  <!-- Saturation -->
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Saturación</div>
+                      <div class="settings-sublabel">Intensidad de los colores</div>
+                    </div>
+                    <div class="settings-slider-container">
+                      <input type="range" id="setting-glass-saturation" class="settings-slider" min="50" max="200"
+                        step="5" value="140">
+                      <span id="setting-glass-saturation-value" class="settings-slider-value">140%</span>
+                    </div>
+                  </div>
+
+                  <!-- Displacement Scale -->
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Desplazamiento</div>
+                      <div class="settings-sublabel">Escala de distorsión del vidrio</div>
+                    </div>
+                    <div class="settings-slider-container">
+                      <input type="range" id="setting-glass-displacement" class="settings-slider" min="0" max="200"
+                        step="10" value="120">
+                      <span id="setting-glass-displacement-value" class="settings-slider-value">120</span>
+                    </div>
+                  </div>
+
+                  <!-- Aberration Intensity -->
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Aberración Cromática</div>
+                      <div class="settings-sublabel">Separación de canales RGB</div>
+                    </div>
+                    <div class="settings-slider-container">
+                      <input type="range" id="setting-glass-aberration" class="settings-slider" min="0" max="10"
+                        step="0.5" value="2">
+                      <span id="setting-glass-aberration-value" class="settings-slider-value">2</span>
+                    </div>
+                  </div>
+
+                  <!-- Elasticity -->
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Elasticidad</div>
+                      <div class="settings-sublabel">Suavidad del efecto de animación</div>
+                    </div>
+                    <div class="settings-slider-container">
+                      <input type="range" id="setting-glass-elasticity" class="settings-slider" min="0.05" max="0.5"
+                        step="0.05" value="0.15">
+                      <span id="setting-glass-elasticity-value" class="settings-slider-value">0.15</span>
+                    </div>
+                  </div>
+
+                  <!-- Center Distortion -->
+                  <div class="settings-row">
+                    <div>
+                      <div class="settings-label">Distorsión Central</div>
+                      <div class="settings-sublabel">Intensidad del efecto en el centro</div>
+                    </div>
+                    <div class="settings-slider-container">
+                      <input type="range" id="setting-glass-center" class="settings-slider" min="0" max="1" step="0.1"
+                        value="1">
+                      <span id="setting-glass-center-value" class="settings-slider-value">1</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Resultados Preliminares View -->
+            <div id="view-resultados" class="hidden min-h-[60vh]">
+              <!-- Header with Filters -->
+              <div class="flex flex-col gap-3 mb-6">
+                <!-- Filters Row - aligned left -->
+                <div class="flex items-center gap-3">
+                  <!-- Custom Glass Dropdowns -->
+                  <div class="viz-dropdown" id="dropdown-result-nivel">
+                    <button class="viz-dropdown-trigger" type="button">
+                      <span class="viz-dropdown-text">Todos los niveles</span>
+                      <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </button>
+                    <div class="viz-dropdown-menu">
+                      <div class="viz-dropdown-item active" data-value="">Todos los niveles</div>
+                    </div>
+                  </div>
+
+                  <div class="viz-dropdown" id="dropdown-result-analito">
+                    <button class="viz-dropdown-trigger" type="button">
+                      <span class="viz-dropdown-text">Todos los analitos</span>
+                      <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </button>
+                    <div class="viz-dropdown-menu">
+                      <div class="viz-dropdown-item active" data-value="">Todos los analitos</div>
+                    </div>
+                  </div>
+
+                  <div class="viz-dropdown" id="dropdown-result-prueba">
+                    <button class="viz-dropdown-trigger" type="button">
+                      <span class="viz-dropdown-text">Todas las pruebas</span>
+                      <svg class="viz-dropdown-arrow" width="14" height="14" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </button>
+                    <div class="viz-dropdown-menu">
+                      <div class="viz-dropdown-item active" data-value="">Todas las pruebas</div>
+                    </div>
+                  </div>
+
+                  <!-- Danger Toggle Button -->
+                  <button id="btn-danger-toggle" class="viz-danger-toggle" aria-label="Filtrar solo alertas"
+                    title="Mostrar solo alertas">
+                    <svg class="viz-danger-icon" width="18" height="18" fill="none" stroke="currentColor"
+                      viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                      </path>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Run Info - below filters -->
+                <div id="result-run-info" class="text-sm text-gray-400"></div>
+              </div>
+
+              <!-- List Container -->
+              <div id="result-list-container" class="result-list-container">
+                <!-- Apple Loading Spinner for Results (inside container for proper positioning) -->
+                <div id="result-loading-spinner" class="apple-spinner hidden"
+                  style="height: 200px; display: flex; align-items: center; justify-content: center;">
+                  <div class="apple-spinner-icon"></div>
+                </div>
+                <!-- Results populated by JS -->
+              </div>
+
+              <!-- Empty State -->
+              <div id="result-empty-state" class="glass-card p-8 rounded-xl hidden">
+                <div class="flex items-start gap-4">
+                  <div
+                    class="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="table-2" class="w-6 h-6 text-white"></i>
+                  </div>
+                  <div>
+                    <h3 id="result-empty-title" class="text-xl font-semibold text-white mb-2">No hay resultados aún
+                    </h3>
+                    <p id="result-empty-text" class="text-gray-300">Ejecuta las evaluaciones para ver los resultados
+                      preliminares.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating image preview (outside glass container for proper fixed positioning) -->
+  <div id="viz-hover-preview" class="viz-hover-preview">
+    <img id="viz-hover-image" src="" alt="">
+  </div>
+
+  <!-- Result Modal -->
+  <div id="result-modal-backdrop" class="result-modal-backdrop">
+    <div class="result-modal" id="result-modal">
+      <div class="result-modal-header">
+        <div>
+          <h3 class="result-modal-title" id="result-modal-title">Resultado</h3>
+          <p class="result-modal-subtitle" id="result-modal-subtitle">Nivel 1 · Analito</p>
+        </div>
+        <button id="result-modal-close" class="result-modal-close">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="result-modal-body" id="result-modal-body">
+        <!-- Dataframe table rendered here -->
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Scripts -->
+  <script src="js/auth_guard.js"></script>
+  <script src="js/security/icon_safety.js"></script>
+  <script src="js/liquid_glass.js"></script>
+  <script src="js/settings_manager.js"></script>
+  <script src="js/notify.js"></script>
+  <script src="js/evaluation_results.js" defer></script>
+  <script>
+    // Initialize Lucide icons
+    if (window.lucide) lucide.createIcons();
+
+    // Initialize Liquid Glass effect on main content panel using saved settings
+    document.addEventListener('DOMContentLoaded', function () {
+      const mainPanel = document.getElementById('main-content-panel');
+      if (mainPanel && window.LiquidGlass && window.SettingsManager) {
+        // Apply glass effect with saved settings
+        SettingsManager.applyGlassSettings();
+      }
+
+      // Initialize settings UI
+      initSettingsUI();
+    });
+
+    function initSettingsUI() {
+      if (!window.SettingsManager) return;
+
+      // Populate timezone dropdown
+      const tzSelect = document.getElementById('setting-timezone');
+      if (tzSelect) {
+        SettingsManager.TIMEZONES.forEach(tz => {
+          const opt = document.createElement('option');
+          opt.value = tz.value;
+          opt.textContent = tz.label;
+          if (tz.value === SettingsManager.get('timezone')) opt.selected = true;
+          tzSelect.appendChild(opt);
+        });
+        tzSelect.addEventListener('change', (e) => {
+          SettingsManager.set('timezone', e.target.value);
+          updateDatePreview();
+        });
+      }
+
+      // Populate date format dropdown
+      const dfSelect = document.getElementById('setting-dateformat');
+      if (dfSelect) {
+        SettingsManager.DATE_FORMATS.forEach(df => {
+          const opt = document.createElement('option');
+          opt.value = df.value;
+          opt.textContent = df.label;
+          if (df.value === SettingsManager.get('dateFormat')) opt.selected = true;
+          dfSelect.appendChild(opt);
+        });
+        dfSelect.addEventListener('change', (e) => {
+          SettingsManager.set('dateFormat', e.target.value);
+          updateDatePreview();
+        });
+      }
+
+      // Date preview
+      function updateDatePreview() {
+        const preview = document.getElementById('setting-date-preview');
+        if (preview) {
+          preview.textContent = SettingsManager.formatDate(new Date());
+        }
+      }
+      updateDatePreview();
+
+      // Glass mode pills
+      const modeSelector = document.getElementById('setting-glass-mode');
+      if (modeSelector) {
+        const currentMode = SettingsManager.get('glassMode');
+        modeSelector.querySelectorAll('.settings-mode-pill').forEach(pill => {
+          if (pill.dataset.value === currentMode) {
+            pill.classList.add('active');
+          }
+          pill.addEventListener('click', () => {
+            modeSelector.querySelectorAll('.settings-mode-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            SettingsManager.set('glassMode', pill.dataset.value);
+          });
+        });
+      }
+
+      // Glass sliders
+      const sliders = [
+        { id: 'setting-glass-blur', key: 'glassBlur', suffix: ' px' },
+        { id: 'setting-glass-saturation', key: 'glassSaturation', suffix: '%' },
+        { id: 'setting-glass-displacement', key: 'glassDisplacement', suffix: '' },
+        { id: 'setting-glass-aberration', key: 'glassAberration', suffix: '' },
+        { id: 'setting-glass-elasticity', key: 'glassElasticity', suffix: '' },
+        { id: 'setting-glass-center', key: 'glassCenterDistortion', suffix: '' }
+      ];
+
+      sliders.forEach(({ id, key, suffix }) => {
+        const slider = document.getElementById(id);
+        const valueEl = document.getElementById(id + '-value');
+        if (slider && valueEl) {
+          const savedValue = SettingsManager.get(key);
+          slider.value = savedValue;
+          valueEl.textContent = savedValue + suffix;
+
+          slider.addEventListener('input', () => {
+            const val = parseFloat(slider.value);
+            valueEl.textContent = val + suffix;
+            SettingsManager.set(key, val);
+          });
+        }
+      });
+
+      // Reset glass button
+      const resetBtn = document.getElementById('btn-reset-glass');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          SettingsManager.resetGlass();
+          // Update UI to reflect defaults
+          sliders.forEach(({ id, key, suffix }) => {
+            const slider = document.getElementById(id);
+            const valueEl = document.getElementById(id + '-value');
+            if (slider && valueEl) {
+              const defVal = SettingsManager.DEFAULTS[key];
+              slider.value = defVal;
+              valueEl.textContent = defVal + suffix;
+            }
+          });
+          // Reset mode pills
+          const defaultMode = SettingsManager.DEFAULTS.glassMode;
+          modeSelector?.querySelectorAll('.settings-mode-pill').forEach(pill => {
+            pill.classList.toggle('active', pill.dataset.value === defaultMode);
+          });
+        });
+      }
+
+      // Re-initialize icons for new elements
+      if (window.lucide) lucide.createIcons();
+    }
+  </script>
+</body>
+
+</html>

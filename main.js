@@ -21,6 +21,7 @@ const ROUTES = new Set([
   'input_data/input_data_sheet.html',
   // Evaluación y reporte
   'evaluation_select.html',
+  'evaluation_results.html',
   'pdf_config.html'
 ]);
 const APP_ICON_PATH = path.join(__dirname, 'assets', 'icons', 'app.ico');

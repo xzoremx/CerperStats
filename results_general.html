@@ -12,11 +12,11 @@
 <body>
   <script>
     (function () {
-      const target = 'evaluation_select.html';
+      const target = 'evaluation_results.html';
       try {
-        sessionStorage.setItem('evalSelectView', 'visualizaciones');
-        sessionStorage.setItem('evalSelectReturnTo', 'session_detail.html');
+        sessionStorage.setItem('evalResultsView', 'visualizaciones');
         const fromSessionDetail = sessionStorage.getItem('sessionSeleccionada');
+        if (fromSessionDetail) sessionStorage.setItem('evalResultsSessionId', fromSessionDetail);
         if (fromSessionDetail && !sessionStorage.getItem('sessionID')) {
           sessionStorage.setItem('sessionID', fromSessionDetail);
         }

@@ -534,16 +534,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadInputs(preferredInputsType);
 
     btnResults?.addEventListener("click", () => {
-      // Ir directo a evaluation_select para evitar navegación abortada por redirect intermedio.
+      // Ir directo a evaluation_results para revisar resultados/gráficos históricos.
       try {
-        sessionStorage.setItem("evalSelectView", "visualizaciones");
-        sessionStorage.setItem("evalSelectReturnTo", "session_detail.html");
-        if (sessionId && !sessionStorage.getItem("sessionID")) {
+        // Asegurar que evaluation_results use la misma sesión histórica (aunque exista un sessionID previo).
+        if (sessionId) {
           sessionStorage.setItem("sessionID", sessionId);
+          sessionStorage.setItem("sessionSeleccionada", sessionId);
+          sessionStorage.setItem("evalResultsSessionId", sessionId);
         }
+        sessionStorage.setItem("evalResultsView", "visualizaciones");
       } catch (_) { }
 
-      const target = "evaluation_select.html";
+      const target = "evaluation_results.html";
       if (window.cerper?.openPage) window.cerper.openPage(target);
       else window.location.href = target;
     });
