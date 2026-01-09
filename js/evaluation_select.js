@@ -39,6 +39,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let isEvaluating = false;
   let activeView = "evaluaciones";
   let visualizacionesLoading = false;
+  let expectedResultsCount = 0; // Track expected results from last evaluation
 
   // Visualization state
   let allGraphs = [];
@@ -1496,6 +1497,12 @@ document.addEventListener("DOMContentLoaded", async () => {
           isEvaluating = false;
           bloquearBotones(false);
 
+          // Save expected count for validation when clicking Continuar
+          if (finalProgress?.total_tasks) {
+            expectedResultsCount = finalProgress.total_tasks;
+            console.log(`[EvalSelect] Guardando expectedResultsCount: ${expectedResultsCount}`);
+          }
+
           if (finalProgress?.status === "completed") {
             notify("Evaluaciones completadas y guardadas correctamente.", "success");
           } else if (finalProgress?.status === "completed_with_errors") {
@@ -1522,25 +1529,46 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // === Botón CONTINUAR ===
   btnContinuar.addEventListener("click", async () => {
-    // Validate that there are evaluation results before proceeding
     if (!sessionId) {
       notify("No hay sesión activa.", "error");
       return;
     }
 
+    // Use lightweight endpoint to check results count
     try {
-      const resultsRes = await window.cerper.getResultadosPreliminares(sessionId);
+      const statusRes = await window.cerper.getSessionResultsStatus(sessionId);
 
-      if (!resultsRes?.ok || !Array.isArray(resultsRes.data) || resultsRes.data.length === 0) {
+      if (!statusRes?.ok) {
+        // If server is down, allow navigation anyway - pdf_config will validate
+        console.warn("[EvalSelect] No se pudo verificar estado, navegando de todos modos...");
+        notify("Redirigiendo a configuración de PDF...", "info");
+        window.cerper.openPage("pdf_config.html");
+        return;
+      }
+
+      if (!statusRes.has_results || statusRes.results_count === 0) {
         notify("No hay resultados de evaluación. Ejecuta las pruebas primero.", "warning");
         return;
       }
 
+      // Validate that we have all expected results
+      if (expectedResultsCount > 0 && statusRes.results_count < expectedResultsCount) {
+        notify(
+          `Resultados incompletos: ${statusRes.results_count}/${expectedResultsCount}. ` +
+          `Espera a que termine o vuelve a ejecutar.`,
+          "warning"
+        );
+        return;
+      }
+
+      console.log(`[EvalSelect] Validación OK: ${statusRes.results_count} resultados`);
       notify("Redirigiendo a configuración de PDF...", "info");
       window.cerper.openPage("pdf_config.html");
     } catch (err) {
       console.error("[EvalSelect] Error checking results:", err);
-      notify("Error verificando resultados. Intenta de nuevo.", "error");
+      // On error, still allow navigation - pdf_config will do final validation
+      notify("Redirigiendo a configuración de PDF...", "info");
+      window.cerper.openPage("pdf_config.html");
     }
   });
 });

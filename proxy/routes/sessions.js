@@ -219,6 +219,37 @@ router.get('/:sessionId', async (req, res) => {
   }
 });
 
+// Lightweight endpoint to check if session has results (for validation before PDF config)
+router.get('/:sessionId/results-status', async (req, res) => {
+  const sessionId = Number(req.params.sessionId);
+  if (!sessionId) {
+    return res.status(400).json({ ok: false, error: 'invalid_session_id' });
+  }
+  try {
+    const { rows } = await pool.query(
+      `SELECT 
+         COUNT(*)::int AS results_count,
+         COUNT(DISTINCT catalog_id)::int AS tests_count,
+         MAX(creado_en)::text AS last_run_at
+       FROM results_general
+       WHERE session_id = $1
+         AND catalog_id IS NOT NULL`,
+      [sessionId]
+    );
+    const data = rows[0] || { results_count: 0, tests_count: 0, last_run_at: null };
+    res.json({
+      ok: true,
+      has_results: data.results_count > 0,
+      results_count: data.results_count,
+      tests_count: data.tests_count,
+      last_run_at: data.last_run_at
+    });
+  } catch (err) {
+    console.error('[API] Error checking results status', err);
+    res.status(500).json({ ok: false, error: 'db_error' });
+  }
+});
+
 router.patch('/:sessionId/close', async (req, res) => {
   const sessionId = Number(req.params.sessionId);
   if (!sessionId) {

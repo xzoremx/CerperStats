@@ -445,6 +445,17 @@ ipcMain.handle("db-get-session-info", async (_event, session_id) => {
   }
 });
 
+// === Estado de resultados (validación ligera para Continuar) ===
+ipcMain.handle("db-get-session-results-status", async (_event, session_id) => {
+  try {
+    const payload = await proxyFetch(`/sessions/${session_id}/results-status`);
+    return { ok: true, ...payload };
+  } catch (err) {
+    console.error("[PROXY] Error al verificar estado de resultados:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
 ipcMain.handle("db-get-sessions-by-role", async (_event, { rol, labDefault }) => {
   try {
     const params = new URLSearchParams();
