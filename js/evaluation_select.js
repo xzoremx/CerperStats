@@ -53,6 +53,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let filterAnalitoValue = "";
   let filterPruebaValue = ""; // Filter by test name (test_titulo)
   let filterDangerValue = ""; // Filter by danger status
+  let hasMultipleLevels = true; // Track if data has more than one unique level
 
   // === CACHE CONTROL ===
   // Track which session's data we have cached to avoid refetching
@@ -376,7 +377,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const title = g?.test_titulo || g?.nombre_interno || (g?.catalog_id ? `Prueba ${g.catalog_id}` : "Prueba");
       const subtitleParts = [];
       if (g?.analito) subtitleParts.push(g.analito);
-      if (g?.nivel != null) subtitleParts.push(`Nivel ${g.nivel}`);
+      if (hasMultipleLevels && g?.nivel != null) subtitleParts.push(`Nivel ${g.nivel}`);
       const subtitle = subtitleParts.join(" · ");
 
       card.innerHTML = `
@@ -526,7 +527,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const title = g?.test_titulo || g?.nombre_interno || (g?.catalog_id ? `Prueba ${g.catalog_id}` : "Prueba");
       const metaParts = [];
       if (g?.analito) metaParts.push(g.analito);
-      if (g?.nivel != null) metaParts.push(`Nivel ${g.nivel}`);
+      if (hasMultipleLevels && g?.nivel != null) metaParts.push(`Nivel ${g.nivel}`);
 
       const item = document.createElement("a");
       item.href = "#";
@@ -726,6 +727,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       .filter(g => isValidDataImageUrl(g?.grafico_data))
       .sort((a, b) => (a.catalog_id || 0) - (b.catalog_id || 0));
 
+    // Detect if we have multiple levels
+    const uniqueLevels = new Set(allGraphs.map(g => g?.nivel).filter(n => n != null));
+    hasMultipleLevels = uniqueLevels.size > 1;
+
+    // Hide nivel dropdown if only one level
+    if (dropdownNivel) {
+      dropdownNivel.classList.toggle("hidden", !hasMultipleLevels);
+    }
+
     if (allGraphs.length === 0) {
       showVisualizacionesEmpty("Sin gráficos válidos", "Los gráficos obtenidos no tienen formato válido.");
       visualizacionesLoading = false;
@@ -890,6 +900,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let resultFilterAnalito = "";
   let resultFilterPrueba = "";
   let resultFilterDanger = "";
+  let hasMultipleResultLevels = true; // Track if results have multiple levels
 
   menuResultados?.addEventListener("click", (e) => {
     e.preventDefault();
@@ -979,7 +990,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const title = r.test_titulo || r.nombre_interno || `Prueba ${r.catalog_id}`;
       const metaParts = [];
       if (r.analito) metaParts.push(r.analito);
-      if (r.nivel != null) metaParts.push(`Nivel ${r.nivel}`);
+      if (hasMultipleResultLevels && r.nivel != null) metaParts.push(`Nivel ${r.nivel}`);
 
       const item = document.createElement("div");
       item.className = "result-list-item";
@@ -1164,6 +1175,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Sort by catalog_id
     allResults = results.sort((a, b) => (a.catalog_id || 0) - (b.catalog_id || 0));
+
+    // Detect if we have multiple levels
+    const uniqueResultLevels = new Set(allResults.map(r => r?.nivel).filter(n => n != null));
+    hasMultipleResultLevels = uniqueResultLevels.size > 1;
+
+    // Hide nivel dropdown if only one level
+    if (dropdownResultNivel) {
+      dropdownResultNivel.classList.toggle("hidden", !hasMultipleResultLevels);
+    }
 
     // Format last run date
     let formattedDate = "";
