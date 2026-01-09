@@ -534,7 +534,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadInputs(preferredInputsType);
 
     btnResults?.addEventListener("click", () => {
-      const target = "results_general.html";
+      // Ir directo a evaluation_select para evitar navegación abortada por redirect intermedio.
+      try {
+        sessionStorage.setItem("evalSelectView", "visualizaciones");
+        sessionStorage.setItem("evalSelectReturnTo", "session_detail.html");
+        if (sessionId && !sessionStorage.getItem("sessionID")) {
+          sessionStorage.setItem("sessionID", sessionId);
+        }
+      } catch (_) { }
+
+      const target = "evaluation_select.html";
       if (window.cerper?.openPage) window.cerper.openPage(target);
       else window.location.href = target;
     });
