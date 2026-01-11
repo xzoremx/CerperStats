@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
@@ -36,6 +37,19 @@ const apiLimiter = rateLimit({
 });
 
 const app = express();
+
+// CORS configuration for Vercel frontend
+app.use(cors({
+  origin: [
+    'https://cerperstats.vercel.app',
+    'http://localhost:3000',
+    /\.vercel\.app$/
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Auth']
+}));
+
 app.use(bodyParser.json({ limit: '50mb' }));
 
 // Servir archivos estáticos públicos (registro, etc.)

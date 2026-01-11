@@ -5,7 +5,8 @@
       "Bash(del \"C:\\\\Users\\\\renat\\\\Desktop\\\\Proyectos\\\\CerperStats\\\\js\\\\auth-guard.js\")",
       "Bash(powershell -Command:*)",
       "WebFetch(domain:fonts.googleapis.com)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(mkdir -p:*)"
     ]
   }
 }
