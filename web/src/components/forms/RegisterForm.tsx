@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import { GlassInput, GlassSelect, GlassButton, useToast } from '@/components/ui';
 import { fetchLabs, registerUser } from '@/lib/api';
 import type { Lab } from '@/lib/types';
@@ -12,9 +11,9 @@ const roleOptions = [
 ];
 
 export function RegisterForm() {
-  const router = useRouter();
   const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [labs, setLabs] = useState<Lab[]>([]);
 
   const [formData, setFormData] = useState({
@@ -43,7 +42,6 @@ export function RegisterForm() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Validaciones
     if (formData.username.length < 3) {
       showToast('El usuario debe tener al menos 3 caracteres');
       return;
@@ -77,8 +75,7 @@ export function RegisterForm() {
       });
 
       if (res.ok) {
-        showToast('Cuenta creada exitosamente! Redirigiendo...', 'success');
-        setTimeout(() => router.push('/'), 2000);
+        setIsSuccess(true);
       } else {
         const errorMessages: Record<string, string> = {
           username_exists: 'El nombre de usuario ya existe',
@@ -87,6 +84,7 @@ export function RegisterForm() {
           password_too_short: 'La contrasena es muy corta',
           username_too_short: 'El usuario es muy corto',
           invalid_username_format: 'Formato de usuario invalido',
+          too_many_attempts: 'Demasiados intentos. Espera 15 minutos.',
         };
         showToast(errorMessages[res.error || ''] || 'Error al crear la cuenta');
       }
@@ -101,6 +99,41 @@ export function RegisterForm() {
     value: lab.lab_key,
     label: lab.nombre || lab.lab_key,
   }));
+
+  // Success state
+  if (isSuccess) {
+    return (
+      <div className="text-center py-8">
+        <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-400">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-semibold text-white mb-2">Cuenta Creada</h2>
+        <p className="text-white/60 mb-6">
+          Tu cuenta ha sido registrada exitosamente.<br />
+          Ya puedes iniciar sesion en la aplicacion.
+        </p>
+        <button
+          onClick={() => {
+            setIsSuccess(false);
+            setFormData({
+              username: '',
+              nombre_completo: '',
+              email: '',
+              password: '',
+              passwordConfirm: '',
+              rol: 'analista',
+              default_lab: '',
+            });
+          }}
+          className="text-white/50 hover:text-white/70 text-sm transition-colors"
+        >
+          Registrar otra cuenta
+        </button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

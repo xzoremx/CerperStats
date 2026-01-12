@@ -6,7 +6,9 @@
       "Bash(powershell -Command:*)",
       "WebFetch(domain:fonts.googleapis.com)",
       "Bash(curl:*)",
-      "Bash(mkdir -p:*)"
+      "Bash(mkdir -p:*)",
+      "Bash(rm:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }
