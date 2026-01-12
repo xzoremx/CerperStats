@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
-import { GlassInput, GlassSelect, GlassButton, useToast } from '@/components/ui';
+import { GlassInput, GlassDropdown, GlassButton, useToast } from '@/components/ui';
 import { fetchLabs, registerUser } from '@/lib/api';
 import type { Lab } from '@/lib/types';
 
@@ -22,7 +22,7 @@ export function RegisterForm() {
     email: '',
     password: '',
     passwordConfirm: '',
-    rol: 'analista',
+    rol: '',
     default_lab: '',
   });
 
@@ -34,7 +34,7 @@ export function RegisterForm() {
     });
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -59,6 +59,11 @@ export function RegisterForm() {
 
     if (formData.password !== formData.passwordConfirm) {
       showToast('Las contrasenas no coinciden');
+      return;
+    }
+
+    if (!formData.rol) {
+      showToast('Selecciona un rol');
       return;
     }
 
@@ -103,16 +108,15 @@ export function RegisterForm() {
   // Success state
   if (isSuccess) {
     return (
-      <div className="text-center py-8">
-        <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-400">
-            <polyline points="20 6 9 17 4 12" />
+      <div className="text-center py-8 animate-in">
+        <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-6 shadow-xl border border-white/40">
+          <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h2 className="text-xl font-semibold text-white mb-2">Cuenta Creada</h2>
-        <p className="text-white/60 mb-6">
-          Tu cuenta ha sido registrada exitosamente.<br />
-          Ya puedes iniciar sesion en la aplicacion.
+        <h2 className="text-3xl font-semibold text-white mb-4">Cuenta Creada</h2>
+        <p className="text-white/70 mb-8 max-w-xs mx-auto">
+          Tu cuenta ha sido registrada exitosamente. Ya puedes iniciar sesion en la aplicacion.
         </p>
         <button
           onClick={() => {
@@ -123,7 +127,7 @@ export function RegisterForm() {
               email: '',
               password: '',
               passwordConfirm: '',
-              rol: 'analista',
+              rol: '',
               default_lab: '',
             });
           }}
@@ -136,87 +140,100 @@ export function RegisterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <GlassInput
-        label="Usuario"
-        name="username"
-        value={formData.username}
-        onChange={handleChange}
-        required
-        minLength={3}
-        placeholder="ej: jperez"
-        autoComplete="username"
-      />
+    <div className="animate-in">
+      <div className="mb-6">
+        <h2 className="text-2xl font-medium text-white mb-1">Crear Cuenta</h2>
+        <p className="text-sm font-normal text-white/60">Completa tus datos para registrarte</p>
+      </div>
 
-      <GlassInput
-        label="Nombre Completo"
-        name="nombre_completo"
-        value={formData.nombre_completo}
-        onChange={handleChange}
-        required
-        placeholder="ej: Juan Perez Garcia"
-      />
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <GlassInput
+            label="Usuario"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            required
+            minLength={3}
+            placeholder="ej: jperez"
+            autoComplete="username"
+          />
+          <GlassInput
+            label="Nombre Completo"
+            name="nombre_completo"
+            value={formData.nombre_completo}
+            onChange={handleChange}
+            required
+            placeholder="Juan Perez Garcia"
+          />
+        </div>
 
-      <GlassInput
-        label="Correo Electronico"
-        name="email"
-        type="email"
-        value={formData.email}
-        onChange={handleChange}
-        placeholder="ej: jperez@empresa.com"
-      />
+        <GlassInput
+          label="Correo Electronico"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          placeholder="jperez@empresa.com"
+        />
 
-      <GlassInput
-        label="Contrasena"
-        hint="(min. 6 caracteres)"
-        name="password"
-        type="password"
-        value={formData.password}
-        onChange={handleChange}
-        required
-        minLength={6}
-        placeholder="******"
-        autoComplete="new-password"
-      />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <GlassInput
+            label="Contrasena"
+            hint="(min. 6)"
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+            minLength={6}
+            placeholder="******"
+            autoComplete="new-password"
+          />
+          <GlassInput
+            label="Confirmar Contrasena"
+            name="passwordConfirm"
+            type="password"
+            value={formData.passwordConfirm}
+            onChange={handleChange}
+            required
+            minLength={6}
+            placeholder="******"
+            autoComplete="new-password"
+          />
+        </div>
 
-      <GlassInput
-        label="Confirmar Contrasena"
-        name="passwordConfirm"
-        type="password"
-        value={formData.passwordConfirm}
-        onChange={handleChange}
-        required
-        minLength={6}
-        placeholder="******"
-        autoComplete="new-password"
-      />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <GlassDropdown
+            label="Rol"
+            options={roleOptions}
+            value={formData.rol}
+            onChange={(value) => setFormData((prev) => ({ ...prev, rol: value }))}
+            placeholder="Seleccionar rol"
+          />
+          <GlassDropdown
+            label="Laboratorio"
+            options={labOptions}
+            value={formData.default_lab}
+            onChange={(value) => setFormData((prev) => ({ ...prev, default_lab: value }))}
+            placeholder="Seleccionar laboratorio"
+          />
+        </div>
 
-      <GlassSelect
-        label="Rol"
-        name="rol"
-        value={formData.rol}
-        onChange={handleChange}
-        options={roleOptions}
-        required
-      />
-
-      <GlassSelect
-        label="Laboratorio"
-        name="default_lab"
-        value={formData.default_lab}
-        onChange={handleChange}
-        options={labOptions}
-        placeholder="-- Seleccionar laboratorio --"
-      />
-
-      <div className="pt-4">
-        <GlassButton type="submit" isLoading={isLoading} className="w-full">
-          Crear Cuenta
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <GlassButton type="submit" isLoading={isLoading} className="mt-6">
+          <span>Crear Cuenta</span>
+          <svg
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            className="group-hover:translate-x-1 transition-transform"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
           </svg>
         </GlassButton>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }

@@ -1,24 +1,44 @@
 'use client';
 
-import { cn } from '@/lib/utils';
 import { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
 interface GlassCardProps {
   children: ReactNode;
   className?: string;
+  innerShadow?: boolean;
+  borderRadius?: string;
 }
 
-export function GlassCard({ children, className }: GlassCardProps) {
+export function GlassCard({
+  children,
+  className = '',
+  innerShadow = true,
+  borderRadius = '24px'
+}: GlassCardProps) {
   return (
-    <div
-      className={cn(
-        'bg-white/10 backdrop-blur-xl',
-        'border border-white/15 rounded-2xl',
-        'shadow-[0_8px_32px_rgba(0,0,0,0.2)]',
-        className
+    <div className={cn('relative overflow-hidden', className)}>
+      {/* Background blur and distortion filter */}
+      <div className="absolute z-0 inset-0 backdrop-blur-md glass-filter overflow-hidden isolate" />
+
+      {/* Translucent overlay */}
+      <div className="z-10 absolute inset-0 bg-white/15" />
+
+      {/* Inner highlight/border effect */}
+      {innerShadow && (
+        <div
+          className="absolute inset-0 z-20 overflow-hidden pointer-events-none"
+          style={{
+            boxShadow: 'inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5), inset -1px -1px 1px 1px rgba(255, 255, 255, 0.5)',
+            borderRadius
+          }}
+        />
       )}
-    >
-      {children}
+
+      {/* Content */}
+      <div className="relative z-30 h-full w-full">
+        {children}
+      </div>
     </div>
   );
 }

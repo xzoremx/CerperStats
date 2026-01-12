@@ -1,47 +1,41 @@
 'use client';
 
-import { cn } from '@/lib/utils';
 import { InputHTMLAttributes, forwardRef } from 'react';
+import { GlassCard } from './GlassCard';
 
 interface GlassInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   hint?: string;
-  error?: string;
 }
 
 export const GlassInput = forwardRef<HTMLInputElement, GlassInputProps>(
-  ({ label, hint, error, className, id, ...props }, ref) => {
+  ({ label, hint, id, ...props }, ref) => {
     const inputId = id || props.name;
 
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-white/90 mb-2">
+          <label htmlFor={inputId} className="block text-sm font-medium text-white mb-2">
             {label}
             {hint && <span className="text-white/50 font-normal ml-1">{hint}</span>}
           </label>
         )}
-        <div
-          className={cn(
-            'relative overflow-hidden rounded-xl',
-            'bg-white/[0.08] border border-white/10',
-            'transition-all duration-200',
-            'focus-within:border-purple-500/50 focus-within:shadow-[0_0_0_3px_rgba(139,92,246,0.2)]',
-            error && 'border-red-500/50'
-          )}
-        >
+        <GlassCard borderRadius="12px" innerShadow={false} className="rounded-xl">
+          {/* Specific shadow for inputs */}
+          <div
+            className="absolute inset-0 z-20 pointer-events-none"
+            style={{
+              boxShadow: 'inset 1px 1px 1px 0 rgba(255, 255, 255, 0.3), inset -1px -1px 1px 1px rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px'
+            }}
+          />
           <input
             ref={ref}
             id={inputId}
-            className={cn(
-              'w-full px-4 py-3 text-sm text-white bg-transparent',
-              'placeholder:text-white/40 outline-none',
-              className
-            )}
             {...props}
+            className="z-30 relative bg-transparent w-full px-4 py-3 text-sm placeholder-white/40 text-white border-none focus:outline-none"
           />
-        </div>
-        {error && <p className="mt-1 text-sm text-red-400">{error}</p>}
+        </GlassCard>
       </div>
     );
   }

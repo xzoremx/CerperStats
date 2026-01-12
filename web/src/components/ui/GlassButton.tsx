@@ -1,11 +1,11 @@
 'use client';
 
-import { cn } from '@/lib/utils';
 import { ButtonHTMLAttributes, ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
 interface GlassButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: 'primary' | 'secondary';
   isLoading?: boolean;
 }
 
@@ -17,53 +17,63 @@ export function GlassButton({
   disabled,
   ...props
 }: GlassButtonProps) {
-  const variants = {
-    primary: cn(
-      'bg-gradient-to-r from-white/20 to-white/5',
-      'border border-white/20',
-      'hover:from-white/30 hover:to-white/10',
-      'hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]'
-    ),
-    secondary: cn(
-      'bg-white/5 border border-white/10',
-      'hover:bg-white/10',
-      'text-white/70'
-    ),
-    danger: cn(
-      'bg-gradient-to-r from-red-500/80 to-red-600/80',
-      'border border-red-500/50',
-      'hover:from-red-500/90 hover:to-red-600/90'
-    ),
-  };
+  if (variant === 'secondary') {
+    return (
+      <button
+        className={cn(
+          'w-full py-3 px-4 rounded-xl border border-white/20 text-white text-sm font-medium',
+          'hover:bg-white/5 transition-all',
+          'disabled:opacity-50 disabled:cursor-not-allowed',
+          className
+        )}
+        disabled={disabled || isLoading}
+        {...props}
+      >
+        {children}
+      </button>
+    );
+  }
 
   return (
     <button
       className={cn(
-        'relative px-6 py-3 rounded-xl',
-        'text-sm font-semibold text-white',
-        'backdrop-blur-lg transition-all duration-200',
-        'hover:-translate-y-0.5',
-        'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0',
-        variants[variant],
+        'group relative w-full overflow-hidden rounded-xl cursor-pointer',
+        'transition-all hover:scale-[1.01] active:scale-[0.99]',
+        'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
         className
       )}
       disabled={disabled || isLoading}
       {...props}
     >
-      <span className={cn('flex items-center justify-center gap-2', isLoading && 'opacity-0')}>
+      {/* Background blur */}
+      <div className="absolute z-0 inset-0 backdrop-blur-sm glass-filter" />
+
+      {/* Gradient overlay */}
+      <div className="z-10 absolute inset-0 bg-gradient-to-r from-white/30 to-white/20 group-hover:from-white/40 transition-all" />
+
+      {/* Inner shadow */}
+      <div
+        className="absolute inset-0 z-20"
+        style={{
+          boxShadow: 'inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5), inset -1px -1px 1px 1px rgba(255, 255, 255, 0.3)',
+          borderRadius: '12px'
+        }}
+      />
+
+      {/* Content */}
+      <div className={cn(
+        'z-30 relative w-full py-3 px-4 flex gap-2 text-sm font-semibold text-white items-center justify-center',
+        isLoading && 'opacity-0'
+      )}>
         {children}
-      </span>
+      </div>
+
+      {/* Loading spinner */}
       {isLoading && (
-        <span className="absolute inset-0 flex items-center justify-center">
-          <Spinner />
-        </span>
+        <div className="absolute inset-0 z-40 flex items-center justify-center">
+          <span className="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+        </div>
       )}
     </button>
-  );
-}
-
-function Spinner() {
-  return (
-    <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
   );
 }
