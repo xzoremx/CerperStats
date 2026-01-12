@@ -8,7 +8,7 @@ import type { Lab } from '@/lib/types';
 
 const roleOptions = [
   { value: 'analista', label: 'Analista' },
-  { value: 'supervisor', label: 'Supervisor / Responsable de Laboratorio' },
+  { value: 'supervisor', label: 'Responsable de Laboratorio' },
 ];
 
 export function RegisterForm() {
@@ -39,6 +39,12 @@ export function RegisterForm() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  // Check if passwords match (both must have content and be equal)
+  const passwordsMatch =
+    formData.password.length >= 6 &&
+    formData.passwordConfirm.length >= 6 &&
+    formData.password === formData.passwordConfirm;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -106,19 +112,30 @@ export function RegisterForm() {
     label: lab.nombre || lab.lab_key,
   }));
 
-  // Success state
+  // Success state - Full card takeover animation
   if (isSuccess) {
     return (
-      <div className="text-center py-8 animate-in">
-        <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-6 shadow-xl border border-white/40">
-          <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-          </svg>
+      <div className="flex flex-col items-center justify-center py-16 px-8 animate-in">
+        {/* Animated checkmark circle */}
+        <div className="relative mb-8">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-[0_0_40px_rgba(74,222,128,0.5)] animate-pulse">
+            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          {/* Decorative rings */}
+          <div className="absolute inset-0 rounded-full border-2 border-green-400/30 animate-ping" />
         </div>
-        <h2 className="text-3xl font-semibold text-white mb-4">Cuenta Creada</h2>
-        <p className="text-white/70 mb-8 max-w-xs mx-auto">
-          Tu cuenta ha sido registrada exitosamente. Ya puedes iniciar sesion en la aplicacion.
+
+        {/* Main message */}
+        <h2 className="text-4xl font-bold text-white mb-3 text-center">
+          ¡Gracias por registrarte!
+        </h2>
+        <p className="text-lg text-white/70 mb-10 text-center max-w-sm">
+          Tu cuenta ha sido creada exitosamente. Ya puedes iniciar sesión en la aplicación.
         </p>
+
+        {/* Subtle CTA */}
         <button
           onClick={() => {
             setIsSuccess(false);
@@ -132,7 +149,7 @@ export function RegisterForm() {
               default_lab: '',
             });
           }}
-          className="text-white/50 hover:text-white/70 text-sm transition-colors"
+          className="text-white/50 hover:text-white text-sm transition-colors underline underline-offset-4"
         >
           Registrar otra cuenta
         </button>
@@ -189,6 +206,7 @@ export function RegisterForm() {
             minLength={6}
             placeholder="******"
             autoComplete="new-password"
+            isSuccess={passwordsMatch}
           />
           <GlassInput
             label="Confirmar Contrasena"
@@ -200,6 +218,7 @@ export function RegisterForm() {
             minLength={6}
             placeholder="******"
             autoComplete="new-password"
+            isSuccess={passwordsMatch}
           />
         </div>
 

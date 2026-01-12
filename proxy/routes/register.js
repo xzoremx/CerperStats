@@ -5,6 +5,21 @@ const pool = require('../db');
 const router = express.Router();
 router.use(express.json());
 
+async function syncUsuariosIdSequence() {
+  const { rows } = await pool.query(
+    "SELECT pg_get_serial_sequence('public.usuarios', 'id') AS seq"
+  );
+  const seq = rows?.[0]?.seq;
+  if (!seq) return false;
+
+  await pool.query(
+    `SELECT setval($1::regclass, (SELECT COALESCE(MAX(id), 0) + 1 FROM public.usuarios), false)`,
+    [seq]
+  );
+
+  return true;
+}
+
 // ============================================
 // GET /register/labs - Listar laboratorios disponibles (público)
 // ============================================
@@ -77,18 +92,57 @@ router.post('/', async (req, res) => {
     const saltRounds = 10;
     const hash_password = await bcrypt.hash(password, saltRounds);
 
-    // Insertar usuario con el rol seleccionado
-    const result = await pool.query(`
-      INSERT INTO usuarios (username, hash_password, nombre_completo, email, default_lab, rol, activo)
-      VALUES ($1, $2, $3, $4, $5, $6, true)
-      RETURNING id, username, nombre_completo, email, default_lab, rol, creado_en
-    `, [username, hash_password, nombre_completo || null, email || null, default_lab || null, userRol]);
+    const insertUser = async () => {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
 
-    // Log del registro
-    await pool.query(`
-      INSERT INTO logs_sistema (usuario_id, accion, detalle)
-      VALUES ($1, 'registro_usuario', 'Usuario registrado via formulario publico')
-    `, [result.rows[0].id]);
+        const result = await client.query(
+          `
+            INSERT INTO usuarios (username, hash_password, nombre_completo, email, default_lab, rol, activo)
+            VALUES ($1, $2, $3, $4, $5, $6, true)
+            RETURNING id, username, nombre_completo, email, default_lab, rol, creado_en
+          `,
+          [username, hash_password, nombre_completo || null, email || null, default_lab || null, userRol]
+        );
+
+        await client.query(
+          `
+            INSERT INTO logs_sistema (usuario_id, accion, detalle)
+            VALUES ($1, 'registro_usuario', 'Usuario registrado via formulario publico')
+          `,
+          [result.rows[0].id]
+        );
+
+        await client.query('COMMIT');
+        return result;
+      } catch (err) {
+        try {
+          await client.query('ROLLBACK');
+        } catch {
+          // ignore rollback errors
+        }
+        throw err;
+      } finally {
+        client.release();
+      }
+    };
+
+    let result;
+    try {
+      result = await insertUser();
+    } catch (err) {
+      if (err?.code === '23505' && err?.constraint === 'usuarios_pkey') {
+        const synced = await syncUsuariosIdSequence();
+        if (synced) {
+          result = await insertUser();
+        } else {
+          throw err;
+        }
+      } else {
+        throw err;
+      }
+    }
 
     console.log('[REGISTER] Nuevo usuario registrado:', username);
 
@@ -102,6 +156,23 @@ router.post('/', async (req, res) => {
     });
   } catch (err) {
     console.error('[REGISTER] Error registrando usuario:', err);
+
+    if (err?.code === '23505') {
+      if (err?.constraint === 'usuarios_username_key') {
+        return res.status(409).json({ ok: false, error: 'username_exists' });
+      }
+
+      if (err?.constraint === 'usuarios_pkey') {
+        return res.status(500).json({ ok: false, error: 'db_sequence_out_of_sync' });
+      }
+
+      return res.status(409).json({ ok: false, error: 'duplicate_key' });
+    }
+
+    if (err?.code === '23503' && err?.constraint === 'fk_usuario_lab') {
+      return res.status(400).json({ ok: false, error: 'invalid_default_lab' });
+    }
+
     return res.status(500).json({ ok: false, error: 'registration_failed' });
   }
 });
