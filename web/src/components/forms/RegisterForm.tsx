@@ -2,6 +2,7 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import { GlassInput, GlassDropdown, GlassButton, useToast } from '@/components/ui';
+import { LabSelector } from './LabSelector';
 import { fetchLabs, registerUser } from '@/lib/api';
 import type { Lab } from '@/lib/types';
 
@@ -142,8 +143,7 @@ export function RegisterForm() {
   return (
     <div className="animate-in">
       <div className="mb-8 text-center">
-        <h2 className="text-3xl font-medium text-white mb-2">Crear Cuenta</h2>
-        <p className="text-base font-normal text-white/60">Completa tus datos para registrarte</p>
+        <p className="text-base font-normal text-white/60">Por favor, completa tus datos para registrarte</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -164,7 +164,7 @@ export function RegisterForm() {
             value={formData.nombre_completo}
             onChange={handleChange}
             required
-            placeholder="Juan Perez Garcia"
+            placeholder="Juan Perez"
           />
         </div>
 
@@ -174,7 +174,7 @@ export function RegisterForm() {
           type="email"
           value={formData.email}
           onChange={handleChange}
-          placeholder="jperez@empresa.com"
+          placeholder="jperez@gmail.com"
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -203,22 +203,19 @@ export function RegisterForm() {
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <GlassDropdown
-            label="Rol"
-            options={roleOptions}
-            value={formData.rol}
-            onChange={(value) => setFormData((prev) => ({ ...prev, rol: value }))}
-            placeholder="Seleccionar rol"
-          />
-          <GlassDropdown
-            label="Laboratorio"
-            options={labOptions}
-            value={formData.default_lab}
-            onChange={(value) => setFormData((prev) => ({ ...prev, default_lab: value }))}
-            placeholder="Seleccionar laboratorio"
-          />
-        </div>
+        <GlassDropdown
+          label="Rol"
+          options={roleOptions}
+          value={formData.rol}
+          onChange={(value) => setFormData((prev) => ({ ...prev, rol: value }))}
+          placeholder="Seleccionar rol"
+        />
+
+        <LabSelector
+          labs={labs}
+          value={formData.default_lab}
+          onChange={(value) => setFormData((prev) => ({ ...prev, default_lab: value }))}
+        />
 
         <GlassButton type="submit" isLoading={isLoading} className="mt-6">
           <span>Crear Cuenta</span>
