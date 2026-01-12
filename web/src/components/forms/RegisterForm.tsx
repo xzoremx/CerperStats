@@ -11,10 +11,14 @@ const roleOptions = [
   { value: 'supervisor', label: 'Responsable de Laboratorio' },
 ];
 
-export function RegisterForm() {
+interface RegisterFormProps {
+  onSuccessChange?: (isSuccess: boolean) => void;
+}
+
+export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
   const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [isSuccess, setIsSuccessState] = useState(false);
   const [labs, setLabs] = useState<Lab[]>([]);
 
   const [formData, setFormData] = useState({
@@ -112,14 +116,20 @@ export function RegisterForm() {
     label: lab.nombre || lab.lab_key,
   }));
 
+  // Helper to update isSuccess and notify parent
+  const setIsSuccess = (value: boolean) => {
+    setIsSuccessState(value);
+    onSuccessChange?.(value);
+  };
+
   // Success state - Full card takeover animation
   if (isSuccess) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 px-8 animate-in">
+      <div className="flex flex-col items-center justify-center py-20 px-8 animate-in min-h-[400px]">
         {/* Animated checkmark circle */}
         <div className="relative mb-8">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-[0_0_40px_rgba(74,222,128,0.5)] animate-pulse">
-            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-[0_0_50px_rgba(74,222,128,0.5)] animate-pulse">
+            <svg className="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -128,10 +138,10 @@ export function RegisterForm() {
         </div>
 
         {/* Main message */}
-        <h2 className="text-4xl font-bold text-white mb-3 text-center">
+        <h2 className="text-4xl font-bold text-white mb-4 text-center">
           ¡Gracias por registrarte!
         </h2>
-        <p className="text-lg text-white/70 mb-10 text-center max-w-sm">
+        <p className="text-lg text-white/70 mb-12 text-center max-w-md">
           Tu cuenta ha sido creada exitosamente. Ya puedes iniciar sesión en la aplicación.
         </p>
 
