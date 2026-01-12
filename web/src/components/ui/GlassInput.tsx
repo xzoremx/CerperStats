@@ -1,7 +1,6 @@
 'use client';
 
 import { InputHTMLAttributes, forwardRef } from 'react';
-import { GlassCard } from './GlassCard';
 
 interface GlassInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -23,45 +22,35 @@ export const GlassInput = forwardRef<HTMLInputElement, GlassInputProps>(
           </label>
         )}
         <div
-          className="relative rounded-xl transition-all duration-300"
-          style={{
-            boxShadow: isSuccess
-              ? '0 0 20px rgba(74, 222, 128, 0.4), 0 0 40px rgba(74, 222, 128, 0.2)'
-              : 'none'
-          }}
+          className={`
+            relative rounded-xl overflow-hidden transition-all duration-300
+            backdrop-blur-md bg-white/10
+            ${isSuccess
+              ? 'ring-2 ring-green-400 shadow-[0_0_20px_rgba(74,222,128,0.4)]'
+              : ''
+            }
+          `}
         >
-          {/* Green neon border overlay */}
-          {isSuccess && (
-            <div
-              className="absolute inset-0 rounded-xl pointer-events-none z-40"
-              style={{
-                border: '2px solid rgba(74, 222, 128, 0.8)',
-                boxShadow: 'inset 0 0 10px rgba(74, 222, 128, 0.3)'
-              }}
-            />
-          )}
-          <GlassCard
-            borderRadius="12px"
-            innerShadow={false}
-            className="rounded-xl"
-          >
-            {/* Specific shadow for inputs */}
-            <div
-              className="absolute inset-0 z-20 pointer-events-none rounded-xl transition-all duration-300"
-              style={{
-                boxShadow: isSuccess
-                  ? 'inset 1px 1px 1px 0 rgba(74, 222, 128, 0.5), inset -1px -1px 1px 1px rgba(74, 222, 128, 0.3)'
-                  : 'inset 1px 1px 1px 0 rgba(255, 255, 255, 0.3), inset -1px -1px 1px 1px rgba(255, 255, 255, 0.1)'
-              }}
-            />
-            <input
-              ref={ref}
-              id={inputId}
-              {...props}
-              className={`z-30 relative bg-transparent w-full px-4 py-3 text-sm placeholder-white/40 border-none focus:outline-none transition-colors rounded-xl ${isSuccess ? 'text-green-300' : 'text-white'
-                }`}
-            />
-          </GlassCard>
+          {/* Inner highlight */}
+          <div
+            className="absolute inset-0 pointer-events-none rounded-xl"
+            style={{
+              boxShadow: isSuccess
+                ? 'inset 1px 1px 1px 0 rgba(74, 222, 128, 0.4), inset -1px -1px 1px 0 rgba(74, 222, 128, 0.2)'
+                : 'inset 1px 1px 1px 0 rgba(255, 255, 255, 0.25), inset -1px -1px 1px 0 rgba(255, 255, 255, 0.1)'
+            }}
+          />
+          <input
+            ref={ref}
+            id={inputId}
+            {...props}
+            className={`
+              relative bg-transparent w-full px-4 py-3 text-sm 
+              placeholder-white/40 border-none focus:outline-none 
+              transition-colors
+              ${isSuccess ? 'text-green-300' : 'text-white'}
+            `}
+          />
         </div>
       </div>
     );
