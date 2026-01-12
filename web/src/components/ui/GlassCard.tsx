@@ -8,16 +8,18 @@ interface GlassCardProps {
   className?: string;
   innerShadow?: boolean;
   borderRadius?: string;
+  allowOverflow?: boolean;
 }
 
 export function GlassCard({
   children,
   className = '',
   innerShadow = true,
-  borderRadius = '24px'
+  borderRadius = '24px',
+  allowOverflow = false
 }: GlassCardProps) {
   return (
-    <div className={cn('relative overflow-hidden', className)}>
+    <div className={cn('relative', !allowOverflow && 'overflow-hidden', className)}>
       {/* Background blur and distortion filter */}
       <div className="absolute z-0 inset-0 backdrop-blur-md glass-filter overflow-hidden isolate" />
 

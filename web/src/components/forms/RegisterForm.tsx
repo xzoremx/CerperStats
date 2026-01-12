@@ -141,9 +141,9 @@ export function RegisterForm() {
 
   return (
     <div className="animate-in">
-      <div className="mb-6 text-center">
-        <h2 className="text-2xl font-medium text-white mb-1">Crear Cuenta</h2>
-        <p className="text-sm font-normal text-white/60">Completa tus datos para registrarte</p>
+      <div className="mb-8 text-center">
+        <h2 className="text-3xl font-medium text-white mb-2">Crear Cuenta</h2>
+        <p className="text-base font-normal text-white/60">Completa tus datos para registrarte</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">

@@ -8,21 +8,21 @@ export default function HomePage() {
     <main className="flex items-center justify-center min-h-screen p-4">
       {/* Main Container */}
       <div className="max-w-2xl w-full beautiful-shadow">
-        <GlassCard className="rounded-3xl flex flex-col">
+        <GlassCard className="rounded-3xl flex flex-col" allowOverflow>
           {/* Top Section - Logo & Welcome */}
-          <div className="h-auto flex flex-col text-center bg-black/10 p-8 items-center justify-center rounded-t-3xl">
+          <div className="h-auto flex flex-col text-center bg-black/10 p-10 items-center justify-center rounded-t-3xl">
             {/* Logo */}
-            <div className="mb-6 flex flex-col items-center">
+            <div className="mb-8 flex flex-col items-center">
               <img
                 src="/cerper_logo.png"
                 alt="CerperStats"
-                className="w-36 h-36 object-contain mb-4"
+                className="w-48 h-48 object-contain mb-6"
               />
-              <h1 className="leading-tight text-4xl sm:text-5xl font-normal text-white tracking-tighter mb-2">
+              <h1 className="leading-tight text-5xl sm:text-6xl font-normal text-white tracking-tighter mb-3">
                 CerperStats
               </h1>
-              <p className="leading-relaxed text-sm font-light text-white/80 max-w-sm mx-auto">
-                Crea tu cuenta para acceder al sistema de gestion de laboratorio
+              <p className="leading-relaxed text-base font-light text-white/80 max-w-md mx-auto">
+                Crea tu cuenta para acceder al sistema de gestión de laboratorio
               </p>
             </div>
           </div>
