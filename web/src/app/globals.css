@@ -19,7 +19,8 @@ html {
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background: linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%);
+  background: url('/background.jpg') no-repeat center center;
+  background-size: cover;
   background-attachment: fixed;
   min-height: 100vh;
   color: white;
