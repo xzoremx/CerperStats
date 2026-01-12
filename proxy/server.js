@@ -38,6 +38,8 @@ const apiLimiter = rateLimit({
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 // CORS configuration for Vercel frontend
 app.use(cors({
   origin: [

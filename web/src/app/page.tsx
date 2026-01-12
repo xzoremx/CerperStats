@@ -12,11 +12,11 @@ export default function HomePage() {
           {/* Top Section - Logo & Welcome */}
           <div className="h-auto flex flex-col text-center bg-black/10 p-8 items-center justify-center">
             {/* Logo */}
-            <div className="mb-6">
+            <div className="mb-6 flex flex-col items-center">
               <img
                 src="/cerper_logo.png"
                 alt="CerperStats"
-                className="w-20 h-20 object-contain mb-4"
+                className="w-28 h-28 object-contain mb-4"
               />
               <h1 className="leading-tight text-4xl sm:text-5xl font-normal text-white tracking-tighter mb-2">
                 CerperStats
