@@ -23,7 +23,7 @@ export function LabSelector({ labs, value, onChange }: LabSelectorProps) {
             <label className="block text-sm font-medium text-white">
                 Selecciona tu Laboratorio
             </label>
-            <div className="flex flex-col gap-3 max-h-[320px] overflow-y-auto glass-scrollbar pr-1">
+            <div className="flex flex-col gap-3 max-h-[320px] overflow-y-auto glass-scrollbar p-1 -m-1">
                 {labs.map((lab) => {
                     const isSelected = value === lab.lab_key;
                     return (
