@@ -8,15 +8,15 @@ export default function HomePage() {
     <main className="flex items-center justify-center min-h-screen p-4">
       {/* Main Container */}
       <div className="max-w-2xl w-full beautiful-shadow">
-        <GlassCard className="rounded-3xl flex flex-col overflow-hidden">
+        <GlassCard className="rounded-3xl flex flex-col">
           {/* Top Section - Logo & Welcome */}
-          <div className="h-auto flex flex-col text-center bg-black/10 p-8 items-center justify-center">
+          <div className="h-auto flex flex-col text-center bg-black/10 p-8 items-center justify-center rounded-t-3xl">
             {/* Logo */}
             <div className="mb-6 flex flex-col items-center">
               <img
                 src="/cerper_logo.png"
                 alt="CerperStats"
-                className="w-28 h-28 object-contain mb-4"
+                className="w-36 h-36 object-contain mb-4"
               />
               <h1 className="leading-tight text-4xl sm:text-5xl font-normal text-white tracking-tighter mb-2">
                 CerperStats
