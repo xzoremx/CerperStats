@@ -35,6 +35,20 @@ function randomAnalistaUsername() {
   return `analista_${n}`;
 }
 
+function formatFullNameForStorage(fullName) {
+  const cleaned = String(fullName || '').trim().replace(/\s+/g, ' ');
+  if (!cleaned) return '';
+
+  return cleaned
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => {
+      const lower = word.toLowerCase();
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(' ');
+}
+
 function normalizeDefaultLabs(value) {
   if (value == null) return null;
 
@@ -103,6 +117,7 @@ router.post('/', async (req, res) => {
   const { password, nombre_completo, sede, default_lab } = req.body || {};
 
   const cleanedFullName = (nombre_completo || '').toString().trim().replace(/\s+/g, ' ');
+  const formattedFullName = formatFullNameForStorage(cleanedFullName);
   const usernamePlan = buildUsernameFromFullName(cleanedFullName);
   if (usernamePlan?.error === 'invalid_full_name') {
     return res.status(400).json({ ok: false, error: 'invalid_full_name' });
@@ -162,7 +177,7 @@ router.post('/', async (req, res) => {
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id
           `,
-          [candidateUsername, hash_password, cleanedFullName || null, sede, defaultLabs, userRol, userActivo]
+          [candidateUsername, hash_password, formattedFullName || null, sede, defaultLabs, userRol, userActivo]
         );
 
         await client.query(
@@ -191,6 +206,20 @@ router.post('/', async (req, res) => {
       err?.code === '23505' &&
       (err?.constraint === 'usuarios_username_key' || err?.constraint === 'idx_usuarios_username_lower');
 
+    const tryRandomFallback = async () => {
+      for (let attempts = 0; attempts < 50; attempts += 1) {
+        const randomCandidate = randomAnalistaUsername();
+        try {
+          await insertUser(randomCandidate);
+          return randomCandidate;
+        } catch (err) {
+          if (isUsernameUniqueViolation(err)) continue;
+          throw err;
+        }
+      }
+      return null;
+    };
+
     let createdUsername = null;
 
     const initialCandidate = baseUsername || randomAnalistaUsername();
@@ -202,22 +231,21 @@ router.post('/', async (req, res) => {
       if (err?.code === '23505' && err?.constraint === 'usuarios_pkey') {
         const synced = await syncUsuariosIdSequence();
         if (synced) {
-          await insertUser(initialCandidate);
-          createdUsername = initialCandidate;
+          try {
+            await insertUser(initialCandidate);
+            createdUsername = initialCandidate;
+          } catch (err2) {
+            // Si después de sincronizar el username colisiona, ir a fallback
+            if (isUsernameUniqueViolation(err2)) {
+              createdUsername = await tryRandomFallback();
+            } else {
+              throw err2;
+            }
+          }
         }
       } else if (isUsernameUniqueViolation(err)) {
         // Evitar leaking de colisiones: fallback a username aleatorio no derivado del nombre.
-        for (let attempts = 0; attempts < 50; attempts += 1) {
-          const randomCandidate = randomAnalistaUsername();
-          try {
-            await insertUser(randomCandidate);
-            createdUsername = randomCandidate;
-            break;
-          } catch (err2) {
-            if (isUsernameUniqueViolation(err2)) continue;
-            throw err2;
-          }
-        }
+        createdUsername = await tryRandomFallback();
       } else {
         throw err;
       }
