@@ -79,12 +79,12 @@ export function GlassDropdown({
         className={`absolute top-full left-0 right-0 z-[60] mt-2 transition-all duration-300 origin-top ${isOpen ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'
           }`}
       >
-        {/* Dark glass menu for better readability */}
-        <div
-          className="rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl border border-white/15"
-          style={{ backgroundColor: 'rgba(55, 65, 81, 0.85)' }}
-        >
-          <div className="py-2 max-h-60 overflow-y-auto glass-scrollbar">
+        {/* Glass menu matching header style */}
+        <div className="relative rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl border border-white/10">
+          {/* Gradient background matching header */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/[0.06] to-black/20" />
+
+          <div className="relative py-2 max-h-60 overflow-y-auto glass-scrollbar">
             {options.map((option) => (
               <div
                 key={option.value}
