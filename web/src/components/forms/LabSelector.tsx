@@ -7,8 +7,8 @@ import type { Lab } from '@/lib/types';
 interface LabSelectorProps {
   labs: Lab[];
   loading?: boolean;
-  value: string;
-  onChange: (labKey: string) => void;
+  value: string[];
+  onChange: (labKeys: string[]) => void;
 }
 
 export function LabSelector({ labs, loading = false, value, onChange }: LabSelectorProps) {
@@ -24,19 +24,25 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
     });
   }, [labs, query]);
 
-  const selectedLab = useMemo(() => {
-    return value ? labs.find((lab) => lab.lab_key === value) : undefined;
+  const selectedLabs = useMemo(() => {
+    return labs.filter((lab) => value.includes(lab.lab_key));
   }, [labs, value]);
+
+  const maxLabsReached = value.length >= 2;
 
   const Header = (
     <div className="flex items-end justify-between gap-3">
-      <label className="block text-sm font-medium text-white">Laboratorio</label>
+      <label className="block text-sm font-medium text-white">
+        Laboratorios <span className="text-xs font-normal text-white/50">(máximo 2)</span>
+      </label>
       <div className="flex items-center gap-3">
-        <span className="text-xs text-white/50">Opcional</span>
-        {value ? (
+        <span className="text-xs text-white/50">
+          {value.length > 0 ? `${value.length}/2 seleccionados` : 'Opcional'}
+        </span>
+        {value.length > 0 ? (
           <button
             type="button"
-            onClick={() => onChange('')}
+            onClick={() => onChange([])}
             className="text-xs text-white/70 hover:text-white underline underline-offset-4"
           >
             Limpiar
@@ -130,13 +136,23 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {filteredLabs.map((lab) => {
-                  const isSelected = value === lab.lab_key;
+                  const isSelected = value.includes(lab.lab_key);
+                  const canSelect = !maxLabsReached || isSelected;
                   return (
                     <button
                       key={lab.lab_key}
                       type="button"
-                      onClick={() => onChange(isSelected ? '' : lab.lab_key)}
-                      className="text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-2xl"
+                      onClick={() => {
+                        if (isSelected) {
+                          onChange(value.filter((k) => k !== lab.lab_key));
+                        } else if (canSelect) {
+                          onChange([...value, lab.lab_key]);
+                        }
+                      }}
+                      disabled={!canSelect}
+                      className={`text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-2xl ${
+                        !canSelect ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                       aria-pressed={isSelected}
                     >
                       <GlassCard
@@ -144,7 +160,7 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
                         innerShadow={false}
                         liquidGlass={false}
                         className={`rounded-2xl transition-colors ${
-                          isSelected ? 'bg-white/20 ring-2 ring-white/40' : 'hover:bg-white/10'
+                          isSelected ? 'bg-white/20 ring-2 ring-white/40' : canSelect ? 'hover:bg-white/10' : ''
                         }`}
                       >
                         <div className="px-4 py-3 flex items-center justify-between gap-3">
@@ -185,12 +201,35 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-xs text-white/50">Seleccionado</span>
-            <span className="text-xs text-white/80 font-medium truncate">
-              {selectedLab ? selectedLab.nombre || selectedLab.lab_key : '—'}
-            </span>
-          </div>
+          {selectedLabs.length > 0 ? (
+            <div className="space-y-2">
+              <span className="text-xs text-white/50">Seleccionados:</span>
+              <div className="flex flex-wrap gap-2">
+                {selectedLabs.map((lab) => (
+                  <div
+                    key={lab.lab_key}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/15 backdrop-blur-sm"
+                  >
+                    <span className="text-xs text-white font-medium">{lab.nombre || lab.lab_key}</span>
+                    <button
+                      type="button"
+                      onClick={() => onChange(value.filter((k) => k !== lab.lab_key))}
+                      className="text-white/60 hover:text-white transition-colors"
+                      aria-label={`Quitar ${lab.nombre || lab.lab_key}`}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-2">
+              <span className="text-xs text-white/50">Ningún laboratorio seleccionado</span>
+            </div>
+          )}
         </div>
       </GlassCard>
     </div>
