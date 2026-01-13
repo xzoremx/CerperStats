@@ -82,7 +82,7 @@ export function GlassDropdown({
         {/* Glass menu matching header style - 40% less transparent */}
         <div className="relative rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl border border-white/10">
           {/* Base layer for less transparency */}
-          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-0 bg-black/10" />
           {/* Gradient background matching header */}
           <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/[0.06] to-black/20" />
 
