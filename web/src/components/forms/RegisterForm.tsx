@@ -144,8 +144,8 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
           <div className="absolute inset-0 rounded-full border-2 border-green-400/30 animate-ping" />
         </div>
 
-        <h2 className="text-4xl font-bold text-white mb-4 text-center">Registro recibido</h2>
-        <p className="text-lg text-white/70 mb-12 text-center max-w-md">
+        <h2 className="text-4xl font-bold text-slate-200 mb-4 text-center">Registro recibido</h2>
+        <p className="text-lg text-slate-300/70 mb-12 text-center max-w-md">
           Tu cuenta debe ser aprobada por un administrador antes de poder iniciar sesion.
         </p>
       </div>
@@ -154,8 +154,12 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
 
   return (
     <div className="animate-in">
-      <div className="mb-8 text-center">
-        <p className="text-base font-normal text-white/60">Por favor, completa tus datos para registrarte</p>
+      <div className="mb-8 flex justify-center">
+        <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-center backdrop-blur-xl">
+          <p className="text-sm sm:text-base font-normal text-slate-200/60">
+            Por favor, completa tus datos para registrarte
+          </p>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">

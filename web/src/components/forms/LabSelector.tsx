@@ -32,18 +32,18 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
 
   const Header = (
     <div className="flex items-end justify-between gap-3">
-      <label className="block text-sm font-medium text-white">
-        Laboratorios <span className="text-xs font-normal text-white/50">(máximo 2)</span>
+      <label className="block text-sm font-medium text-slate-200">
+        Laboratorios <span className="text-xs font-normal text-slate-400/70">(máximo 2)</span>
       </label>
       <div className="flex items-center gap-3">
-        <span className="text-xs text-white/50">
+        <span className="text-xs text-slate-400/70">
           {value.length > 0 ? `${value.length}/2 seleccionados` : 'Opcional'}
         </span>
         {value.length > 0 ? (
           <button
             type="button"
             onClick={() => onChange([])}
-            className="text-xs text-white/70 hover:text-white underline underline-offset-4"
+            className="text-xs text-slate-300/70 hover:text-slate-200 underline underline-offset-4"
           >
             Limpiar
           </button>
@@ -57,7 +57,7 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
       <div className="space-y-3">
         {Header}
         <GlassCard borderRadius="16px" liquidGlass={false} className="rounded-2xl">
-          <div className="p-5 text-center text-white/50 text-sm">Cargando laboratorios...</div>
+          <div className="p-5 text-center text-slate-400/70 text-sm">Cargando laboratorios...</div>
         </GlassCard>
       </div>
     );
@@ -68,7 +68,7 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
       <div className="space-y-3">
         {Header}
         <GlassCard borderRadius="16px" liquidGlass={false} className="rounded-2xl">
-          <div className="p-5 text-center text-white/50 text-sm">No hay laboratorios disponibles</div>
+          <div className="p-5 text-center text-slate-400/70 text-sm">No hay laboratorios disponibles</div>
         </GlassCard>
       </div>
     );
@@ -150,18 +150,16 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
                         }
                       }}
                       disabled={!canSelect}
-                      className={`text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-2xl ${
-                        !canSelect ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
+                      className={`text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-2xl ${!canSelect ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                       aria-pressed={isSelected}
                     >
                       <GlassCard
                         borderRadius="14px"
                         innerShadow={false}
                         liquidGlass={false}
-                        className={`rounded-2xl transition-colors ${
-                          isSelected ? 'bg-white/20 ring-2 ring-white/40' : canSelect ? 'hover:bg-white/10' : ''
-                        }`}
+                        className={`rounded-2xl transition-colors ${isSelected ? 'bg-white/20 ring-2 ring-white/40' : canSelect ? 'hover:bg-white/10' : ''
+                          }`}
                       >
                         <div className="px-4 py-3 flex items-center justify-between gap-3">
                           <div className="min-w-0">
@@ -171,9 +169,8 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
                             <div className="text-xs text-white/50 truncate">{lab.lab_key}</div>
                           </div>
                           <div
-                            className={`flex-shrink-0 w-9 h-9 rounded-xl border flex items-center justify-center transition-colors ${
-                              isSelected ? 'border-white/50 bg-white/20' : 'border-white/20 bg-white/10'
-                            }`}
+                            className={`flex-shrink-0 w-9 h-9 rounded-xl border flex items-center justify-center transition-colors ${isSelected ? 'border-white/50 bg-white/20' : 'border-white/20 bg-white/10'
+                              }`}
                             aria-hidden="true"
                           >
                             <svg
