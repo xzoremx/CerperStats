@@ -148,23 +148,6 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
         <p className="text-lg text-white/70 mb-12 text-center max-w-md">
           Tu cuenta debe ser aprobada por un administrador antes de poder iniciar sesion.
         </p>
-
-        <button
-          onClick={() => {
-            setIsSuccess(false);
-            setFormData({
-              username: '',
-              nombre_completo: '',
-              password: '',
-              passwordConfirm: '',
-              sede: '',
-              default_lab: [],
-            });
-          }}
-          className="text-white/50 hover:text-white text-sm transition-colors underline underline-offset-4"
-        >
-          Registrar otra cuenta
-        </button>
       </div>
     );
   }
