@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, FormEvent } from 'react';
+import { useEffect, useMemo, useState, FormEvent } from 'react';
 import { GlassInput, GlassDropdown, GlassButton, useToast } from '@/components/ui';
 import { fetchLabs, registerUser } from '@/lib/api';
 import { LabSelector } from './LabSelector';
@@ -21,17 +21,42 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
   const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccessState] = useState(false);
+  const [assignedUsername, setAssignedUsername] = useState<string | null>(null);
   const [labs, setLabs] = useState<Lab[]>([]);
   const [labsLoading, setLabsLoading] = useState(true);
 
   const [formData, setFormData] = useState({
-    username: '',
-    nombre_completo: '',
+    nombres: '',
+    apellido_paterno: '',
+    apellido_materno: '',
     password: '',
     passwordConfirm: '',
     sede: '',
     default_lab: [] as string[],
   });
+
+  const generatedUsername = useMemo(() => {
+    const normalize = (value: string) =>
+      value
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/g, '');
+
+    const nombres = formData.nombres.trim();
+    const apellidoPaterno = formData.apellido_paterno.trim();
+    const apellidoMaterno = formData.apellido_materno.trim();
+
+    if (!nombres || !apellidoPaterno || !apellidoMaterno) return '';
+
+    const firstName = nombres.split(/\s+/)[0] || '';
+    const initial = normalize(firstName).slice(0, 1);
+    const paternal = normalize(apellidoPaterno);
+
+    if (!initial || !paternal) return '';
+    return `${initial}.${paternal}`;
+  }, [formData.apellido_materno, formData.apellido_paterno, formData.nombres]);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,13 +100,8 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (formData.username.length < 3) {
-      showToast('El usuario debe tener al menos 3 caracteres');
-      return;
-    }
-
-    if (!formData.nombre_completo) {
-      showToast('El nombre completo es requerido');
+    if (!formData.nombres.trim() || !formData.apellido_paterno.trim() || !formData.apellido_materno.trim()) {
+      showToast('Ingresa nombres y dos apellidos');
       return;
     }
 
@@ -100,25 +120,32 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
       return;
     }
 
+    const nombre_completo = [
+      formData.nombres.trim(),
+      formData.apellido_paterno.trim(),
+      formData.apellido_materno.trim(),
+    ]
+      .filter(Boolean)
+      .join(' ');
+
     setIsLoading(true);
 
     try {
       const res = await registerUser({
-        username: formData.username,
         password: formData.password,
-        nombre_completo: formData.nombre_completo,
+        nombre_completo,
         sede: formData.sede as 'Paita' | 'Chimbote' | 'Arequipa' | 'Callao',
         default_lab: formData.default_lab.length > 0 ? formData.default_lab : undefined,
       });
 
       if (res.ok) {
+        setAssignedUsername(res.data?.username || generatedUsername || null);
         setIsSuccess(true);
       } else {
         const errorMessages: Record<string, string> = {
           username_password_required: 'Usuario y contrasena son requeridos',
           password_too_short: 'La contrasena es muy corta',
-          username_too_short: 'El usuario es muy corto',
-          invalid_username_format: 'Formato de usuario invalido',
+          invalid_full_name: 'Ingresa nombres y dos apellidos',
           invalid_sede: 'Sede no valida',
           invalid_default_lab: 'Laboratorio no valido',
           too_many_attempts: 'Demasiados intentos. Espera 15 minutos.',
@@ -148,6 +175,15 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
         <p className="text-lg text-slate-300/70 mb-12 text-center max-w-md">
           Tu cuenta debe ser aprobada por un administrador antes de poder iniciar sesion.
         </p>
+
+        {assignedUsername ? (
+          <div className="w-full max-w-md text-center">
+            <p className="text-sm text-slate-300/60 mb-3">Tu usuario asignado es:</p>
+            <div className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
+              <span className="font-mono text-lg text-slate-100 tracking-[0.08em]">{assignedUsername}</span>
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -157,22 +193,43 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <GlassInput
-            label="Usuario"
-            name="username"
-            value={formData.username}
+            label="Nombres"
+            name="nombres"
+            value={formData.nombres}
             onChange={handleChange}
             required
-            minLength={3}
-            placeholder="ej: jperez"
-            autoComplete="username"
+            placeholder="ej: Rosa"
+            autoComplete="given-name"
           />
           <GlassInput
-            label="Nombre Completo"
-            name="nombre_completo"
-            value={formData.nombre_completo}
+            label="Apellido Paterno"
+            name="apellido_paterno"
+            value={formData.apellido_paterno}
             onChange={handleChange}
             required
-            placeholder="Juan Perez"
+            placeholder="ej: Chávez"
+            autoComplete="family-name"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <GlassInput
+            label="Apellido Materno"
+            name="apellido_materno"
+            value={formData.apellido_materno}
+            onChange={handleChange}
+            required
+            placeholder="ej: Alarcón"
+            autoComplete="additional-name"
+          />
+          <GlassInput
+            label="Usuario asignado"
+            hint="(automático)"
+            id="username_asignado"
+            value={generatedUsername}
+            readOnly
+            placeholder="Se generará automáticamente"
+            aria-readonly="true"
           />
         </div>
 

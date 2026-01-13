@@ -10,7 +10,6 @@ export interface ApiResponse<T> {
 }
 
 export interface RegisterPayload {
-  username: string;
   password: string;
   nombre_completo: string;
   sede: 'Paita' | 'Chimbote' | 'Arequipa' | 'Callao';

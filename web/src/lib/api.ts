@@ -7,7 +7,9 @@ export async function fetchLabs(): Promise<ApiResponse<Lab[]>> {
   return res.json();
 }
 
-export async function registerUser(payload: RegisterPayload): Promise<ApiResponse<null>> {
+export async function registerUser(
+  payload: RegisterPayload
+): Promise<ApiResponse<{ username: string }> & { message?: string }> {
   const res = await fetch(`${API_URL}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

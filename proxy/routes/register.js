@@ -6,6 +6,35 @@ const router = express.Router();
 
 const allowedSedes = ['Paita', 'Chimbote', 'Arequipa', 'Callao'];
 
+function normalizeUsernamePart(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function buildUsernameCandidatesFromFullName(fullName) {
+  const tokens = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+  if (tokens.length < 3) return { error: 'invalid_full_name' };
+
+  const firstName = tokens[0];
+  const apellidoPaterno = tokens[tokens.length - 2];
+  const apellidoMaterno = tokens[tokens.length - 1];
+
+  const initial = normalizeUsernamePart(firstName).slice(0, 1);
+  const paternal = normalizeUsernamePart(apellidoPaterno);
+  const maternalInitial = normalizeUsernamePart(apellidoMaterno).slice(0, 1);
+
+  if (!initial || !paternal) return { error: 'invalid_full_name' };
+
+  const base = `${initial}.${paternal}`;
+  const extended = maternalInitial ? `${base}${maternalInitial}` : null;
+
+  return { base, extended };
+}
+
 function normalizeDefaultLabs(value) {
   if (value == null) return null;
 
@@ -22,9 +51,10 @@ function normalizeDefaultLabs(value) {
   return labs.length ? { labs } : null;
 }
 
-function getGenericRegisterResponse() {
+function getGenericRegisterResponse(username) {
   return {
     ok: true,
+    data: username ? { username } : undefined,
     message:
       'Registro recibido correctamente. Su cuenta debe ser aprobada por un administrador para poder ingresar.',
   };
@@ -65,33 +95,31 @@ router.get('/labs', async (req, res) => {
 
 // ============================================
 // POST /register - Registro de nuevo usuario (público)
-// Seguridad: rol forzado a 'analista', activo=false, username lowercase.
+// Seguridad: rol forzado a 'analista', activo=false.
+// Username autogenerado desde nombre + apellidos.
 // Respuesta genérica para evitar enumeración.
 // ============================================
 router.post('/', async (req, res) => {
-  const { username, password, nombre_completo, sede, default_lab } = req.body || {};
+  const { password, nombre_completo, sede, default_lab } = req.body || {};
 
-  const lowerUsername = (username || '').toString().trim().toLowerCase();
+  const cleanedFullName = (nombre_completo || '').toString().trim().replace(/\s+/g, ' ');
+  const usernamePlan = buildUsernameCandidatesFromFullName(cleanedFullName);
+  if (usernamePlan?.error) {
+    return res.status(400).json({ ok: false, error: usernamePlan.error });
+  }
+
   const normalizedDefaultLabs = normalizeDefaultLabs(default_lab);
   if (normalizedDefaultLabs?.error) {
     return res.status(400).json({ ok: false, error: normalizedDefaultLabs.error });
   }
   const defaultLabs = normalizedDefaultLabs?.labs || null;
 
-  if (!lowerUsername || !password) {
+  if (!password) {
     return res.status(400).json({ ok: false, error: 'username_password_required' });
-  }
-
-  if (lowerUsername.length < 3) {
-    return res.status(400).json({ ok: false, error: 'username_too_short' });
   }
 
   if (password.length < 6) {
     return res.status(400).json({ ok: false, error: 'password_too_short' });
-  }
-
-  if (!/^[a-zA-Z0-9._-]+$/.test(lowerUsername)) {
-    return res.status(400).json({ ok: false, error: 'invalid_username_format' });
   }
 
   if (!sede || !allowedSedes.includes(sede)) {
@@ -122,7 +150,7 @@ router.post('/', async (req, res) => {
     const saltRounds = 10;
     const hash_password = await bcrypt.hash(password, saltRounds);
 
-    const insertUser = async () => {
+    const insertUser = async (candidateUsername) => {
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
@@ -133,7 +161,7 @@ router.post('/', async (req, res) => {
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id
           `,
-          [lowerUsername, hash_password, nombre_completo || null, sede, defaultLabs, userRol, userActivo]
+          [candidateUsername, hash_password, cleanedFullName || null, sede, defaultLabs, userRol, userActivo]
         );
 
         await client.query(
@@ -158,31 +186,53 @@ router.post('/', async (req, res) => {
       }
     };
 
-    try {
-      await insertUser();
-    } catch (err) {
-      // No enumerar usuarios: si el username ya existe (case-insensitive), responder éxito genérico.
-      if (
-        err?.code === '23505' &&
-        (err?.constraint === 'usuarios_username_key' || err?.constraint === 'idx_usuarios_username_lower')
-      ) {
-        return res.status(201).json(getGenericRegisterResponse());
-      }
+    const candidates = [usernamePlan.base];
+    if (usernamePlan.extended) candidates.push(usernamePlan.extended);
 
-      // Mitigación: secuencia desincronizada (usuarios_pkey)
-      if (err?.code === '23505' && err?.constraint === 'usuarios_pkey') {
-        const synced = await syncUsuariosIdSequence();
-        if (synced) {
-          await insertUser();
-          return res.status(201).json(getGenericRegisterResponse());
-        }
-      }
-
-      throw err;
+    const fallbackBase = usernamePlan.extended || usernamePlan.base;
+    for (let i = 2; i <= 99; i += 1) {
+      candidates.push(`${fallbackBase}${i}`);
     }
 
-    console.log('[REGISTER] Nuevo registro recibido:', lowerUsername);
-    return res.status(201).json(getGenericRegisterResponse());
+    const isUsernameUniqueViolation = (err) =>
+      err?.code === '23505' &&
+      (err?.constraint === 'usuarios_username_key' || err?.constraint === 'idx_usuarios_username_lower');
+
+    let createdUsername = null;
+
+    for (const candidate of candidates) {
+      try {
+        await insertUser(candidate);
+        createdUsername = candidate;
+        break;
+      } catch (err) {
+        if (isUsernameUniqueViolation(err)) {
+          continue;
+        }
+
+        // Mitigación: secuencia desincronizada (usuarios_pkey)
+        if (err?.code === '23505' && err?.constraint === 'usuarios_pkey') {
+          const synced = await syncUsuariosIdSequence();
+          if (synced) {
+            await insertUser(candidate);
+            createdUsername = candidate;
+            break;
+          }
+        }
+
+        throw err;
+      }
+    }
+
+    if (!createdUsername) {
+      const suffix = Math.random().toString(36).slice(2, 6);
+      const randomCandidate = `${fallbackBase}${suffix}`;
+      await insertUser(randomCandidate);
+      createdUsername = randomCandidate;
+    }
+
+    console.log('[REGISTER] Nuevo registro recibido:', createdUsername);
+    return res.status(201).json(getGenericRegisterResponse(createdUsername));
   } catch (err) {
     console.error('[REGISTER] Error registrando usuario:', err);
 
@@ -192,11 +242,6 @@ router.post('/', async (req, res) => {
 
     if (err?.code === '23514' && err?.constraint === 'check_default_lab_max2') {
       return res.status(400).json({ ok: false, error: 'invalid_default_lab' });
-    }
-
-    // Si es duplicado pero no tenemos constraint name por alguna razón, responder genérico.
-    if (err?.code === '23505') {
-      return res.status(201).json(getGenericRegisterResponse());
     }
 
     return res.status(500).json({ ok: false, error: 'registration_failed' });

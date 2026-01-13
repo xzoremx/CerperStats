@@ -76,12 +76,15 @@ export function GlassDropdown({
 
       {/* Dropdown Menu */}
       <div
-        className={`absolute top-full left-0 right-0 z-[60] mt-2 transition-all duration-300 origin-top ${
-          isOpen ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'
-        }`}
+        className={`absolute top-full left-0 right-0 z-[60] mt-2 transition-all duration-300 origin-top ${isOpen ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'
+          }`}
       >
-        <GlassCard borderRadius="12px" className="rounded-xl shadow-2xl glass-scrollbar max-h-60 overflow-y-auto">
-          <div className="py-2">
+        {/* Dark glass menu for better readability */}
+        <div
+          className="rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl border border-white/10"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
+        >
+          <div className="py-2 max-h-60 overflow-y-auto glass-scrollbar">
             {options.map((option) => (
               <div
                 key={option.value}
@@ -89,17 +92,16 @@ export function GlassDropdown({
                   onChange(option.value);
                   setIsOpen(false);
                 }}
-                className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
-                  value === option.value
+                className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${value === option.value
                     ? 'bg-white/20 text-white font-semibold'
-                    : 'text-white/80 hover:bg-white/10'
-                }`}
+                    : 'text-white/90 hover:bg-white/10'
+                  }`}
               >
                 {option.label}
               </div>
             ))}
           </div>
-        </GlassCard>
+        </div>
       </div>
     </div>
   );
