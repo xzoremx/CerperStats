@@ -78,51 +78,53 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
     <div className="space-y-3">
       {Header}
 
-      <GlassCard borderRadius="16px" liquidGlass={false} className="rounded-2xl">
+      <GlassCard
+        borderRadius="16px"
+        liquidGlass={false}
+        className="rounded-2xl bg-white/8 ring-1 ring-white/12 shadow-none"
+      >
         <div className="p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="flex-1">
-              <GlassCard borderRadius="12px" innerShadow={false} liquidGlass={false} className="rounded-xl">
-                <div className="px-4 py-3 flex items-center gap-3">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    className="text-white/40 flex-shrink-0"
-                    aria-hidden="true"
+              <div className="rounded-xl border border-white/12 bg-white/6 backdrop-blur-sm px-4 py-3 flex items-center gap-3">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  className="text-white/40 flex-shrink-0"
+                  aria-hidden="true"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35" />
+                  <circle cx="11" cy="11" r="7" strokeWidth="2" />
+                </svg>
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar laboratorio..."
+                  className="bg-transparent w-full text-sm text-white placeholder-white/50 focus:outline-none"
+                />
+                {query ? (
+                  <button
+                    type="button"
+                    onClick={() => setQuery('')}
+                    className="text-white/50 hover:text-white/80 transition-colors"
+                    aria-label="Limpiar búsqueda"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35" />
-                    <circle cx="11" cy="11" r="7" strokeWidth="2" />
-                  </svg>
-                  <input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Buscar laboratorio..."
-                    className="bg-transparent w-full text-sm text-white placeholder-white/40 focus:outline-none"
-                  />
-                  {query ? (
-                    <button
-                      type="button"
-                      onClick={() => setQuery('')}
-                      className="text-white/50 hover:text-white/80 transition-colors"
-                      aria-label="Limpiar búsqueda"
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      aria-hidden="true"
                     >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        aria-hidden="true"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 6L6 18M6 6l12 12" />
-                      </svg>
-                    </button>
-                  ) : null}
-                </div>
-              </GlassCard>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             <div className="text-xs text-white/50 tabular-nums whitespace-nowrap">
@@ -154,11 +156,8 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
                         }`}
                       aria-pressed={isSelected}
                     >
-                      <GlassCard
-                        borderRadius="14px"
-                        innerShadow={false}
-                        liquidGlass={false}
-                        className={`rounded-2xl transition-colors ${isSelected ? 'bg-white/20 ring-2 ring-white/40' : canSelect ? 'hover:bg-white/10' : ''
+                      <div
+                        className={`rounded-2xl border border-white/12 bg-white/5 backdrop-blur-sm transition-colors ${isSelected ? 'ring-2 ring-white/30 bg-white/10' : canSelect ? 'hover:bg-white/8' : ''
                           }`}
                       >
                         <div className="px-4 py-3 flex items-center justify-between gap-3">
@@ -166,10 +165,10 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
                             <div className="text-sm font-semibold text-white truncate">
                               {lab.nombre || lab.lab_key}
                             </div>
-                            <div className="text-xs text-white/50 truncate">{lab.lab_key}</div>
+                            <div className="text-xs text-white/60 truncate">{lab.lab_key}</div>
                           </div>
                           <div
-                            className={`flex-shrink-0 w-9 h-9 rounded-xl border flex items-center justify-center transition-colors ${isSelected ? 'border-white/50 bg-white/20' : 'border-white/20 bg-white/10'
+                            className={`flex-shrink-0 w-9 h-9 rounded-xl border flex items-center justify-center transition-colors ${isSelected ? 'border-white/50 bg-white/16' : 'border-white/16 bg-white/8'
                               }`}
                             aria-hidden="true"
                           >
@@ -179,7 +178,7 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
-                              className={isSelected ? 'text-white' : 'text-white/30'}
+                              className={isSelected ? 'text-white' : 'text-white/35'}
                             >
                               <path
                                 strokeLinecap="round"
@@ -190,7 +189,7 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
                             </svg>
                           </div>
                         </div>
-                      </GlassCard>
+                      </div>
                     </button>
                   );
                 })}
