@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, FormEvent } from 'react';
+import { useEffect, useState, FormEvent } from 'react';
 import { GlassInput, GlassDropdown, GlassButton, useToast } from '@/components/ui';
 import { fetchLabs, registerUser } from '@/lib/api';
 import { LabSelector } from './LabSelector';
@@ -34,29 +34,6 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
     sede: '',
     default_lab: [] as string[],
   });
-
-  const generatedUsername = useMemo(() => {
-    const normalize = (value: string) =>
-      value
-        .trim()
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]/g, '');
-
-    const nombres = formData.nombres.trim();
-    const apellidoPaterno = formData.apellido_paterno.trim();
-    const apellidoMaterno = formData.apellido_materno.trim();
-
-    if (!nombres || !apellidoPaterno || !apellidoMaterno) return '';
-
-    const firstName = nombres.split(/\s+/)[0] || '';
-    const initial = normalize(firstName).slice(0, 1);
-    const paternal = normalize(apellidoPaterno);
-
-    if (!initial || !paternal) return '';
-    return `${initial}.${paternal}`;
-  }, [formData.apellido_materno, formData.apellido_paterno, formData.nombres]);
 
   useEffect(() => {
     let cancelled = false;
@@ -139,7 +116,7 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
       });
 
       if (res.ok) {
-        setAssignedUsername(res.data?.username || generatedUsername || null);
+        setAssignedUsername(res.data?.username || null);
         setIsSuccess(true);
       } else {
         const errorMessages: Record<string, string> = {
@@ -221,15 +198,6 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
             required
             placeholder="ej: Alarcón"
             autoComplete="additional-name"
-          />
-          <GlassInput
-            label="Usuario asignado"
-            hint="(automático)"
-            id="username_asignado"
-            value={generatedUsername}
-            readOnly
-            placeholder="Se generará automáticamente"
-            aria-readonly="true"
           />
         </div>
 
