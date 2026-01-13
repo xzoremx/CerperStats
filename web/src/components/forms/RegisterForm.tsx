@@ -199,6 +199,13 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
             placeholder="ej: Alarcón"
             autoComplete="additional-name"
           />
+          <GlassDropdown
+            label="Sede"
+            options={sedeOptions}
+            value={formData.sede}
+            onChange={(value) => setFormData((prev) => ({ ...prev, sede: value }))}
+            placeholder="Seleccionar sede"
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -228,14 +235,6 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
             isSuccess={passwordsMatch}
           />
         </div>
-
-        <GlassDropdown
-          label="Sede"
-          options={sedeOptions}
-          value={formData.sede}
-          onChange={(value) => setFormData((prev) => ({ ...prev, sede: value }))}
-          placeholder="Seleccionar sede"
-        />
 
         <LabSelector
           labs={labs}
