@@ -551,6 +551,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     btnReport?.addEventListener("click", () => {
+      try {
+        if (sessionId) {
+          sessionStorage.setItem("sessionID", sessionId);
+          sessionStorage.setItem("sessionSeleccionada", sessionId);
+        }
+      } catch (_) { }
       const target = "reports.html";
       if (window.cerper?.openPage) window.cerper.openPage(target);
       else window.location.href = target;

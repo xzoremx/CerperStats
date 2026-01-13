@@ -895,3 +895,22 @@ ipcMain.handle("mark-reports-as-urgent", async (_event, reportIds) => {
   }
 });
 
+/**
+ * Update a report status (e.g. aprobado / rechazado / archivado)
+ */
+ipcMain.handle("update-report-status", async (_event, { reportId, estado }) => {
+  const id = Number(reportId);
+  const status = String(estado || "").trim();
+  if (!id || !status) return { ok: false, error: "invalid_payload" };
+
+  try {
+    await proxyFetch(`/reports/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ estado: status }),
+    });
+    return { ok: true };
+  } catch (err) {
+    console.error("[PROXY] Error updating report status:", err);
+    return { ok: false, error: err.message };
+  }
+});

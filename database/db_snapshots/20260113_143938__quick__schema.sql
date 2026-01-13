@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict tk2uWgXmUGSrZT25DSsS6Saa6I4M9OazmafxhqHMhmIq4ZsBqcgO3dfyPPWeiLT
+\restrict okPAaEdSX61s0XlVQyGpCGrneTUOPX6Fdy1oZvoFfeKzyiLYTxGCnAMDoRnvYMl
 
 -- Dumped from database version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
 -- Dumped by pg_dump version 18.0
@@ -434,12 +434,14 @@ CREATE TABLE public.usuarios (
     username text NOT NULL,
     nombre_completo text,
     rol text DEFAULT 'analista'::text,
-    email text,
     hash_password text,
-    default_lab text,
-    activo boolean DEFAULT true,
+    default_lab text[],
+    activo boolean DEFAULT false,
     creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    sede character varying(20),
+    CONSTRAINT check_default_lab_max2 CHECK ((COALESCE(array_length(default_lab, 1), 0) <= 2)),
+    CONSTRAINT check_sede CHECK (((sede)::text = ANY ((ARRAY['Paita'::character varying, 'Chimbote'::character varying, 'Arequipa'::character varying, 'Callao'::character varying])::text[])))
 );
 
 
@@ -1178,6 +1180,13 @@ CREATE INDEX idx_tests_catalog_nombre ON public.tests_catalog USING btree (nombr
 
 
 --
+-- Name: idx_usuarios_username_lower; Type: INDEX; Schema: public; Owner: cerper_user
+--
+
+CREATE UNIQUE INDEX idx_usuarios_username_lower ON public.usuarios USING btree (lower(username));
+
+
+--
 -- Name: uniq_active_module_per_catalog; Type: INDEX; Schema: public; Owner: cerper_user
 --
 
@@ -1418,14 +1427,6 @@ ALTER TABLE ONLY public.test_modules
 
 
 --
--- Name: usuarios fk_usuario_lab; Type: FK CONSTRAINT; Schema: public; Owner: cerper_user
---
-
-ALTER TABLE ONLY public.usuarios
-    ADD CONSTRAINT fk_usuario_lab FOREIGN KEY (default_lab) REFERENCES public.labs(lab_key) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
 -- Name: session_selected_tests session_selected_tests_catalog_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: cerper_user
 --
 
@@ -1445,5 +1446,5 @@ ALTER TABLE ONLY public.session_selected_tests
 -- PostgreSQL database dump complete
 --
 
-\unrestrict tk2uWgXmUGSrZT25DSsS6Saa6I4M9OazmafxhqHMhmIq4ZsBqcgO3dfyPPWeiLT
+\unrestrict okPAaEdSX61s0XlVQyGpCGrneTUOPX6Fdy1oZvoFfeKzyiLYTxGCnAMDoRnvYMl
 

@@ -86,6 +86,8 @@ contextBridge.exposeInMainWorld('cerper', {
     ipcRenderer.invoke("save-report-to-db", { sessionId, report }),
   markReportsAsUrgent: (reportIds) =>
     ipcRenderer.invoke("mark-reports-as-urgent", reportIds),
+  updateReportStatus: (reportId, estado) =>
+    ipcRenderer.invoke("update-report-status", { reportId, estado }),
 });
 
 // Exponer configuración de iconos (leer archivos locales de forma segura)
