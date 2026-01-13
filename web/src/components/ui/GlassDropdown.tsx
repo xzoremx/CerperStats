@@ -81,8 +81,8 @@ export function GlassDropdown({
       >
         {/* Dark glass menu for better readability */}
         <div
-          className="rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl border border-white/10"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
+          className="rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl border border-white/15"
+          style={{ backgroundColor: 'rgba(55, 65, 81, 0.85)' }}
         >
           <div className="py-2 max-h-60 overflow-y-auto glass-scrollbar">
             {options.map((option) => (
@@ -93,8 +93,8 @@ export function GlassDropdown({
                   setIsOpen(false);
                 }}
                 className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${value === option.value
-                    ? 'bg-white/20 text-white font-semibold'
-                    : 'text-white/90 hover:bg-white/10'
+                  ? 'bg-white/20 text-white font-semibold'
+                  : 'text-white/90 hover:bg-white/10'
                   }`}
               >
                 {option.label}
