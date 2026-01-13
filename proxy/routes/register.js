@@ -15,24 +15,24 @@ function normalizeUsernamePart(value) {
     .replace(/[^a-z0-9]/g, '');
 }
 
-function buildUsernameCandidatesFromFullName(fullName) {
+function buildUsernameFromFullName(fullName) {
   const tokens = String(fullName || '').trim().split(/\s+/).filter(Boolean);
   if (tokens.length < 3) return { error: 'invalid_full_name' };
 
   const firstName = tokens[0];
   const apellidoPaterno = tokens[tokens.length - 2];
-  const apellidoMaterno = tokens[tokens.length - 1];
 
   const initial = normalizeUsernamePart(firstName).slice(0, 1);
   const paternal = normalizeUsernamePart(apellidoPaterno);
-  const maternalInitial = normalizeUsernamePart(apellidoMaterno).slice(0, 1);
 
-  if (!initial || !paternal) return { error: 'invalid_full_name' };
+  if (!initial || !paternal) return { error: 'invalid_username_generation' };
 
-  const base = `${initial}.${paternal}`;
-  const extended = maternalInitial ? `${base}${maternalInitial}` : null;
+  return { username: `${initial}.${paternal}` };
+}
 
-  return { base, extended };
+function randomAnalistaUsername() {
+  const n = Math.floor(100 + Math.random() * 900); // 100-999
+  return `analista_${n}`;
 }
 
 function normalizeDefaultLabs(value) {
@@ -54,7 +54,7 @@ function normalizeDefaultLabs(value) {
 function getGenericRegisterResponse(username) {
   return {
     ok: true,
-    data: username ? { username } : undefined,
+    data: { username },
     message:
       'Registro recibido correctamente. Su cuenta debe ser aprobada por un administrador para poder ingresar.',
   };
@@ -103,10 +103,11 @@ router.post('/', async (req, res) => {
   const { password, nombre_completo, sede, default_lab } = req.body || {};
 
   const cleanedFullName = (nombre_completo || '').toString().trim().replace(/\s+/g, ' ');
-  const usernamePlan = buildUsernameCandidatesFromFullName(cleanedFullName);
-  if (usernamePlan?.error) {
-    return res.status(400).json({ ok: false, error: usernamePlan.error });
+  const usernamePlan = buildUsernameFromFullName(cleanedFullName);
+  if (usernamePlan?.error === 'invalid_full_name') {
+    return res.status(400).json({ ok: false, error: 'invalid_full_name' });
   }
+  const baseUsername = usernamePlan?.username || null;
 
   const normalizedDefaultLabs = normalizeDefaultLabs(default_lab);
   if (normalizedDefaultLabs?.error) {
@@ -186,47 +187,45 @@ router.post('/', async (req, res) => {
       }
     };
 
-    const candidates = [usernamePlan.base];
-    if (usernamePlan.extended) candidates.push(usernamePlan.extended);
-
-    const fallbackBase = usernamePlan.extended || usernamePlan.base;
-    for (let i = 2; i <= 99; i += 1) {
-      candidates.push(`${fallbackBase}${i}`);
-    }
-
     const isUsernameUniqueViolation = (err) =>
       err?.code === '23505' &&
       (err?.constraint === 'usuarios_username_key' || err?.constraint === 'idx_usuarios_username_lower');
 
     let createdUsername = null;
 
-    for (const candidate of candidates) {
-      try {
-        await insertUser(candidate);
-        createdUsername = candidate;
-        break;
-      } catch (err) {
-        if (isUsernameUniqueViolation(err)) {
-          continue;
+    const initialCandidate = baseUsername || randomAnalistaUsername();
+    try {
+      await insertUser(initialCandidate);
+      createdUsername = initialCandidate;
+    } catch (err) {
+      // Mitigación: secuencia desincronizada (usuarios_pkey)
+      if (err?.code === '23505' && err?.constraint === 'usuarios_pkey') {
+        const synced = await syncUsuariosIdSequence();
+        if (synced) {
+          await insertUser(initialCandidate);
+          createdUsername = initialCandidate;
         }
-
-        // Mitigación: secuencia desincronizada (usuarios_pkey)
-        if (err?.code === '23505' && err?.constraint === 'usuarios_pkey') {
-          const synced = await syncUsuariosIdSequence();
-          if (synced) {
-            await insertUser(candidate);
-            createdUsername = candidate;
+      } else if (isUsernameUniqueViolation(err)) {
+        // Evitar leaking de colisiones: fallback a username aleatorio no derivado del nombre.
+        for (let attempts = 0; attempts < 50; attempts += 1) {
+          const randomCandidate = randomAnalistaUsername();
+          try {
+            await insertUser(randomCandidate);
+            createdUsername = randomCandidate;
             break;
+          } catch (err2) {
+            if (isUsernameUniqueViolation(err2)) continue;
+            throw err2;
           }
         }
-
+      } else {
         throw err;
       }
     }
 
     if (!createdUsername) {
-      const suffix = Math.random().toString(36).slice(2, 6);
-      const randomCandidate = `${fallbackBase}${suffix}`;
+      // Si llegamos acá fue por colisiones reiteradas, usar un fallback más amplio.
+      const randomCandidate = `analista_${Math.floor(100000 + Math.random() * 900000)}`;
       await insertUser(randomCandidate);
       createdUsername = randomCandidate;
     }
