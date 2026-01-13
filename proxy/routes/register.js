@@ -3,7 +3,16 @@ const bcrypt = require('bcryptjs');
 const pool = require('../db');
 
 const router = express.Router();
-router.use(express.json());
+
+const allowedSedes = ['Paita', 'Chimbote', 'Arequipa', 'Callao'];
+
+function getGenericRegisterResponse() {
+  return {
+    ok: true,
+    message:
+      'Registro recibido correctamente. Su cuenta debe ser aprobada por un administrador para poder ingresar.',
+  };
+}
 
 async function syncUsuariosIdSequence() {
   const { rows } = await pool.query(
@@ -22,6 +31,7 @@ async function syncUsuariosIdSequence() {
 
 // ============================================
 // GET /register/labs - Listar laboratorios disponibles (público)
+// (Se mantiene por compatibilidad con UIs existentes)
 // ============================================
 router.get('/labs', async (req, res) => {
   try {
@@ -39,16 +49,19 @@ router.get('/labs', async (req, res) => {
 
 // ============================================
 // POST /register - Registro de nuevo usuario (público)
+// Seguridad: rol forzado a 'analista', activo=false, username lowercase.
+// Respuesta genérica para evitar enumeración.
 // ============================================
 router.post('/', async (req, res) => {
-  const { username, password, nombre_completo, email, rol, default_lab } = req.body || {};
+  const { username, password, nombre_completo, sede } = req.body || {};
 
-  // Validaciones
-  if (!username || !password) {
+  const lowerUsername = (username || '').toString().trim().toLowerCase();
+
+  if (!lowerUsername || !password) {
     return res.status(400).json({ ok: false, error: 'username_password_required' });
   }
 
-  if (username.length < 3) {
+  if (lowerUsername.length < 3) {
     return res.status(400).json({ ok: false, error: 'username_too_short' });
   }
 
@@ -56,39 +69,18 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'password_too_short' });
   }
 
-  // Validar formato de username (solo letras, numeros, guiones y puntos)
-  if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+  if (!/^[a-zA-Z0-9._-]+$/.test(lowerUsername)) {
     return res.status(400).json({ ok: false, error: 'invalid_username_format' });
   }
 
-  // Validar rol (solo analista o supervisor permitidos en auto-registro)
-  const allowedRoles = ['analista', 'supervisor'];
-  const userRol = rol && allowedRoles.includes(rol) ? rol : 'analista';
+  if (!sede || !allowedSedes.includes(sede)) {
+    return res.status(400).json({ ok: false, error: 'invalid_sede' });
+  }
+
+  const userRol = 'analista';
+  const userActivo = false;
 
   try {
-    // Verificar si el username ya existe
-    const existing = await pool.query(
-      'SELECT id FROM usuarios WHERE LOWER(username) = LOWER($1)',
-      [username]
-    );
-
-    if (existing.rows.length > 0) {
-      return res.status(409).json({ ok: false, error: 'username_exists' });
-    }
-
-    // Verificar si el email ya existe (si se proporciona)
-    if (email) {
-      const existingEmail = await pool.query(
-        'SELECT id FROM usuarios WHERE LOWER(email) = LOWER($1)',
-        [email]
-      );
-
-      if (existingEmail.rows.length > 0) {
-        return res.status(409).json({ ok: false, error: 'email_exists' });
-      }
-    }
-
-    // Hash de la contraseña
     const saltRounds = 10;
     const hash_password = await bcrypt.hash(password, saltRounds);
 
@@ -99,11 +91,11 @@ router.post('/', async (req, res) => {
 
         const result = await client.query(
           `
-            INSERT INTO usuarios (username, hash_password, nombre_completo, email, default_lab, rol, activo)
-            VALUES ($1, $2, $3, $4, $5, $6, true)
-            RETURNING id, username, nombre_completo, email, default_lab, rol, creado_en
+            INSERT INTO usuarios (username, hash_password, nombre_completo, sede, rol, activo)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id
           `,
-          [username, hash_password, nombre_completo || null, email || null, default_lab || null, userRol]
+          [lowerUsername, hash_password, nombre_completo || null, sede, userRol, userActivo]
         );
 
         await client.query(
@@ -128,49 +120,41 @@ router.post('/', async (req, res) => {
       }
     };
 
-    let result;
     try {
-      result = await insertUser();
+      await insertUser();
     } catch (err) {
+      // No enumerar usuarios: si el username ya existe (case-insensitive), responder éxito genérico.
+      if (
+        err?.code === '23505' &&
+        (err?.constraint === 'usuarios_username_key' || err?.constraint === 'idx_usuarios_username_lower')
+      ) {
+        return res.status(201).json(getGenericRegisterResponse());
+      }
+
+      // Mitigación: secuencia desincronizada (usuarios_pkey)
       if (err?.code === '23505' && err?.constraint === 'usuarios_pkey') {
         const synced = await syncUsuariosIdSequence();
         if (synced) {
-          result = await insertUser();
-        } else {
-          throw err;
+          await insertUser();
+          return res.status(201).json(getGenericRegisterResponse());
         }
-      } else {
-        throw err;
       }
+
+      throw err;
     }
 
-    console.log('[REGISTER] Nuevo usuario registrado:', username);
-
-    return res.status(201).json({
-      ok: true,
-      user: {
-        id: result.rows[0].id,
-        username: result.rows[0].username,
-        nombre_completo: result.rows[0].nombre_completo
-      }
-    });
+    console.log('[REGISTER] Nuevo registro recibido:', lowerUsername);
+    return res.status(201).json(getGenericRegisterResponse());
   } catch (err) {
     console.error('[REGISTER] Error registrando usuario:', err);
 
-    if (err?.code === '23505') {
-      if (err?.constraint === 'usuarios_username_key') {
-        return res.status(409).json({ ok: false, error: 'username_exists' });
-      }
-
-      if (err?.constraint === 'usuarios_pkey') {
-        return res.status(500).json({ ok: false, error: 'db_sequence_out_of_sync' });
-      }
-
-      return res.status(409).json({ ok: false, error: 'duplicate_key' });
+    if (err?.code === '23514' && err?.constraint === 'check_sede') {
+      return res.status(400).json({ ok: false, error: 'invalid_sede' });
     }
 
-    if (err?.code === '23503' && err?.constraint === 'fk_usuario_lab') {
-      return res.status(400).json({ ok: false, error: 'invalid_default_lab' });
+    // Si es duplicado pero no tenemos constraint name por alguna razón, responder genérico.
+    if (err?.code === '23505') {
+      return res.status(201).json(getGenericRegisterResponse());
     }
 
     return res.status(500).json({ ok: false, error: 'registration_failed' });

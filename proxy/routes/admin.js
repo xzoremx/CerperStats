@@ -3,7 +3,8 @@ const bcrypt = require('bcryptjs');
 const pool = require('../db');
 
 const router = express.Router();
-router.use(express.json());
+
+const allowedSedes = ['Paita', 'Chimbote', 'Arequipa', 'Callao'];
 
 // Middleware: verificar que el usuario autenticado sea admin
 // Nota: Este middleware asume que verifyToken ya fue aplicado y req.client existe
@@ -28,7 +29,7 @@ const requireAdmin = async (req, res, next) => {
     const { rows } = await pool.query(
       `SELECT id, username, hash_password, rol
        FROM usuarios
-       WHERE username = $1 AND activo = true AND rol = 'admin'
+       WHERE LOWER(username) = LOWER($1) AND activo = true AND rol = 'admin'
        LIMIT 1`,
       [username]
     );
@@ -61,7 +62,7 @@ const requireAdmin = async (req, res, next) => {
 router.get('/users', requireAdmin, async (req, res) => {
   try {
     const { rows } = await pool.query(`
-      SELECT id, username, nombre_completo, rol, email, default_lab, activo, creado_en, actualizado_en
+      SELECT id, username, nombre_completo, rol, sede, default_lab, activo, creado_en, actualizado_en
       FROM usuarios
       ORDER BY creado_en DESC
     `);
@@ -93,7 +94,7 @@ router.get('/labs', requireAdmin, async (req, res) => {
 // POST /admin/users - Crear nuevo usuario
 // ============================================
 router.post('/users', requireAdmin, async (req, res) => {
-  const { username, password, nombre_completo, rol, email, default_lab } = req.body || {};
+  const { username, password, nombre_completo, rol, sede, default_lab } = req.body || {};
 
   // Validaciones
   if (!username || !password) {
@@ -110,6 +111,10 @@ router.post('/users', requireAdmin, async (req, res) => {
 
   const validRoles = ['admin', 'supervisor', 'analista'];
   const userRol = rol && validRoles.includes(rol) ? rol : 'analista';
+
+  if (sede !== undefined && sede !== null && sede !== '' && !allowedSedes.includes(sede)) {
+    return res.status(400).json({ ok: false, error: 'invalid_sede' });
+  }
 
   try {
     // Verificar si el username ya existe
@@ -128,10 +133,10 @@ router.post('/users', requireAdmin, async (req, res) => {
 
     // Insertar usuario
     const result = await pool.query(`
-      INSERT INTO usuarios (username, hash_password, nombre_completo, rol, email, default_lab, activo)
+      INSERT INTO usuarios (username, hash_password, nombre_completo, rol, sede, default_lab, activo)
       VALUES ($1, $2, $3, $4, $5, $6, true)
-      RETURNING id, username, nombre_completo, rol, email, default_lab, activo, creado_en
-    `, [username, hash_password, nombre_completo || null, userRol, email || null, default_lab || null]);
+      RETURNING id, username, nombre_completo, rol, sede, default_lab, activo, creado_en
+    `, [username, hash_password, nombre_completo || null, userRol, sede || null, default_lab || null]);
 
     // Log de la acción
     await pool.query(`
@@ -151,7 +156,7 @@ router.post('/users', requireAdmin, async (req, res) => {
 // ============================================
 router.put('/users/:id', requireAdmin, async (req, res) => {
   const userId = parseInt(req.params.id, 10);
-  const { nombre_completo, rol, email, default_lab, activo, password } = req.body || {};
+  const { nombre_completo, rol, sede, default_lab, activo, password } = req.body || {};
 
   if (isNaN(userId)) {
     return res.status(400).json({ ok: false, error: 'invalid_user_id' });
@@ -181,9 +186,16 @@ router.put('/users/:id', requireAdmin, async (req, res) => {
       }
     }
 
-    if (email !== undefined) {
-      updates.push(`email = $${paramIndex++}`);
-      values.push(email || null);
+    if (sede !== undefined) {
+      if (sede === null || sede === '') {
+        updates.push(`sede = $${paramIndex++}`);
+        values.push(null);
+      } else if (allowedSedes.includes(sede)) {
+        updates.push(`sede = $${paramIndex++}`);
+        values.push(sede);
+      } else {
+        return res.status(400).json({ ok: false, error: 'invalid_sede' });
+      }
     }
 
     if (default_lab !== undefined) {
@@ -212,7 +224,7 @@ router.put('/users/:id', requireAdmin, async (req, res) => {
       UPDATE usuarios
       SET ${updates.join(', ')}
       WHERE id = $${paramIndex}
-      RETURNING id, username, nombre_completo, rol, email, default_lab, activo, actualizado_en
+      RETURNING id, username, nombre_completo, rol, sede, default_lab, activo, actualizado_en
     `, values);
 
     // Log de la acción

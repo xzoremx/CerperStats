@@ -171,7 +171,7 @@ function renderUsersTable() {
     <tr>
       <td class="font-semibold">${escapeHtml(user.username)}</td>
       <td>${escapeHtml(user.nombre_completo || '-')}</td>
-      <td class="text-white/60">${escapeHtml(user.email || '-')}</td>
+      <td class="text-white/60">${escapeHtml(user.sede || '-')}</td>
       <td><span class="badge badge-${user.rol}">${user.rol}</span></td>
       <td class="text-white/60">${escapeHtml(user.default_lab || '-')}</td>
       <td>
@@ -237,7 +237,7 @@ function openEditUser(userId) {
   document.getElementById('user-password').required = false;
   document.getElementById('password-hint').textContent = '(dejar vacio para mantener)';
   document.getElementById('user-nombre').value = user.nombre_completo || '';
-  document.getElementById('user-email').value = user.email || '';
+  document.getElementById('user-sede').value = user.sede || '';
   document.getElementById('user-rol').value = user.rol || 'analista';
   document.getElementById('user-lab').value = user.default_lab || '';
   document.getElementById('user-activo').checked = user.activo;
@@ -261,7 +261,7 @@ document.getElementById('user-form').addEventListener('submit', async (e) => {
   const username = document.getElementById('user-username').value.trim();
   const password = document.getElementById('user-password').value;
   const nombre_completo = document.getElementById('user-nombre').value.trim();
-  const email = document.getElementById('user-email').value.trim();
+  const sede = document.getElementById('user-sede').value || null;
   const rol = document.getElementById('user-rol').value;
   const default_lab = document.getElementById('user-lab').value || null;
   const activo = document.getElementById('user-activo').checked;
@@ -286,7 +286,7 @@ document.getElementById('user-form').addEventListener('submit', async (e) => {
 
   try {
     if (editingUserId) {
-      const payload = { nombre_completo, email, rol, default_lab, activo };
+      const payload = { nombre_completo, sede, rol, default_lab, activo };
       if (password) payload.password = password;
 
       await apiCall(`/users/${editingUserId}`, {
@@ -301,7 +301,7 @@ document.getElementById('user-form').addEventListener('submit', async (e) => {
           username,
           password,
           nombre_completo,
-          email,
+          sede,
           rol,
           default_lab
         })

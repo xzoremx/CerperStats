@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, FormEvent } from 'react';
 import { GlassInput, GlassDropdown, GlassButton, useToast } from '@/components/ui';
-import { LabSelector } from './LabSelector';
-import { fetchLabs, registerUser } from '@/lib/api';
-import type { Lab } from '@/lib/types';
+import { registerUser } from '@/lib/api';
 
-const roleOptions = [
-  { value: 'analista', label: 'Analista' },
-  { value: 'supervisor', label: 'Responsable de Laboratorio' },
+const sedeOptions = [
+  { value: 'Paita', label: 'Paita' },
+  { value: 'Chimbote', label: 'Chimbote' },
+  { value: 'Arequipa', label: 'Arequipa' },
+  { value: 'Callao', label: 'Callao' },
 ];
 
 interface RegisterFormProps {
@@ -19,36 +19,29 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
   const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccessState] = useState(false);
-  const [labs, setLabs] = useState<Lab[]>([]);
 
   const [formData, setFormData] = useState({
     username: '',
     nombre_completo: '',
-    email: '',
     password: '',
     passwordConfirm: '',
-    rol: '',
-    default_lab: '',
+    sede: '',
   });
-
-  useEffect(() => {
-    fetchLabs().then((res) => {
-      if (res.ok && res.data) {
-        setLabs(res.data);
-      }
-    });
-  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Check if passwords match (both must have content and be equal)
   const passwordsMatch =
     formData.password.length >= 6 &&
     formData.passwordConfirm.length >= 6 &&
     formData.password === formData.passwordConfirm;
+
+  const setIsSuccess = (value: boolean) => {
+    setIsSuccessState(value);
+    onSuccessChange?.(value);
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -73,8 +66,8 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
       return;
     }
 
-    if (!formData.rol) {
-      showToast('Selecciona un rol');
+    if (!formData.sede) {
+      showToast('Selecciona una sede');
       return;
     }
 
@@ -85,24 +78,21 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
         username: formData.username,
         password: formData.password,
         nombre_completo: formData.nombre_completo,
-        email: formData.email || undefined,
-        rol: formData.rol as 'analista' | 'supervisor',
-        default_lab: formData.default_lab || undefined,
+        sede: formData.sede as 'Paita' | 'Chimbote' | 'Arequipa' | 'Callao',
       });
 
       if (res.ok) {
         setIsSuccess(true);
       } else {
         const errorMessages: Record<string, string> = {
-          username_exists: 'El nombre de usuario ya existe',
-          email_exists: 'El correo electronico ya esta registrado',
           username_password_required: 'Usuario y contrasena son requeridos',
           password_too_short: 'La contrasena es muy corta',
           username_too_short: 'El usuario es muy corto',
           invalid_username_format: 'Formato de usuario invalido',
+          invalid_sede: 'Sede no valida',
           too_many_attempts: 'Demasiados intentos. Espera 15 minutos.',
         };
-        showToast(errorMessages[res.error || ''] || 'Error al crear la cuenta');
+        showToast(errorMessages[res.error || ''] || 'Error al enviar el registro');
       }
     } catch {
       showToast('Error de conexion. Intenta de nuevo.');
@@ -111,58 +101,22 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
     }
   };
 
-  const labOptions = labs.map((lab) => ({
-    value: lab.lab_key,
-    label: lab.nombre || lab.lab_key,
-  }));
-
-  // Helper to update isSuccess and notify parent
-  const setIsSuccess = (value: boolean) => {
-    setIsSuccessState(value);
-    onSuccessChange?.(value);
-  };
-
-  // Success state - Full card takeover animation
   if (isSuccess) {
     return (
       <div className="flex flex-col items-center justify-center py-20 px-8 animate-in min-h-[400px]">
-        {/* Animated checkmark circle */}
         <div className="relative mb-8">
           <div className="w-28 h-28 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-[0_0_50px_rgba(74,222,128,0.5)] animate-pulse">
             <svg className="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          {/* Decorative rings */}
           <div className="absolute inset-0 rounded-full border-2 border-green-400/30 animate-ping" />
         </div>
 
-        {/* Main message */}
-        <h2 className="text-4xl font-bold text-white mb-4 text-center">
-          ¡Gracias por registrarte!
-        </h2>
+        <h2 className="text-4xl font-bold text-white mb-4 text-center">Registro recibido</h2>
         <p className="text-lg text-white/70 mb-12 text-center max-w-md">
-          Tu cuenta ha sido creada exitosamente. Ya puedes iniciar sesión en la aplicación.
+          Tu cuenta debe ser aprobada por un administrador antes de poder iniciar sesion.
         </p>
-
-        {/* Subtle CTA */}
-        <button
-          onClick={() => {
-            setIsSuccess(false);
-            setFormData({
-              username: '',
-              nombre_completo: '',
-              email: '',
-              password: '',
-              passwordConfirm: '',
-              rol: '',
-              default_lab: '',
-            });
-          }}
-          className="text-white/50 hover:text-white text-sm transition-colors underline underline-offset-4"
-        >
-          Registrar otra cuenta
-        </button>
       </div>
     );
   }
@@ -195,15 +149,6 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
           />
         </div>
 
-        <GlassInput
-          label="Correo Electronico"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          placeholder="jperez@gmail.com"
-        />
-
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <GlassInput
             label="Contrasena"
@@ -233,21 +178,15 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
         </div>
 
         <GlassDropdown
-          label="Rol"
-          options={roleOptions}
-          value={formData.rol}
-          onChange={(value) => setFormData((prev) => ({ ...prev, rol: value }))}
-          placeholder="Seleccionar rol"
-        />
-
-        <LabSelector
-          labs={labs}
-          value={formData.default_lab}
-          onChange={(value) => setFormData((prev) => ({ ...prev, default_lab: value }))}
+          label="Sede"
+          options={sedeOptions}
+          value={formData.sede}
+          onChange={(value) => setFormData((prev) => ({ ...prev, sede: value }))}
+          placeholder="Seleccionar sede"
         />
 
         <GlassButton type="submit" isLoading={isLoading} className="mt-6">
-          <span>Crear Cuenta</span>
+          <span>Enviar Registro</span>
           <svg
             width="18"
             height="18"

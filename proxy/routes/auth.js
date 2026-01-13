@@ -3,7 +3,6 @@ const bcrypt = require('bcryptjs');
 const pool = require('../db');
 
 const router = express.Router();
-router.use(express.json());
 
 router.post('/login', async (req, res) => {
   const { username, password } = req.body || {};
@@ -14,8 +13,7 @@ router.post('/login', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT *
        FROM usuarios
-       WHERE username = $1
-         AND activo = true
+       WHERE LOWER(username) = LOWER($1)
        LIMIT 1`,
       [username]
     );
@@ -36,7 +34,7 @@ router.post('/login', async (req, res) => {
       await pool.query(
         `INSERT INTO logs_sistema (usuario_id, accion, detalle)
          VALUES (
-           (SELECT id FROM usuarios WHERE username = $1),
+           (SELECT id FROM usuarios WHERE LOWER(username) = LOWER($1)),
            'login_fallido',
            'Contraseña incorrecta'
          )`,
@@ -44,6 +42,15 @@ router.post('/login', async (req, res) => {
       );
       return res.status(401).json({ ok: false, error: 'invalid_password' });
     }
+
+    if (!user.activo) {
+      return res.status(403).json({
+        ok: false,
+        error: 'account_inactive',
+        message: 'Su cuenta aún no ha sido activada por un administrador.',
+      });
+    }
+
     await pool.query(
       `INSERT INTO logs_sistema (usuario_id, accion, detalle)
        VALUES ($1, 'login_exitoso', 'Inicio de sesión correcto.')`,

@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
@@ -52,8 +51,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Auth']
 }));
 
-app.use(bodyParser.json({ limit: '50mb' }));
-
 // Servir archivos estáticos públicos (registro, etc.)
 // Accesible en: http://tu-servidor:4000/
 app.use(express.static(path.join(__dirname, 'public')));
@@ -91,10 +88,15 @@ app.get('/auth/verify', verifyToken, (req, res) => {
 });
 
 // Auth routes (login doesn't need token verification)
-app.use('/auth', authLimiter, authRouter);
+app.use('/auth', express.json({ limit: '5kb' }), authLimiter, authRouter);
 
 // Public registration routes (no token required, rate limited)
-app.use('/register', authLimiter, registerRouter);
+// Limit payload size aggressively to mitigate abuse/DoS.
+app.use('/register', express.json({ limit: '1kb' }), authLimiter, registerRouter);
+
+// Default JSON body limit for the rest of the API.
+app.use(express.json({ limit: '50mb' }));
+
 app.use('/labs', apiLimiter, verifyToken, labsRouter);
 app.use('/inputs', apiLimiter, verifyToken, inputsRouter);
 app.use('/sessions', apiLimiter, verifyToken, sessionsRouter);

@@ -13,7 +13,5 @@ export interface RegisterPayload {
   username: string;
   password: string;
   nombre_completo: string;
-  email?: string;
-  rol: 'analista' | 'supervisor';
-  default_lab?: string;
+  sede: 'Paita' | 'Chimbote' | 'Arequipa' | 'Callao';
 }
