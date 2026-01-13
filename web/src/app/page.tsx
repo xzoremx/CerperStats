@@ -25,10 +25,10 @@ export default function HomePage() {
                 <img
                   src="/cerper_logo.png"
                   alt="CerperStats"
-                  className="w-40 h-40 sm:w-44 sm:h-44 object-contain mb-6 opacity-90 drop-shadow-[0_14px_40px_rgba(0,0,0,0.35)]"
+                  className="w-52 h-52 sm:w-56 sm:h-56 object-contain mb-6 opacity-95 drop-shadow-[0_16px_48px_rgba(0,0,0,0.35)]"
                 />
 
-                <h1 className="leading-[1.05] text-5xl sm:text-6xl font-light text-slate-100 tracking-[-0.04em] mb-3">
+                <h1 className="leading-[1.05] text-5xl sm:text-6xl font-light text-slate-100 tracking-[0.06em] mb-3">
                   CerperStats
                 </h1>
 

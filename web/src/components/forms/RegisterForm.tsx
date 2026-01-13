@@ -154,14 +154,6 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
 
   return (
     <div className="animate-in">
-      <div className="mb-8 flex justify-center">
-        <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-center backdrop-blur-xl">
-          <p className="text-sm sm:text-base font-normal text-slate-200/60">
-            Por favor, completa tus datos para registrarte
-          </p>
-        </div>
-      </div>
-
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <GlassInput

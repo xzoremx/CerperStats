@@ -16,9 +16,9 @@ export const GlassInput = forwardRef<HTMLInputElement, GlassInputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-slate-200 mb-2">
+          <label htmlFor={inputId} className="block text-sm font-medium text-white mb-2">
             {label}
-            {hint && <span className="text-slate-400/70 font-normal ml-1">{hint}</span>}
+            {hint && <span className="text-white/50 font-normal ml-1">{hint}</span>}
           </label>
         )}
         <div
@@ -46,9 +46,9 @@ export const GlassInput = forwardRef<HTMLInputElement, GlassInputProps>(
             {...props}
             className={`
               relative bg-transparent w-full px-4 py-3 text-sm 
-              placeholder-slate-400/50 border-none focus:outline-none 
+              placeholder-white/40 border-none focus:outline-none 
               transition-colors
-              ${isSuccess ? 'text-green-300' : 'text-slate-200'}
+              ${isSuccess ? 'text-green-300' : 'text-white'}
             `}
           />
         </div>

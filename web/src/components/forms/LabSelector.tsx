@@ -32,18 +32,18 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
 
   const Header = (
     <div className="flex items-end justify-between gap-3">
-      <label className="block text-sm font-medium text-slate-200">
-        Laboratorios <span className="text-xs font-normal text-slate-400/70">(máximo 2)</span>
+      <label className="block text-sm font-medium text-white">
+        Laboratorios <span className="text-xs font-normal text-white/50">(máximo 2)</span>
       </label>
       <div className="flex items-center gap-3">
-        <span className="text-xs text-slate-400/70">
+        <span className="text-xs text-white/50">
           {value.length > 0 ? `${value.length}/2 seleccionados` : 'Opcional'}
         </span>
         {value.length > 0 ? (
           <button
             type="button"
             onClick={() => onChange([])}
-            className="text-xs text-slate-300/70 hover:text-slate-200 underline underline-offset-4"
+            className="text-xs text-white/70 hover:text-white underline underline-offset-4"
           >
             Limpiar
           </button>
@@ -57,7 +57,7 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
       <div className="space-y-3">
         {Header}
         <GlassCard borderRadius="16px" liquidGlass={false} className="rounded-2xl">
-          <div className="p-5 text-center text-slate-400/70 text-sm">Cargando laboratorios...</div>
+          <div className="p-5 text-center text-white/50 text-sm">Cargando laboratorios...</div>
         </GlassCard>
       </div>
     );
@@ -68,7 +68,7 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
       <div className="space-y-3">
         {Header}
         <GlassCard borderRadius="16px" liquidGlass={false} className="rounded-2xl">
-          <div className="p-5 text-center text-slate-400/70 text-sm">No hay laboratorios disponibles</div>
+          <div className="p-5 text-center text-white/50 text-sm">No hay laboratorios disponibles</div>
         </GlassCard>
       </div>
     );

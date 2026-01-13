@@ -23,8 +23,7 @@ body {
   background-size: cover;
   background-attachment: fixed;
   min-height: 100vh;
-  /* Apple-style slate gray text */
-  color: rgb(226, 232, 240);
+  color: white;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
