@@ -14,7 +14,7 @@ export default function HomePage() {
         <GlassCard className="rounded-3xl flex flex-col" allowOverflow>
           {/* Top Section - Logo & Welcome (hidden on success) */}
           {!isSuccessView && (
-            <div className="relative h-auto flex flex-col text-center p-8 sm:p-10 items-center justify-center rounded-t-3xl border-b border-white/10 overflow-hidden">
+            <div className="relative h-auto flex flex-col text-center p-6 sm:p-8 items-center justify-center rounded-t-3xl border-b border-white/10 overflow-hidden">
               {/* Subtle background */}
               <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/[0.06] to-black/10" />
               <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-cyan-300/10 blur-3xl" />
@@ -25,14 +25,14 @@ export default function HomePage() {
                 <img
                   src="/cerper_logo.png"
                   alt="CerperStats"
-                  className="w-52 h-52 sm:w-56 sm:h-56 object-contain mb-6 opacity-95 drop-shadow-[0_16px_48px_rgba(0,0,0,0.35)]"
+                  className="w-36 h-36 sm:w-40 sm:h-40 object-contain mb-4 opacity-95 drop-shadow-[0_12px_36px_rgba(0,0,0,0.35)]"
                 />
 
-                <h1 className="leading-[1.05] text-5xl sm:text-6xl font-light text-slate-100 tracking-[0.06em] mb-3">
+                <h1 className="leading-[1.05] text-4xl sm:text-5xl font-light text-slate-100 tracking-[0.06em] mb-2">
                   CerperStats
                 </h1>
 
-                <p className="leading-relaxed text-sm sm:text-base font-normal text-slate-200/70 max-w-lg mx-auto">
+                <p className="leading-relaxed text-sm font-normal text-slate-200/70 max-w-lg mx-auto">
                   Crea tu cuenta para acceder al sistema de gestión de laboratorio
                 </p>
               </div>
