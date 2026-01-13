@@ -213,6 +213,18 @@ router.post('/', async (req, res) => {
           await insertUser(randomCandidate);
           return randomCandidate;
         } catch (err) {
+          if (err?.code === '23505' && err?.constraint === 'usuarios_pkey') {
+            const synced = await syncUsuariosIdSequence();
+            if (synced) {
+              try {
+                await insertUser(randomCandidate);
+                return randomCandidate;
+              } catch (retryErr) {
+                if (isUsernameUniqueViolation(retryErr)) continue;
+                throw retryErr;
+              }
+            }
+          }
           if (isUsernameUniqueViolation(err)) continue;
           throw err;
         }
@@ -253,9 +265,34 @@ router.post('/', async (req, res) => {
 
     if (!createdUsername) {
       // Si llegamos acá fue por colisiones reiteradas, usar un fallback más amplio.
-      const randomCandidate = `analista_${Math.floor(100000 + Math.random() * 900000)}`;
-      await insertUser(randomCandidate);
-      createdUsername = randomCandidate;
+      for (let attempts = 0; attempts < 50; attempts += 1) {
+        const randomCandidate = `analista_${Math.floor(100000 + Math.random() * 900000)}`;
+        try {
+          await insertUser(randomCandidate);
+          createdUsername = randomCandidate;
+          break;
+        } catch (err) {
+          if (err?.code === '23505' && err?.constraint === 'usuarios_pkey') {
+            const synced = await syncUsuariosIdSequence();
+            if (synced) {
+              try {
+                await insertUser(randomCandidate);
+                createdUsername = randomCandidate;
+                break;
+              } catch (retryErr) {
+                if (isUsernameUniqueViolation(retryErr)) continue;
+                throw retryErr;
+              }
+            }
+          }
+          if (isUsernameUniqueViolation(err)) continue;
+          throw err;
+        }
+      }
+    }
+
+    if (!createdUsername) {
+      return res.status(500).json({ ok: false, error: 'registration_failed' });
     }
 
     console.log('[REGISTER] Nuevo registro recibido:', createdUsername);
