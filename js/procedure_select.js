@@ -150,9 +150,23 @@ function initLabName() {
 
 function gateSessionsSection() {
   const labKey = sessionStorage.getItem("labSeleccionado") || localStorage.getItem("labSeleccionado") || "";
-  const defaultLab = (sessionStorage.getItem("default_lab") || "").trim();
   const rol = (sessionStorage.getItem("rol") || "").toLowerCase().trim();
-  const allowed = rol === "admin" || (rol === "supervisor" && labKey && defaultLab && labKey === defaultLab);
+
+  const primaryDefaultLab = (sessionStorage.getItem("default_lab") || "").trim();
+  let defaultLabs = [];
+  try {
+    const raw = sessionStorage.getItem("default_labs");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        defaultLabs = parsed.map((v) => String(v || "").trim()).filter(Boolean);
+      }
+    }
+  } catch (_) { }
+  if (!defaultLabs.length && primaryDefaultLab) defaultLabs = [primaryDefaultLab];
+
+  const allowed =
+    rol === "admin" || (rol === "supervisor" && labKey && defaultLabs.includes(labKey));
   if (allowed) return;
   const sessionsSection = document.querySelector('.section[data-index="3"]') || document.querySelectorAll(".section")[2];
   sessionsSection?.remove();

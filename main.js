@@ -459,7 +459,14 @@ ipcMain.handle("db-get-sessions-by-role", async (_event, { rol, labDefault }) =>
   try {
     const params = new URLSearchParams();
     if (rol) params.set("rol", rol);
-    if (labDefault) params.set("lab", labDefault);
+    if (Array.isArray(labDefault)) {
+      labDefault
+        .map((v) => String(v || "").trim())
+        .filter(Boolean)
+        .forEach((lab) => params.append("lab", lab));
+    } else if (labDefault) {
+      params.set("lab", String(labDefault).trim());
+    }
     const query = params.toString();
     const payload = await proxyFetch(`/sessions${query ? `?${query}` : ""}`);
     return { ok: true, data: payload.data || [] };

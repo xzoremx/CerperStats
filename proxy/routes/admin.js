@@ -6,6 +6,22 @@ const router = express.Router();
 
 const allowedSedes = ['Paita', 'Chimbote', 'Arequipa', 'Callao'];
 
+function normalizeDefaultLabs(value) {
+  if (value == null) return null;
+
+  const raw = Array.isArray(value) ? value : [value];
+  const labs = [];
+
+  for (const entry of raw) {
+    const lab = (entry || '').toString().trim();
+    if (!lab) continue;
+    if (!labs.includes(lab)) labs.push(lab);
+    if (labs.length > 2) return { error: 'invalid_default_lab' };
+  }
+
+  return labs.length ? { labs } : null;
+}
+
 // Middleware: verificar que el usuario autenticado sea admin
 // Nota: Este middleware asume que verifyToken ya fue aplicado y req.client existe
 const requireAdmin = async (req, res, next) => {
@@ -116,6 +132,12 @@ router.post('/users', requireAdmin, async (req, res) => {
     return res.status(400).json({ ok: false, error: 'invalid_sede' });
   }
 
+  const normalizedDefaultLabs = normalizeDefaultLabs(default_lab);
+  if (normalizedDefaultLabs?.error) {
+    return res.status(400).json({ ok: false, error: normalizedDefaultLabs.error });
+  }
+  const defaultLabs = normalizedDefaultLabs?.labs || null;
+
   try {
     // Verificar si el username ya existe
     const existing = await pool.query(
@@ -131,12 +153,24 @@ router.post('/users', requireAdmin, async (req, res) => {
     const saltRounds = 10;
     const hash_password = await bcrypt.hash(password, saltRounds);
 
+    if (defaultLabs) {
+      const { rows } = await pool.query(
+        `SELECT lab_key
+         FROM labs
+         WHERE lab_key = ANY($1::text[])`,
+        [defaultLabs]
+      );
+      if (rows.length !== defaultLabs.length) {
+        return res.status(400).json({ ok: false, error: 'invalid_default_lab' });
+      }
+    }
+
     // Insertar usuario
     const result = await pool.query(`
       INSERT INTO usuarios (username, hash_password, nombre_completo, rol, sede, default_lab, activo)
       VALUES ($1, $2, $3, $4, $5, $6, true)
       RETURNING id, username, nombre_completo, rol, sede, default_lab, activo, creado_en
-    `, [username, hash_password, nombre_completo || null, userRol, sede || null, default_lab || null]);
+    `, [username, hash_password, nombre_completo || null, userRol, sede || null, defaultLabs]);
 
     // Log de la acción
     await pool.query(`
@@ -199,8 +233,26 @@ router.put('/users/:id', requireAdmin, async (req, res) => {
     }
 
     if (default_lab !== undefined) {
+      const normalized = normalizeDefaultLabs(default_lab);
+      if (normalized?.error) {
+        return res.status(400).json({ ok: false, error: normalized.error });
+      }
+      const defaultLabs = normalized?.labs || null;
+
+      if (defaultLabs) {
+        const { rows } = await pool.query(
+          `SELECT lab_key
+           FROM labs
+           WHERE lab_key = ANY($1::text[])`,
+          [defaultLabs]
+        );
+        if (rows.length !== defaultLabs.length) {
+          return res.status(400).json({ ok: false, error: 'invalid_default_lab' });
+        }
+      }
+
       updates.push(`default_lab = $${paramIndex++}`);
-      values.push(default_lab || null);
+      values.push(defaultLabs);
     }
 
     if (activo !== undefined) {

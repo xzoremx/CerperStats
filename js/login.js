@@ -52,6 +52,18 @@ document.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("labSeleccionado", user.default_lab || "");
       sessionStorage.setItem("default_lab", user.default_lab || "");
 
+      // Lista opcional de laboratorios asignados (máx 2). Mantener default_lab como el primer valor.
+      try {
+        const labsList = Array.isArray(user.default_labs)
+          ? user.default_labs
+          : user.default_lab
+            ? [user.default_lab]
+            : [];
+        sessionStorage.setItem("default_labs", JSON.stringify(labsList));
+      } catch (_) {
+        // ignore
+      }
+
       // Resolver y guardar metadata del laboratorio a partir del lab_key (default_lab)
       try {
         if (user.default_lab) {

@@ -145,15 +145,56 @@ function updateStats() {
 }
 
 function populateLabsSelect() {
-  const select = document.getElementById('user-lab');
-  select.innerHTML = '<option value="">-- Sin asignar --</option>';
+  const select1 = document.getElementById('user-lab-1');
+  const select2 = document.getElementById('user-lab-2');
 
-  labs.forEach(lab => {
-    const option = document.createElement('option');
-    option.value = lab.lab_key;
-    option.textContent = lab.nombre || lab.lab_key;
-    select.appendChild(option);
-  });
+  const fill = (select, placeholder) => {
+    if (!select) return;
+    select.innerHTML = '';
+
+    const optEmpty = document.createElement('option');
+    optEmpty.value = '';
+    optEmpty.textContent = placeholder;
+    select.appendChild(optEmpty);
+
+    labs.forEach(lab => {
+      const option = document.createElement('option');
+      option.value = lab.lab_key;
+      option.textContent = lab.nombre || lab.lab_key;
+      select.appendChild(option);
+    });
+  };
+
+  fill(select1, '-- Principal --');
+  fill(select2, '-- Secundario (opcional) --');
+}
+
+function normalizeDefaultLabs(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map(v => String(v || '').trim()).filter(Boolean);
+  const raw = String(value).trim();
+  if (!raw) return [];
+
+  // Handle Postgres array literal e.g. "{lab1,lab2}"
+  if (raw.startsWith('{') && raw.endsWith('}')) {
+    const inner = raw.slice(1, -1);
+    return inner
+      .split(',')
+      .map(s => s.replace(/^\"|\"$/g, '').trim())
+      .filter(Boolean);
+  }
+
+  // Fallback: comma-separated string (e.g. "lab1,lab2")
+  if (raw.includes(',')) {
+    return raw.split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  return [raw];
+}
+
+function formatDefaultLabs(value) {
+  const labsList = normalizeDefaultLabs(value);
+  return labsList.length ? labsList.join(', ') : '-';
 }
 
 // =============================================
@@ -173,7 +214,7 @@ function renderUsersTable() {
       <td>${escapeHtml(user.nombre_completo || '-')}</td>
       <td class="text-white/60">${escapeHtml(user.sede || '-')}</td>
       <td><span class="badge badge-${user.rol}">${user.rol}</span></td>
-      <td class="text-white/60">${escapeHtml(user.default_lab || '-')}</td>
+      <td class="text-white/60">${escapeHtml(formatDefaultLabs(user.default_lab))}</td>
       <td>
         <span class="badge ${user.activo ? 'badge-active' : 'badge-inactive'}">
           ${user.activo ? 'Activo' : 'Inactivo'}
@@ -239,7 +280,15 @@ function openEditUser(userId) {
   document.getElementById('user-nombre').value = user.nombre_completo || '';
   document.getElementById('user-sede').value = user.sede || '';
   document.getElementById('user-rol').value = user.rol || 'analista';
-  document.getElementById('user-lab').value = user.default_lab || '';
+
+  const labsList = normalizeDefaultLabs(user.default_lab);
+  const lab1 = labsList[0] || '';
+  const lab2 = labsList[1] || '';
+  const sel1 = document.getElementById('user-lab-1');
+  const sel2 = document.getElementById('user-lab-2');
+  if (sel1) sel1.value = lab1;
+  if (sel2) sel2.value = lab2;
+
   document.getElementById('user-activo').checked = user.activo;
   document.getElementById('activo-group').classList.remove('hidden');
   document.getElementById('user-form-error').textContent = '';
@@ -263,7 +312,13 @@ document.getElementById('user-form').addEventListener('submit', async (e) => {
   const nombre_completo = document.getElementById('user-nombre').value.trim();
   const sede = document.getElementById('user-sede').value || null;
   const rol = document.getElementById('user-rol').value;
-  const default_lab = document.getElementById('user-lab').value || null;
+
+  const lab1 = (document.getElementById('user-lab-1')?.value || '').trim();
+  const lab2 = (document.getElementById('user-lab-2')?.value || '').trim();
+  const default_lab = lab1
+    ? (lab2 && lab2 !== lab1 ? [lab1, lab2] : [lab1])
+    : (lab2 ? [lab2] : null);
+
   const activo = document.getElementById('user-activo').checked;
 
   if (!username || username.length < 3) {
@@ -318,6 +373,8 @@ document.getElementById('user-form').addEventListener('submit', async (e) => {
       errorMsg = 'El nombre de usuario ya existe';
     } else if (err.message === 'password_too_short') {
       errorMsg = 'La contrasena es muy corta';
+    } else if (err.message === 'invalid_default_lab') {
+      errorMsg = 'Laboratorio(s) no válido(s)';
     }
 
     formError.textContent = errorMsg;

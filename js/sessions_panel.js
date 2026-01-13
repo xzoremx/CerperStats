@@ -1,7 +1,21 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const usuario = sessionStorage.getItem("usuario");
   const rol = sessionStorage.getItem("rol");
-  const defaultLab = sessionStorage.getItem("default_lab") || null;
+  const primaryDefaultLab = (sessionStorage.getItem("default_lab") || "").trim() || null;
+  let defaultLabs = null;
+  try {
+    const raw = sessionStorage.getItem("default_labs");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        defaultLabs = parsed.map((v) => String(v || "").trim()).filter(Boolean);
+      }
+    }
+  } catch (_) { }
+  if (!defaultLabs || defaultLabs.length === 0) {
+    defaultLabs = primaryDefaultLab ? [primaryDefaultLab] : [];
+  }
+  if (defaultLabs.length > 2) defaultLabs = defaultLabs.slice(0, 2);
 
   if (!usuario) {
     if (window.cerper?.openPage) window.cerper.openPage("login.html");
@@ -67,7 +81,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   async function loadSessions() {
-    const labFilter = (rol === 'admin') ? (selLab?.value === 'all' ? null : selLab?.value) : defaultLab;
+    if (rol === 'supervisor' && (!defaultLabs || defaultLabs.length === 0)) {
+      allSessions = [];
+      renderSesiones([]);
+      window.notify?.("No tienes laboratorios asignados.", "error");
+      return;
+    }
+
+    const labFilter =
+      (rol === 'admin')
+        ? (selLab?.value === 'all' ? null : selLab?.value)
+        : (rol === 'supervisor' ? defaultLabs : primaryDefaultLab);
+
     const res = await window.cerper.getSessionsByRole({ rol, labDefault: labFilter || null });
     if (!res.ok) throw new Error(res.error);
     allSessions = res.data || [];

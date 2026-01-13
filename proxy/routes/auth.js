@@ -4,6 +4,14 @@ const pool = require('../db');
 
 const router = express.Router();
 
+function normalizeDefaultLabs(value) {
+  if (value == null) return [];
+  if (Array.isArray(value)) return value.filter(Boolean).map((v) => String(v).trim()).filter(Boolean);
+  const raw = String(value).trim();
+  if (!raw) return [];
+  return [raw];
+}
+
 router.post('/login', async (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password) {
@@ -56,13 +64,20 @@ router.post('/login', async (req, res) => {
        VALUES ($1, 'login_exitoso', 'Inicio de sesión correcto.')`,
       [user.id]
     );
+
+    const defaultLabs = normalizeDefaultLabs(user.default_lab);
+    const primaryDefaultLab = defaultLabs[0] || null;
+
     return res.json({
       ok: true,
       user: {
         id: user.id,
         username: user.username,
         rol: user.rol,
-        default_lab: user.default_lab,
+        // Keep legacy behavior: the "primary" default lab is the first element.
+        default_lab: primaryDefaultLab,
+        // New: optional list (max 2) for supervisors session review filters.
+        default_labs: defaultLabs,
         nombre_completo: user.nombre_completo || null,
       },
     });
