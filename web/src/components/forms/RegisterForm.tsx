@@ -210,7 +210,7 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <GlassInput
-            label="Contrasena"
+            label="Contraseña"
             hint="(min. 6)"
             name="password"
             type="password"
@@ -223,7 +223,7 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
             isSuccess={passwordsMatch}
           />
           <GlassInput
-            label="Confirmar Contrasena"
+            label="Confirmar Contraseña"
             name="passwordConfirm"
             type="password"
             value={formData.passwordConfirm}
