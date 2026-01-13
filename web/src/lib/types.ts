@@ -14,5 +14,5 @@ export interface RegisterPayload {
   password: string;
   nombre_completo: string;
   sede: 'Paita' | 'Chimbote' | 'Arequipa' | 'Callao';
-  default_lab?: string;
+  default_lab?: string | string[];
 }

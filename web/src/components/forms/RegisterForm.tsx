@@ -30,7 +30,7 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
     password: '',
     passwordConfirm: '',
     sede: '',
-    default_lab: '',
+    default_lab: [] as string[],
   });
 
   useEffect(() => {
@@ -108,7 +108,7 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
         password: formData.password,
         nombre_completo: formData.nombre_completo,
         sede: formData.sede as 'Paita' | 'Chimbote' | 'Arequipa' | 'Callao',
-        default_lab: formData.default_lab || undefined,
+        default_lab: formData.default_lab.length > 0 ? formData.default_lab : undefined,
       });
 
       if (res.ok) {
@@ -158,7 +158,7 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
               password: '',
               passwordConfirm: '',
               sede: '',
-              default_lab: '',
+              default_lab: [],
             });
           }}
           className="text-white/50 hover:text-white text-sm transition-colors underline underline-offset-4"
