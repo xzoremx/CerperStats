@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useEffect, useState, FormEvent } from 'react';
 import { GlassInput, GlassDropdown, GlassButton, useToast } from '@/components/ui';
-import { registerUser } from '@/lib/api';
+import { fetchLabs, registerUser } from '@/lib/api';
+import { LabSelector } from './LabSelector';
+import type { Lab } from '@/lib/types';
 
 const sedeOptions = [
   { value: 'Paita', label: 'Paita' },
@@ -19,6 +21,8 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
   const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccessState] = useState(false);
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsLoading, setLabsLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     username: '',
@@ -26,7 +30,32 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
     password: '',
     passwordConfirm: '',
     sede: '',
+    default_lab: '',
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    setLabsLoading(true);
+    fetchLabs()
+      .then((res) => {
+        if (cancelled) return;
+        if (res.ok && res.data) {
+          setLabs(res.data);
+        } else {
+          setLabs([]);
+        }
+      })
+      .catch((err) => {
+        console.error('[WEB] Error cargando labs:', err);
+        if (!cancelled) showToast('No se pudieron cargar los laboratorios');
+      })
+      .finally(() => {
+        if (!cancelled) setLabsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showToast]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -79,6 +108,7 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
         password: formData.password,
         nombre_completo: formData.nombre_completo,
         sede: formData.sede as 'Paita' | 'Chimbote' | 'Arequipa' | 'Callao',
+        default_lab: formData.default_lab || undefined,
       });
 
       if (res.ok) {
@@ -90,6 +120,7 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
           username_too_short: 'El usuario es muy corto',
           invalid_username_format: 'Formato de usuario invalido',
           invalid_sede: 'Sede no valida',
+          invalid_default_lab: 'Laboratorio no valido',
           too_many_attempts: 'Demasiados intentos. Espera 15 minutos.',
         };
         showToast(errorMessages[res.error || ''] || 'Error al enviar el registro');
@@ -117,6 +148,23 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
         <p className="text-lg text-white/70 mb-12 text-center max-w-md">
           Tu cuenta debe ser aprobada por un administrador antes de poder iniciar sesion.
         </p>
+
+        <button
+          onClick={() => {
+            setIsSuccess(false);
+            setFormData({
+              username: '',
+              nombre_completo: '',
+              password: '',
+              passwordConfirm: '',
+              sede: '',
+              default_lab: '',
+            });
+          }}
+          className="text-white/50 hover:text-white text-sm transition-colors underline underline-offset-4"
+        >
+          Registrar otra cuenta
+        </button>
       </div>
     );
   }
@@ -183,6 +231,13 @@ export function RegisterForm({ onSuccessChange }: RegisterFormProps) {
           value={formData.sede}
           onChange={(value) => setFormData((prev) => ({ ...prev, sede: value }))}
           placeholder="Seleccionar sede"
+        />
+
+        <LabSelector
+          labs={labs}
+          loading={labsLoading}
+          value={formData.default_lab}
+          onChange={(value) => setFormData((prev) => ({ ...prev, default_lab: value }))}
         />
 
         <GlassButton type="submit" isLoading={isLoading} className="mt-6">

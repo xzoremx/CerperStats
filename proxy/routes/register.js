@@ -53,9 +53,10 @@ router.get('/labs', async (req, res) => {
 // Respuesta genérica para evitar enumeración.
 // ============================================
 router.post('/', async (req, res) => {
-  const { username, password, nombre_completo, sede } = req.body || {};
+  const { username, password, nombre_completo, sede, default_lab } = req.body || {};
 
   const lowerUsername = (username || '').toString().trim().toLowerCase();
+  const normalizedDefaultLab = (default_lab || '').toString().trim() || null;
 
   if (!lowerUsername || !password) {
     return res.status(400).json({ ok: false, error: 'username_password_required' });
@@ -77,6 +78,24 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'invalid_sede' });
   }
 
+  if (normalizedDefaultLab) {
+    try {
+      const { rowCount } = await pool.query(
+        `SELECT 1
+         FROM labs
+         WHERE lab_key = $1
+         LIMIT 1`,
+        [normalizedDefaultLab]
+      );
+      if (!rowCount) {
+        return res.status(400).json({ ok: false, error: 'invalid_default_lab' });
+      }
+    } catch (err) {
+      console.error('[REGISTER] Error validando laboratorio:', err);
+      return res.status(500).json({ ok: false, error: 'registration_failed' });
+    }
+  }
+
   const userRol = 'analista';
   const userActivo = false;
 
@@ -91,11 +110,11 @@ router.post('/', async (req, res) => {
 
         const result = await client.query(
           `
-            INSERT INTO usuarios (username, hash_password, nombre_completo, sede, rol, activo)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO usuarios (username, hash_password, nombre_completo, sede, default_lab, rol, activo)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id
           `,
-          [lowerUsername, hash_password, nombre_completo || null, sede, userRol, userActivo]
+          [lowerUsername, hash_password, nombre_completo || null, sede, normalizedDefaultLab, userRol, userActivo]
         );
 
         await client.query(
@@ -150,6 +169,10 @@ router.post('/', async (req, res) => {
 
     if (err?.code === '23514' && err?.constraint === 'check_sede') {
       return res.status(400).json({ ok: false, error: 'invalid_sede' });
+    }
+
+    if (err?.code === '23503' && err?.constraint === 'fk_usuario_lab') {
+      return res.status(400).json({ ok: false, error: 'invalid_default_lab' });
     }
 
     // Si es duplicado pero no tenemos constraint name por alguna razón, responder genérico.
