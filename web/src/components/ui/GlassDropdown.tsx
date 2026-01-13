@@ -79,8 +79,10 @@ export function GlassDropdown({
         className={`absolute top-full left-0 right-0 z-[60] mt-2 transition-all duration-300 origin-top ${isOpen ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'
           }`}
       >
-        {/* Glass menu matching header style */}
+        {/* Glass menu matching header style - 40% less transparent */}
         <div className="relative rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl border border-white/10">
+          {/* Base layer for less transparency */}
+          <div className="absolute inset-0 bg-black/40" />
           {/* Gradient background matching header */}
           <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/[0.06] to-black/20" />
 
