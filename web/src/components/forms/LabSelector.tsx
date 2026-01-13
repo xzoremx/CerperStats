@@ -81,7 +81,7 @@ export function LabSelector({ labs, loading = false, value, onChange }: LabSelec
       <GlassCard
         borderRadius="16px"
         liquidGlass={false}
-        className="rounded-2xl bg-white/8 ring-1 ring-white/12 shadow-none"
+        className="rounded-2xl bg-white/6 border border-white/10 shadow-none"
       >
         <div className="p-4 space-y-4">
           <div className="flex items-center gap-3">

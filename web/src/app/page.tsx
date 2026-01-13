@@ -14,7 +14,7 @@ export default function HomePage() {
         <GlassCard className="rounded-3xl flex flex-col" allowOverflow>
           {/* Top Section - Logo & Welcome (hidden on success) */}
           {!isSuccessView && (
-            <div className="relative h-auto flex flex-col text-center p-10 sm:p-12 items-center justify-center rounded-t-3xl border-b border-white/10 overflow-hidden">
+            <div className="relative h-auto flex flex-col text-center p-8 sm:p-10 items-center justify-center rounded-t-3xl border-b border-white/10 overflow-hidden">
               {/* Subtle background */}
               <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/[0.06] to-black/10" />
               <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-cyan-300/10 blur-3xl" />
