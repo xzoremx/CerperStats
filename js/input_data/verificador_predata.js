@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const ensayo = getValue("ensayo");
     const expediente = getValue("expediente");
     const unidad = getValue("unidad");
-    const modoAnalito = sessionStorage.getItem("modoAnalito");
+    const tipoAnalisis = sessionStorage.getItem("tipoAnalisis");
     const parametro = sessionStorage.getItem("parametroSeleccionado");
     const tipoDato = sessionStorage.getItem("tipoDato");
     const k = Number(sessionStorage.getItem("K"));
@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const problemas = [];
     if (!metodo || !producto || !ensayo || !expediente || !unidad) problemas.push("Preinfo incompleta");
-    if (!modoAnalito) problemas.push("modo de análisis");
+    if (!tipoAnalisis) problemas.push("modo de análisis");
     if (!parametro) problemas.push("parámetro");
     if (!tipoDato) problemas.push("tipo de dato");
     if (!Number.isInteger(k) || k < 2) problemas.push("K inválido");

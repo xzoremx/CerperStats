@@ -27,10 +27,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Control de retorno y reanudación de sesión
   const btnBack = document.getElementById("btn-go-back") || document.getElementById("go-back");
   const sessionId = sessionStorage.getItem("sessionID");
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
-  if (!sessionStorage.getItem("tipoAnalisis")) {
-    sessionStorage.setItem("tipoAnalisis", tipoAnalisis);
-  }
+  // tipoAnalisis es la variable unificada en toda la app
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
   sessionStorage.removeItem("niveles");
   localStorage.removeItem("niveles");
   niveles = 1;
@@ -829,7 +827,7 @@ function sincronizarNivelesDesdeDatos(datos) {
   actualizarBadge();
 
   // Determinar tipo de análisis
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
   const esMulti = (tipoAnalisis === "multi" || tipoAnalisis === "multianalito");
 
   // Para multianalito: calcular número de analitos desde los datos (necesario para columnas de tabla)
@@ -1188,7 +1186,7 @@ function guardarSnapshot(nivel) {
 function restaurarPagina(nivel) {
   const table = document.getElementById("excel");
   if (!table) return;
-  const tipoActual = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
+  const tipoActual = sessionStorage.getItem("tipoAnalisis") || "mono";
   const esMulti = (tipoActual === "multi" || tipoActual === "multianalito");
 
   const snap = snapshotPorNivel[nivel];

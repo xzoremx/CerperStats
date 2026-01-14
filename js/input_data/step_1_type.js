@@ -2,7 +2,8 @@
 document.addEventListener("DOMContentLoaded", () => {
   if (window.lucide?.createIcons) lucide.createIcons();
 
-  sessionStorage.removeItem("modoAnalito");
+  // Usar tipoAnalisis como variable unificada en toda la app
+  sessionStorage.removeItem("tipoAnalisis");
   sessionStorage.removeItem("parametroSeleccionado");
 
   const btnOptions = Array.from(document.querySelectorAll(".btn-option"));
@@ -23,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  let selectedMode = sessionStorage.getItem("modoAnalito") || null;
+  let selectedMode = sessionStorage.getItem("tipoAnalisis") || null;
 
   if (selectedMode) {
     aplicarModoUI(selectedMode);
@@ -40,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const mode = btn.textContent.trim().toLowerCase().includes("multi") ? "multi" : "mono";
       if (selectedMode === mode) return;
       selectedMode = mode;
-      sessionStorage.setItem("modoAnalito", mode);
+      sessionStorage.setItem("tipoAnalisis", mode);
       aplicarModoUI(mode);
       state.ok = true;
       state.modified = true;

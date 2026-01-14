@@ -560,6 +560,13 @@
               </button>
             </div>
           </div>
+          <!-- Botón Log10 (solo para microbiología) -->
+          <button type="button" id="btn-log10"
+            class="hidden items-center justify-center gap-2 backdrop-blur-sm bg-amber-500/15 hover:bg-amber-500/25 rounded-lg px-4 py-2.5 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-200 text-amber-200 hover:text-amber-100"
+            title="Convertir todos los valores a Log₁₀">
+            <i data-lucide="calculator" class="w-4 h-4"></i>
+            <span class="text-xs uppercase tracking-[0.1em] font-geist font-medium">Log₁₀</span>
+          </button>
           <!-- Badge de página -->
           <div id="badge-pagina"
             class="text-xs px-3 py-2 rounded-lg border border-white/10 text-gray-300 bg-white/5 font-geist text-center cursor-pointer hover:bg-white/10 transition-colors">
@@ -718,6 +725,174 @@
             window.lucide.createIcons();
           }
         }
+      }
+
+      // === Funcionalidad Log10 (solo para Microbiologia + Cuantitativo) ===
+      const labSeleccionado = (
+        sessionStorage.getItem("labSeleccionado") ||
+        localStorage.getItem("labSeleccionado") ||
+        ""
+      ).toLowerCase().trim();
+
+      const tipoDatoSeleccionado = (
+        sessionStorage.getItem("tipoDato") || ""
+      ).toLowerCase().trim();
+
+      const btnLog10 = document.getElementById("btn-log10");
+      const esMicrobiologia = labSeleccionado === "microbiologia";
+      const esCuantitativo = tipoDatoSeleccionado === "cuantitativo";
+
+      if (btnLog10 && esMicrobiologia && esCuantitativo) {
+        btnLog10.classList.remove("hidden");
+        btnLog10.classList.add("flex");
+
+        // Flag para prevenir doble conversion
+        let log10YaAplicado = false;
+
+        btnLog10.addEventListener("click", async () => {
+          // Advertir si ya se aplico la conversion
+          if (log10YaAplicado) {
+            const continuar = await mostrarConfirmacionLog10(
+              "Atencion: Ya se aplico Log10",
+              "Los datos ya fueron convertidos a Log10.<br><small class='text-amber-300'>Aplicar de nuevo convertira los logaritmos actuales (doble conversion).</small><br><small class='text-gray-400'>¿Desea continuar de todos modos?</small>"
+            );
+            if (!continuar) {
+              notify("Operacion cancelada.", "info");
+              return;
+            }
+          }
+
+          // Confirmar accion
+          const confirmar = await mostrarConfirmacionLog10(
+            "Convertir a Log10",
+            "Desea convertir todos los valores numericos a su logaritmo base 10?<br><small class='text-gray-400'>Esta accion modificara los datos en todos los niveles.</small>"
+          );
+
+          if (!confirmar) {
+            notify("Conversion cancelada.", "info");
+            return;
+          }
+
+          // Guardar snapshot actual antes de procesar
+          if (typeof guardarSnapshot === "function" && typeof paginaActual !== "undefined") {
+            guardarSnapshot(paginaActual);
+          }
+
+          let totalConvertidos = 0;
+          let totalErrores = 0;
+          const nivelesTotal = window.niveles || 1;
+          const snapshots = window.snapshotPorNivel || {};
+
+          // Obtener tipoAnalisis para saber si es multianalito
+          const tipoAnalisisActual = sessionStorage.getItem("tipoAnalisis") || "mono";
+          const esMultianalito = (tipoAnalisisActual === "multi" || tipoAnalisisActual === "multianalito");
+
+          // Procesar cada nivel
+          for (let niv = 1; niv <= nivelesTotal; niv++) {
+            const snap = snapshots[niv];
+            if (!snap) continue;
+
+            // Convertir valores en el snapshot (saltando fila 0 = headers)
+            for (let r = 1; r < snap.length; r++) {
+              for (let c = 0; c < snap[r].length; c++) {
+                // En multianalito, saltar columna 0 (etiquetas fijas)
+                if (esMultianalito && c === 0) continue;
+
+                const valorOriginal = (snap[r][c] || "").toString().trim();
+
+                // Saltar celdas vacias
+                if (!valorOriginal) continue;
+
+                // Normalizar numero (coma a punto - reemplazar todas las comas)
+                const valorNormalizado = valorOriginal.replace(/,/g, ".");
+                const num = parseFloat(valorNormalizado);
+
+                // Verificar si es un numero valido y positivo (log10 requiere > 0)
+                if (isNaN(num)) continue;
+
+                if (num <= 0) {
+                  totalErrores++;
+                  continue;
+                }
+
+                // Calcular log10 y redondear a 4 decimales
+                const log10Val = Math.log10(num);
+                const log10Redondeado = Math.round(log10Val * 10000) / 10000;
+
+                snap[r][c] = log10Redondeado.toString();
+                totalConvertidos++;
+              }
+            }
+          }
+
+          // Restaurar la pagina actual para reflejar los cambios
+          if (typeof restaurarPagina === "function" && typeof paginaActual !== "undefined") {
+            restaurarPagina(paginaActual);
+          }
+
+          // Marcar que ya se aplico la conversion
+          if (totalConvertidos > 0) {
+            log10YaAplicado = true;
+          }
+
+          // Notificar resultado
+          if (totalConvertidos > 0) {
+            let mensaje = `Se convirtieron ${totalConvertidos} valor(es) a Log10.`;
+            if (totalErrores > 0) {
+              mensaje += ` ${totalErrores} valor(es) ignorados (menor o igual a 0).`;
+            }
+            notify(mensaje, "success");
+          } else if (totalErrores > 0) {
+            notify(`No se pudo convertir: ${totalErrores} valor(es) son menor o igual a 0.`, "warning");
+          } else {
+            notify("No se encontraron valores numericos para convertir.", "info");
+          }
+        });
+      }
+
+      // Modal de confirmacion para Log10
+      function mostrarConfirmacionLog10(titulo, mensaje) {
+        return new Promise((resolve) => {
+          const overlay = document.createElement("div");
+          overlay.className = "cs-inline-modal-overlay";
+
+          const modal = document.createElement("div");
+          modal.className = "cs-inline-modal";
+
+          modal.innerHTML = `
+            <h3 class="cs-inline-modal__title">${titulo}</h3>
+            <p class="cs-inline-modal__message">${mensaje}</p>
+            <div class="cs-inline-modal__actions">
+              <button id="log10-yes" class="cs-inline-modal__btn cs-inline-modal__btn--primary">Convertir</button>
+              <button id="log10-no" class="cs-inline-modal__btn cs-inline-modal__btn--secondary">Cancelar</button>
+            </div>
+          `;
+
+          overlay.appendChild(modal);
+          document.body.appendChild(overlay);
+
+          const yes = modal.querySelector("#log10-yes");
+          const no = modal.querySelector("#log10-no");
+
+          // Listener de Escape (se debe remover al cerrar)
+          const escListener = (ev) => {
+            if (ev.key === "Escape") {
+              closeModal(false);
+            }
+          };
+          document.addEventListener("keydown", escListener);
+
+          const closeModal = (value) => {
+            // Remover listener de Escape para evitar memory leaks
+            document.removeEventListener("keydown", escListener);
+            overlay.classList.add("is-closing");
+            setTimeout(() => overlay.remove(), 200);
+            resolve(value);
+          };
+
+          yes.addEventListener("click", () => closeModal(true));
+          no.addEventListener("click", () => closeModal(false));
+        });
       }
     });
   </script>

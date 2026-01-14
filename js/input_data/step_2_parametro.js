@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
     { name: "Otro", icon: "list" },
   ];
 
-  let selectedMode = sessionStorage.getItem("modoAnalito") || null;
+  let selectedMode = sessionStorage.getItem("tipoAnalisis") || null;
   let selectedParam = sessionStorage.getItem("parametroSeleccionado") || null;
 
   const state = {

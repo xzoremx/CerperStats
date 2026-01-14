@@ -37,7 +37,7 @@ const COLORS = {
  * Se llama automáticamente en cada input/paste
  */
 function validarVisual() {
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
   const table = document.getElementById("excel");
   if (!table) return;
 
@@ -487,7 +487,7 @@ function snapshotToRows(snap) {
 }
 
 function validarEstructuraYContenidoSnapshots(opts = {}) {
-  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
+  const tipoAnalisis = sessionStorage.getItem("tipoAnalisis") || "mono";
   const nivelesCount =
     opts.niveles ||
     (typeof window.niveles === "number" ? window.niveles : parseInt(sessionStorage.getItem("niveles")) || 1);
@@ -561,7 +561,7 @@ function validarEstructuraYContenidoSnapshots(opts = {}) {
 async function guardarDataframeTemp() {
   try {
     const session_id = sessionStorage.getItem("sessionID") || null;
-    const tipo = sessionStorage.getItem("tipoAnalisis") || sessionStorage.getItem("modoAnalito") || "mono";
+    const tipo = sessionStorage.getItem("tipoAnalisis") || "mono";
     const key = (tipo === "multi" || tipo === "multianalito") ? "multiAnalitoDatos" : "monoAnalitoDatos";
     const jsonStr = sessionStorage.getItem(key);
     const dataObj = JSON.parse(jsonStr);

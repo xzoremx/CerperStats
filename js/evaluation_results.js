@@ -129,9 +129,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let labKey =
     sessionStorage.getItem("labSeleccionado") ||
     localStorage.getItem("labSeleccionado");
-  let tipoAnalisis =
-    sessionStorage.getItem("tipoAnalisis") ||
-    sessionStorage.getItem("modoAnalito");
+  let tipoAnalisis = sessionStorage.getItem("tipoAnalisis");
   let tipoDato = sessionStorage.getItem("tipoDato");
   let modoCualitativo = sessionStorage.getItem("modoCualitativo");
   let sessionId = readResultsSessionId();
