@@ -3,6 +3,35 @@ document.addEventListener("DOMContentLoaded", () => {
   setupModernNumberInputs();
   const context = buildContext();
 
+  // === Restaurar valores desde cache ===
+  const cachedK = sessionStorage.getItem("K");
+  const cachedLecturas = sessionStorage.getItem("lecturasPorParametro");
+
+  if (cachedK && context.inputK) {
+    context.inputK.value = cachedK;
+  }
+
+  if (cachedLecturas) {
+    try {
+      const lecturas = JSON.parse(cachedLecturas);
+      const k = parseInt(cachedK || "0", 10);
+
+      if (k === 2 && lecturas.length === 2) {
+        // Caso especial k=2: restaurar n1 y n2
+        if (context.inputN1) context.inputN1.value = lecturas[0];
+        if (context.inputN2) context.inputN2.value = lecturas[1];
+      } else if (lecturas.length > 0 && context.inputN) {
+        // Caso normal: todas las lecturas son iguales
+        context.inputN.value = lecturas[0];
+      }
+    } catch (e) {
+      console.warn("[Step4] Error restaurando lecturas:", e);
+    }
+  }
+
+  // Asegurar que el panel k=2 se muestre/oculte correctamente despues de restaurar
+  toggleLecturas(context);
+
   const BADGE_WAITING_TEXT = "Esperando parámetro";
   const BADGE_CONFIGURED_TEXT = "Configuración establecida";
 

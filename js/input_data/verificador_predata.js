@@ -72,7 +72,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const parametro = sessionStorage.getItem("parametroSeleccionado");
     const tipoDato = sessionStorage.getItem("tipoDato");
     const k = Number(sessionStorage.getItem("K"));
-    const lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
+    let lecturas = [];
+    try {
+      lecturas = JSON.parse(sessionStorage.getItem("lecturasPorParametro") || "[]");
+    } catch (e) {
+      console.warn("[verificador] Cache de lecturas corrupto, usando fallback:", e);
+      lecturas = [];
+    }
 
     const problemas = [];
     if (!metodo || !producto || !ensayo || !expediente || !unidad) problemas.push("Preinfo incompleta");

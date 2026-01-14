@@ -100,7 +100,12 @@ async function initUnifiedStep3({ labKey, labName }) {
 
   step3GoBack?.addEventListener("click", () => scrollToSection("step2-section"));
 
-  const resetSelection = () => {
+  // Verificar si hay datos cacheados para restaurar
+  const cachedTipoDato = sessionStorage.getItem("tipoDato");
+  const hasCachedData = !!cachedTipoDato;
+
+  // Solo resetear si NO hay cache (nueva sesion)
+  if (!hasCachedData) {
     sessionStorage.removeItem("tipoDato");
     sessionStorage.removeItem("modoCualitativo");
     sessionStorage.removeItem("valoresPermitidos");
@@ -108,8 +113,12 @@ async function initUnifiedStep3({ labKey, labName }) {
     step3State.modified = false;
     emitStep3State();
     markStep3Selection(null);
-  };
-  resetSelection();
+  } else {
+    // Restaurar estado desde cache
+    step3State.ok = true;
+    step3State.modified = true;
+    emitStep3State();
+  }
 
   const tipos = await cargarTipos(labKey);
 

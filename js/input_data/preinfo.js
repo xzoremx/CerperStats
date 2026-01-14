@@ -2,6 +2,24 @@
 import { dataService } from "../../modules/_common/dataService.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // === Detectar sesion activa y redirigir ===
+  // Si hay sessionID activo, el usuario deberia estar en input_data_sheet.html
+  const activeSessionId = sessionStorage.getItem("sessionID");
+  if (activeSessionId) {
+    console.warn("[preinfo] Sesion activa detectada, redirigiendo a input_data_sheet.html");
+    if (typeof notify === "function") {
+      notify("Hay una sesion activa. Redirigiendo...", "warning");
+    }
+    setTimeout(() => {
+      if (window.cerper?.openPage) {
+        window.cerper.openPage("input_data/input_data_sheet.html");
+      } else {
+        window.location.href = "input_data_sheet.html";
+      }
+    }, 500);
+    return; // Detener inicializacion
+  }
+
   const inputs = {
     metodo: document.getElementById("metodo"),
     producto: document.getElementById("producto"),
@@ -9,6 +27,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     expediente: document.getElementById("expediente"),
     unidad: document.getElementById("unidad"),
   };
+
+  // === Restaurar datos desde sessionStorage (cache) ===
+  Object.entries(inputs).forEach(([key, input]) => {
+    if (input) {
+      const cached = sessionStorage.getItem(key);
+      if (cached) {
+        input.value = cached;
+      }
+    }
+  });
 
   const goMenu = document.getElementById("go-menu");
   const labTitle = document.getElementById("lab-title");
@@ -160,6 +188,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   emitPreinfoState();
+
+  // Si hay datos cacheados, validar automáticamente al cargar
+  const hasCachedData = Object.values(inputs).some(input => input?.value?.trim());
+  if (hasCachedData) {
+    // Pequeño delay para que los placeholders se carguen primero
+    setTimeout(() => {
+      validateAndPersist();
+    }, 100);
+  }
 
   async function validateAndPersist() {
     const currentRun = ++validationRunId;

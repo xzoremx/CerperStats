@@ -2,9 +2,8 @@
 document.addEventListener("DOMContentLoaded", () => {
   if (window.lucide?.createIcons) lucide.createIcons();
 
-  // Usar tipoAnalisis como variable unificada en toda la app
-  sessionStorage.removeItem("tipoAnalisis");
-  sessionStorage.removeItem("parametroSeleccionado");
+  // NO borrar cache si el usuario vuelve desde input_data_sheet
+  // Solo mantener el estado existente para permitir edicion
 
   const btnOptions = Array.from(document.querySelectorAll(".btn-option"));
   const paramPlaceholder = document.getElementById("param-placeholder");
@@ -24,12 +23,13 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
+  // Restaurar seleccion desde cache si existe
   let selectedMode = sessionStorage.getItem("tipoAnalisis") || null;
 
   if (selectedMode) {
     aplicarModoUI(selectedMode);
     state.ok = true;
-    state.modified = false;
+    state.modified = true; // Marcar como modificado para que el boton Continuar funcione
     emitState();
     notificarModo(selectedMode);
   } else {

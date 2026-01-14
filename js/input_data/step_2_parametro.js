@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const state = {
     ok: !!selectedParam,
-    modified: false,
+    modified: !!selectedParam, // Si hay cache, marcar como modificado
   };
 
   function emitState() {
