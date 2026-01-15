@@ -19,7 +19,7 @@
       </button>
       <div class="panel-brand">
         <img src="assets/logos/cerper_sessions.png" alt="Cerper" class="panel-logo" />
-        <h1 id="panel-title" class="panel-title">Sesiones registradas</h1>
+        <h1 id="panel-title" class="panel-title">Expedientes</h1>
       </div>
     </header>
 
@@ -46,6 +46,13 @@
           <option value="multi">Multianalito</option>
         </select>
       </div>
+    </section>
+
+    <section class="status-legend" aria-label="Leyenda de estados">
+      <div class="legend-item"><span class="legend-dot status-light-active"></span><span>Activa</span></div>
+      <div class="legend-item"><span class="legend-dot status-light-sufficient"></span><span>Suficiente</span></div>
+      <div class="legend-item"><span class="legend-dot status-light-finalized"></span><span>Finalizada</span></div>
+      <div class="legend-item"><span class="legend-dot status-light-cancelled"></span><span>Cancelada</span></div>
     </section>
 
     <section id="sessions-container" class="sessions-grid" aria-live="polite">

@@ -1041,6 +1041,17 @@ if (btnBack) {
           const delRes = await window.cerper.deleteSessionDeep(sessionId);
           if (!delRes?.ok) {
             console.warn("[Step5] No se pudo eliminar completamente la sesión:", delRes?.error);
+            // Fallback: evitar dejar la sesión como 'activa' si no se pudo borrar.
+            if (window.cerper?.closeSession) {
+              try {
+                const closeRes = await window.cerper.closeSession(sessionId);
+                if (!closeRes?.ok) {
+                  console.warn("[Step5] Fallback closeSession falló:", closeRes?.error);
+                }
+              } catch (e) {
+                console.warn("[Step5] Error en fallback closeSession:", e);
+              }
+            }
           }
         } else if (sessionId && window.cerper?.closeSession) {
           // Fallback mínimo: solo cerrar sesión si no existe deleteSessionDeep

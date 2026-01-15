@@ -157,14 +157,37 @@ function renderSesiones(sesiones) {
     const badgeRow = badges.length ? `<div class="badge-row">${badges.join('')}</div>` : '';
     const creadoRaw = s.creado_en ?? '';
     const creadoText = formatDateTimePeru(creadoRaw);
+    // Determine status light class based on estado
+    const estadoNorm = String(s.estado || '').toLowerCase().trim();
+    let statusLightClass = 'status-light-unknown'; // orange for unknown
+    if (estadoNorm === 'activa' || estadoNorm === 'activo' || estadoNorm === 'abierta') {
+      statusLightClass = 'status-light-active'; // green pulsing
+    } else if (estadoNorm === 'suficiente') {
+      statusLightClass = 'status-light-sufficient'; // blue
+    } else if (
+      estadoNorm === 'finalizada' ||
+      estadoNorm === 'finalizado' ||
+      estadoNorm === 'completada' ||
+      estadoNorm === 'completado'
+    ) {
+      statusLightClass = 'status-light-finalized'; // purple
+    } else if (
+      estadoNorm === 'cancelada' ||
+      estadoNorm === 'cancelado' ||
+      estadoNorm === 'cerrada' ||
+      estadoNorm === 'cerrado'
+    ) {
+      statusLightClass = 'status-light-cancelled'; // red
+    }
+
     card.innerHTML = `
       ${badgeRow}
+      <span class="status-light ${statusLightClass}" title="Estado: ${s.estado || 'desconocido'}"></span>
       <h3>${labName} | ${s.producto || "Sin producto"}</h3>
-      <p><b>ID:</b> ${s.id}</p>
-      <p><b>Estado:</b> ${s.estado}</p>
-      <p><b>Método:</b> ${s.metodo || "-"}</p>
-      <p><b>Creado (Perú):</b> <span title="${creadoRaw}">${creadoText}</span></p>
-      <p><b>Analista:</b> ${s.usuario || "-"}</p>
+      <p class="card-field"><i data-lucide="book-open"></i> ${s.metodo || "-"}</p>
+      <p class="card-field"><i data-lucide="user"></i> ${s.usuario || "-"}</p>
+      <span class="card-date" title="${creadoRaw}"><i data-lucide="calendar"></i> ${creadoText}</span>
+      <span class="card-id-signature">#${s.id}</span>
     `;
     card.addEventListener("click", () => {
       sessionStorage.setItem("sessionSeleccionada", s.id);
@@ -173,6 +196,9 @@ function renderSesiones(sesiones) {
     });
     contenedor.appendChild(card);
   });
+
+  // Render Lucide icons after all cards are added
+  try { lucide.createIcons(); } catch (e) { }
 }
 
 function formatDateTimePeru(value) {
@@ -197,8 +223,8 @@ function formatDateTimePeru(value) {
 }
 
 // --- Custom glass select popup for filters ---
-(function(){
-  function enhanceSelect(select){
+(function () {
+  function enhanceSelect(select) {
     if (!select || select._enhanced) return;
     select._enhanced = true;
 
@@ -270,8 +296,8 @@ function formatDateTimePeru(value) {
   }
 
   // Try to enhance after initial render and after async labs load
-  const boot = ()=>{
-    try{
+  const boot = () => {
+    try {
       const proc = document.getElementById('filter-proc');
       if (proc) enhanceSelect(proc);
       const analisis = document.getElementById('filter-analisis');
@@ -279,8 +305,8 @@ function formatDateTimePeru(value) {
       const lab = document.getElementById('filter-lab');
       const rol = sessionStorage.getItem('rol');
       if (rol === 'admin' && lab) enhanceSelect(lab);
-    }catch(_){/* ignore */}
+    } catch (_) {/* ignore */ }
   };
   if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(boot, 50);
-  else document.addEventListener('DOMContentLoaded', ()=> setTimeout(boot, 50));
+  else document.addEventListener('DOMContentLoaded', () => setTimeout(boot, 50));
 })();

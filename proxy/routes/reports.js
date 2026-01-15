@@ -43,6 +43,24 @@ router.post('/', async (req, res) => {
     try {
         await client.query('BEGIN');
 
+        // Validate session state before allowing report uploads
+        const { rows: sessionRows } = await client.query(
+            `SELECT COALESCE(LOWER(estado), '') AS estado
+             FROM sessions
+             WHERE id = $1`,
+            [session_id]
+        );
+
+        const sessionEstado = sessionRows[0]?.estado || '';
+        if (!sessionRows.length) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ ok: false, error: 'session_not_found' });
+        }
+        if (sessionEstado === 'cancelada' || sessionEstado === 'cerrada') {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ ok: false, error: 'session_canceled' });
+        }
+
         // Decode base64 to binary
         const pdfBuffer = Buffer.from(pdf_base64, 'base64');
 
@@ -83,6 +101,19 @@ router.post('/', async (req, res) => {
                 [reportId, ...tests_included, session_id]
             );
         }
+
+        // Mark session as "suficiente" once there is at least one saved PDF.
+        // Keep "finalizada" if it was already set manually.
+        await client.query(
+            `UPDATE sessions
+             SET estado = CASE
+                 WHEN COALESCE(LOWER(estado), '') = 'finalizada' THEN 'finalizada'
+                 ELSE 'suficiente'
+             END,
+             actualizado_en = NOW()
+             WHERE id = $1`,
+            [session_id]
+        );
 
         await client.query('COMMIT');
         res.json({ ok: true, report_id: reportId });
@@ -231,6 +262,16 @@ router.delete('/:reportId', async (req, res) => {
     try {
         await client.query('BEGIN');
 
+        const { rows: reportRows } = await client.query(
+            `SELECT session_id FROM reports WHERE id = $1`,
+            [reportId]
+        );
+        const sessionId = Number(reportRows[0]?.session_id);
+        if (!sessionId) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ ok: false, error: 'report_not_found' });
+        }
+
         // Delete links first
         await client.query(
             'DELETE FROM reports_tests_link WHERE report_id = $1',
@@ -242,6 +283,23 @@ router.delete('/:reportId', async (req, res) => {
             'DELETE FROM reports WHERE id = $1',
             [reportId]
         );
+
+        // If this was the last report, session can no longer be "suficiente/finalizada"
+        const { rows: remainingRows } = await client.query(
+            `SELECT EXISTS(SELECT 1 FROM reports WHERE session_id = $1) AS has_reports`,
+            [sessionId]
+        );
+        const hasReports = Boolean(remainingRows[0]?.has_reports);
+        if (!hasReports) {
+            await client.query(
+                `UPDATE sessions
+                 SET estado = 'activa',
+                     actualizado_en = NOW()
+                 WHERE id = $1
+                   AND COALESCE(LOWER(estado), '') IN ('suficiente', 'finalizada')`,
+                [sessionId]
+            );
+        }
 
         await client.query('COMMIT');
 

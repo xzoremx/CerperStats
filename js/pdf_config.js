@@ -135,6 +135,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const inboxStats = document.getElementById('inbox-stats');
     const inboxEmpty = document.getElementById('inbox-empty');
 
+    // DOM Elements - Session Status
+    const sessionFinalizeCheckbox = document.getElementById('session-finalize-checkbox');
+    const sessionEstadoBadge = document.getElementById('session-estado-badge');
+    const sessionFinalizeHint = document.getElementById('session-finalize-hint');
+
     // DOM Elements - Filters and Bulk Actions
     const filterTipo = document.getElementById('filter-tipo');
     const searchInput = document.getElementById('search-input');
@@ -158,6 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let activeView = 'config';
     let selectedMode = 'unified';
     let isGenerating = false;
+    let sessionEstado = '';
     let resultsData = [];
     let analitos = new Set();
     let niveles = new Set();
@@ -178,6 +184,95 @@ document.addEventListener('DOMContentLoaded', async () => {
     let sessionParametro = '';
     let sessionNumParametros = 0;
     let analystNames = []; // Array of analyst names when parametro === 'Analista'
+
+    function normalizeSessionEstado(value) {
+        const raw = String(value || '').trim().toLowerCase();
+        if (!raw) return '';
+        if (raw === 'activo') return 'activa';
+        if (raw === 'cerrada' || raw === 'cerrado') return 'cancelada';
+        if (raw === 'finalizado') return 'finalizada';
+        if (raw === 'completada' || raw === 'completado') return 'finalizada';
+        return raw;
+    }
+
+    function formatSessionEstadoLabel(value) {
+        const estado = normalizeSessionEstado(value);
+        if (estado === 'activa') return 'ACTIVA';
+        if (estado === 'suficiente') return 'SUFICIENTE';
+        if (estado === 'finalizada') return 'FINALIZADA';
+        if (estado === 'cancelada') return 'CANCELADA';
+        return '—';
+    }
+
+    function updateSessionEstadoBadge() {
+        if (!sessionEstadoBadge) return;
+
+        const estado = normalizeSessionEstado(sessionEstado);
+        const base = 'px-2.5 py-1 rounded-full text-xs font-semibold border';
+        const variants = {
+            activa: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-200',
+            suficiente: 'bg-indigo-500/10 border-indigo-500/20 text-indigo-200',
+            finalizada: 'bg-violet-500/10 border-violet-500/20 text-violet-200',
+            cancelada: 'bg-red-500/10 border-red-500/20 text-red-200',
+            default: 'bg-white/10 border-white/10 text-gray-200'
+        };
+
+        sessionEstadoBadge.textContent = formatSessionEstadoLabel(estado);
+        sessionEstadoBadge.className = `${base} ${variants[estado] || variants.default}`;
+    }
+
+    function updateFinalizeControls() {
+        updateSessionEstadoBadge();
+        if (!sessionFinalizeCheckbox) return;
+
+        const estado = normalizeSessionEstado(sessionEstado);
+        const hasSaved = savedReports.length > 0;
+        const canToggle = hasSaved && estado !== 'cancelada';
+
+        sessionFinalizeCheckbox.checked = estado === 'finalizada';
+        sessionFinalizeCheckbox.disabled = !canToggle;
+
+        if (sessionFinalizeHint) {
+            sessionFinalizeHint.textContent = hasSaved
+                ? 'Puedes marcar/desmarcar cuando quieras.'
+                : 'Requiere al menos 1 reporte guardado.';
+        }
+    }
+
+    async function setSessionEstado(nextEstado) {
+        const next = normalizeSessionEstado(nextEstado);
+        if (!next || !sessionId || !window.cerper?.updateSessionStatus) {
+            return { ok: false, error: 'api_unavailable' };
+        }
+        const res = await window.cerper.updateSessionStatus(sessionId, next);
+        if (res?.ok) sessionEstado = next;
+        return res;
+    }
+
+    async function reconcileSessionEstadoWithReports() {
+        const estado = normalizeSessionEstado(sessionEstado);
+        const hasSaved = savedReports.length > 0;
+
+        // If there is at least one saved report, session must be at least "suficiente" (unless manually finalizada).
+        if (hasSaved && estado !== 'finalizada' && estado !== 'suficiente') {
+            const res = await setSessionEstado('suficiente');
+            if (!res?.ok) {
+                // Fallback (visual only)
+                sessionEstado = 'suficiente';
+            }
+        }
+
+        // If there are no saved reports, session can't be "suficiente/finalizada".
+        if (!hasSaved && (estado === 'suficiente' || estado === 'finalizada')) {
+            const res = await setSessionEstado('activa');
+            if (!res?.ok) {
+                // Fallback (visual only)
+                sessionEstado = 'activa';
+            }
+        }
+
+        updateFinalizeControls();
+    }
     // === NAVIGATION ===
     function setActiveView(view) {
         activeView = view;
@@ -239,6 +334,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (sessionRes?.ok && sessionRes.data) {
             const s = sessionRes.data;
+            sessionEstado = normalizeSessionEstado(s.estado);
             if (labNameEl) {
                 labNameEl.textContent = s.lab_nombre || s.lab_key || 'Laboratorio';
             }
@@ -348,6 +444,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) {
             console.error('[PDFConfig] Error loading saved reports:', err);
         }
+        await reconcileSessionEstadoWithReports();
     }
 
     // Initial load
@@ -1482,6 +1579,47 @@ document.addEventListener('DOMContentLoaded', async () => {
             );
         }
     };
+
+    // Manual session finalization toggle (revocable)
+    let finalizing = false;
+    sessionFinalizeCheckbox?.addEventListener('change', async () => {
+        if (!sessionId || finalizing) return;
+
+        const hasSaved = savedReports.length > 0;
+        const wantFinal = Boolean(sessionFinalizeCheckbox.checked);
+
+        if (wantFinal && !hasSaved) {
+            sessionFinalizeCheckbox.checked = false;
+            await showCustomAlert(
+                'Debes guardar al menos 1 reporte antes de marcar el proceso como finalizado.',
+                'No disponible',
+                'warning'
+            );
+            updateFinalizeControls();
+            return;
+        }
+
+        const next = wantFinal ? 'finalizada' : (hasSaved ? 'suficiente' : 'activa');
+
+        finalizing = true;
+        sessionFinalizeCheckbox.disabled = true;
+        try {
+            const res = await setSessionEstado(next);
+            if (!res?.ok) {
+                throw new Error(res?.error || 'No se pudo actualizar el estado');
+            }
+        } catch (err) {
+            console.error('[PDFConfig] Error updating session status:', err);
+            await showCustomAlert(
+                'No se pudo actualizar el estado de la sesión.',
+                'Error',
+                'error'
+            );
+        } finally {
+            finalizing = false;
+            updateFinalizeControls();
+        }
+    });
 
     // === TIME AGO FUNCTIONALITY ===
     function getTimeAgo(timestamp) {

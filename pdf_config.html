@@ -752,6 +752,22 @@
                             </button>
                         </div>
 
+                        <!-- Session Status -->
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <label class="flex items-center gap-2 text-sm text-white cursor-pointer select-none">
+                                    <input type="checkbox" id="session-finalize-checkbox"
+                                        class="w-4 h-4 rounded accent-emerald-500">
+                                    <span>Marcar como finalizado el proceso</span>
+                                </label>
+                                <span id="session-estado-badge"
+                                    class="px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 border border-white/10 text-gray-200">—</span>
+                            </div>
+                            <p id="session-finalize-hint" class="text-xs text-gray-500">
+                                Requiere al menos 1 reporte guardado.
+                            </p>
+                        </div>
+
                         <!-- Filters and Bulk Actions -->
                         <div class="flex items-center justify-between gap-4 mt-4">
                             <!-- Filters -->

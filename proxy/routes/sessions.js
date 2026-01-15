@@ -105,7 +105,7 @@ router.post('/', async (req, res) => {
         tipo_analisis, tipo_dato, modo_cualitativo, parametro, usuario_id,
         estado, creado_en, actualizado_en
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'activo', NOW(), NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'activa', NOW(), NOW())
       RETURNING id`,
       [
         lab_key,
@@ -130,6 +130,86 @@ router.post('/', async (req, res) => {
   }
 });
 
+router.patch('/:sessionId/status', async (req, res) => {
+  const sessionId = Number(req.params.sessionId);
+  if (!sessionId) {
+    return res.status(400).json({ ok: false, error: 'invalid_session_id' });
+  }
+
+  const requested = String(req.body?.estado || '').trim().toLowerCase();
+  const validStates = ['activa', 'cancelada', 'suficiente', 'finalizada'];
+  if (!requested || !validStates.includes(requested)) {
+    return res.status(400).json({ ok: false, error: 'invalid_status', valid: validStates });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+         COALESCE(LOWER(estado), '') AS estado,
+         EXISTS(SELECT 1 FROM reports r WHERE r.session_id = s.id) AS has_reports
+       FROM sessions s
+       WHERE s.id = $1`,
+      [sessionId]
+    );
+
+    const row = rows[0];
+    if (!row) {
+      return res.status(404).json({ ok: false, error: 'session_not_found' });
+    }
+
+    const hasReports = Boolean(row.has_reports);
+    if ((requested === 'finalizada' || requested === 'suficiente') && !hasReports) {
+      return res.status(400).json({ ok: false, error: 'missing_reports' });
+    }
+    if (requested === 'cancelada' && hasReports) {
+      return res.status(400).json({ ok: false, error: 'has_reports' });
+    }
+
+    const result = await pool.query(
+      `UPDATE sessions
+       SET estado = $1,
+           actualizado_en = CURRENT_TIMESTAMP
+       WHERE id = $2`,
+      [requested, sessionId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: 'session_not_found' });
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[API] Error actualizando estado de sesión', err);
+    res.status(500).json({ ok: false, error: 'db_error' });
+  }
+});
+
+router.post('/cancel-incomplete', async (req, res) => {
+  const usuarioId = Number(req.body?.usuario_id);
+  if (!usuarioId) {
+    return res.status(400).json({ ok: false, error: 'invalid_usuario_id' });
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE sessions s
+       SET estado = 'cancelada',
+           actualizado_en = CURRENT_TIMESTAMP
+       WHERE s.usuario_id = $1
+         AND COALESCE(LOWER(s.estado), '') IN ('', 'activa', 'activo')
+         AND NOT EXISTS (
+           SELECT 1 FROM reports r WHERE r.session_id = s.id
+         )`,
+      [usuarioId]
+    );
+
+    res.json({ ok: true, canceled: result.rowCount || 0 });
+  } catch (err) {
+    console.error('[API] Error cancelando sesiones incompletas', err);
+    res.status(500).json({ ok: false, error: 'db_error' });
+  }
+});
+
 router.get('/', async (req, res) => {
   const rol = (req.query.rol || '').toLowerCase();
   const labQuery = req.query.lab;
@@ -147,7 +227,8 @@ router.get('/', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT
          s.id, s.lab_key, l.nombre AS lab_nombre, s.producto, s.metodo,
-         s.estado, s.creado_en, s."procedure", u.username AS usuario,
+         s.estado, s.creado_en, s."procedure", 
+         COALESCE(u.nombre_completo, u.username) AS usuario,
          s.tipo_analisis, s.tipo_dato, s.modo_cualitativo
        FROM sessions s
        LEFT JOIN usuarios u ON s.usuario_id = u.id
@@ -265,9 +346,17 @@ router.patch('/:sessionId/close', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'invalid_session_id' });
   }
   try {
+    const { rows } = await pool.query(
+      `SELECT EXISTS(SELECT 1 FROM reports r WHERE r.session_id = $1) AS has_reports`,
+      [sessionId]
+    );
+    const hasReports = Boolean(rows[0]?.has_reports);
+    if (hasReports) {
+      return res.status(400).json({ ok: false, error: 'has_reports' });
+    }
     const result = await pool.query(
       `UPDATE sessions
-       SET estado = 'cerrada',
+       SET estado = 'cancelada',
            actualizado_en = CURRENT_TIMESTAMP
        WHERE id = $1`,
       [sessionId]
@@ -277,7 +366,7 @@ router.patch('/:sessionId/close', async (req, res) => {
     }
     res.json({ ok: true });
   } catch (err) {
-    console.error('[API] Error cerrando sesión', err);
+    console.error('[API] Error cancelando sesión', err);
     res.status(500).json({ ok: false, error: 'db_error' });
   }
 });
