@@ -147,13 +147,40 @@ npm run dev
 
 ## Build / distribución (Electron)
 
-- `npm run prebuild` ejecuta:
+⚠️ **IMPORTANTE**: Antes de generar el ejecutable, **debes configurar el archivo `.env`** con la URL del servidor backend. Sin esto, el ejecutable **no funcionará en otras PCs**. Ver instrucciones detalladas en: [`docs/BUILD_INSTRUCTIONS.md`](docs/BUILD_INSTRUCTIONS.md)
+
+### Pasos rápidos:
+
+1. **Configurar .env** (requerido):
+   ```bash
+   cp .env.example .env
+   # Edita .env y configura CERPER_PROXY_URL con tu servidor backend
+   ```
+
+2. **Generar ejecutable**:
+   ```bash
+   npm run dist:win
+   ```
+
+### ¿Qué hace el build?
+
+- `npm run prebuild` ejecuta automáticamente:
   - `scripts/copy-chrome.js` (copia Chromium de Puppeteer a `chrome-bundled/`)
   - `scripts/embed-config.js` (genera `config/embedded-env.js` para builds empaquetados)
-- `npm run dist:win` genera instalable portable (config en `electron-builder.json`).
+- `npm run dist:win` genera ejecutable portable (config en `electron-builder.json`)
+- El ejecutable resultante estará en: `dist/CerperStats-Portable-<version>.exe`
+
+### Solución de problemas
+
+Si el ejecutable muestra "fetch fail" al hacer login en otra PC:
+- ✅ Verifica que creaste el archivo `.env` antes del build
+- ✅ Verifica que `CERPER_PROXY_URL` apunte a un servidor accesible (no `localhost`)
+- ✅ Verifica que el servidor backend esté corriendo y accesible
+- 📖 Ver guía completa: [`docs/BUILD_INSTRUCTIONS.md`](docs/BUILD_INSTRUCTIONS.md)
 
 ## Documentación adicional
 
+- **Build/distribución**: `docs/BUILD_INSTRUCTIONS.md` ⚠️ **LEER ANTES DE GENERAR EL EJECUTABLE**
 - Backend en AWS: `docs/AWS_BACKEND.md`
 - Producción on‑prem (infra/entregables/plan): `docs/PRODUCCION_ONPREM.md`
 - Registro web (Next.js): `docs/web_architecture.md`

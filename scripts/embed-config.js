@@ -13,9 +13,59 @@ const CONFIG_PATH = path.join(__dirname, '..', 'config', 'embedded-env.js');
 function embedConfig() {
     console.log('[embed-config] Reading .env...');
 
+    // Validate .env exists
+    if (!fs.existsSync(ENV_PATH)) {
+        console.error('');
+        console.error('❌ ERROR: Archivo .env no encontrado');
+        console.error('');
+        console.error('   Para generar el ejecutable necesitas crear un archivo ".env"');
+        console.error('   con la configuración del servidor backend.');
+        console.error('');
+        console.error('   Pasos:');
+        console.error('   1. Copia .env.example a .env');
+        console.error('   2. Edita .env y configura CERPER_PROXY_URL con la URL real');
+        console.error('   3. Vuelve a ejecutar npm run dist');
+        console.error('');
+        process.exit(1);
+    }
+
     // Read and parse .env
     const envContent = fs.readFileSync(ENV_PATH, 'utf8');
     const parsed = dotenv.parse(envContent);
+
+    // Validate CERPER_PROXY_URL is present (minimum required)
+    if (!parsed.CERPER_PROXY_URL || parsed.CERPER_PROXY_URL.trim() === '') {
+        console.error('');
+        console.error('❌ ERROR: CERPER_PROXY_URL no está configurado en .env');
+        console.error('');
+        console.error('   El ejecutable necesita saber la URL del servidor backend.');
+        console.error('   Edita el archivo .env y configura:');
+        console.error('');
+        console.error('   CERPER_PROXY_URL=https://tu-servidor.com');
+        console.error('');
+        process.exit(1);
+    }
+
+    // Warning if using localhost (won't work on other PCs)
+    if (parsed.CERPER_PROXY_URL.includes('localhost') || parsed.CERPER_PROXY_URL.includes('127.0.0.1')) {
+        console.warn('');
+        console.warn('⚠️  ADVERTENCIA: CERPER_PROXY_URL está configurado con localhost');
+        console.warn('');
+        console.warn('   El ejecutable NO funcionará en otras PCs porque intentará');
+        console.warn('   conectarse a localhost (que no existe en esas máquinas).');
+        console.warn('');
+        console.warn('   Para distribución, usa una URL pública:');
+        console.warn('   CERPER_PROXY_URL=https://tu-servidor.com');
+        console.warn('');
+        console.warn('   Continuando en 5 segundos...');
+        console.warn('');
+        // Give time to read and cancel if needed
+        const waitMs = 5000;
+        const start = Date.now();
+        while (Date.now() - start < waitMs) {
+            // Busy wait
+        }
+    }
 
     // Only embed the necessary variables for the packaged app
     const keysToEmbed = [
