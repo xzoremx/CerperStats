@@ -7,7 +7,7 @@
 - `activo`: estado inicial al crear la sesión.
 - `suficiente`: automático cuando existe al menos 1 PDF guardado en base de datos para la sesión.
 - `finalizada`: manual (revocable) desde `pdf_config.html` mediante un checkbox. Requiere al menos 1 PDF guardado.
-- `cancelada`: automático al cerrar el programa si la sesión no tiene PDFs guardados *y* no tiene inputs guardados (sesión “huérfana”).
+- `cancelada`: automático al cerrar el programa si la sesión no tiene PDFs guardados *y* no tiene resultados guardados (sesión “incompleta”).
 
 La columna no es `NOT NULL`, así que pueden existir `NULL` o valores históricos; en UI se tratan como “desconocido”.
 
@@ -25,9 +25,9 @@ La columna no es `NOT NULL`, así que pueden existir `NULL` o valores histórico
   - UI: checkbox “Marcar como finalizado el proceso” en `pdf_config.html` (lógica en `js/pdf_config.js`)
   - Backend: `PATCH /sessions/:sessionId/status` en `proxy/routes/sessions.js` (valida `missing_reports`)
 
-- **Cerrar app sin PDFs ni inputs** → `cancelada`
+- **Cerrar app sin PDFs ni resultados** → `cancelada`
   - Main process: `main.js` llama `POST /sessions/cancel-incomplete` al salir
-  - Backend: `POST /sessions/cancel-incomplete` en `proxy/routes/sessions.js` cancela sesiones `activo` sin PDFs ni inputs
+  - Backend: `POST /sessions/cancel-incomplete` en `proxy/routes/sessions.js` cancela sesiones `activo` sin PDFs ni resultados
 
 ## Mapeo visual (panel de sesiones)
 

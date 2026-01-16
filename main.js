@@ -196,14 +196,14 @@ app.on('before-quit', async (event) => {
   if (quitting) return;
   quitting = true;
 
-  // Try to cancel incomplete sessions (no PDFs saved) so they are not resumable.
+  // Try to cancel incomplete sessions (no PDFs and no saved results) so they are not resumable.
   // Don't block app exit for too long if the server is unreachable.
   event.preventDefault();
   try {
     const userId = Number(currentUser?.id);
     if (userId) {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 1500);
+      const timeout = setTimeout(() => controller.abort(), 3000);
       try {
         await proxyFetch('/sessions/cancel-incomplete', {
           method: 'POST',
@@ -327,6 +327,31 @@ ipcMain.handle("db-login", async (_event, { username, password }) => {
     });
     currentUser = payload.user || null;
     currentUserToken = payload.user_token || null;
+
+    // Opportunistic cleanup: if the app previously crashed / couldn't reach the server on exit,
+    // ensure incomplete sessions are still canceled right after login.
+    try {
+      const userId = Number(currentUser?.id);
+      if (userId) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        try {
+          await proxyFetch("/sessions/cancel-incomplete", {
+            method: "POST",
+            body: JSON.stringify({ usuario_id: userId }),
+            signal: controller.signal,
+          });
+        } finally {
+          clearTimeout(timeout);
+        }
+      }
+    } catch (err) {
+      console.warn(
+        "[SESSIONS] No se pudo cancelar sesiones incompletas al iniciar sesión:",
+        err?.message || err
+      );
+    }
+
     return { ok: true, user: currentUser };
   } catch (err) {
     console.error("[PROXY] Error en login:", err);
@@ -471,9 +496,9 @@ ipcMain.handle("db-update-session-status", async (_event, { session_id, estado }
   }
 });
 
-// === Cancelar sesiones incompletas (sin PDFs) ===
-ipcMain.handle("db-cancel-incomplete-sessions", async (_event, { usuario_id }) => {
-  const userId = Number(usuario_id);
+// === Cancelar sesiones incompletas (sin PDFs y sin resultados guardados) ===
+ipcMain.handle("db-cancel-incomplete-sessions", async (_event, { usuario_id } = {}) => {
+  const userId = Number(usuario_id) || Number(currentUser?.id);
   if (!userId) return { ok: false, error: "invalid_payload" };
 
   try {

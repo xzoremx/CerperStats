@@ -323,16 +323,16 @@ router.post('/cancel-incomplete', async (req, res) => {
        SET estado = 'cancelada',
            actualizado_en = CURRENT_TIMESTAMP
        WHERE s.usuario_id = $1
-         AND COALESCE(LOWER(s.estado), '') IN ('', 'activa', 'activo')
-         AND NOT EXISTS (
-           SELECT 1 FROM reports r WHERE r.session_id = s.id
-         )
-         AND NOT EXISTS (
-           SELECT 1 FROM inputs_monoanalito i WHERE i.session_id = s.id
-         )
-         AND NOT EXISTS (
-           SELECT 1 FROM inputs_multianalito i WHERE i.session_id = s.id
-         )`,
+          AND COALESCE(LOWER(btrim(s.estado)), '') IN ('', 'activa', 'activo', 'abierta', 'abierto')
+          AND NOT EXISTS (
+            SELECT 1 FROM reports r WHERE r.session_id = s.id
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM results_general rg
+            WHERE rg.session_id = s.id
+              AND rg.catalog_id IS NOT NULL
+          )`,
       [usuarioId]
     );
 
