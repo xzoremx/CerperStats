@@ -58,9 +58,9 @@
             </select>
 
             <div class="filters-grid">
-              <!-- Zone 1: Procedimiento - 3x2 Grid -->
-              <div class="filter-zone filter-zone-proc">
-                <label class="filter-zone-label">Procedimiento</label>
+              <!-- Procedimiento -->
+              <div class="filter-group">
+                <label class="filter-group-label">Procedimiento</label>
                 <div class="proc-grid" id="filter-proc-group">
                   <button type="button" class="proc-grid-item active" data-value="all">Todos</button>
                   <button type="button" class="proc-grid-item" data-value="intralaboratorios">Intralaboratorio</button>
@@ -70,9 +70,9 @@
                 </div>
               </div>
 
-              <!-- Zone 2: Estructura - 2 options -->
-              <div class="filter-zone filter-zone-estructura">
-                <label class="filter-zone-label">Estructura</label>
+              <!-- Estructura -->
+              <div class="filter-group">
+                <label class="filter-group-label">Estructura</label>
                 <div class="estructura-options" id="filter-analisis-group">
                   <button type="button" class="estructura-btn active" data-value="all">Todas</button>
                   <button type="button" class="estructura-btn" data-value="mono">Monoanalito</button>
@@ -80,20 +80,20 @@
                 </div>
               </div>
 
-              <!-- Zone 3: Fecha - Simple range inputs -->
-              <div class="filter-zone filter-zone-fecha">
-                <label class="filter-zone-label">Rango de Fechas</label>
+              <!-- Fecha -->
+              <div class="filter-group">
+                <label class="filter-group-label">Fecha</label>
                 <div class="fecha-range">
-                  <div class="fecha-input-wrap">
+                  <div class="fecha-row">
                     <span class="fecha-label">Desde</span>
                     <input type="date" id="filter-date-from" class="fecha-input" />
                   </div>
-                  <div class="fecha-input-wrap">
+                  <div class="fecha-row">
                     <span class="fecha-label">Hasta</span>
                     <input type="date" id="filter-date-to" class="fecha-input" />
                   </div>
-                  <button type="button" class="fecha-clear-btn" id="fecha-clear-btn" title="Limpiar fechas">
-                    <i data-lucide="x"></i>
+                  <button type="button" class="fecha-clear-btn" id="fecha-clear-btn" title="Restablecer">
+                    <i data-lucide="rotate-ccw"></i>
                   </button>
                 </div>
               </div>
