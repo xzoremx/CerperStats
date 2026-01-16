@@ -55,6 +55,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   let labOptions = [];
   let currentLabValue = 'all';
 
+  // View mode state (grid or list)
+  let currentViewMode = 'grid';
+
   let allSessions = [];
 
 
@@ -262,7 +265,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
-    renderSesiones(data);
+    renderSesiones(data, currentViewMode);
   }
 
 
@@ -313,6 +316,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     applyFilters();
   });
 
+  // View toggle event handlers
+  const viewToggle = document.getElementById('view-toggle');
+  if (viewToggle) {
+    const viewBtns = viewToggle.querySelectorAll('.view-toggle-btn');
+    viewBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const newView = btn.dataset.view || 'grid';
+        if (newView === currentViewMode) return;
+
+        // Update active state
+        viewBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update state and re-render
+        currentViewMode = newView;
+        applyFilters();
+      });
+    });
+  }
+
   try { await loadSessions(); } catch (err) {
     console.error('[SessionsPanel] Error:', err);
     const msg = err?.message ? `Error al cargar las sesiones: ${err.message}` : 'Error al cargar las sesiones.';
@@ -325,18 +348,50 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
-function renderSesiones(sesiones) {
+// Helper functions (outside render for performance)
+const PROC_INFO_MAP = {
+  autorizaciones: { abbr: 'AUT', cls: 'proc-aut' },
+  implementaciones: { abbr: 'IMP', cls: 'proc-imp' },
+  intralaboratorios: { abbr: 'INTRA', cls: 'proc-intra' },
+  'intercomparación': { abbr: 'INTER', cls: 'proc-inter' }
+};
+
+const STATUS_MAP = {
+  activa: 'status-light-active',
+  activo: 'status-light-active',
+  abierta: 'status-light-active',
+  suficiente: 'status-light-sufficient',
+  finalizada: 'status-light-finalized',
+  finalizado: 'status-light-finalized',
+  completada: 'status-light-finalized',
+  completado: 'status-light-finalized',
+  cancelada: 'status-light-cancelled',
+  cancelado: 'status-light-cancelled',
+  cerrada: 'status-light-cancelled',
+  cerrado: 'status-light-cancelled'
+};
+
+function getProcInfo(name) {
+  return PROC_INFO_MAP[(name || '').toLowerCase()] || null;
+}
+
+function getStatusLightClass(estado) {
+  return STATUS_MAP[String(estado || '').toLowerCase().trim()] || 'status-light-unknown';
+}
+
+function navigateToSession(id) {
+  sessionStorage.setItem("sessionSeleccionada", id);
+  if (window.cerper?.openPage) window.cerper.openPage("session_detail.html");
+  else window.location.href = "session_detail.html";
+}
+
+function renderSesiones(sesiones, viewMode = 'grid') {
   const contenedor = document.getElementById("sessions-container");
   contenedor.innerHTML = "";
 
-  const procInfo = (name) => {
-    const k = (name || '').toLowerCase();
-    if (k === 'autorizaciones') return { abbr: 'AUT', cls: 'proc-aut' };
-    if (k === 'implementaciones') return { abbr: 'IMP', cls: 'proc-imp' };
-    if (k === 'intralaboratorios') return { abbr: 'INTRA', cls: 'proc-intra' };
-    if (k === 'intercomparación') return { abbr: 'INTER', cls: 'proc-inter' };
-    return null;
-  };
+  // Update container class based on view mode
+  contenedor.classList.remove('sessions-grid', 'sessions-list');
+  contenedor.classList.add(viewMode === 'list' ? 'sessions-list' : 'sessions-grid');
 
   if (!sesiones || !sesiones.length) {
     contenedor.innerHTML = `
@@ -346,65 +401,63 @@ function renderSesiones(sesiones) {
         <p class="empty-state-subtitle">No se encontraron sesiones con los filtros seleccionados</p>
       </div>
     `;
-    // Re-render lucide icons for the new content
     if (window.lucide) lucide.createIcons();
     return;
   }
 
-  sesiones.forEach(s => {
-    const card = document.createElement("article");
-    card.className = "session-card";
-    const labName = s.lab_nombre || s.lab_key || '';
-    const pInfo = procInfo(s.procedure);
-    const badges = [];
-    if (pInfo) badges.push(`<span class="proc-badge ${pInfo.cls}" title="${s.procedure}">${pInfo.abbr}</span>`);
+  // Use DocumentFragment for better performance
+  const fragment = document.createDocumentFragment();
 
-    const badgeRow = badges.length ? `<div class="badge-row">${badges.join('')}</div>` : '';
+  sesiones.forEach(s => {
+    const labName = s.lab_nombre || s.lab_key || '';
+    const pInfo = getProcInfo(s.procedure);
     const creadoRaw = s.creado_en ?? '';
     const creadoText = formatDateTimePeru(creadoRaw);
-    // Determine status light class based on estado
-    const estadoNorm = String(s.estado || '').toLowerCase().trim();
-    let statusLightClass = 'status-light-unknown'; // orange for unknown
-    if (estadoNorm === 'activa' || estadoNorm === 'activo' || estadoNorm === 'abierta') {
-      statusLightClass = 'status-light-active'; // green pulsing
-    } else if (estadoNorm === 'suficiente') {
-      statusLightClass = 'status-light-sufficient'; // blue
-    } else if (
-      estadoNorm === 'finalizada' ||
-      estadoNorm === 'finalizado' ||
-      estadoNorm === 'completada' ||
-      estadoNorm === 'completado'
-    ) {
-      statusLightClass = 'status-light-finalized'; // purple
-    } else if (
-      estadoNorm === 'cancelada' ||
-      estadoNorm === 'cancelado' ||
-      estadoNorm === 'cerrada' ||
-      estadoNorm === 'cerrado'
-    ) {
-      statusLightClass = 'status-light-cancelled'; // red
+    const statusClass = getStatusLightClass(s.estado);
+    const producto = s.producto || "Sin producto";
+    const metodo = s.metodo || "-";
+    const usuario = s.usuario || "-";
+    const estadoTitle = s.estado || 'desconocido';
+
+    const el = document.createElement("article");
+
+    if (viewMode === 'list') {
+      el.className = "session-list-item";
+      el.innerHTML = `
+        <div class="list-status-bar ${statusClass}" title="Estado: ${estadoTitle}"></div>
+        <div class="list-item-content">
+          <div class="list-item-main">
+            <span class="list-item-title">${labName} | ${producto}</span>
+            <span class="list-item-method"><i data-lucide="book-open"></i> ${metodo}</span>
+          </div>
+          <div class="list-item-meta"><i data-lucide="calendar"></i> ${creadoText}</div>
+          <div class="list-item-meta"><i data-lucide="user"></i> ${usuario}</div>
+          ${pInfo ? `<div class="list-item-badge"><span class="proc-badge ${pInfo.cls}" title="${s.procedure}">${pInfo.abbr}</span></div>` : ''}
+          <span class="list-item-id">#${s.id}</span>
+        </div>
+      `;
+    } else {
+      el.className = "session-card";
+      el.innerHTML = `
+        ${pInfo ? `<div class="badge-row"><span class="proc-badge ${pInfo.cls}" title="${s.procedure}">${pInfo.abbr}</span></div>` : ''}
+        <div class="status-bar ${statusClass}" title="Estado: ${estadoTitle}"></div>
+        <h3>${labName} | ${producto}</h3>
+        <p class="card-field"><i data-lucide="book-open"></i> ${metodo}</p>
+        <div class="card-footer">
+          <span class="card-meta" title="${creadoRaw}"><i data-lucide="calendar"></i> ${creadoText}</span>
+          <span class="card-meta"><i data-lucide="user"></i> ${usuario}</span>
+        </div>
+        <span class="card-id-signature">#${s.id}</span>
+      `;
     }
 
-    card.innerHTML = `
-      ${badgeRow}
-      <div class="status-bar ${statusLightClass}" title="Estado: ${s.estado || 'desconocido'}"></div>
-      <h3>${labName} | ${s.producto || "Sin producto"}</h3>
-      <p class="card-field"><i data-lucide="book-open"></i> ${s.metodo || "-"}</p>
-      <div class="card-footer">
-        <span class="card-meta" title="${creadoRaw}"><i data-lucide="calendar"></i> ${creadoText}</span>
-        <span class="card-meta"><i data-lucide="user"></i> ${s.usuario || "-"}</span>
-      </div>
-      <span class="card-id-signature">#${s.id}</span>
-    `;
-    card.addEventListener("click", () => {
-      sessionStorage.setItem("sessionSeleccionada", s.id);
-      if (window.cerper?.openPage) window.cerper.openPage("session_detail.html");
-      else window.location.href = "session_detail.html";
-    });
-    contenedor.appendChild(card);
+    el.addEventListener("click", () => navigateToSession(s.id));
+    fragment.appendChild(el);
   });
 
-  // Render Lucide icons after all cards are added
+  contenedor.appendChild(fragment);
+
+  // Render Lucide icons after all items are added
   try { lucide.createIcons(); } catch (e) { }
 }
 

@@ -544,15 +544,26 @@ select.hidden {
    Status Legend (inside glass card)
    ======================================== */
 
+/* Legend + View Toggle Row */
+.legend-view-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-top: 1px solid var(--border-light);
+  background: rgba(0, 0, 0, 0.015);
+  gap: 16px;
+}
+
 .status-legend {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   align-items: center;
-  justify-content: center;
-  padding: 18px 24px;
-  border-top: 1px solid var(--border-light);
-  background: rgba(0, 0, 0, 0.015);
+  justify-content: flex-start;
+  padding: 0;
+  border-top: none;
+  background: transparent;
 }
 
 .status-legend .legend-item {
@@ -1521,5 +1532,271 @@ select.hidden {
 
   .lab-sidebar {
     display: none;
+  }
+}
+
+/* ========================================
+   View Toggle Button
+   ======================================== */
+
+.view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+}
+
+.view-toggle-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 150ms ease;
+}
+
+.view-toggle-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--text-secondary);
+}
+
+.view-toggle-btn.active {
+  background: rgba(255, 255, 255, 0.35);
+  color: var(--accent-text);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.view-toggle-btn i,
+.view-toggle-btn svg {
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+/* ========================================
+   Sessions List View
+   ======================================== */
+
+.sessions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.session-list-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 4px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--border-glass-outer);
+  border-radius: var(--radius-md);
+  padding: 14px 18px 14px 0;
+  cursor: pointer;
+  box-shadow: var(--glass-shadow), var(--glass-inner-shadow);
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    background 200ms ease;
+  overflow: hidden;
+}
+
+.session-list-item:hover {
+  transform: translateX(4px);
+  box-shadow: var(--glass-shadow-hover), var(--glass-inner-shadow);
+}
+
+.session-list-item:active {
+  transform: translateX(2px) scale(0.995);
+}
+
+/* Status bar on left edge */
+.session-list-item .list-status-bar {
+  width: 4px;
+  height: 100%;
+  min-height: 44px;
+  border-radius: 0 2px 2px 0;
+  align-self: stretch;
+}
+
+.session-list-item .list-status-bar.status-light-active {
+  background: #22c55e;
+  animation: pulse-bar 2s ease-in-out infinite;
+}
+
+.session-list-item .list-status-bar.status-light-sufficient {
+  background: #3b82f6;
+}
+
+.session-list-item .list-status-bar.status-light-finalized {
+  background: #8b5cf6;
+}
+
+.session-list-item .list-status-bar.status-light-cancelled {
+  background: #ef4444;
+}
+
+.session-list-item .list-status-bar.status-light-unknown {
+  background: #f59e0b;
+}
+
+/* List item content */
+.list-item-content {
+  display: grid;
+  grid-template-columns: minmax(200px, 1.5fr) minmax(150px, 1fr) auto auto auto;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.list-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.list-item-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-item-method {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.list-item-method i,
+.list-item-method svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.list-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-quaternary);
+  white-space: nowrap;
+}
+
+.list-item-meta i,
+.list-item-meta svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+}
+
+/* Procedure badge in list */
+.list-item-badge {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.list-item-badge .proc-badge {
+  transform: none;
+  position: static;
+  font-size: 10px;
+  padding: 4px 10px;
+}
+
+/* ID signature in list */
+.list-item-id {
+  font-family: "Calibri", "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  font-style: italic;
+  color: rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+  transition: color 200ms ease;
+}
+
+.session-list-item:hover .list-item-id {
+  color: rgba(108, 92, 231, 0.3);
+}
+
+/* ========================================
+   Responsive List View
+   ======================================== */
+
+@media (max-width: 900px) {
+  .list-item-content {
+    grid-template-columns: 1fr auto auto;
+    gap: 12px;
+  }
+
+  .list-item-method {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .legend-view-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .status-legend {
+    justify-content: center;
+  }
+
+  .view-toggle {
+    align-self: flex-end;
+  }
+
+  .list-item-content {
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+  }
+
+  .list-item-badge,
+  .list-item-id {
+    display: none;
+  }
+
+  .session-list-item {
+    padding: 12px 14px 12px 0;
+  }
+
+  .list-item-main {
+    gap: 4px;
+  }
+
+  .list-item-meta {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
   }
 }

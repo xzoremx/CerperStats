@@ -100,14 +100,27 @@
             </div>
           </div>
 
-          <!-- Status Legend -->
-          <div class="status-legend" aria-label="Leyenda de estados">
-            <div class="legend-item"><span class="legend-dot status-light-active"></span><span>Activa</span></div>
-            <div class="legend-item"><span class="legend-dot status-light-sufficient"></span><span>Suficiente</span>
+          <!-- Status Legend + View Toggle Row -->
+          <div class="legend-view-row">
+            <div class="status-legend" aria-label="Leyenda de estados">
+              <div class="legend-item"><span class="legend-dot status-light-active"></span><span>Activa</span></div>
+              <div class="legend-item"><span class="legend-dot status-light-sufficient"></span><span>Suficiente</span>
+              </div>
+              <div class="legend-item"><span class="legend-dot status-light-finalized"></span><span>Finalizada</span>
+              </div>
+              <div class="legend-item"><span class="legend-dot status-light-cancelled"></span><span>Cancelada</span>
+              </div>
             </div>
-            <div class="legend-item"><span class="legend-dot status-light-finalized"></span><span>Finalizada</span>
+
+            <!-- View Toggle -->
+            <div class="view-toggle" id="view-toggle" aria-label="Cambiar vista">
+              <button type="button" class="view-toggle-btn active" data-view="grid" title="Vista cuadrícula">
+                <i data-lucide="grid-2x2"></i>
+              </button>
+              <button type="button" class="view-toggle-btn" data-view="list" title="Vista lista">
+                <i data-lucide="list"></i>
+              </button>
             </div>
-            <div class="legend-item"><span class="legend-dot status-light-cancelled"></span><span>Cancelada</span></div>
           </div>
         </section>
 
