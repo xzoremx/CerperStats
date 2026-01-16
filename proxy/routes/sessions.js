@@ -79,6 +79,11 @@ async function computeSessionMeta(sessionId) {
   };
 }
 
+function isMultiAnalisis(tipo) {
+  const normalized = String(tipo || "").trim().toLowerCase();
+  return normalized === "multi" || normalized === "multianalito";
+}
+
 router.post('/', async (req, res) => {
   const {
     lab_key,
@@ -128,6 +133,108 @@ router.post('/', async (req, res) => {
   } catch (err) {
     console.error('[API] Error insertando sesión', err);
     res.status(500).json({ ok: false, error: 'db_error' });
+  }
+});
+
+// Create a new session from an existing one and copy its inputs (no results or reports).
+// The new session keeps a reference to the original via `parent_session_id`.
+router.post('/:sessionId/reuse', async (req, res) => {
+  const parentSessionId = Number(req.params.sessionId);
+  if (!parentSessionId) {
+    return res.status(400).json({ ok: false, error: 'invalid_session_id' });
+  }
+
+  const usuarioIdRaw = Number(req.body?.usuario_id);
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { rows: parentRows } = await client.query(
+      `SELECT
+         lab_key, "procedure", metodo, producto, ensayo, expediente, unidad,
+         tipo_analisis, tipo_dato, modo_cualitativo, parametro, usuario_id
+       FROM sessions
+       WHERE id = $1`,
+      [parentSessionId]
+    );
+
+    const parent = parentRows[0];
+    if (!parent) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ ok: false, error: 'session_not_found' });
+    }
+
+    const newUsuarioId = usuarioIdRaw || Number(parent.usuario_id) || null;
+    if (!newUsuarioId) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ ok: false, error: 'invalid_usuario_id' });
+    }
+
+    const { rows: newRows } = await client.query(
+      `INSERT INTO sessions (
+        lab_key, "procedure", metodo, producto, ensayo, expediente, unidad,
+        tipo_analisis, tipo_dato, modo_cualitativo, parametro, usuario_id,
+        parent_session_id, estado, creado_en, actualizado_en
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'activo', NOW(), NOW())
+      RETURNING id`,
+      [
+        parent.lab_key,
+        parent.procedure,
+        parent.metodo,
+        parent.producto,
+        parent.ensayo,
+        parent.expediente,
+        parent.unidad,
+        parent.tipo_analisis,
+        parent.tipo_dato,
+        parent.modo_cualitativo,
+        parent.parametro,
+        newUsuarioId,
+        parentSessionId,
+      ]
+    );
+
+    const newSessionId = newRows[0]?.id;
+    if (!newSessionId) {
+      await client.query('ROLLBACK');
+      return res.status(500).json({ ok: false, error: 'db_error' });
+    }
+
+    const multi = isMultiAnalisis(parent.tipo_analisis);
+    const copyQuery = multi
+      ? `INSERT INTO inputs_multianalito (
+           session_id, analito, parametro, nivel, lectura_idx, valor,
+           unidad, tipo_dato, modo_cualitativo, valido, comentario
+         )
+         SELECT
+           $1 AS session_id, analito, parametro, nivel, lectura_idx, valor,
+           unidad, tipo_dato, modo_cualitativo, valido, comentario
+         FROM inputs_multianalito
+         WHERE session_id = $2 AND valido = true`
+      : `INSERT INTO inputs_monoanalito (
+           session_id, analito, parametro, nivel, lectura_idx, valor,
+           unidad, tipo_dato, modo_cualitativo, valido, comentario
+         )
+         SELECT
+           $1 AS session_id, analito, parametro, nivel, lectura_idx, valor,
+           unidad, tipo_dato, modo_cualitativo, valido, comentario
+         FROM inputs_monoanalito
+         WHERE session_id = $2 AND valido = true`;
+
+    const copyResult = await client.query(copyQuery, [newSessionId, parentSessionId]);
+
+    await client.query('COMMIT');
+    res.json({ ok: true, session_id: newSessionId, copied_inputs: copyResult.rowCount || 0 });
+  } catch (err) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (_) { }
+    console.error('[API] Error reutilizando sesión', err);
+    res.status(500).json({ ok: false, error: 'db_error' });
+  } finally {
+    client.release();
   }
 });
 

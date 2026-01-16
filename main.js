@@ -495,6 +495,24 @@ ipcMain.handle("db-delete-session-deep", async (_event, session_id) => {
   }
 });
 
+// === Reutilizar sesión: clonar metadata + inputs (sin resultados/PDFs) ===
+ipcMain.handle("db-reuse-session", async (_event, { session_id, usuario_id }) => {
+  const parentId = Number(session_id);
+  const userId = Number(usuario_id) || Number(currentUser?.id) || null;
+  if (!parentId) return { ok: false, error: "invalid_session_id" };
+
+  try {
+    const payload = await proxyFetch(`/sessions/${parentId}/reuse`, {
+      method: "POST",
+      body: JSON.stringify(userId ? { usuario_id: userId } : {}),
+    });
+    return { ok: true, session_id: payload.session_id, copied_inputs: payload.copied_inputs ?? 0 };
+  } catch (err) {
+    console.error("[PROXY] Error reutilizando sesión:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
 
 // === INFO DETALLADA DE SESIÓN ===
 ipcMain.handle("db-get-session-info", async (_event, session_id) => {

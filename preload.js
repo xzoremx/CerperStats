@@ -70,6 +70,8 @@ contextBridge.exposeInMainWorld('cerper', {
     ipcRenderer.invoke("db-get-resultados-preliminares", session_id),
   deleteSessionDeep: (session_id) =>
     ipcRenderer.invoke("db-delete-session-deep", session_id),
+  reuseSession: (session_id, usuario_id) =>
+    ipcRenderer.invoke("db-reuse-session", { session_id, usuario_id }),
   getCurrentUser: () => ipcRenderer.invoke("auth-get-current-user"),
   logout: () => ipcRenderer.invoke("auth-logout"),
   // Control de ventana estilo Apple

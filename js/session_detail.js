@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const btnResults = document.getElementById("btn-results");
   const btnReport = document.getElementById("btn-report");
+  const btnReuse = document.getElementById("btn-reuse");
   const btnVolver = document.getElementById("btn-volver");
 
   // Session meta elements (new UI)
@@ -66,6 +67,129 @@ document.addEventListener("DOMContentLoaded", async () => {
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
+  }
+
+  function normalizeModalMessage(message) {
+    if (message == null) return "";
+    return String(message).replace(/\n/g, "<br>");
+  }
+
+  function showInlineModal({ title, message, confirmText, cancelText }) {
+    return new Promise((resolve) => {
+      const existing = document.querySelector(".cs-inline-modal-overlay");
+      if (existing) existing.remove();
+
+      const overlay = document.createElement("div");
+      overlay.className = "cs-inline-modal-overlay";
+
+      const modal = document.createElement("div");
+      modal.className = "cs-inline-modal";
+
+      const titleEl = document.createElement("h3");
+      titleEl.className = "cs-inline-modal__title";
+      titleEl.textContent = title || "Confirmar";
+
+      const messageEl = document.createElement("p");
+      messageEl.className = "cs-inline-modal__message";
+      messageEl.innerHTML = normalizeModalMessage(message);
+
+      const buttons = document.createElement("div");
+      buttons.className = "cs-inline-modal__actions";
+
+      const confirmBtn = document.createElement("button");
+      confirmBtn.type = "button";
+      confirmBtn.textContent = confirmText || "Aceptar";
+      confirmBtn.className = "cs-inline-modal__btn cs-inline-modal__btn--primary";
+
+      buttons.appendChild(confirmBtn);
+
+      let cancelBtn = null;
+      if (cancelText) {
+        cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.textContent = cancelText;
+        cancelBtn.className = "cs-inline-modal__btn cs-inline-modal__btn--secondary";
+        buttons.appendChild(cancelBtn);
+      }
+
+      modal.appendChild(titleEl);
+      modal.appendChild(messageEl);
+      modal.appendChild(buttons);
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+
+      const closeModal = (value) => {
+        document.removeEventListener("keydown", keyHandler);
+        overlay.classList.add("is-closing");
+        setTimeout(() => {
+          overlay.remove();
+          resolve(value);
+        }, 200);
+      };
+
+      const keyHandler = (ev) => {
+        if (ev.key === "Escape") {
+          ev.preventDefault();
+          closeModal(false);
+        } else if (ev.key === "Enter") {
+          ev.preventDefault();
+          closeModal(true);
+        }
+      };
+
+      confirmBtn.addEventListener("click", () => closeModal(true));
+      if (cancelBtn) cancelBtn.addEventListener("click", () => closeModal(false));
+
+      document.addEventListener("keydown", keyHandler);
+      confirmBtn.focus();
+    });
+  }
+
+  function normalizeTipoAnalisis(value) {
+    const raw = String(value || "").trim().toLowerCase();
+    if (!raw) return "mono";
+    if (raw === "multi" || raw === "multianalito" || raw.includes("multi")) return "multi";
+    if (raw === "mono" || raw === "monoanalito" || raw.includes("mono")) return "mono";
+    return raw;
+  }
+
+  function inferKAndLecturas(inputsRows) {
+    const rows = Array.isArray(inputsRows) ? inputsRows : [];
+    const orderedParams = [];
+    const seen = new Set();
+
+    for (const r of rows) {
+      const param = String(r?.parametro ?? "").trim();
+      if (!param) continue;
+      if (!seen.has(param)) {
+        seen.add(param);
+        orderedParams.push(param);
+      }
+    }
+
+    if (!orderedParams.length) {
+      const maxIdx = Math.max(...rows.map((r) => Number(r?.lectura_idx) || 0), 0);
+      return { K: 1, lecturasPorParametro: [Math.max(1, maxIdx || 1)] };
+    }
+
+    const lecturasPorParametro = orderedParams.map((param) => {
+      const byLevel = new Map();
+      for (const r of rows) {
+        if (String(r?.parametro ?? "").trim() !== param) continue;
+        const level = Number(r?.nivel) || 1;
+        const idx = Number(r?.lectura_idx) || 0;
+        if (idx < 1) continue;
+        if (!byLevel.has(level)) byLevel.set(level, new Set());
+        byLevel.get(level).add(idx);
+      }
+      let maxCount = 0;
+      for (const set of byLevel.values()) {
+        maxCount = Math.max(maxCount, set.size);
+      }
+      return Math.max(1, maxCount || 1);
+    });
+
+    return { K: orderedParams.length, lecturasPorParametro };
   }
 
   function asNumber(value, fallback = null) {
@@ -557,6 +681,87 @@ document.addEventListener("DOMContentLoaded", async () => {
       const target = "reports.html";
       if (window.cerper?.openPage) window.cerper.openPage(target);
       else window.location.href = target;
+    });
+
+    btnReuse?.addEventListener("click", async () => {
+      if (!window.cerper?.reuseSession) {
+        notify("Esta versión no soporta 'Reutilizar sesión'.", "error");
+        return;
+      }
+
+      const ok = await showInlineModal({
+        title: "Reutilizar sesión",
+        message: [
+          `Se creará una nueva sesión basada en la sesión <strong>#${escapeHtml(info.id)}</strong>.`,
+          "Se copiará la metadata y los inputs guardados.",
+          "No se copiarán resultados ni reportes.",
+        ].join("\n"),
+        confirmText: "Crear nueva sesión",
+        cancelText: "Cancelar",
+      });
+      if (!ok) return;
+
+      const usuarioId = Number(sessionStorage.getItem("usuario_id")) || null;
+      if (!usuarioId) {
+        notify("No se pudo determinar el usuario actual.", "error");
+        return;
+      }
+
+      const prevText = btnReuse.textContent;
+      btnReuse.disabled = true;
+      btnReuse.textContent = "Reutilizando...";
+
+      try {
+        notify("Creando nueva sesión y copiando inputs...", "info");
+        const reuseRes = await window.cerper.reuseSession(info.id, usuarioId);
+        if (!reuseRes?.ok || !reuseRes.session_id) {
+          throw new Error(reuseRes?.error || "No se pudo reutilizar la sesión");
+        }
+
+        const newSessionId = String(reuseRes.session_id);
+
+        // Preparar contexto para poder volver a input_data_sheet desde evaluation_select.
+        try {
+          sessionStorage.setItem("sessionID", newSessionId);
+          sessionStorage.setItem("sessionSeleccionada", newSessionId);
+          if (info.lab_key) sessionStorage.setItem("labSeleccionado", String(info.lab_key));
+          if (info.lab_nombre || info.lab_key) {
+            sessionStorage.setItem("labNombreVisible", String(info.lab_nombre || info.lab_key));
+          }
+          if (info.procedure) sessionStorage.setItem("procedimientoSeleccionado", String(info.procedure));
+
+          if (info.metodo != null) sessionStorage.setItem("metodo", String(info.metodo || ""));
+          if (info.producto != null) sessionStorage.setItem("producto", String(info.producto || ""));
+          if (info.ensayo != null) sessionStorage.setItem("ensayo", String(info.ensayo || ""));
+          if (info.expediente != null) sessionStorage.setItem("expediente", String(info.expediente || ""));
+          if (info.unidad != null) sessionStorage.setItem("unidad", String(info.unidad || ""));
+
+          const tipoAnalisis = normalizeTipoAnalisis(info.tipo_analisis);
+          sessionStorage.setItem("tipoAnalisis", tipoAnalisis);
+          if (info.parametro != null) sessionStorage.setItem("parametroSeleccionado", String(info.parametro || ""));
+          if (info.tipo_dato != null) sessionStorage.setItem("tipoDato", String(info.tipo_dato || ""));
+          if (info.modo_cualitativo != null && String(info.modo_cualitativo).trim()) {
+            sessionStorage.setItem("modoCualitativo", String(info.modo_cualitativo));
+          } else {
+            sessionStorage.removeItem("modoCualitativo");
+          }
+
+          const inputsRes = await window.cerper.getInputsBySession(newSessionId, tipoAnalisis);
+          const { K, lecturasPorParametro } = inferKAndLecturas(inputsRes?.ok ? inputsRes.data : []);
+          sessionStorage.setItem("K", String(K));
+          sessionStorage.setItem("lecturasPorParametro", JSON.stringify(lecturasPorParametro));
+        } catch (_) { }
+
+        notify(`Sesión creada (#${newSessionId}). Abriendo evaluaciones...`, "success");
+        if (window.cerper?.openPage) window.cerper.openPage("evaluation_select.html");
+        else window.location.href = "evaluation_select.html";
+      } catch (e) {
+        console.error("[SessionDetail] Reuse failed:", e);
+        notify(e?.message || "No se pudo reutilizar la sesión.", "error");
+      } finally {
+        btnReuse.disabled = false;
+        btnReuse.textContent = prevText;
+      }
     });
 
     // Inputs viewer events

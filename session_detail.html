@@ -13,24 +13,26 @@
 
 <body>
   <main class="detail-container">
-    <header class="detail-header">
-      <div class="detail-title">
-        <h2>Ficha Técnica</h2>
-        <p class="detail-subtitle" id="session-subtitle">Cargando información...</p>
-      </div>
-      <div class="detail-badges" aria-label="Resumen de sesión">
-        <span class="chip chip-id" id="session-chip-id">Sesión —</span>
-        <span class="chip chip-status" id="session-chip-status">—</span>
-      </div>
-    </header>
-
     <section class="session-meta" aria-label="Información de la sesión">
+      <!-- Header inside glass card -->
+      <header class="meta-header">
+        <div class="meta-title-group">
+          <h2 class="meta-main-title">Ficha Técnica</h2>
+          <p class="meta-subtitle" id="session-subtitle">Cargando información...</p>
+        </div>
+        <div class="meta-badges" aria-label="Resumen de sesión">
+          <span class="chip chip-id" id="session-chip-id">Sesión —</span>
+          <span class="chip chip-status" id="session-chip-status">—</span>
+        </div>
+      </header>
+
+      <!-- Context chips -->
       <div class="meta-chips" aria-label="Contexto">
-        <span class="chip chip-analisis" id="session-chip-analisis">—</span>
         <span class="chip chip-dato" id="session-chip-dato">—</span>
         <span class="chip chip-modo hidden" id="session-chip-modo">—</span>
       </div>
 
+      <!-- Key-value grid -->
       <dl class="kv-grid" id="session-kv">
         <div class="kv-row">
           <dt>Procedimiento</dt>
@@ -70,6 +72,7 @@
     <div class="options">
       <button id="btn-results">Ver Resultados</button>
       <button id="btn-report">Ver Reportes</button>
+      <button id="btn-reuse">Reutilizar Sesión</button>
     </div>
 
     <section class="inputs-panel" id="inputs-panel" aria-label="Inputs guardados">
@@ -80,14 +83,7 @@
         </div>
 
         <div class="inputs-actions">
-          <div class="segmented" role="tablist" aria-label="Estructura de inputs">
-            <button id="inputs-tab-mono" type="button" class="segmented-btn" role="tab" aria-selected="false">
-              Monoanalito
-            </button>
-            <button id="inputs-tab-multi" type="button" class="segmented-btn" role="tab" aria-selected="false">
-              Multianalito
-            </button>
-          </div>
+          <span class="chip chip-analisis" id="session-chip-analisis">—</span>
 
           <button id="btn-copy-inputs" type="button" class="inputs-btn" title="Copiar inputs visibles">
             <i data-lucide="copy"></i><span>Copiar</span>
