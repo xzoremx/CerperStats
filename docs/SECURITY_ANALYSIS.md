@@ -8,16 +8,17 @@
 
 ## Resumen Ejecutivo
 
-CerperStats es una aplicacion de escritorio Electron que se conecta a un backend REST API para gestionar evaluaciones estadisticas de laboratorios. El analisis revela un nivel de seguridad **MODERADO** con varias buenas practicas implementadas, pero tambien identifica **vulnerabilidades criticas** que requieren atencion inmediata antes del despliegue en produccion empresarial.
+CerperStats es una aplicacion de escritorio Electron que se conecta a un backend REST API para gestionar evaluaciones estadisticas de laboratorios. El analisis revela un nivel de seguridad **MODERADO-ALTO** con varias buenas practicas implementadas y mejoras recientes en seguridad.
 
-### Clasificacion de Riesgos
+### Clasificacion de Riesgos (Actualizado)
 
 | Nivel | Cantidad | Descripcion |
 |-------|----------|-------------|
-| CRITICO | 2 | Requieren atencion inmediata |
-| ALTO | 4 | Deben resolverse antes de produccion |
+| CRITICO | 1 | Credenciales en .env (pendiente) |
+| ALTO | 2 | IDOR, interpolacion SQL |
 | MEDIO | 5 | Recomendados para hardening |
 | BAJO | 3 | Mejoras opcionales |
+| MITIGADO | 3 | Sandbox, HTTPS, Auth admin |
 
 ---
 
@@ -51,62 +52,72 @@ PGHOST=3.210.242.5
 4. Usar un gestor de secretos (AWS Secrets Manager, HashiCorp Vault)
 5. Documentar un `.env.example` sin valores reales
 
-### 1.2 Sandbox Deshabilitado en Electron (CRITICO)
+### 1.2 Sandbox Habilitado en Electron (CORREGIDO)
 
 **Archivo:** `main.js:121`
-**Severidad:** CRITICA
+**Severidad:** CRITICA (resuelta)
 
 ```javascript
 webPreferences: {
-  sandbox: false,  // PROBLEMA
+  sandbox: true,
   contextIsolation: true,
   nodeIntegration: false,
 }
 ```
 
 **Descripcion:**
-Aunque `contextIsolation` esta habilitado correctamente, `sandbox: false` permite que el proceso renderer tenga mas acceso al sistema operativo del que deberia.
+Se habilito `sandbox: true` para reducir la superficie de ataque del proceso renderer.
 
-**Riesgos:**
+**Riesgos (cuando estaba deshabilitado):**
 - Si un atacante logra ejecutar codigo en el renderer (XSS), tiene mayor superficie de ataque
 - Acceso potencial a APIs del sistema operativo
 
 **Recomendaciones:**
-1. Habilitar `sandbox: true` si es posible
-2. Si no es posible por dependencias, documentar la justificacion
+1. Mantener `sandbox: true` habilitado
+2. Si se deshabilita por dependencias, documentar la justificacion
 3. Implementar Content-Security-Policy estricta
 
 ---
 
 ## 2. HALLAZGOS DE SEVERIDAD ALTA
 
-### 2.1 Ausencia de HTTPS entre Cliente Electron y Backend
+### 2.1 HTTPS via Cloudflare Tunnel (MITIGADO)
 
-**Archivo:** `main.js:262-266`
-**Severidad:** ALTA
+**Archivo:** `.env`, `config/embedded-env.js`
+**Severidad:** ALTA (mitigada)
+**Estado:** IMPLEMENTADO via Cloudflare Tunnel
 
-```javascript
-const DEFAULT_PROXY_RUN_URL = "http://localhost:4000/run-eval";
-const PROXY_RUN_URL = CERPER_PROXY_URL || CERPER_EVAL_URL || DEFAULT_PROXY_RUN_URL;
+```env
+# Configuracion actual (pre-produccion)
+CERPER_PROXY_URL=https://someone-teddy-about-strengths.trycloudflare.com/run-eval
 ```
 
 **Descripcion:**
-La comunicacion entre el cliente Electron y el backend puede realizarse sobre HTTP sin cifrado, incluso en produccion si la configuracion lo permite.
+Se implemento HTTPS mediante Cloudflare Tunnel (Quick Tunnel). El trafico entre el cliente Electron y el backend ahora viaja cifrado.
 
-**Riesgos:**
-- Tokens JWT viajan en texto plano
-- Credenciales de login pueden ser interceptadas
-- Datos sensibles de evaluaciones expuestos
+**Arquitectura:**
+```
+Cliente Electron --HTTPS--> Cloudflare Edge --HTTP--> localhost:4000 (servidor)
+```
 
-**Recomendaciones:**
-1. Forzar HTTPS en produccion
-2. Validar que `CERPER_PROXY_URL` use `https://`
-3. Implementar certificate pinning para entornos enterprise
+**Riesgos mitigados:**
+- Tokens JWT ahora viajan cifrados
+- Credenciales de login protegidas en transito
+- Datos sensibles de evaluaciones cifrados
 
-### 2.2 Autenticacion Admin via Header Base64 (ALTA)
+**Limitaciones actuales (pre-produccion):**
+- URL dinamica (cambia si se reinicia cloudflared)
+- Para produccion: configurar tunel nombrado con URL fija
+
+**Recomendaciones para produccion:**
+1. Configurar tunel nombrado con dominio propio
+2. Validar en codigo que `CERPER_PROXY_URL` use `https://`
+3. Considerar certificate pinning para mayor seguridad
+
+### 2.2 Autenticacion Admin via Header Base64 (MITIGADO PARCIALMENTE)
 
 **Archivo:** `proxy/routes/admin.js:27-73`
-**Severidad:** ALTA
+**Severidad:** ALTA -> MEDIA (con HTTPS)
 
 ```javascript
 const authHeader = req.headers['x-admin-auth'];
@@ -117,14 +128,19 @@ const [username, password] = decoded.split(':');
 **Descripcion:**
 El panel de administracion usa autenticacion basica sobre un header personalizado. Base64 NO es cifrado, solo codificacion.
 
-**Riesgos:**
-- Credenciales de admin facilmente decodificables si el trafico es interceptado
-- Sin HTTPS, las credenciales viajan en texto "legible"
+**Estado actual:**
+- Con HTTPS via Cloudflare Tunnel, las credenciales estan protegidas en transito
+- El riesgo principal (intercepcion) esta mitigado
 
-**Recomendaciones:**
-1. **Obligatorio:** HTTPS para `/admin/*`
+**Riesgos residuales:**
+- Credenciales visibles en logs del servidor si se loggean headers
+- No hay proteccion contra ataques de fuerza bruta especificos para admin
+
+**Recomendaciones para produccion:**
+1. Mantener HTTPS obligatorio para `/admin/*`
 2. Considerar autenticacion JWT tambien para admin
 3. Implementar 2FA para usuarios admin
+4. Rate limiting especifico para `/admin/*`
 
 ### 2.3 Falta de Autorizacion por Recursos (ALTA)
 
@@ -479,31 +495,44 @@ Acciones criticas (login, creacion/modificacion de usuarios) se registran en `lo
 
 ## 7. MATRIZ DE REMEDIACION PRIORIZADA
 
-| # | Hallazgo | Severidad | Esfuerzo | Prioridad |
-|---|----------|-----------|----------|-----------|
-| 1 | Credenciales en .env | CRITICA | Bajo | INMEDIATO |
-| 2 | Rotar credenciales expuestas | CRITICA | Medio | INMEDIATO |
-| 3 | Implementar HTTPS | ALTA | Medio | Semana 1 |
-| 4 | Autorizacion por recursos (IDOR) | ALTA | Alto | Semana 1-2 |
-| 5 | Habilitar sandbox Electron | CRITICA | Bajo | Semana 1 |
-| 6 | Mejorar auth admin | ALTA | Medio | Semana 2 |
-| 7 | Rate limiting granular | MEDIA | Bajo | Semana 2 |
-| 8 | Headers de seguridad (Helmet) | BAJA | Bajo | Semana 3 |
-| 9 | Refresh tokens | MEDIA | Medio | Semana 3-4 |
-| 10 | Deshabilitar DevTools prod | BAJA | Bajo | Semana 3 |
+| # | Hallazgo | Severidad | Estado | Prioridad |
+|---|----------|-----------|--------|-----------|
+| 1 | Credenciales en .env | CRITICA | PENDIENTE | INMEDIATO |
+| 2 | Rotar credenciales expuestas | CRITICA | PENDIENTE | INMEDIATO |
+| 3 | ~~Implementar HTTPS~~ | ~~ALTA~~ | COMPLETADO | ~~Semana 1~~ |
+| 4 | Autorizacion por recursos (IDOR) | ALTA | PENDIENTE | Semana 1-2 |
+| 5 | ~~Habilitar sandbox Electron~~ | ~~CRITICA~~ | COMPLETADO | ~~Semana 1~~ |
+| 6 | ~~Mejorar auth admin~~ | ~~ALTA~~ | MITIGADO | ~~Semana 2~~ |
+| 7 | Rate limiting granular | MEDIA | PENDIENTE | Semana 2 |
+| 8 | Headers de seguridad (Helmet) | BAJA | PENDIENTE | Semana 3 |
+| 9 | Refresh tokens | MEDIA | PENDIENTE | Semana 3-4 |
+| 10 | Deshabilitar DevTools prod | BAJA | PENDIENTE | Semana 3 |
+
+### Progreso de Remediacion
+
+- **COMPLETADO:** 3 items (Sandbox, HTTPS, Auth admin mitigado)
+- **PENDIENTE CRITICO:** 2 items (Credenciales .env)
+- **PENDIENTE ALTO:** 1 item (IDOR)
 
 ---
 
 ## 8. CONCLUSION
 
-CerperStats demuestra un esfuerzo consciente por implementar seguridad, especialmente en la capa de Electron donde se siguen las mejores practicas (context isolation, node integration deshabilitado, whitelist de rutas). Sin embargo, existen vulnerabilidades criticas que deben resolverse antes del despliegue en produccion:
+CerperStats demuestra un esfuerzo consciente por implementar seguridad, especialmente en la capa de Electron donde se siguen las mejores practicas (context isolation, node integration deshabilitado, sandbox habilitado, whitelist de rutas).
 
-1. **Credenciales expuestas** en el repositorio
-2. **Falta de autorizacion** a nivel de recursos (IDOR)
-3. **Ausencia de HTTPS** en comunicacion cliente-servidor
+**Mejoras recientes implementadas:**
+- HTTPS via Cloudflare Tunnel (pre-produccion)
+- Sandbox habilitado en Electron
 
-Se recomienda:
-- Remediar inmediatamente los hallazgos CRITICOS
+**Vulnerabilidades pendientes para produccion:**
+
+1. **Credenciales expuestas** en el repositorio (CRITICO)
+2. **Falta de autorizacion** a nivel de recursos - IDOR (ALTO)
+
+**Para produccion se recomienda:**
+- Remediar inmediatamente las credenciales en .env
+- Implementar verificacion de ownership en endpoints
+- Configurar tunel Cloudflare nombrado con URL fija
 - Implementar un proceso de revision de seguridad antes de cada release
 - Considerar una auditoria de seguridad externa antes del go-live
 
