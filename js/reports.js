@@ -374,7 +374,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function goBack() {
     try {
-      sessionStorage.setItem("sessionID", String(sessionId));
       sessionStorage.setItem("sessionSeleccionada", String(sessionId));
     } catch (_) {}
 

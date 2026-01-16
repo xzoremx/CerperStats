@@ -1,11 +1,50 @@
 // input_data/preinfo.js
 import { dataService } from "../../modules/_common/dataService.js";
 
+function clearWizardCache() {
+  const keys = [
+    // Sesión (wizard / edición)
+    "sessionID",
+    "monoAnalitoDatos",
+    "multiAnalitoDatos",
+
+    // Preinfo
+    "metodo",
+    "producto",
+    "ensayo",
+    "expediente",
+    "unidad",
+
+    // Pasos 1-4
+    "tipoAnalisis",
+    "parametroSeleccionado",
+    "tipoDato",
+    "modoCualitativo",
+    "valoresPermitidos",
+    "K",
+    "lecturasPorParametro",
+  ];
+
+  keys.forEach((k) => {
+    try {
+      sessionStorage.removeItem(k);
+    } catch (_) { }
+  });
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
-  // === Detectar sesion activa y redirigir ===
-  // Si hay sessionID activo, el usuario deberia estar en input_data_sheet.html
+  // === Detectar sessionID sin contexto del wizard (evita contaminación desde vistas) ===
   const activeSessionId = sessionStorage.getItem("sessionID");
-  if (activeSessionId) {
+  const hasStep4Cache = Boolean(sessionStorage.getItem("K")) && Boolean(sessionStorage.getItem("lecturasPorParametro"));
+  if (activeSessionId && !hasStep4Cache) {
+    console.warn("[preinfo] sessionID sin cache del paso 4 detectado, limpiando cache del wizard.");
+    clearWizardCache();
+    window.notify?.("Se limpió una sesión previa detectada. Inicia una nueva carga.", "info");
+  }
+
+  // Si hay sessionID activo, el usuario deberia estar en input_data_sheet.html
+  const stillActiveSessionId = sessionStorage.getItem("sessionID");
+  if (stillActiveSessionId) {
     console.warn("[preinfo] Sesion activa detectada, redirigiendo a input_data_sheet.html");
     if (typeof notify === "function") {
       notify("Hay una sesion activa. Redirigiendo...", "warning");
@@ -306,5 +345,3 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 });
-
-

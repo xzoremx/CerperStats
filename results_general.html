@@ -17,9 +17,6 @@
         sessionStorage.setItem('evalResultsView', 'visualizaciones');
         const fromSessionDetail = sessionStorage.getItem('sessionSeleccionada');
         if (fromSessionDetail) sessionStorage.setItem('evalResultsSessionId', fromSessionDetail);
-        if (fromSessionDetail && !sessionStorage.getItem('sessionID')) {
-          sessionStorage.setItem('sessionID', fromSessionDetail);
-        }
       } catch (_) {}
       if (window.cerper && typeof window.cerper.openPage === 'function') {
         window.cerper.openPage(target);

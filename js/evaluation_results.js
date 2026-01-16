@@ -28,12 +28,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     );
   }
 
-  function setCanonicalSessionId(sessionId) {
+  function setCanonicalResultsSessionId(sessionId) {
     if (!sessionId) return;
     try {
       const sid = String(sessionId);
-      sessionStorage.setItem("sessionID", sid);
       sessionStorage.setItem("sessionSeleccionada", sid);
+      // Mantener un ID separado para visualizaciones (solo lectura).
+      sessionStorage.setItem("evalResultsSessionId", sid);
     } catch (_) { }
   }
 
@@ -117,7 +118,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (btnVolver) {
     btnVolver.addEventListener("click", () => {
       const sid = readResultsSessionId();
-      setCanonicalSessionId(sid);
+      setCanonicalResultsSessionId(sid);
 
       const target = "session_detail.html";
       if (window.cerper && window.cerper.openPage) window.cerper.openPage(target);
@@ -133,7 +134,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let tipoDato = sessionStorage.getItem("tipoDato");
   let modoCualitativo = sessionStorage.getItem("modoCualitativo");
   let sessionId = readResultsSessionId();
-  setCanonicalSessionId(sessionId);
+  setCanonicalResultsSessionId(sessionId);
   sessionId = readResultsSessionId();
 
   // Normalizar alias históricos para evitar perder contexto entre páginas

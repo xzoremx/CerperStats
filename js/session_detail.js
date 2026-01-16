@@ -536,9 +536,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     btnResults?.addEventListener("click", () => {
       // Ir directo a evaluation_results para revisar resultados/gráficos históricos.
       try {
-        // Asegurar que evaluation_results use la misma sesión histórica (aunque exista un sessionID previo).
         if (sessionId) {
-          sessionStorage.setItem("sessionID", sessionId);
           sessionStorage.setItem("sessionSeleccionada", sessionId);
           sessionStorage.setItem("evalResultsSessionId", sessionId);
         }
@@ -553,7 +551,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     btnReport?.addEventListener("click", () => {
       try {
         if (sessionId) {
-          sessionStorage.setItem("sessionID", sessionId);
           sessionStorage.setItem("sessionSeleccionada", sessionId);
         }
       } catch (_) { }
