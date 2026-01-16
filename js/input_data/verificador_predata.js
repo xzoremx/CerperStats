@@ -112,7 +112,7 @@ if (continueBtn) {
       return;
     }
 
-    notify("Datos validados correctamente. Avanzando…", "success");
+    notify("Next step! :) ", "success");
 
     setTimeout(() => {
       const destino = "input_data/input_data_sheet.html";

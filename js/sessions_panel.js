@@ -36,6 +36,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   const selProc = document.getElementById('filter-proc');
   const selAnalisis = document.getElementById('filter-analisis');
   const labWrap = document.getElementById('filter-lab-wrap');
+
+  // Date filter elements
+  const dateModeButtons = document.querySelectorAll('.date-mode-btn');
+  const dateSingleInput = document.getElementById('filter-date-single');
+  const dateFromInput = document.getElementById('filter-date-from');
+  const dateToInput = document.getElementById('filter-date-to');
+  const dateSingleGroup = document.getElementById('date-single-group');
+  const dateRangeGroup = document.getElementById('date-range-group');
+  let currentDateMode = 'all';
+
   let allSessions = [];
 
   function normalizeText(value) {
@@ -99,22 +109,98 @@ document.addEventListener("DOMContentLoaded", async () => {
     applyFilters();
   }
 
+  function parseSessionDate(value) {
+    if (!value) return null;
+    const d = new Date(value);
+    return Number.isFinite(d.getTime()) ? d : null;
+  }
+
+  function isSameDay(date1, date2) {
+    return date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate();
+  }
+
   function applyFilters() {
     const proc = (selProc?.value || 'all').toLowerCase();
     const analisis = (selAnalisis?.value || 'all').toLowerCase();
     let data = allSessions;
+
+    // Filter by procedure
     if (proc !== 'all') {
       data = data.filter(s => (s.procedure || '').toLowerCase() === proc);
     }
+
+    // Filter by analysis type
     if (analisis !== 'all') {
       data = data.filter(s => normalizeTipoAnalisis(s.tipo_analisis) === analisis);
     }
+
+    // Filter by date
+    if (currentDateMode === 'single' && dateSingleInput?.value) {
+      const targetDate = new Date(dateSingleInput.value + 'T00:00:00');
+      data = data.filter(s => {
+        const sessionDate = parseSessionDate(s.creado_en);
+        return sessionDate && isSameDay(sessionDate, targetDate);
+      });
+    } else if (currentDateMode === 'range') {
+      const fromValue = dateFromInput?.value;
+      const toValue = dateToInput?.value;
+
+      if (fromValue || toValue) {
+        const fromDate = fromValue ? new Date(fromValue + 'T00:00:00') : null;
+        const toDate = toValue ? new Date(toValue + 'T23:59:59') : null;
+
+        data = data.filter(s => {
+          const sessionDate = parseSessionDate(s.creado_en);
+          if (!sessionDate) return false;
+          if (fromDate && sessionDate < fromDate) return false;
+          if (toDate && sessionDate > toDate) return false;
+          return true;
+        });
+      }
+    }
+
     renderSesiones(data);
   }
 
   selLab?.addEventListener('change', () => { if (rol === 'admin') loadSessions().catch(console.error); });
   selProc?.addEventListener('change', applyFilters);
   selAnalisis?.addEventListener('change', applyFilters);
+
+  // Date filter mode toggle
+  dateModeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Update active state
+      dateModeButtons.forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+
+      // Update current mode
+      currentDateMode = btn.dataset.mode;
+
+      // Show/hide date inputs
+      if (dateSingleGroup) dateSingleGroup.style.display = currentDateMode === 'single' ? 'flex' : 'none';
+      if (dateRangeGroup) dateRangeGroup.style.display = currentDateMode === 'range' ? 'flex' : 'none';
+
+      // Clear inputs when switching to "all"
+      if (currentDateMode === 'all') {
+        if (dateSingleInput) dateSingleInput.value = '';
+        if (dateFromInput) dateFromInput.value = '';
+        if (dateToInput) dateToInput.value = '';
+      }
+
+      applyFilters();
+    });
+  });
+
+  // Date input change listeners
+  dateSingleInput?.addEventListener('change', applyFilters);
+  dateFromInput?.addEventListener('change', applyFilters);
+  dateToInput?.addEventListener('change', applyFilters);
 
   try { await loadSessions(); } catch (err) {
     console.error('[SessionsPanel] Error:', err);
@@ -182,11 +268,13 @@ function renderSesiones(sesiones) {
 
     card.innerHTML = `
       ${badgeRow}
-      <span class="status-light ${statusLightClass}" title="Estado: ${s.estado || 'desconocido'}"></span>
+      <div class="status-bar ${statusLightClass}" title="Estado: ${s.estado || 'desconocido'}"></div>
       <h3>${labName} | ${s.producto || "Sin producto"}</h3>
       <p class="card-field"><i data-lucide="book-open"></i> ${s.metodo || "-"}</p>
-      <p class="card-field"><i data-lucide="user"></i> ${s.usuario || "-"}</p>
-      <span class="card-date" title="${creadoRaw}"><i data-lucide="calendar"></i> ${creadoText}</span>
+      <div class="card-footer">
+        <span class="card-meta" title="${creadoRaw}"><i data-lucide="calendar"></i> ${creadoText}</span>
+        <span class="card-meta"><i data-lucide="user"></i> ${s.usuario || "-"}</span>
+      </div>
       <span class="card-id-signature">#${s.id}</span>
     `;
     card.addEventListener("click", () => {

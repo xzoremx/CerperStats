@@ -13,46 +13,84 @@
 
 <body>
   <main class="panel-container" role="main">
-    <header class="panel-header">
-      <button id="btn-volver" class="btn-return" aria-label="Volver">
-        <i data-lucide="chevron-left"></i>
-      </button>
-      <div class="panel-brand">
-        <img src="assets/logos/cerper_sessions.png" alt="Cerper" class="panel-logo" />
-        <h1 id="panel-title" class="panel-title">Expedientes</h1>
-      </div>
-    </header>
+    <!-- Unified Glass Card: Header + Filters + Legend -->
+    <section class="panel-glass-card" aria-label="Panel de control">
+      <!-- Header Row -->
+      <header class="panel-header">
+        <button id="btn-volver" class="btn-return" aria-label="Volver">
+          <i data-lucide="chevron-left"></i>
+        </button>
+        <div class="panel-brand">
+          <img src="assets/logos/cerper_sessions.png" alt="Cerper" class="panel-logo" />
+          <h1 id="panel-title" class="panel-title">Expedientes</h1>
+        </div>
+      </header>
 
-    <section class="filters" id="filters-bar" aria-label="Filtros de sesiones">
-      <div class="filter-item" id="filter-lab-wrap">
-        <label for="filter-lab">Laboratorio</label>
-        <select id="filter-lab" class="filter-select"></select>
-      </div>
-      <div class="filter-item">
-        <label for="filter-proc">Procedimiento</label>
-        <select id="filter-proc" class="filter-select">
-          <option value="all">Todos</option>
-          <option value="autorizaciones">Autorizaciones</option>
-          <option value="implementaciones">Implementaciones</option>
-          <option value="intralaboratorios">Intralaboratorios</option>
-          <option value="intercomparación">Intercomparación</option>
-        </select>
-      </div>
-      <div class="filter-item">
-        <label for="filter-analisis">Estructura</label>
-        <select id="filter-analisis" class="filter-select">
-          <option value="all">Todas</option>
-          <option value="mono">Monoanalito</option>
-          <option value="multi">Multianalito</option>
-        </select>
-      </div>
-    </section>
+      <!-- Filters Section -->
+      <div class="filters-section" id="filters-bar" aria-label="Filtros de sesiones">
+        <div class="filters-row">
+          <div class="filter-item" id="filter-lab-wrap">
+            <label for="filter-lab">Laboratorio</label>
+            <select id="filter-lab" class="filter-select"></select>
+          </div>
+          <div class="filter-item">
+            <label for="filter-proc">Procedimiento</label>
+            <select id="filter-proc" class="filter-select">
+              <option value="all">Todos</option>
+              <option value="autorizaciones">Autorizaciones</option>
+              <option value="implementaciones">Implementaciones</option>
+              <option value="intralaboratorios">Intralaboratorios</option>
+              <option value="intercomparación">Intercomparación</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label for="filter-analisis">Estructura</label>
+            <select id="filter-analisis" class="filter-select">
+              <option value="all">Todas</option>
+              <option value="mono">Monoanalito</option>
+              <option value="multi">Multianalito</option>
+            </select>
+          </div>
+        </div>
 
-    <section class="status-legend" aria-label="Leyenda de estados">
-      <div class="legend-item"><span class="legend-dot status-light-active"></span><span>Activa</span></div>
-      <div class="legend-item"><span class="legend-dot status-light-sufficient"></span><span>Suficiente</span></div>
-      <div class="legend-item"><span class="legend-dot status-light-finalized"></span><span>Finalizada</span></div>
-      <div class="legend-item"><span class="legend-dot status-light-cancelled"></span><span>Cancelada</span></div>
+        <!-- Date Filter Row -->
+        <div class="filters-row filters-row-date">
+          <div class="filter-item filter-date-group">
+            <label>Fecha</label>
+            <div class="date-filter-controls">
+              <div class="date-mode-toggle" role="tablist">
+                <button type="button" class="date-mode-btn active" data-mode="all" role="tab" aria-selected="true">
+                  Todas
+                </button>
+                <button type="button" class="date-mode-btn" data-mode="single" role="tab" aria-selected="false">
+                  Fecha
+                </button>
+                <button type="button" class="date-mode-btn" data-mode="range" role="tab" aria-selected="false">
+                  Rango
+                </button>
+              </div>
+              <div class="date-inputs-wrap">
+                <div class="date-input-group" id="date-single-group" style="display: none;">
+                  <input type="date" id="filter-date-single" class="filter-date" />
+                </div>
+                <div class="date-input-group" id="date-range-group" style="display: none;">
+                  <input type="date" id="filter-date-from" class="filter-date" placeholder="Desde" />
+                  <span class="date-separator">—</span>
+                  <input type="date" id="filter-date-to" class="filter-date" placeholder="Hasta" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Legend -->
+      <div class="status-legend" aria-label="Leyenda de estados">
+        <div class="legend-item"><span class="legend-dot status-light-active"></span><span>Activa</span></div>
+        <div class="legend-item"><span class="legend-dot status-light-sufficient"></span><span>Suficiente</span></div>
+        <div class="legend-item"><span class="legend-dot status-light-finalized"></span><span>Finalizada</span></div>
+        <div class="legend-item"><span class="legend-dot status-light-cancelled"></span><span>Cancelada</span></div>
+      </div>
     </section>
 
     <section id="sessions-container" class="sessions-grid" aria-live="polite">

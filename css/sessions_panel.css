@@ -73,45 +73,62 @@ body {
 }
 
 /* ========================================
-   Header
+   Unified Glass Card - Pure Glass Style
+   ======================================== */
+
+.panel-glass-card {
+  position: relative;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+  border-left: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 0 24px rgba(255, 255, 255, 0.15);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+/* ========================================
+   Header (inside glass card)
    ======================================== */
 
 .panel-header {
   position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0;
-  margin-bottom: 32px;
-  padding-top: 8px;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .btn-return {
   position: absolute;
-  left: 0;
+  left: 20px;
   top: 50%;
   transform: translateY(-50%);
   appearance: none;
-  border: 1px solid var(--border-glass-outer);
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(20px) saturate(var(--glass-saturate));
+  border: 1px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.5);
   color: var(--text-secondary);
   cursor: pointer;
   border-radius: 50%;
   padding: 8px;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 150ms ease;
-  box-shadow: var(--glass-inner-shadow), 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .btn-return:hover {
-  background: var(--glass-bg-hover);
+  background: rgba(255, 255, 255, 0.8);
   color: var(--accent);
 }
 
@@ -128,43 +145,40 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .panel-logo {
-  height: 48px;
+  height: 44px;
   width: auto;
   object-fit: contain;
 }
 
 .panel-title {
   margin: 0;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-primary);
 }
 
 /* ========================================
-   Filters Bar - Glass Panel
+   Filters Section
    ======================================== */
 
-.filters {
-  position: relative;
-  z-index: 100;
+.filters-section {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filters-row {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
   align-items: flex-end;
-  margin-bottom: 24px;
-  padding: 20px 24px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-glass-outer);
-  box-shadow: var(--glass-shadow), var(--glass-inner-shadow);
 }
 
 .filter-item {
@@ -176,20 +190,18 @@ body {
 }
 
 .filter-item label {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
 }
 
 .filter-select {
   appearance: none;
   min-width: 160px;
   border: 1px solid var(--border-medium);
-  background: var(--glass-bg-solid);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.6);
   color: var(--text-primary);
   border-radius: var(--radius-sm);
   padding: 10px 36px 10px 14px;
@@ -202,17 +214,164 @@ body {
   background-repeat: no-repeat;
   background-position: right 12px center;
   transition: all 150ms ease;
-  box-shadow: var(--glass-inner-shadow);
 }
 
 .filter-select:hover {
   border-color: var(--accent);
+  background-color: rgba(255, 255, 255, 0.8);
 }
 
 .filter-select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ========================================
+   Date Filter
+   ======================================== */
+
+.filter-date-group {
+  flex: 1;
+  min-width: 280px;
+}
+
+.date-filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.date-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-light);
+}
+
+.date-mode-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 6px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  transition: all 150ms ease;
+}
+
+.date-mode-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.date-mode-btn.active {
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--accent-text);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.date-inputs-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.date-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-date {
+  appearance: none;
+  border: 1px solid var(--border-medium);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: all 150ms ease;
+  min-width: 140px;
+}
+
+.filter-date:hover {
+  border-color: var(--accent);
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.filter-date:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.date-separator {
+  color: var(--text-quaternary);
+  font-size: 14px;
+  padding: 0 4px;
+}
+
+/* ========================================
+   Status Legend (inside glass card)
+   ======================================== */
+
+.status-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 24px;
+  border-top: 1px solid var(--border-light);
+  background: rgba(0, 0, 0, 0.015);
+}
+
+.status-legend .legend-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+  border-left: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  transition: all 200ms ease;
+}
+
+.status-legend .legend-item:hover {
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.status-legend .legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
 }
 
 /* ========================================
@@ -240,6 +399,8 @@ body {
 
 .session-card {
   position: relative;
+  display: flex;
+  flex-direction: column;
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
@@ -255,8 +416,7 @@ body {
 }
 
 .session-card:hover {
-  transform: translateY(-4px) scale(1.01);
-  background: var(--glass-bg-hover);
+  transform: translateY(-3px);
   box-shadow: var(--glass-shadow-hover), var(--glass-inner-shadow);
 }
 
@@ -271,6 +431,9 @@ body {
   color: var(--text-primary);
   letter-spacing: -0.02em;
   line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .session-card p {
@@ -289,6 +452,12 @@ body {
   margin: 8px 0;
   padding: 6px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 3em;
 }
 
 .card-field:last-of-type {
@@ -332,131 +501,104 @@ body {
   transform: rotate(-10deg);
 }
 
-/* Card date - Bottom left corner */
-.card-date {
-  position: absolute;
-  bottom: 12px;
-  left: 16px;
+/* Card footer */
+.card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.card-meta {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
+  gap: 5px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--text-quaternary);
   letter-spacing: -0.01em;
 }
 
-.card-date i,
-.card-date svg {
-  width: 12px;
-  height: 12px;
+.card-meta i,
+.card-meta svg {
+  width: 13px;
+  height: 13px;
   opacity: 0.7;
 }
 
 /* ========================================
-   Status Light Indicator
+   Status Bar Indicator (single vertical bar)
    ======================================== */
 
-.status-light {
+.status-bar {
   position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
+  top: 12px;
+  right: 12px;
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
   z-index: 5;
 }
 
 /* Active - Green pulsing */
-.status-light-active {
+.status-bar.status-light-active {
   background: #22c55e;
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.8),
-    0 0 8px rgba(34, 197, 94, 0.6);
-  animation: pulse-active 2s ease-in-out infinite;
+  animation: pulse-bar 2s ease-in-out infinite;
 }
 
-@keyframes pulse-active {
+@keyframes pulse-bar {
 
   0%,
   100% {
-    box-shadow:
-      0 0 0 2px rgba(255, 255, 255, 0.8),
-      0 0 8px rgba(34, 197, 94, 0.6);
+    opacity: 0.8;
   }
 
   50% {
-    box-shadow:
-      0 0 0 2px rgba(255, 255, 255, 0.9),
-      0 0 16px rgba(34, 197, 94, 0.9),
-      0 0 24px rgba(34, 197, 94, 0.4);
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
   }
 }
 
-/* Closed - Purple static */
-.status-light-finalized,
-.status-light-closed {
+/* Finalized/Closed - Purple */
+.status-bar.status-light-finalized,
+.status-bar.status-light-closed {
   background: #8b5cf6;
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.8),
-    0 0 6px rgba(139, 92, 246, 0.4);
 }
 
-/* Sufficient - Blue static */
-.status-light-sufficient {
+/* Sufficient - Blue */
+.status-bar.status-light-sufficient {
   background: #3b82f6;
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.8),
-    0 0 6px rgba(59, 130, 246, 0.45);
 }
 
-/* Cancelled - Red static */
-.status-light-cancelled {
+/* Cancelled - Red */
+.status-bar.status-light-cancelled {
   background: #ef4444;
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.8),
-    0 0 6px rgba(239, 68, 68, 0.45);
 }
 
-/* Unknown - Orange static */
-.status-light-unknown {
+/* Unknown - Orange */
+.status-bar.status-light-unknown {
   background: #f59e0b;
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.8),
-    0 0 6px rgba(245, 158, 11, 0.4);
 }
 
-/* ========================================
-   Status Legend
-   ======================================== */
-
-.status-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  align-items: center;
-  padding: 0 20px 16px;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 12px;
+/* Legend dot colors */
+.legend-dot.status-light-active {
+  background: #22c55e;
 }
 
-.status-legend .legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+.legend-dot.status-light-sufficient {
+  background: #3b82f6;
 }
 
-.status-legend .legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
+.legend-dot.status-light-finalized,
+.legend-dot.status-light-closed {
+  background: #8b5cf6;
+}
+
+.legend-dot.status-light-cancelled {
+  background: #ef4444;
 }
 
 /* ========================================
@@ -481,7 +623,6 @@ body {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   border-radius: 6px;
-  /* Glass base */
   background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
@@ -653,9 +794,23 @@ body {
    Responsive
    ======================================== */
 
-@media (max-width: 520px) {
+@media (max-width: 680px) {
   .panel-container {
     padding: 20px 16px;
+  }
+
+  .panel-header {
+    padding: 20px 16px 16px;
+  }
+
+  .panel-title {
+    font-size: 20px;
+  }
+
+  .btn-return {
+    position: static;
+    transform: none;
+    margin-bottom: 12px;
   }
 
   .panel-header {
@@ -663,23 +818,59 @@ body {
     align-items: stretch;
   }
 
-  .panel-title {
-    font-size: 22px;
+  .panel-brand {
+    order: 1;
   }
 
   .btn-return {
-    position: static;
-    transform: none;
+    order: 0;
     align-self: flex-start;
-    margin-bottom: 16px;
   }
 
-  .filters {
+  .filters-section {
     padding: 16px;
   }
 
+  .filters-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
   .filter-item {
-    flex: 1;
-    min-width: 140px;
+    width: 100%;
+  }
+
+  .filter-select,
+  .filter-date {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .date-filter-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .date-mode-toggle {
+    justify-content: center;
+  }
+
+  .date-input-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .filter-date {
+    width: 100%;
+  }
+
+  .date-separator {
+    display: none;
+  }
+
+  .status-legend {
+    padding: 14px 16px;
+    justify-content: center;
   }
 }
