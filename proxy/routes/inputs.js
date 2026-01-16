@@ -1,12 +1,34 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { requireUser, assertSessionAccess } = require('../lib/resourceAuth');
+
+router.use(requireUser);
+
+/**
+ * SEGURIDAD: Whitelist explícita de tablas permitidas.
+ * Este mapeo previene SQL injection al garantizar que solo se usen
+ * nombres de tabla predefinidos. Cualquier valor no reconocido
+ * lanza un error en lugar de usar un fallback.
+ * 
+ * @see docs/SECURITY_ANALYSIS.md - Sección 2.4
+ */
+const ALLOWED_INPUT_TABLES = Object.freeze({
+  'mono': 'inputs_monoanalito',
+  'monoanalito': 'inputs_monoanalito',
+  'multi': 'inputs_multianalito',
+  'multianalito': 'inputs_multianalito',
+});
 
 function resolveInputTable(tipoAnalisis) {
   const normalized = (tipoAnalisis || '').toLowerCase();
-  return normalized === 'multi' || normalized === 'multianalito'
-    ? 'inputs_multianalito'
-    : 'inputs_monoanalito';
+  const table = ALLOWED_INPUT_TABLES[normalized];
+
+  if (!table) {
+    throw new Error(`Tipo de análisis no válido: "${tipoAnalisis}". Valores permitidos: ${Object.keys(ALLOWED_INPUT_TABLES).join(', ')}`);
+  }
+
+  return table;
 }
 
 router.post('/', async (req, res) => {
@@ -14,7 +36,20 @@ router.post('/', async (req, res) => {
   if (!session_id || !Array.isArray(datos)) {
     return res.status(400).json({ ok: false, error: 'invalid_payload' });
   }
-  const table = resolveInputTable(tipoAnalisis);
+
+  let table;
+  try {
+    table = resolveInputTable(tipoAnalisis);
+  } catch (err) {
+    return res.status(400).json({ ok: false, error: 'invalid_tipo_analisis', message: err.message });
+  }
+
+  try {
+    await assertSessionAccess(pool, req.user, session_id, { mutate: true });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({ ok: false, error: err.message || 'db_error' });
+  }
+
   const COLS_PER_ROW = 11; // agrega nivel
   try {
     const placeholders = datos
@@ -59,10 +94,24 @@ router.get('/:sessionId', async (req, res) => {
   if (!session_id) {
     return res.status(400).json({ ok: false, error: 'missing_session_id' });
   }
-  const table = resolveInputTable(tipoAnalisis);
+
+  let table;
   try {
+    table = resolveInputTable(tipoAnalisis);
+  } catch (err) {
+    return res.status(400).json({ ok: false, error: 'invalid_tipo_analisis', message: err.message });
+  }
+
+  try {
+    await assertSessionAccess(pool, req.user, session_id, { mutate: false });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({ ok: false, error: err.message || 'db_error' });
+  }
+
+  try {
+    const isMulti = table === 'inputs_multianalito';
     const rows = await pool.query(
-      tipoAnalisis === 'multi' || tipoAnalisis === 'multianalito'
+      isMulti
         ? `SELECT analito, parametro, nivel, lectura_idx, valor
            FROM inputs_multianalito
            WHERE session_id = $1 AND valido = true
@@ -86,7 +135,20 @@ router.delete('/:sessionId', async (req, res) => {
   if (!session_id) {
     return res.status(400).json({ ok: false, error: 'missing_session_id' });
   }
-  const table = resolveInputTable(tipoAnalisis);
+
+  let table;
+  try {
+    table = resolveInputTable(tipoAnalisis);
+  } catch (err) {
+    return res.status(400).json({ ok: false, error: 'invalid_tipo_analisis', message: err.message });
+  }
+
+  try {
+    await assertSessionAccess(pool, req.user, session_id, { mutate: true });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({ ok: false, error: err.message || 'db_error' });
+  }
+
   try {
     const result = await pool.query(`DELETE FROM ${table} WHERE session_id = $1`, [session_id]);
     res.json({ ok: true, changes: result.rowCount });

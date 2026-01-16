@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { requireUser, assertSessionAccess } = require('../lib/resourceAuth');
+
+router.use(requireUser);
 
 /**
  * DELETE /results/:sessionId
@@ -15,6 +18,7 @@ router.delete('/:sessionId', async (req, res) => {
     }
 
     try {
+        await assertSessionAccess(pool, req.user, session_id, { mutate: true });
         const result = await pool.query(
             `DELETE FROM results_general WHERE session_id = $1`,
             [session_id]
@@ -24,6 +28,9 @@ router.delete('/:sessionId', async (req, res) => {
 
         res.json({ ok: true, deleted: result.rowCount });
     } catch (err) {
+        if (err?.statusCode) {
+            return res.status(err.statusCode).json({ ok: false, error: err.message });
+        }
         console.error('[API] Error eliminando resultados', err);
         res.status(500).json({ ok: false, error: 'db_error' });
     }

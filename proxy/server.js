@@ -37,6 +37,7 @@ const apiLimiter = rateLimit({
 const app = express();
 
 app.set('trust proxy', 1);
+app.locals.JWT_SECRET = SECRET;
 
 // CORS configuration for Vercel frontend
 app.use(cors({
@@ -105,7 +106,11 @@ function verifyToken(req, res, next) {
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'missing_token' });
   try {
-    req.client = jwt.verify(token, SECRET);
+    const payload = jwt.verify(token, SECRET);
+    if (!payload || typeof payload.client !== 'string' || !payload.client.trim()) {
+      return res.status(401).json({ error: 'invalid_token' });
+    }
+    req.client = payload;
     return next();
   } catch (err) {
     return res.status(401).json({ error: 'invalid_token' });

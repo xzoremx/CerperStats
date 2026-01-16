@@ -1,5 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const pool = require('../db');
 
 const router = express.Router();
@@ -67,9 +68,25 @@ router.post('/login', async (req, res) => {
 
     const defaultLabs = normalizeDefaultLabs(user.default_lab);
     const primaryDefaultLab = defaultLabs[0] || null;
+    const secret = req.app?.locals?.JWT_SECRET;
+    if (!secret) {
+      return res.status(500).json({ ok: false, error: 'server_misconfigured' });
+    }
+
+    const userToken = jwt.sign(
+      {
+        type: 'user',
+        user_id: user.id,
+        rol: user.rol,
+        default_labs: defaultLabs,
+      },
+      secret,
+      { expiresIn: '24h' }
+    );
 
     return res.json({
       ok: true,
+      user_token: userToken,
       user: {
         id: user.id,
         username: user.username,

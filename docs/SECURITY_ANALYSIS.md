@@ -15,10 +15,10 @@ CerperStats es una aplicacion de escritorio Electron que se conecta a un backend
 | Nivel | Cantidad | Descripcion |
 |-------|----------|-------------|
 | CRITICO | 1 | Credenciales en .env (pendiente) |
-| ALTO | 2 | IDOR, interpolacion SQL |
+| ALTO | 1 | IDOR |
 | MEDIO | 5 | Recomendados para hardening |
 | BAJO | 3 | Mejoras opcionales |
-| MITIGADO | 2 | Sandbox, HTTPS |
+| MITIGADO | 3 | Sandbox, HTTPS, Interpolacion SQL |
 | ELIMINADO | 1 | Panel admin removido |
 
 ---
@@ -123,11 +123,12 @@ Los archivos `proxy/routes/admin.js` y `proxy/admin/` fueron eliminados ya que n
 
 ### 2.3 Falta de Autorizacion por Recursos (ALTA)
 
-**Archivos:** `proxy/routes/sessions.js`, `proxy/routes/inputs.js`, `proxy/routes/reports.js`
-**Severidad:** ALTA
+**Estado:** CORREGIDO
+**Archivos:** `proxy/routes/sessions.js`, `proxy/routes/inputs.js`, `proxy/routes/reports.js`, `proxy/routes/evaluaciones.js`, `proxy/routes/results.js`
+**Severidad:** ALTA (resuelta)
 
-**Descripcion:**
-Las rutas protegidas verifican que el token JWT sea valido, pero NO verifican que el usuario tenga permiso para acceder al recurso especifico.
+**Descripcion (antes):**
+Las rutas protegidas verificaban solo el JWT del cliente (app), pero NO verificaban que el usuario tuviera permiso para acceder al recurso especifico.
 
 Ejemplo en `sessions.js`:
 ```javascript
@@ -148,12 +149,23 @@ router.get('/:sessionId', async (req, res) => {
 2. Ejemplo: `WHERE s.id = $1 AND s.usuario_id = $2`
 3. Para supervisores/admin: verificar rol antes de permitir acceso cross-user
 
-### 2.4 Inyeccion SQL Potencial por Interpolacion de Tabla (ALTA)
+**Mitigacion implementada:**
+1. Login emite `user_token` firmado (`POST /auth/login`) y el cliente lo envia en `X-User-Token`.
+2. Las rutas sensibles ahora exigen `router.use(requireUser)` y validan acceso con checks de recurso (`assertSessionAccess` / `assertReportAccess`).
+3. Reglas aplicadas:
+   - `analista`: acceso solo a sesiones propias (`sessions.usuario_id = user_id`)
+   - `supervisor`: lectura para sesiones en `default_labs` (y propias); acciones destructivas solo sobre sesiones propias (o `admin`)
+   - `admin`: acceso total
+4. El token JWT del cliente ahora se valida exigiendo el claim `client` (para evitar usar `user_token` como token de cliente).
 
-**Archivo:** `proxy/routes/inputs.js:5-10`
-**Severidad:** ALTA
+### 2.4 Interpolacion de Tabla con Whitelist (CORREGIDO)
+
+**Archivo:** `proxy/routes/inputs.js:5-29`
+**Severidad:** ALTA (resuelta)
+**Estado:** CORREGIDO
 
 ```javascript
+// ANTES (vulnerable):
 function resolveInputTable(tipoAnalisis) {
   const normalized = (tipoAnalisis || '').toLowerCase();
   return normalized === 'multi' || normalized === 'multianalito'
@@ -161,22 +173,34 @@ function resolveInputTable(tipoAnalisis) {
     : 'inputs_monoanalito';
 }
 
-// Uso:
-const table = resolveInputTable(tipoAnalisis);
-await pool.query(`INSERT INTO ${table} ...`);  // Interpolacion directa
+// DESPUÉS (seguro):
+const ALLOWED_INPUT_TABLES = Object.freeze({
+  'mono': 'inputs_monoanalito',
+  'monoanalito': 'inputs_monoanalito',
+  'multi': 'inputs_multianalito',
+  'multianalito': 'inputs_multianalito',
+});
+
+function resolveInputTable(tipoAnalisis) {
+  const normalized = (tipoAnalisis || '').toLowerCase();
+  const table = ALLOWED_INPUT_TABLES[normalized];
+  
+  if (!table) {
+    throw new Error(`Tipo de análisis no válido: "${tipoAnalisis}"`);
+  }
+  
+  return table;
+}
 ```
 
 **Descripcion:**
-Aunque el valor esta controlado (solo 2 opciones), el patron de interpolar nombres de tabla es peligroso y puede llevar a errores futuros.
+Se implementó una whitelist explícita usando `Object.freeze()` para prevenir modificaciones. Ahora cualquier valor no reconocido lanza un error en lugar de usar un valor por defecto.
 
-**Riesgos:**
-- Si se agrega otro valor sin validacion, podria permitir SQL injection
-- El patron establece un mal precedente
-
-**Recomendaciones:**
-1. Usar mapeo explicito con whitelist
-2. Considerar usar ORM o query builder
-3. Agregar comentarios de advertencia en el codigo
+**Mejoras implementadas:**
+- ✅ Whitelist inmutable con `Object.freeze()`
+- ✅ Validación estricta que rechaza valores no reconocidos
+- ✅ Manejo de errores con respuesta HTTP 400 descriptiva
+- ✅ Documentación de seguridad en el código (`@see docs/SECURITY_ANALYSIS.md`)
 
 ---
 
@@ -489,7 +513,7 @@ Acciones criticas (login, creacion/modificacion de usuarios) se registran en `lo
 
 ### Progreso de Remediacion
 
-- **COMPLETADO:** 2 items (Sandbox, HTTPS)
+- **COMPLETADO:** 3 items (Sandbox, HTTPS, Interpolacion SQL whitelist)
 - **ELIMINADO:** 1 item (Panel admin removido)
 - **PENDIENTE CRITICO:** 2 items (Credenciales .env)
 - **PENDIENTE ALTO:** 1 item (IDOR)

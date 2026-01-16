@@ -6,6 +6,7 @@ const { registerExternalUrlSecurity } = require('./js/security/external_url_secu
 let mainWindow;
 // Estado de autenticación en memoria (fuente de verdad)
 let currentUser = null;
+let currentUserToken = null;
 // === Lista blanca de rutas (todas las vistas autorizadas) ===
 const ROUTES = new Set([
   // Login, menú principal y selección
@@ -267,6 +268,7 @@ const PROXY_BASE_URL = PROXY_RUN_URL.replace(/\/run-eval\/?$/, "") || PROXY_RUN_
 const buildProxyHeaders = (additional = {}) => ({
   "Content-Type": "application/json",
   ...(PROXY_TOKEN ? { Authorization: `Bearer ${PROXY_TOKEN}` } : {}),
+  ...(currentUserToken ? { "X-User-Token": currentUserToken } : {}),
   ...additional,
 });
 
@@ -324,6 +326,7 @@ ipcMain.handle("db-login", async (_event, { username, password }) => {
       body: JSON.stringify({ username, password }),
     });
     currentUser = payload.user || null;
+    currentUserToken = payload.user_token || null;
     return { ok: true, user: currentUser };
   } catch (err) {
     console.error("[PROXY] Error en login:", err);
@@ -339,6 +342,7 @@ ipcMain.handle("auth-get-current-user", async () => {
 // === Autenticación: logout ===
 ipcMain.handle("auth-logout", async () => {
   currentUser = null;
+  currentUserToken = null;
   return { ok: true };
 });
 // === Lectura de laboratorios para el menú principal ===

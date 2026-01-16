@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { CANONICAL_SESSION_STATES, normalizeSessionEstado, isCanonicalSessionEstado } = require('../lib/sessionEstado');
+const { requireUser, normalizeRole, assertSessionAccess, normalizeLabs } = require('../lib/resourceAuth');
+
+router.use(requireUser);
 
 async function computeSessionMeta(sessionId) {
   const { rows: sessionRows } = await pool.query(
@@ -97,11 +100,19 @@ router.post('/', async (req, res) => {
     tipo_dato,
     modo_cualitativo,
     parametro,
-    usuario,
   } = req.body || {};
 
-  if (!lab_key || !usuario) {
+  const user = req.user;
+  const usuarioId = Number(user?.id);
+  const role = normalizeRole(user?.rol);
+  const allowedLabs = normalizeLabs(user?.default_labs);
+
+  if (!lab_key || !usuarioId) {
     return res.status(400).json({ ok: false, error: 'invalid_payload' });
+  }
+
+  if (role !== 'admin' && allowedLabs.length > 0 && !allowedLabs.includes(String(lab_key).trim())) {
+    return res.status(403).json({ ok: false, error: 'forbidden_lab' });
   }
 
   try {
@@ -125,7 +136,7 @@ router.post('/', async (req, res) => {
         tipo_dato,
         modo_cualitativo,
         parametro,
-        usuario,
+        usuarioId,
       ]
     );
     const sessionId = rows[0]?.id;
@@ -144,11 +155,11 @@ router.post('/:sessionId/reuse', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'invalid_session_id' });
   }
 
-  const usuarioIdRaw = Number(req.body?.usuario_id);
-
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+
+    await assertSessionAccess(client, req.user, parentSessionId, { mutate: false });
 
     const { rows: parentRows } = await client.query(
       `SELECT
@@ -165,7 +176,7 @@ router.post('/:sessionId/reuse', async (req, res) => {
       return res.status(404).json({ ok: false, error: 'session_not_found' });
     }
 
-    const newUsuarioId = usuarioIdRaw || Number(parent.usuario_id) || null;
+    const newUsuarioId = Number(req.user?.id) || null;
     if (!newUsuarioId) {
       await client.query('ROLLBACK');
       return res.status(400).json({ ok: false, error: 'invalid_usuario_id' });
@@ -231,6 +242,9 @@ router.post('/:sessionId/reuse', async (req, res) => {
     try {
       await client.query('ROLLBACK');
     } catch (_) { }
+    if (err?.statusCode) {
+      return res.status(err.statusCode).json({ ok: false, error: err.message });
+    }
     console.error('[API] Error reutilizando sesión', err);
     res.status(500).json({ ok: false, error: 'db_error' });
   } finally {
@@ -251,6 +265,8 @@ router.patch('/:sessionId/status', async (req, res) => {
   }
 
   try {
+    await assertSessionAccess(pool, req.user, sessionId, { mutate: true });
+
     const { rows } = await pool.query(
       `SELECT
          COALESCE(LOWER(estado), '') AS estado,
@@ -287,13 +303,16 @@ router.patch('/:sessionId/status', async (req, res) => {
 
     res.json({ ok: true });
   } catch (err) {
+    if (err?.statusCode) {
+      return res.status(err.statusCode).json({ ok: false, error: err.message });
+    }
     console.error('[API] Error actualizando estado de sesión', err);
     res.status(500).json({ ok: false, error: 'db_error' });
   }
 });
 
 router.post('/cancel-incomplete', async (req, res) => {
-  const usuarioId = Number(req.body?.usuario_id);
+  const usuarioId = Number(req.user?.id);
   if (!usuarioId) {
     return res.status(400).json({ ok: false, error: 'invalid_usuario_id' });
   }
@@ -325,7 +344,6 @@ router.post('/cancel-incomplete', async (req, res) => {
 });
 
 router.get('/', async (req, res) => {
-  const rol = (req.query.rol || '').toLowerCase();
   const labQuery = req.query.lab;
   const labs =
     Array.isArray(labQuery)
@@ -334,24 +352,75 @@ router.get('/', async (req, res) => {
         ? [(labQuery || '').toString().trim()].filter(Boolean)
         : null;
   const labFilter = labs && labs.length ? labs : null;
+
+  const user = req.user;
+  const role = normalizeRole(user?.rol);
+  const userId = Number(user?.id) || null;
+  const allowedLabs = normalizeLabs(user?.default_labs);
   try {
-    if (rol === 'analista') {
-      return res.json({ ok: true, data: [] });
+    if (role === 'admin') {
+      const { rows } = await pool.query(
+        `SELECT
+           s.id, s.lab_key, l.nombre AS lab_nombre, s.producto, s.metodo,
+           s.estado, s.creado_en, s."procedure",
+           COALESCE(u.nombre_completo, u.username) AS usuario,
+           s.tipo_analisis, s.tipo_dato, s.modo_cualitativo
+         FROM sessions s
+         LEFT JOIN usuarios u ON s.usuario_id = u.id
+         LEFT JOIN labs l ON l.lab_key = s.lab_key
+         WHERE ($1::text[] IS NULL OR s.lab_key = ANY($1::text[]))
+         ORDER BY s.creado_en DESC`,
+        [labFilter]
+      );
+      return res.json({ ok: true, data: rows });
     }
+
+    if (!userId) {
+      return res.status(401).json({ ok: false, error: 'missing_user' });
+    }
+
+    if (role === 'analista') {
+      const { rows } = await pool.query(
+        `SELECT
+           s.id, s.lab_key, l.nombre AS lab_nombre, s.producto, s.metodo,
+           s.estado, s.creado_en, s."procedure",
+           COALESCE(u.nombre_completo, u.username) AS usuario,
+           s.tipo_analisis, s.tipo_dato, s.modo_cualitativo
+         FROM sessions s
+         LEFT JOIN usuarios u ON s.usuario_id = u.id
+         LEFT JOIN labs l ON l.lab_key = s.lab_key
+         WHERE s.usuario_id = $1
+         ORDER BY s.creado_en DESC`,
+        [userId]
+      );
+      return res.json({ ok: true, data: rows });
+    }
+
+    // supervisor
+    const requestedLabs = labFilter;
+    const effectiveLabs =
+      requestedLabs && requestedLabs.length
+        ? requestedLabs.filter((lab) => allowedLabs.includes(lab))
+        : allowedLabs;
+    const labsParam = effectiveLabs && effectiveLabs.length ? effectiveLabs : null;
+
     const { rows } = await pool.query(
       `SELECT
          s.id, s.lab_key, l.nombre AS lab_nombre, s.producto, s.metodo,
-         s.estado, s.creado_en, s."procedure", 
+         s.estado, s.creado_en, s."procedure",
          COALESCE(u.nombre_completo, u.username) AS usuario,
          s.tipo_analisis, s.tipo_dato, s.modo_cualitativo
        FROM sessions s
        LEFT JOIN usuarios u ON s.usuario_id = u.id
        LEFT JOIN labs l ON l.lab_key = s.lab_key
-       WHERE ($1::text[] IS NULL OR s.lab_key = ANY($1::text[]))
+       WHERE (
+         s.usuario_id = $1
+         OR ($2::text[] IS NOT NULL AND s.lab_key = ANY($2::text[]))
+       )
        ORDER BY s.creado_en DESC`,
-      [labFilter]
+      [userId, labsParam]
     );
-    res.json({ ok: true, data: rows });
+    return res.json({ ok: true, data: rows });
   } catch (err) {
     console.error('[API] Error listando sesiones', err);
     res.status(500).json({ ok: false, error: 'db_error' });
@@ -364,6 +433,7 @@ router.get('/:sessionId/tests-metadata', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'invalid_session_id' });
   }
   try {
+    await assertSessionAccess(pool, req.user, sessionId, { mutate: false });
     const meta = await computeSessionMeta(sessionId);
     const { rows } = await pool.query(
       `SELECT 
@@ -386,8 +456,8 @@ router.get('/:sessionId/tests-metadata', async (req, res) => {
     );
     res.json({ ok: true, data: rows, meta });
   } catch (err) {
-    if (err.statusCode === 404) {
-      return res.status(404).json({ ok: false, error: 'session_not_found' });
+    if (err?.statusCode) {
+      return res.status(err.statusCode).json({ ok: false, error: err.message });
     }
     console.error('[API] Error en metadata unificada', err);
     res.status(500).json({ ok: false, error: 'db_error' });
@@ -400,6 +470,7 @@ router.get('/:sessionId', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'invalid_session_id' });
   }
   try {
+    await assertSessionAccess(pool, req.user, sessionId, { mutate: false });
     const { rows } = await pool.query(
       `SELECT s.*, u.username AS usuario, l.nombre AS lab_nombre,
               (SELECT u2.username FROM usuarios u2 
@@ -418,6 +489,9 @@ router.get('/:sessionId', async (req, res) => {
     }
     res.json({ ok: true, data: rows[0] });
   } catch (err) {
+    if (err?.statusCode) {
+      return res.status(err.statusCode).json({ ok: false, error: err.message });
+    }
     console.error('[API] Error obteniendo sesión', err);
     res.status(500).json({ ok: false, error: 'db_error' });
   }
@@ -430,6 +504,7 @@ router.get('/:sessionId/results-status', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'invalid_session_id' });
   }
   try {
+    await assertSessionAccess(pool, req.user, sessionId, { mutate: false });
     const { rows } = await pool.query(
       `SELECT 
          COUNT(*)::int AS results_count,
@@ -449,6 +524,9 @@ router.get('/:sessionId/results-status', async (req, res) => {
       last_run_at: data.last_run_at
     });
   } catch (err) {
+    if (err?.statusCode) {
+      return res.status(err.statusCode).json({ ok: false, error: err.message });
+    }
     console.error('[API] Error checking results status', err);
     res.status(500).json({ ok: false, error: 'db_error' });
   }
@@ -460,6 +538,7 @@ router.patch('/:sessionId/close', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'invalid_session_id' });
   }
   try {
+    await assertSessionAccess(pool, req.user, sessionId, { mutate: true });
     const { rows } = await pool.query(
       `SELECT EXISTS(SELECT 1 FROM reports r WHERE r.session_id = $1) AS has_reports`,
       [sessionId]
@@ -480,6 +559,9 @@ router.patch('/:sessionId/close', async (req, res) => {
     }
     res.json({ ok: true });
   } catch (err) {
+    if (err?.statusCode) {
+      return res.status(err.statusCode).json({ ok: false, error: err.message });
+    }
     console.error('[API] Error cancelando sesión', err);
     res.status(500).json({ ok: false, error: 'db_error' });
   }
@@ -493,6 +575,7 @@ router.delete('/:sessionId', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await assertSessionAccess(client, req.user, sessionId, { mutate: true });
     const rMono = await client.query(
       `DELETE FROM inputs_monoanalito WHERE session_id = $1`,
       [sessionId]
@@ -515,6 +598,9 @@ router.delete('/:sessionId', async (req, res) => {
     try {
       await client.query('ROLLBACK');
     } catch (_) { }
+    if (err?.statusCode) {
+      return res.status(err.statusCode).json({ ok: false, error: err.message });
+    }
     console.error('[API] Error eliminando sesión profundamente', err);
     res.status(500).json({ ok: false, error: 'db_error' });
   } finally {

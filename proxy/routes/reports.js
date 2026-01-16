@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { normalizeSessionEstado } = require('../lib/sessionEstado');
+const { requireUser, assertSessionAccess, assertReportAccess, normalizeRole, normalizeLabs } = require('../lib/resourceAuth');
+
+router.use(requireUser);
 
 /**
  * POST /reports
@@ -27,7 +30,6 @@ router.post('/', async (req, res) => {
         pdf_base64,
         hash_documento,
         observaciones,
-        usuario_id,
         tests_included,
         estado
     } = req.body || {};
@@ -43,6 +45,8 @@ router.post('/', async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+
+        await assertSessionAccess(client, req.user, session_id, { mutate: true });
 
         // Validate session state before allowing report uploads
         const { rows: sessionRows } = await client.query(
@@ -83,7 +87,7 @@ router.post('/', async (req, res) => {
                 pdfBuffer,
                 hash_documento,
                 observaciones,
-                usuario_id
+                Number(req.user?.id) || null
             ]
         );
 
@@ -120,6 +124,9 @@ router.post('/', async (req, res) => {
         res.json({ ok: true, report_id: reportId });
     } catch (err) {
         try { await client.query('ROLLBACK'); } catch (_) { }
+        if (err?.statusCode) {
+            return res.status(err.statusCode).json({ ok: false, error: err.message });
+        }
         console.error('[API] Error saving report:', err);
         res.status(500).json({ ok: false, error: 'db_error', message: err.message });
     } finally {
@@ -138,6 +145,7 @@ router.get('/session/:sessionId', async (req, res) => {
     }
 
     try {
+        await assertSessionAccess(pool, req.user, sessionId, { mutate: false });
         const { rows } = await pool.query(
             `SELECT 
          r.id,
@@ -167,6 +175,9 @@ router.get('/session/:sessionId', async (req, res) => {
 
         res.json({ ok: true, data: rows });
     } catch (err) {
+        if (err?.statusCode) {
+            return res.status(err.statusCode).json({ ok: false, error: err.message });
+        }
         console.error('[API] Error listing reports:', err);
         res.status(500).json({ ok: false, error: 'db_error' });
     }
@@ -183,6 +194,7 @@ router.get('/:reportId', async (req, res) => {
     }
 
     try {
+        await assertReportAccess(pool, req.user, reportId, { mutate: false });
         const { rows } = await pool.query(
             `SELECT 
          r.id,
@@ -209,6 +221,9 @@ router.get('/:reportId', async (req, res) => {
 
         res.json({ ok: true, data: rows[0] });
     } catch (err) {
+        if (err?.statusCode) {
+            return res.status(err.statusCode).json({ ok: false, error: err.message });
+        }
         console.error('[API] Error getting report:', err);
         res.status(500).json({ ok: false, error: 'db_error' });
     }
@@ -225,6 +240,7 @@ router.get('/:reportId/pdf', async (req, res) => {
     }
 
     try {
+        await assertReportAccess(pool, req.user, reportId, { mutate: false });
         const { rows } = await pool.query(
             `SELECT pdf_data, tipo_informe, session_id, creado_en
        FROM reports
@@ -244,6 +260,9 @@ router.get('/:reportId/pdf', async (req, res) => {
         res.setHeader('Content-Length', report.pdf_data.length);
         res.send(report.pdf_data);
     } catch (err) {
+        if (err?.statusCode) {
+            return res.status(err.statusCode).json({ ok: false, error: err.message });
+        }
         console.error('[API] Error downloading PDF:', err);
         res.status(500).json({ ok: false, error: 'db_error' });
     }
@@ -262,16 +281,8 @@ router.delete('/:reportId', async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-
-        const { rows: reportRows } = await client.query(
-            `SELECT session_id FROM reports WHERE id = $1`,
-            [reportId]
-        );
-        const sessionId = Number(reportRows[0]?.session_id);
-        if (!sessionId) {
-            await client.query('ROLLBACK');
-            return res.status(404).json({ ok: false, error: 'report_not_found' });
-        }
+        const reportAccess = await assertReportAccess(client, req.user, reportId, { mutate: true });
+        const sessionId = Number(reportAccess.session_id);
 
         // Delete links first
         await client.query(
@@ -311,6 +322,9 @@ router.delete('/:reportId', async (req, res) => {
         res.json({ ok: true, deleted: result.rowCount });
     } catch (err) {
         try { await client.query('ROLLBACK'); } catch (_) { }
+        if (err?.statusCode) {
+            return res.status(err.statusCode).json({ ok: false, error: err.message });
+        }
         console.error('[API] Error deleting report:', err);
         res.status(500).json({ ok: false, error: 'db_error' });
     } finally {
@@ -336,6 +350,8 @@ router.patch('/:reportId/status', async (req, res) => {
     }
 
     try {
+        const role = normalizeRole(req.user?.rol);
+        await assertReportAccess(pool, req.user, reportId, { mutate: role === 'analista' });
         const result = await pool.query(
             `UPDATE reports SET estado = $1, actualizado_en = NOW() WHERE id = $2`,
             [estado, reportId]
@@ -347,6 +363,9 @@ router.patch('/:reportId/status', async (req, res) => {
 
         res.json({ ok: true });
     } catch (err) {
+        if (err?.statusCode) {
+            return res.status(err.statusCode).json({ ok: false, error: err.message });
+        }
         console.error('[API] Error updating report status:', err);
         res.status(500).json({ ok: false, error: 'db_error' });
     }
@@ -364,12 +383,53 @@ router.patch('/bulk/urgent', async (req, res) => {
     }
 
     try {
-        await pool.query(
-            `UPDATE reports SET estado = 'a_revisar', actualizado_en = NOW() WHERE id = ANY($1::int[])`,
-            [report_ids]
-        );
+        const role = normalizeRole(req.user?.rol);
 
-        res.json({ ok: true, updated: report_ids.length });
+        const ids = report_ids
+            .map((v) => Number(v))
+            .filter((n) => Number.isFinite(n) && n > 0);
+        if (ids.length === 0) {
+            return res.status(400).json({ ok: false, error: 'invalid_payload', message: 'report_ids array required' });
+        }
+
+        const userId = Number(req.user?.id) || null;
+        const labs = normalizeLabs(req.user?.default_labs);
+        const labsParam = labs.length ? labs : null;
+
+        const result = role === 'admin'
+            ? await pool.query(
+                `UPDATE reports
+                 SET estado = 'a_revisar',
+                     actualizado_en = NOW()
+                 WHERE id = ANY($1::int[])`,
+                [ids]
+            )
+            : role === 'supervisor'
+                ? await pool.query(
+                    `UPDATE reports r
+                     SET estado = 'a_revisar',
+                         actualizado_en = NOW()
+                     FROM sessions s
+                     WHERE r.session_id = s.id
+                       AND r.id = ANY($1::int[])
+                       AND (
+                         s.usuario_id = $2
+                         OR ($3::text[] IS NOT NULL AND s.lab_key = ANY($3::text[]))
+                       )`,
+                    [ids, userId, labsParam]
+                )
+                : await pool.query(
+                    `UPDATE reports r
+                     SET estado = 'a_revisar',
+                         actualizado_en = NOW()
+                     FROM sessions s
+                     WHERE r.session_id = s.id
+                       AND r.id = ANY($1::int[])
+                       AND s.usuario_id = $2`,
+                    [ids, userId]
+                );
+
+        res.json({ ok: true, updated: result.rowCount || 0 });
     } catch (err) {
         console.error('[API] Error updating bulk urgent status:', err);
         res.status(500).json({ ok: false, error: 'db_error' });

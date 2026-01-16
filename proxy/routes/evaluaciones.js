@@ -3,9 +3,12 @@ const fs = require('fs');
 const path = require('path');
 const pool = require('../db');
 const runEvaluator = require('../lib/runEvaluator');
+const { requireUser, assertSessionAccess, normalizeRole, normalizeLabs } = require('../lib/resourceAuth');
 
 const router = express.Router();
 const MANIFEST_PATH = path.resolve(__dirname, '../../modules/_common/modules_manifest.json');
+
+router.use(requireUser);
 
 // Progreso en memoria (polling desde el cliente): /evaluaciones/progress/:session_id
 const progressStore = new Map();
@@ -141,6 +144,13 @@ router.get('/', async (req, res) => {
   if (!lab_key || !tipo_analisis || !tipo_dato) {
     return res.status(400).json({ ok: false, error: 'missing_filters' });
   }
+
+  const role = normalizeRole(req.user?.rol);
+  const allowedLabs = normalizeLabs(req.user?.default_labs);
+  if (role !== 'admin' && allowedLabs.length > 0 && !allowedLabs.includes(String(lab_key).trim())) {
+    return res.status(403).json({ ok: false, error: 'forbidden_lab' });
+  }
+
   try {
     const { rows } = await pool.query(
       `SELECT DISTINCT
@@ -180,10 +190,18 @@ function loadManifest() {
   }
 }
 
-router.get('/progress/:session_id', (req, res) => {
-  const sessionId = String(req.params.session_id || '');
-  if (!sessionId) return res.status(400).json({ ok: false, error: 'missing_session_id' });
-  const entry = progressStore.get(sessionId);
+router.get('/progress/:session_id', async (req, res) => {
+  const sessionIdRaw = String(req.params.session_id || '').trim();
+  const sessionId = Number(sessionIdRaw);
+  if (!sessionId) return res.status(400).json({ ok: false, error: 'invalid_session_id' });
+
+  try {
+    await assertSessionAccess(pool, req.user, sessionId, { mutate: false });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({ ok: false, error: err.message || 'db_error' });
+  }
+
+  const entry = progressStore.get(sessionIdRaw);
   if (!entry) return res.status(404).json({ ok: false, error: 'progress_not_found' });
   return res.json({ ok: true, data: getProgressSnapshot(entry) });
 });
@@ -199,6 +217,7 @@ router.get('/graficos/:session_id', async (req, res) => {
   const maxTests = Number.isFinite(maxTestsRaw) ? Math.max(1, Math.min(500, Math.trunc(maxTestsRaw))) : 500;
 
   try {
+    await assertSessionAccess(pool, req.user, sessionId, { mutate: false });
     const { rows: metaRows } = await pool.query(
       `SELECT MAX(creado_en)::text AS last_run_at
        FROM results_general
@@ -255,6 +274,9 @@ router.get('/graficos/:session_id', async (req, res) => {
       },
     });
   } catch (err) {
+    if (err?.statusCode) {
+      return res.status(err.statusCode).json({ ok: false, error: err.message });
+    }
     console.error('[API] Error obteniendo gráficos', err);
     return res.status(500).json({ ok: false, error: 'db_error' });
   }
@@ -271,6 +293,7 @@ router.get('/resultados/:session_id', async (req, res) => {
   const maxTests = Number.isFinite(maxTestsRaw) ? Math.max(1, Math.min(500, Math.trunc(maxTestsRaw))) : 500;
 
   try {
+    await assertSessionAccess(pool, req.user, sessionId, { mutate: false });
     const { rows: metaRows } = await pool.query(
       `SELECT MAX(creado_en)::text AS last_run_at
        FROM results_general
@@ -331,6 +354,9 @@ router.get('/resultados/:session_id', async (req, res) => {
       },
     });
   } catch (err) {
+    if (err?.statusCode) {
+      return res.status(err.statusCode).json({ ok: false, error: err.message });
+    }
     console.error('[API] Error obteniendo resultados', err);
     return res.status(500).json({ ok: false, error: 'db_error' });
   }
@@ -343,6 +369,12 @@ router.post('/run', async (req, res) => {
   if (!session_id || !Array.isArray(catalog_ids) || catalog_ids.length === 0) {
     console.log('[EVAL-ROUTE] Payload inválido');
     return res.status(400).json({ ok: false, error: 'invalid_payload' });
+  }
+
+  try {
+    await assertSessionAccess(pool, req.user, session_id, { mutate: true });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({ ok: false, error: err.message || 'db_error' });
   }
 
   const progressInit = initProgress(session_id);
@@ -781,4 +813,3 @@ router.post('/run', async (req, res) => {
 });
 
 module.exports = router;
-
