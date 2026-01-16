@@ -18,7 +18,8 @@ CerperStats es una aplicacion de escritorio Electron que se conecta a un backend
 | ALTO | 2 | IDOR, interpolacion SQL |
 | MEDIO | 5 | Recomendados para hardening |
 | BAJO | 3 | Mejoras opcionales |
-| MITIGADO | 3 | Sandbox, HTTPS, Auth admin |
+| MITIGADO | 2 | Sandbox, HTTPS |
+| ELIMINADO | 1 | Panel admin removido |
 
 ---
 
@@ -114,33 +115,11 @@ Cliente Electron --HTTPS--> Cloudflare Edge --HTTP--> localhost:4000 (servidor)
 2. Validar en codigo que `CERPER_PROXY_URL` use `https://`
 3. Considerar certificate pinning para mayor seguridad
 
-### 2.2 Autenticacion Admin via Header Base64 (MITIGADO PARCIALMENTE)
+### ~~2.2 Autenticacion Admin via Header Base64~~ (ELIMINADO)
 
-**Archivo:** `proxy/routes/admin.js:27-73`
-**Severidad:** ALTA -> MEDIA (con HTTPS)
+**Estado:** ELIMINADO - Panel de administracion removido del proyecto.
 
-```javascript
-const authHeader = req.headers['x-admin-auth'];
-const decoded = Buffer.from(authHeader, 'base64').toString('utf8');
-const [username, password] = decoded.split(':');
-```
-
-**Descripcion:**
-El panel de administracion usa autenticacion basica sobre un header personalizado. Base64 NO es cifrado, solo codificacion.
-
-**Estado actual:**
-- Con HTTPS via Cloudflare Tunnel, las credenciales estan protegidas en transito
-- El riesgo principal (intercepcion) esta mitigado
-
-**Riesgos residuales:**
-- Credenciales visibles en logs del servidor si se loggean headers
-- No hay proteccion contra ataques de fuerza bruta especificos para admin
-
-**Recomendaciones para produccion:**
-1. Mantener HTTPS obligatorio para `/admin/*`
-2. Considerar autenticacion JWT tambien para admin
-3. Implementar 2FA para usuarios admin
-4. Rate limiting especifico para `/admin/*`
+Los archivos `proxy/routes/admin.js` y `proxy/admin/` fueron eliminados ya que no se planea desarrollar un panel de administracion en esta fase.
 
 ### 2.3 Falta de Autorizacion por Recursos (ALTA)
 
@@ -502,7 +481,7 @@ Acciones criticas (login, creacion/modificacion de usuarios) se registran en `lo
 | 3 | ~~Implementar HTTPS~~ | ~~ALTA~~ | COMPLETADO | ~~Semana 1~~ |
 | 4 | Autorizacion por recursos (IDOR) | ALTA | PENDIENTE | Semana 1-2 |
 | 5 | ~~Habilitar sandbox Electron~~ | ~~CRITICA~~ | COMPLETADO | ~~Semana 1~~ |
-| 6 | ~~Mejorar auth admin~~ | ~~ALTA~~ | MITIGADO | ~~Semana 2~~ |
+| 6 | ~~Panel admin~~ | ~~ALTA~~ | ELIMINADO | N/A |
 | 7 | Rate limiting granular | MEDIA | PENDIENTE | Semana 2 |
 | 8 | Headers de seguridad (Helmet) | BAJA | PENDIENTE | Semana 3 |
 | 9 | Refresh tokens | MEDIA | PENDIENTE | Semana 3-4 |
@@ -510,7 +489,8 @@ Acciones criticas (login, creacion/modificacion de usuarios) se registran en `lo
 
 ### Progreso de Remediacion
 
-- **COMPLETADO:** 3 items (Sandbox, HTTPS, Auth admin mitigado)
+- **COMPLETADO:** 2 items (Sandbox, HTTPS)
+- **ELIMINADO:** 1 item (Panel admin removido)
 - **PENDIENTE CRITICO:** 2 items (Credenciales .env)
 - **PENDIENTE ALTO:** 1 item (IDOR)
 

@@ -12,7 +12,6 @@ const reportsRouter = require('./routes/reports');
 const resultsRouter = require('./routes/results');
 const authRouter = require('./routes/auth');
 const testsRouter = require('./routes/tests');
-const adminRouter = require('./routes/admin');
 const registerRouter = require('./routes/register');
 const runEvaluator = require('./lib/runEvaluator');
 
@@ -48,16 +47,12 @@ app.use(cors({
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Auth']
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Servir archivos estáticos públicos (registro, etc.)
 // Accesible en: http://tu-servidor:4000/
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Servir panel de administración como archivos estáticos
-// Accesible en: http://tu-servidor:4000/admin-panel/
-app.use('/admin-panel', express.static(path.join(__dirname, 'admin')));
 
 // Health check endpoint (no auth required for monitoring)
 app.get('/health', (req, res) => {
@@ -104,10 +99,6 @@ app.use('/evaluaciones', apiLimiter, verifyToken, evaluacionesRouter);
 app.use('/reports', apiLimiter, verifyToken, reportsRouter);
 app.use('/tests', apiLimiter, verifyToken, testsRouter);
 app.use('/results', apiLimiter, verifyToken, resultsRouter);
-
-// Admin routes (autenticación propia basada en credenciales de admin)
-// No requieren JWT token, usan X-Admin-Auth header
-app.use('/admin', apiLimiter, adminRouter);
 
 function verifyToken(req, res, next) {
   const header = req.headers.authorization || '';

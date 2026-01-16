@@ -611,9 +611,7 @@ async function guardarDataframeTemp() {
 
     const res = await window.cerper.insertInputs(session_id, tipo, datosParaInsertar);
 
-    if (res.ok) {
-      notify("Datos guardados en base de datos correctamente.", "success");
-    } else {
+    if (!res.ok) {
       notify(`Error guardando datos: ${res.error}`, "error");
     }
 
