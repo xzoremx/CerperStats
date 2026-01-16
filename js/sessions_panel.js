@@ -35,18 +35,28 @@ document.addEventListener("DOMContentLoaded", async () => {
   const selLab = document.getElementById('filter-lab');
   const selProc = document.getElementById('filter-proc');
   const selAnalisis = document.getElementById('filter-analisis');
-  const labWrap = document.getElementById('filter-lab-wrap');
 
-  // Date filter elements
-  const dateModeButtons = document.querySelectorAll('.date-mode-btn');
-  const dateSingleInput = document.getElementById('filter-date-single');
+  // New filter controls
+  const analisisGroup = document.getElementById('filter-analisis-group');
+  const procGroup = document.getElementById('filter-proc-group');
+
+  // Lab sidebar elements
+  const labSidebar = document.getElementById('lab-sidebar');
+  const labSidebarTrack = document.getElementById('lab-sidebar-track');
+
+  // Date filter elements (simplified to just range)
   const dateFromInput = document.getElementById('filter-date-from');
   const dateToInput = document.getElementById('filter-date-to');
-  const dateSingleGroup = document.getElementById('date-single-group');
-  const dateRangeGroup = document.getElementById('date-range-group');
-  let currentDateMode = 'all';
+  const fechaClearBtn = document.getElementById('fecha-clear-btn');
+
+  // Filter state for new controls
+  let currentAnalisis = 'all';
+  let currentProc = 'all';
+  let labOptions = [];
+  let currentLabValue = 'all';
 
   let allSessions = [];
+
 
   function normalizeText(value) {
     return String(value || '')
@@ -64,13 +74,107 @@ document.addEventListener("DOMContentLoaded", async () => {
     return norm;
   }
 
-  // Hide lab filter for supervisors, show and populate for admins
+  // Shorten lab names for display: "Laboratorio de X" -> "Lab. de X"
+  function shortenLabName(name) {
+    if (!name) return name;
+    return name
+      .replace(/^Laboratorio\s+/i, 'Lab. ')
+      .replace(/\s+de\s+Laboratorio\s+/gi, ' de Lab. ');
+  }
+
+  // Lab sidebar helper functions
+  function renderLabSidebar() {
+    if (!labSidebarTrack) return;
+    labSidebarTrack.innerHTML = '';
+
+    labOptions.forEach((opt) => {
+      const marker = document.createElement('div');
+      marker.className = 'lab-sidebar-marker' + (opt.value === currentLabValue ? ' active' : '');
+      marker.dataset.value = opt.value;
+
+      const label = document.createElement('span');
+      label.className = 'lab-sidebar-label';
+      label.textContent = shortenLabName(opt.text);
+
+      const bar = document.createElement('div');
+      bar.className = 'lab-sidebar-marker-bar';
+
+      marker.appendChild(bar);
+      marker.appendChild(label);
+
+      // Click handler
+      marker.addEventListener('click', () => {
+        selectLab(opt.value);
+      });
+
+      labSidebarTrack.appendChild(marker);
+    });
+  }
+
+  function selectLab(value) {
+    currentLabValue = value;
+
+    // Update active class on markers
+    const markers = labSidebarTrack?.querySelectorAll('.lab-sidebar-marker');
+    markers?.forEach(m => {
+      m.classList.toggle('active', m.dataset.value === value);
+    });
+
+    // Sync hidden select
+    if (selLab) {
+      selLab.value = value;
+    }
+
+    // Reload sessions with new lab filter
+    if (rol === 'admin') {
+      loadSessions().catch(console.error);
+    }
+  }
+
+  // Initialize lab sidebar based on role
   if (rol === 'supervisor') {
-    labWrap?.classList.add('hidden');
-    if (labWrap) labWrap.style.display = 'none';
+    // Supervisor: show only their assigned labs (max 2)
+    if (!defaultLabs || defaultLabs.length === 0) {
+      // Hide sidebar if no labs assigned
+      labSidebar?.classList.add('hidden');
+    } else {
+      // Build labOptions from defaultLabs
+      labOptions = defaultLabs.map(labKey => ({
+        value: labKey,
+        text: labKey // Will be replaced with actual name if available
+      }));
+      // Try to get lab names
+      try {
+        const labs = await window.cerper.getLabs();
+        const labMap = new Map(labs.map(l => [l.lab_key || l.key, l.nombre || l.name || l.lab_key || l.key]));
+        labOptions = labOptions.map(opt => ({
+          value: opt.value,
+          text: labMap.get(opt.value) || opt.value
+        }));
+      } catch (_) { /* ignore, use keys as names */ }
+
+      // Populate hidden select
+      if (selLab) {
+        selLab.innerHTML = '';
+        labOptions.forEach(opt => {
+          const o = document.createElement('option');
+          o.value = opt.value;
+          o.textContent = opt.text;
+          selLab.appendChild(o);
+        });
+        if (labOptions.length > 0) {
+          selLab.value = labOptions[0].value;
+          currentLabValue = labOptions[0].value;
+        }
+      }
+
+      renderLabSidebar();
+    }
   } else {
+    // Admin: show all labs with "Todos" option
     try {
       const labs = await window.cerper.getLabs();
+      labOptions = [{ value: 'all', text: 'Todos' }];
       if (selLab) {
         selLab.innerHTML = '';
         const optAll = document.createElement('option');
@@ -84,10 +188,15 @@ document.addEventListener("DOMContentLoaded", async () => {
           o.value = key;
           o.textContent = name;
           selLab.appendChild(o);
+          labOptions.push({ value: key, text: name });
         });
         selLab.value = 'all';
       }
-    } catch (e) { console.warn('[SessionsPanel] No se pudieron cargar labs', e); }
+      renderLabSidebar();
+    } catch (e) {
+      console.warn('[SessionsPanel] No se pudieron cargar labs', e);
+      labSidebar?.classList.add('hidden');
+    }
   }
 
   async function loadSessions() {
@@ -100,8 +209,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const labFilter =
       (rol === 'admin')
-        ? (selLab?.value === 'all' ? null : selLab?.value)
-        : (rol === 'supervisor' ? defaultLabs : primaryDefaultLab);
+        ? (currentLabValue === 'all' ? null : currentLabValue)
+        : (rol === 'supervisor' ? (currentLabValue || defaultLabs) : primaryDefaultLab);
 
     const res = await window.cerper.getSessionsByRole({ rol, labDefault: labFilter || null });
     if (!res.ok) throw new Error(res.error);
@@ -122,8 +231,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function applyFilters() {
-    const proc = (selProc?.value || 'all').toLowerCase();
-    const analisis = (selAnalisis?.value || 'all').toLowerCase();
+    const proc = currentProc.toLowerCase();
+    const analisis = currentAnalisis.toLowerCase();
     let data = allSessions;
 
     // Filter by procedure
@@ -136,71 +245,73 @@ document.addEventListener("DOMContentLoaded", async () => {
       data = data.filter(s => normalizeTipoAnalisis(s.tipo_analisis) === analisis);
     }
 
-    // Filter by date
-    if (currentDateMode === 'single' && dateSingleInput?.value) {
-      const targetDate = new Date(dateSingleInput.value + 'T00:00:00');
+    // Filter by date range
+    const fromValue = dateFromInput?.value;
+    const toValue = dateToInput?.value;
+
+    if (fromValue || toValue) {
+      const fromDate = fromValue ? new Date(fromValue + 'T00:00:00') : null;
+      const toDate = toValue ? new Date(toValue + 'T23:59:59') : null;
+
       data = data.filter(s => {
         const sessionDate = parseSessionDate(s.creado_en);
-        return sessionDate && isSameDay(sessionDate, targetDate);
+        if (!sessionDate) return false;
+        if (fromDate && sessionDate < fromDate) return false;
+        if (toDate && sessionDate > toDate) return false;
+        return true;
       });
-    } else if (currentDateMode === 'range') {
-      const fromValue = dateFromInput?.value;
-      const toValue = dateToInput?.value;
-
-      if (fromValue || toValue) {
-        const fromDate = fromValue ? new Date(fromValue + 'T00:00:00') : null;
-        const toDate = toValue ? new Date(toValue + 'T23:59:59') : null;
-
-        data = data.filter(s => {
-          const sessionDate = parseSessionDate(s.creado_en);
-          if (!sessionDate) return false;
-          if (fromDate && sessionDate < fromDate) return false;
-          if (toDate && sessionDate > toDate) return false;
-          return true;
-        });
-      }
     }
 
     renderSesiones(data);
   }
 
+
   selLab?.addEventListener('change', () => { if (rol === 'admin') loadSessions().catch(console.error); });
-  selProc?.addEventListener('change', applyFilters);
-  selAnalisis?.addEventListener('change', applyFilters);
 
-  // Date filter mode toggle
-  dateModeButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      // Update active state
-      dateModeButtons.forEach(b => {
-        b.classList.remove('active');
-        b.setAttribute('aria-selected', 'false');
+  // Estructura button event handlers
+  if (analisisGroup) {
+    const analisisBtns = analisisGroup.querySelectorAll('.estructura-btn');
+    analisisBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Update active state
+        analisisBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update state and filter
+        currentAnalisis = btn.dataset.value || 'all';
+        if (selAnalisis) selAnalisis.value = currentAnalisis;
+        applyFilters();
       });
-      btn.classList.add('active');
-      btn.setAttribute('aria-selected', 'true');
-
-      // Update current mode
-      currentDateMode = btn.dataset.mode;
-
-      // Show/hide date inputs
-      if (dateSingleGroup) dateSingleGroup.style.display = currentDateMode === 'single' ? 'flex' : 'none';
-      if (dateRangeGroup) dateRangeGroup.style.display = currentDateMode === 'range' ? 'flex' : 'none';
-
-      // Clear inputs when switching to "all"
-      if (currentDateMode === 'all') {
-        if (dateSingleInput) dateSingleInput.value = '';
-        if (dateFromInput) dateFromInput.value = '';
-        if (dateToInput) dateToInput.value = '';
-      }
-
-      applyFilters();
     });
-  });
+  }
+
+  // Procedimiento grid buttons event handlers
+  if (procGroup) {
+    const procBtns = procGroup.querySelectorAll('.proc-grid-item');
+    procBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Update active state
+        procBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update state and filter
+        currentProc = btn.dataset.value || 'all';
+        if (selProc) selProc.value = currentProc;
+        applyFilters();
+      });
+    });
+  }
 
   // Date input change listeners
-  dateSingleInput?.addEventListener('change', applyFilters);
   dateFromInput?.addEventListener('change', applyFilters);
   dateToInput?.addEventListener('change', applyFilters);
+
+  // Clear date button
+  fechaClearBtn?.addEventListener('click', () => {
+    if (dateFromInput) dateFromInput.value = '';
+    if (dateToInput) dateToInput.value = '';
+    applyFilters();
+  });
 
   try { await loadSessions(); } catch (err) {
     console.error('[SessionsPanel] Error:', err);
@@ -310,91 +421,13 @@ function formatDateTimePeru(value) {
   }
 }
 
-// --- Custom glass select popup for filters ---
+// --- Custom glass select popup for filters (no longer used for proc/analisis/lab) ---
+// The new UI uses:
+// - Slot machine spinner for lab filter
+// - Post-it buttons for procedure filter  
+// - Segmented control for estructura filter
+// This IIFE is kept for potential future use but currently does nothing
 (function () {
-  function enhanceSelect(select) {
-    if (!select || select._enhanced) return;
-    select._enhanced = true;
-
-    const wrap = document.createElement('div'); wrap.className = 'select-wrap';
-    const display = document.createElement('div'); display.className = 'select-display';
-    const valueEl = document.createElement('span'); valueEl.className = 'select-value';
-    valueEl.textContent = select.options[select.selectedIndex]?.text || '';
-    const caret = document.createElement('span'); caret.className = 'select-caret';
-    display.appendChild(valueEl); display.appendChild(caret);
-
-    const menu = document.createElement('div'); menu.className = 'select-menu';
-
-    const buildMenu = () => {
-      menu.innerHTML = '';
-      Array.from(select.options).forEach(opt => {
-        const item = document.createElement('div');
-        item.className = 'select-option';
-        item.dataset.value = opt.value;
-        item.textContent = opt.text;
-        if (opt.selected) item.setAttribute('aria-selected', 'true');
-        item.addEventListener('click', () => {
-          select.value = opt.value;
-          valueEl.textContent = opt.text;
-          Array.from(menu.children).forEach(c => c.removeAttribute('aria-selected'));
-          item.setAttribute('aria-selected', 'true');
-          select.dispatchEvent(new Event('change', { bubbles: true }));
-          menu.classList.remove('show');
-        });
-        menu.appendChild(item);
-      });
-    };
-
-    buildMenu();
-
-    select.style.display = 'none';
-    const parent = select.parentElement || document.body;
-    parent.insertBefore(wrap, select);
-    wrap.appendChild(display);
-    wrap.appendChild(menu);
-    wrap.appendChild(select);
-
-    // Toggle menu on display click
-    display.addEventListener('click', (e) => {
-      e.stopPropagation();
-      menu.classList.toggle('show');
-    });
-
-    // Close menu when clicking outside
-    document.addEventListener('click', (e) => {
-      if (!wrap.contains(e.target)) {
-        menu.classList.remove('show');
-      }
-    });
-
-    // Update display when select value changes
-    select.addEventListener('change', () => {
-      valueEl.textContent = select.options[select.selectedIndex]?.text || '';
-      Array.from(menu.children).forEach(c => c.removeAttribute('aria-selected'));
-      const sel = Array.from(menu.children).find(c => c.dataset.value === select.value);
-      if (sel) sel.setAttribute('aria-selected', 'true');
-    });
-
-    // Observe changes to the select's options and rebuild the menu
-    const mo = new MutationObserver(() => {
-      buildMenu();
-      valueEl.textContent = select.options[select.selectedIndex]?.text || '';
-    });
-    mo.observe(select, { childList: true, subtree: true, attributes: true });
-  }
-
-  // Try to enhance after initial render and after async labs load
-  const boot = () => {
-    try {
-      const proc = document.getElementById('filter-proc');
-      if (proc) enhanceSelect(proc);
-      const analisis = document.getElementById('filter-analisis');
-      if (analisis) enhanceSelect(analisis);
-      const lab = document.getElementById('filter-lab');
-      const rol = sessionStorage.getItem('rol');
-      if (rol === 'admin' && lab) enhanceSelect(lab);
-    } catch (_) {/* ignore */ }
-  };
-  if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(boot, 50);
-  else document.addEventListener('DOMContentLoaded', () => setTimeout(boot, 50));
+  // All filter selects are now hidden and replaced with custom UI controls
 })();
+

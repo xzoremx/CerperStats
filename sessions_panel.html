@@ -13,85 +13,109 @@
 
 <body>
   <main class="panel-container" role="main">
-    <!-- Unified Glass Card: Header + Filters + Legend -->
-    <section class="panel-glass-card" aria-label="Panel de control">
-      <!-- Header Row -->
-      <header class="panel-header">
-        <button id="btn-volver" class="btn-return" aria-label="Volver">
-          <i data-lucide="chevron-left"></i>
-        </button>
-        <div class="panel-brand">
-          <img src="assets/logos/cerper_sessions.png" alt="Cerper" class="panel-logo" />
-          <h1 id="panel-title" class="panel-title">Expedientes</h1>
+    <!-- Page layout: lab sidebar + main content -->
+    <div class="page-layout">
+      <!-- Lab Sidebar - Left side navigation spanning full height -->
+      <aside class="lab-sidebar" id="lab-sidebar" aria-label="Filtro de laboratorios">
+        <div class="lab-sidebar-header">
+          <span class="lab-sidebar-title">Labs</span>
         </div>
-      </header>
+        <div class="lab-sidebar-track" id="lab-sidebar-track">
+          <!-- Markers will be injected by JS -->
+        </div>
+      </aside>
 
-      <!-- Filters Section -->
-      <div class="filters-section" id="filters-bar" aria-label="Filtros de sesiones">
-        <div class="filters-row">
-          <div class="filter-item" id="filter-lab-wrap">
-            <label for="filter-lab">Laboratorio</label>
-            <select id="filter-lab" class="filter-select"></select>
-          </div>
-          <div class="filter-item">
-            <label for="filter-proc">Procedimiento</label>
-            <select id="filter-proc" class="filter-select">
+      <!-- Main content column -->
+      <div class="main-content">
+        <!-- Unified Glass Card: Header + Filters + Legend -->
+        <section class="panel-glass-card" aria-label="Panel de control">
+          <!-- Header Row -->
+          <header class="panel-header">
+            <button id="btn-volver" class="btn-return" aria-label="Volver">
+              <i data-lucide="chevron-left"></i>
+            </button>
+            <div class="panel-brand">
+              <img src="assets/logos/cerper_sessions.png" alt="Cerper" class="panel-logo" />
+              <h1 id="panel-title" class="panel-title">Expedientes</h1>
+            </div>
+          </header>
+
+          <!-- Filters Section - 3 Glass Zones -->
+          <div class="filters-section" id="filters-bar" aria-label="Filtros de sesiones">
+            <!-- Hidden selects for filter state -->
+            <select id="filter-lab" class="filter-select hidden"></select>
+            <select id="filter-proc" class="filter-select hidden">
               <option value="all">Todos</option>
               <option value="autorizaciones">Autorizaciones</option>
               <option value="implementaciones">Implementaciones</option>
               <option value="intralaboratorios">Intralaboratorios</option>
               <option value="intercomparación">Intercomparación</option>
             </select>
-          </div>
-          <div class="filter-item">
-            <label for="filter-analisis">Estructura</label>
-            <select id="filter-analisis" class="filter-select">
+            <select id="filter-analisis" class="filter-select hidden">
               <option value="all">Todas</option>
               <option value="mono">Monoanalito</option>
               <option value="multi">Multianalito</option>
             </select>
-          </div>
-          <div class="filter-item filter-date-group">
-            <label>Fecha</label>
-            <div class="date-filter-controls">
-              <div class="date-mode-toggle" role="tablist">
-                <button type="button" class="date-mode-btn active" data-mode="all" role="tab" aria-selected="true">
-                  Todas
-                </button>
-                <button type="button" class="date-mode-btn" data-mode="single" role="tab" aria-selected="false">
-                  Fecha
-                </button>
-                <button type="button" class="date-mode-btn" data-mode="range" role="tab" aria-selected="false">
-                  Rango
-                </button>
-              </div>
-              <div class="date-inputs-wrap">
-                <div class="date-input-group" id="date-single-group" style="display: none;">
-                  <input type="date" id="filter-date-single" class="filter-date" />
+
+            <div class="filters-grid">
+              <!-- Zone 1: Procedimiento - 3x2 Grid -->
+              <div class="filter-zone filter-zone-proc">
+                <label class="filter-zone-label">Procedimiento</label>
+                <div class="proc-grid" id="filter-proc-group">
+                  <button type="button" class="proc-grid-item active" data-value="all">Todos</button>
+                  <button type="button" class="proc-grid-item" data-value="intralaboratorios">Intralaboratorio</button>
+                  <button type="button" class="proc-grid-item" data-value="implementaciones">Implementación</button>
+                  <button type="button" class="proc-grid-item" data-value="autorizaciones">Autorización</button>
+                  <button type="button" class="proc-grid-item" data-value="intercomparación">Intercomparación</button>
                 </div>
-                <div class="date-input-group" id="date-range-group" style="display: none;">
-                  <input type="date" id="filter-date-from" class="filter-date" placeholder="Desde" />
-                  <span class="date-separator">—</span>
-                  <input type="date" id="filter-date-to" class="filter-date" placeholder="Hasta" />
+              </div>
+
+              <!-- Zone 2: Estructura - 2 options -->
+              <div class="filter-zone filter-zone-estructura">
+                <label class="filter-zone-label">Estructura</label>
+                <div class="estructura-options" id="filter-analisis-group">
+                  <button type="button" class="estructura-btn active" data-value="all">Todas</button>
+                  <button type="button" class="estructura-btn" data-value="mono">Monoanalito</button>
+                  <button type="button" class="estructura-btn" data-value="multi">Multianalito</button>
+                </div>
+              </div>
+
+              <!-- Zone 3: Fecha - Simple range inputs -->
+              <div class="filter-zone filter-zone-fecha">
+                <label class="filter-zone-label">Rango de Fechas</label>
+                <div class="fecha-range">
+                  <div class="fecha-input-wrap">
+                    <span class="fecha-label">Desde</span>
+                    <input type="date" id="filter-date-from" class="fecha-input" />
+                  </div>
+                  <div class="fecha-input-wrap">
+                    <span class="fecha-label">Hasta</span>
+                    <input type="date" id="filter-date-to" class="fecha-input" />
+                  </div>
+                  <button type="button" class="fecha-clear-btn" id="fecha-clear-btn" title="Limpiar fechas">
+                    <i data-lucide="x"></i>
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Status Legend -->
-      <div class="status-legend" aria-label="Leyenda de estados">
-        <div class="legend-item"><span class="legend-dot status-light-active"></span><span>Activa</span></div>
-        <div class="legend-item"><span class="legend-dot status-light-sufficient"></span><span>Suficiente</span></div>
-        <div class="legend-item"><span class="legend-dot status-light-finalized"></span><span>Finalizada</span></div>
-        <div class="legend-item"><span class="legend-dot status-light-cancelled"></span><span>Cancelada</span></div>
-      </div>
-    </section>
+          <!-- Status Legend -->
+          <div class="status-legend" aria-label="Leyenda de estados">
+            <div class="legend-item"><span class="legend-dot status-light-active"></span><span>Activa</span></div>
+            <div class="legend-item"><span class="legend-dot status-light-sufficient"></span><span>Suficiente</span>
+            </div>
+            <div class="legend-item"><span class="legend-dot status-light-finalized"></span><span>Finalizada</span>
+            </div>
+            <div class="legend-item"><span class="legend-dot status-light-cancelled"></span><span>Cancelada</span></div>
+          </div>
+        </section>
 
-    <section id="sessions-container" class="sessions-grid" aria-live="polite">
-      <p class="loading">Cargando sesiones...</p>
-    </section>
+        <section id="sessions-container" class="sessions-grid" aria-live="polite">
+          <p class="loading">Cargando sesiones...</p>
+        </section>
+      </div>
+    </div>
   </main>
 
   <script src="js/auth_guard.js"></script>

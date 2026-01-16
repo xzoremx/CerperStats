@@ -21,16 +21,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const sessionChipDato = document.getElementById("session-chip-dato");
   const sessionChipModo = document.getElementById("session-chip-modo");
 
-  const sessionIdEl = document.getElementById("session-id");
-  const sessionLabEl = document.getElementById("session-lab");
   const sessionProcedureEl = document.getElementById("session-procedure");
   const sessionMetodoEl = document.getElementById("session-metodo");
-  const sessionProductoEl = document.getElementById("session-producto");
   const sessionEnsayoEl = document.getElementById("session-ensayo");
   const sessionExpedienteEl = document.getElementById("session-expediente");
   const sessionUnidadEl = document.getElementById("session-unidad");
-  const sessionTipoAnalisisEl = document.getElementById("session-tipo-analisis");
-  const sessionTipoDatoEl = document.getElementById("session-tipo-dato");
   const rowModoCualitativo = document.getElementById("row-modo-cualitativo");
   const sessionModoCualitativoEl = document.getElementById("session-modo-cualitativo");
   const sessionParametroEl = document.getElementById("session-parametro");
@@ -510,16 +505,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    if (sessionIdEl) sessionIdEl.textContent = String(info.id ?? '—');
-    if (sessionLabEl) sessionLabEl.textContent = labName || '—';
     if (sessionProcedureEl) sessionProcedureEl.textContent = String(info.procedure || '—');
     if (sessionMetodoEl) sessionMetodoEl.textContent = String(info.metodo || '—');
-    if (sessionProductoEl) sessionProductoEl.textContent = String(info.producto || '—');
     if (sessionEnsayoEl) sessionEnsayoEl.textContent = String(info.ensayo || '—');
     if (sessionExpedienteEl) sessionExpedienteEl.textContent = String(info.expediente || '—');
     if (sessionUnidadEl) sessionUnidadEl.textContent = String(info.unidad || '—');
-    if (sessionTipoAnalisisEl) sessionTipoAnalisisEl.textContent = analisisLabel;
-    if (sessionTipoDatoEl) sessionTipoDatoEl.textContent = datoLabel;
 
     if (rowModoCualitativo && sessionModoCualitativoEl) {
       if (modoCualitativo) {
