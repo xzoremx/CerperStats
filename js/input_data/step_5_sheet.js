@@ -221,7 +221,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         const res = await window.guardarDataframeTemp();
 
         if (res.ok) {
-          notify("Datos guardados correctamente en la base de datos.", "success");
           setTimeout(() => {
             window.cerper.openPage("evaluation_select.html");
           }, 1000);
