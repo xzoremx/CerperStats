@@ -188,8 +188,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     function normalizeSessionEstado(value) {
         const raw = String(value || '').trim().toLowerCase();
         if (!raw) return '';
-        if (raw === 'activo') return 'activa';
-        if (raw === 'cerrada' || raw === 'cerrado') return 'cancelada';
+        if (raw === 'activo' || raw === 'activa' || raw === 'abierta' || raw === 'abierto') return 'activo';
+        if (raw === 'cerrada' || raw === 'cerrado' || raw === 'cancelado') return 'cancelada';
         if (raw === 'finalizado') return 'finalizada';
         if (raw === 'completada' || raw === 'completado') return 'finalizada';
         return raw;
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function formatSessionEstadoLabel(value) {
         const estado = normalizeSessionEstado(value);
-        if (estado === 'activa') return 'ACTIVA';
+        if (estado === 'activo') return 'ACTIVO';
         if (estado === 'suficiente') return 'SUFICIENTE';
         if (estado === 'finalizada') return 'FINALIZADA';
         if (estado === 'cancelada') return 'CANCELADA';
@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const estado = normalizeSessionEstado(sessionEstado);
         const base = 'px-2.5 py-1 rounded-full text-xs font-semibold border';
         const variants = {
-            activa: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-200',
+            activo: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-200',
             suficiente: 'bg-indigo-500/10 border-indigo-500/20 text-indigo-200',
             finalizada: 'bg-violet-500/10 border-violet-500/20 text-violet-200',
             cancelada: 'bg-red-500/10 border-red-500/20 text-red-200',
@@ -264,10 +264,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // If there are no saved reports, session can't be "suficiente/finalizada".
         if (!hasSaved && (estado === 'suficiente' || estado === 'finalizada')) {
-            const res = await setSessionEstado('activa');
+            const res = await setSessionEstado('activo');
             if (!res?.ok) {
                 // Fallback (visual only)
-                sessionEstado = 'activa';
+                sessionEstado = 'activo';
             }
         }
 
@@ -1599,7 +1599,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const next = wantFinal ? 'finalizada' : (hasSaved ? 'suficiente' : 'activa');
+        const next = wantFinal ? 'finalizada' : (hasSaved ? 'suficiente' : 'activo');
 
         finalizing = true;
         sessionFinalizeCheckbox.disabled = true;

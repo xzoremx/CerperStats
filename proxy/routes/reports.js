@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { normalizeSessionEstado } = require('../lib/sessionEstado');
 
 /**
  * POST /reports
@@ -51,12 +52,12 @@ router.post('/', async (req, res) => {
             [session_id]
         );
 
-        const sessionEstado = sessionRows[0]?.estado || '';
+        const sessionEstado = normalizeSessionEstado(sessionRows[0]?.estado || '');
         if (!sessionRows.length) {
             await client.query('ROLLBACK');
             return res.status(404).json({ ok: false, error: 'session_not_found' });
         }
-        if (sessionEstado === 'cancelada' || sessionEstado === 'cerrada') {
+        if (sessionEstado === 'cancelada') {
             await client.query('ROLLBACK');
             return res.status(409).json({ ok: false, error: 'session_canceled' });
         }
@@ -107,7 +108,7 @@ router.post('/', async (req, res) => {
         await client.query(
             `UPDATE sessions
              SET estado = CASE
-                 WHEN COALESCE(LOWER(estado), '') = 'finalizada' THEN 'finalizada'
+                 WHEN COALESCE(LOWER(estado), '') IN ('finalizada', 'finalizado', 'completada', 'completado') THEN 'finalizada'
                  ELSE 'suficiente'
              END,
              actualizado_en = NOW()
@@ -293,10 +294,10 @@ router.delete('/:reportId', async (req, res) => {
         if (!hasReports) {
             await client.query(
                 `UPDATE sessions
-                 SET estado = 'activa',
+                 SET estado = 'activo',
                      actualizado_en = NOW()
                  WHERE id = $1
-                   AND COALESCE(LOWER(estado), '') IN ('suficiente', 'finalizada')`,
+                   AND COALESCE(LOWER(estado), '') IN ('suficiente', 'finalizada', 'finalizado', 'completada', 'completado')`,
                 [sessionId]
             );
         }

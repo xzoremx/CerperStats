@@ -381,10 +381,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       block.className = "inputs-level-block";
       block.dataset.level = String(lvl);
 
-      const title = document.createElement("div");
-      title.className = "inputs-level-title";
-      title.textContent = `Nivel ${lvl}`;
-      block.appendChild(title);
+      // Only show level title if there are multiple levels
+      if (levels.length > 1) {
+        const title = document.createElement("div");
+        title.className = "inputs-level-title";
+        title.textContent = `Nivel ${lvl}`;
+        block.appendChild(title);
+      }
 
       const scroll = document.createElement("div");
       scroll.className = "inputs-table-scroll";
@@ -409,9 +412,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     const multiLvls = inputsState.levels.multi || [];
 
     const parts = [];
-    if (monoCount > 0) parts.push(`Monoanalito: ${monoCount} registros · niveles ${monoLvls.join(", ")}`);
-    if (multiCount > 0) parts.push(`Multianalito: ${multiCount} registros · niveles ${multiLvls.join(", ")}`);
-    if (parts.length === 0) parts.push("No hay inputs guardados para esta sesión.");
+    // Only show levels if there are multiple levels
+    if (monoCount > 0) {
+      const lvlText = monoLvls.length > 1 ? ` · Niveles ${monoLvls.join(", ")}` : '';
+      parts.push(`${monoCount} registros${lvlText}`);
+    }
+    if (multiCount > 0) {
+      const lvlText = multiLvls.length > 1 ? ` · Niveles ${multiLvls.join(", ")}` : '';
+      parts.push(`${multiCount} registros${lvlText}`);
+    }
+    if (parts.length === 0) parts.push("Que raro, no hay inputs guardados para esta sesión.");
 
     inputsSubtitle.textContent = parts.join(" | ");
   }

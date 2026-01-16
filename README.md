@@ -78,10 +78,10 @@ Nota: en builds empaquetados de Electron no se incluyen `proxy/` ni `modules/pyt
 
 `sessions.estado` se usa como indicador de progreso:
 
-- `activa`: estado inicial al crear la sesión.
+- `activo`: estado inicial al crear la sesión.
 - `suficiente`: automático cuando hay ≥1 PDF guardado en DB para la sesión.
 - `finalizada`: manual y revocable desde `pdf_config.html` (checkbox). Requiere ≥1 PDF guardado.
-- `cancelada`: automático al cerrar la app si la sesión no tiene PDFs guardados (no se reanuda).
+- `cancelada`: automático al cerrar la app si la sesión no tiene PDFs guardados y no tiene inputs guardados (sesión “huérfana”).
 
 Detalle completo: `docs/session_states.md`.
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { CANONICAL_SESSION_STATES, normalizeSessionEstado, isCanonicalSessionEstado } = require('../lib/sessionEstado');
 
 async function computeSessionMeta(sessionId) {
   const { rows: sessionRows } = await pool.query(
@@ -105,7 +106,7 @@ router.post('/', async (req, res) => {
         tipo_analisis, tipo_dato, modo_cualitativo, parametro, usuario_id,
         estado, creado_en, actualizado_en
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'activa', NOW(), NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'activo', NOW(), NOW())
       RETURNING id`,
       [
         lab_key,
@@ -136,10 +137,10 @@ router.patch('/:sessionId/status', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'invalid_session_id' });
   }
 
-  const requested = String(req.body?.estado || '').trim().toLowerCase();
-  const validStates = ['activa', 'cancelada', 'suficiente', 'finalizada'];
-  if (!requested || !validStates.includes(requested)) {
-    return res.status(400).json({ ok: false, error: 'invalid_status', valid: validStates });
+  const requestedRaw = String(req.body?.estado || '').trim();
+  const requested = normalizeSessionEstado(requestedRaw);
+  if (!requested || !isCanonicalSessionEstado(requested)) {
+    return res.status(400).json({ ok: false, error: 'invalid_status', valid: CANONICAL_SESSION_STATES });
   }
 
   try {
@@ -199,6 +200,12 @@ router.post('/cancel-incomplete', async (req, res) => {
          AND COALESCE(LOWER(s.estado), '') IN ('', 'activa', 'activo')
          AND NOT EXISTS (
            SELECT 1 FROM reports r WHERE r.session_id = s.id
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM inputs_monoanalito i WHERE i.session_id = s.id
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM inputs_multianalito i WHERE i.session_id = s.id
          )`,
       [usuarioId]
     );
