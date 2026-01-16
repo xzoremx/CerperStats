@@ -339,7 +339,15 @@ function renderSesiones(sesiones) {
   };
 
   if (!sesiones || !sesiones.length) {
-    contenedor.innerHTML = "<p>No se encontraron sesiones.</p>";
+    contenedor.innerHTML = `
+      <div class="empty-state">
+        <i data-lucide="inbox" class="empty-state-icon"></i>
+        <h3 class="empty-state-title">No hay sesiones</h3>
+        <p class="empty-state-subtitle">No se encontraron sesiones con los filtros seleccionados</p>
+      </div>
+    `;
+    // Re-render lucide icons for the new content
+    if (window.lucide) lucide.createIcons();
     return;
   }
 
