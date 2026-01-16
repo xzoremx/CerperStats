@@ -19,9 +19,9 @@ const SECRET_PATH = path.resolve(__dirname, '../secrets/token_secret.txt');
 const SECRET = fs.readFileSync(SECRET_PATH, 'utf8').trim();
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: { error: 'too_many_attempts', message: 'Demasiados intentos de login. Intente en 15 minutos.' },
+  windowMs: 5 * 60 * 1000,
+  max: 20,
+  message: { error: 'too_many_attempts', message: 'Demasiados intentos de login. Intente en 5 minutos.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
