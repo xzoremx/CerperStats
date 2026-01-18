@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let currentLabValue = 'all';
 
   // View mode state (grid or list)
-  let currentViewMode = 'grid';
+  let currentViewMode = 'list';
 
   let allSessions = [];
 
