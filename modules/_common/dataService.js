@@ -27,10 +27,8 @@ export const dataService = {
 
   // --- Validar formato de método ---
   validateMetodo(metodo) {
-    // Permite letras, números, espacios, guiones, puntos, dos puntos, paréntesis, comas
-    // Ejemplos válidos: "NOM-021-RECNAT-2000. 2002. Salinity Specifications...", etc.
-    const pattern = /^[A-Za-zÁÉÍÓÚáéíóúñÑ0-9\s\(\)\-\,\.:]{3,200}$/;
-    return pattern.test(metodo);
+    // Acepta cualquier texto con al menos 3 caracteres
+    return typeof metodo === "string" && metodo.trim().length >= 3;
   },
 
   // --- Validar formato de producto ---
@@ -41,8 +39,8 @@ export const dataService = {
 
   // --- Validar formato de ensayo ---
   validateEnsayo(ensayo) {
-    const pattern = /^[A-Za-zÁÉÍÓÚáéíóúñÑ0-9\s\(\)\-\,\.]{4,80}$/;
-    return pattern.test(ensayo);
+    // Acepta cualquier texto con al menos 3 caracteres
+    return typeof ensayo === "string" && ensayo.trim().length >= 3;
   },
 
   // --- Validar formato de unidad ---
