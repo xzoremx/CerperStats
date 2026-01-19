@@ -1464,6 +1464,261 @@
       color: #fca5a5;
       margin-left: 0.5rem;
     }
+
+    /* ========================================
+       Parametrizable Test Modal Styles
+       ======================================== */
+    .param-modal {
+      max-width: 600px;
+    }
+
+    .param-modal-header {
+      background: linear-gradient(180deg,
+          rgba(99, 102, 241, 0.08) 0%,
+          rgba(139, 92, 246, 0.04) 100%);
+      border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+    }
+
+    .param-modal-body {
+      padding: 1.5rem 1.75rem;
+    }
+
+    .param-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .param-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .param-field-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #1e293b;
+    }
+
+    .param-field-label .required-mark {
+      color: #dc2626;
+      font-weight: 600;
+    }
+
+    .param-field-description {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: -0.25rem;
+    }
+
+    .param-input {
+      padding: 0.625rem 0.875rem;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.9);
+      font-size: 0.875rem;
+      color: #1e293b;
+      transition: all 0.2s ease;
+    }
+
+    .param-input:focus {
+      outline: none;
+      border-color: rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .param-input.error {
+      border-color: rgba(239, 68, 68, 0.5);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+
+    .param-input::placeholder {
+      color: #94a3b8;
+    }
+
+    /* Checkbox styling */
+    .param-checkbox-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .param-checkbox {
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 0.375rem;
+      border: 2px solid rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+      accent-color: #6366f1;
+    }
+
+    /* Select styling */
+    .param-select {
+      padding: 0.625rem 0.875rem;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.9);
+      font-size: 0.875rem;
+      color: #1e293b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .param-select:focus {
+      outline: none;
+      border-color: rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    /* Range slider styling */
+    .param-range-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .param-range-inputs {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .param-range-inputs .param-input {
+      flex: 1;
+      text-align: center;
+      font-family: 'SF Mono', ui-monospace, monospace;
+    }
+
+    .param-range-separator {
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .param-range-slider {
+      position: relative;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.08);
+      border-radius: 3px;
+      margin: 0.5rem 0;
+    }
+
+    .param-range-track {
+      position: absolute;
+      height: 100%;
+      background: linear-gradient(90deg, #6366f1, #8b5cf6);
+      border-radius: 3px;
+    }
+
+    /* Modal footer */
+    .param-modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      padding: 1rem 1.75rem;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      background: linear-gradient(180deg,
+          rgba(248, 250, 252, 0.5) 0%,
+          rgba(241, 245, 249, 0.8) 100%);
+    }
+
+    .param-btn-secondary {
+      padding: 0.625rem 1.25rem;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.8);
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .param-btn-secondary:hover {
+      background: rgba(255, 255, 255, 1);
+      border-color: rgba(0, 0, 0, 0.15);
+      color: #475569;
+    }
+
+    .param-btn-danger {
+      padding: 0.625rem 1.25rem;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      background: rgba(239, 68, 68, 0.12);
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #ef4444;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-right: auto;
+    }
+
+    .param-btn-danger:hover {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fecaca;
+    }
+
+    .param-btn-primary {
+      padding: 0.625rem 1.25rem;
+      border-radius: 0.5rem;
+      border: none;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    }
+
+    .param-btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+
+    .param-btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Validation errors */
+    .param-validation-errors {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .param-validation-errors.hidden {
+      display: none;
+    }
+
+    .param-error-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: #dc2626;
+      padding: 0.25rem 0;
+    }
+
+    /* Badge for configured tests */
+    .badge-configured {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+    }
+
+    .badge-needs-config {
+      background: rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+    }
   </style>
 </head>
 
@@ -2013,6 +2268,40 @@
       </div>
       <div class="result-modal-body" id="result-modal-body">
         <!-- Dataframe table rendered here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Parametrizable Test Modal -->
+  <div id="param-modal-backdrop" class="result-modal-backdrop param-modal-backdrop">
+    <div class="result-modal param-modal" id="param-modal">
+      <div class="result-modal-header param-modal-header">
+        <div>
+          <h3 class="result-modal-title" id="param-modal-title">Configurar Parámetros</h3>
+          <p class="result-modal-subtitle" id="param-modal-subtitle">Prueba parametrizable</p>
+        </div>
+        <button id="param-modal-close" class="result-modal-close">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="result-modal-body param-modal-body" id="param-modal-body">
+        <form id="param-form" class="param-form">
+          <!-- Dynamic form fields will be rendered here -->
+        </form>
+        <div id="param-validation-errors" class="param-validation-errors hidden"></div>
+      </div>
+      <div class="param-modal-footer">
+        <button type="button" id="param-modal-delete" class="param-btn-danger hidden">
+          Quitar Configuración
+        </button>
+        <button type="button" id="param-modal-cancel" class="param-btn-secondary">
+          Cancelar
+        </button>
+        <button type="button" id="param-modal-submit" class="param-btn-primary">
+          Aplicar Configuración
+        </button>
       </div>
     </div>
   </div>

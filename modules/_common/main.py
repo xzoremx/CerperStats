@@ -341,6 +341,12 @@ def run_single_module(
     df_ingreso = df_base.copy(deep=True)
     df_raw = df_base.copy(deep=True)
 
+    user_params = test.get("user_params", {})
+    if not isinstance(user_params, dict):
+        user_params = {}
+    else:
+        user_params = deepcopy(user_params)
+
     local_vars = {
         "pd": pd,
         "np": np,
@@ -348,6 +354,7 @@ def run_single_module(
         "statistics": statistics,
         "df_ingreso": df_ingreso,
         "df_raw": df_raw,
+        "user_params": user_params,
     }
     
     # Agregar variables multianalito al namespace si están disponibles
@@ -462,6 +469,7 @@ def run_single_module(
                 "df_raw": df_raw,
                 "df_resultado": df_res,
                 "resultado_pc": resultado_pc,
+                "user_params": user_params,
             }
             # Agregar variables multianalito si están disponibles
             if total_analitos is not None:

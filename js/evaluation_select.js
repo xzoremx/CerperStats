@@ -1437,9 +1437,65 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  // ========================================
+  // Parametrizable tests - caches (schemas + saved params)
+  // ========================================
+  const sessionTestParamsCache = new Map(); // Map<catalogId, params_json>
+  const testParamsSchemaCache = new Map(); // Map<catalogId, user_input_schema|null>
+  let sessionTestParamsLoaded = false;
+  let sessionTestParamsLoading = null;
+
+  async function loadSessionTestParamsCache() {
+    if (sessionTestParamsLoaded) return;
+    if (sessionTestParamsLoading) return sessionTestParamsLoading;
+
+    sessionTestParamsLoading = (async () => {
+      if (!sessionId || !window.cerper?.getAllSessionTestParams) {
+        sessionTestParamsLoaded = true;
+        return;
+      }
+      try {
+        const savedRes = await window.cerper.getAllSessionTestParams(sessionId);
+        if (savedRes?.ok && Array.isArray(savedRes.data)) {
+          sessionTestParamsCache.clear();
+          for (const row of savedRes.data) {
+            sessionTestParamsCache.set(row.catalog_id, row.params_json || {});
+          }
+          console.log(`[ParamTests] Loaded ${savedRes.data.length} saved param sets`);
+        }
+        sessionTestParamsLoaded = true;
+      } catch (err) {
+        console.warn("[ParamTests] Error loading saved params:", err);
+        sessionTestParamsLoaded = false;
+      } finally {
+        sessionTestParamsLoading = null;
+      }
+    })();
+
+    return sessionTestParamsLoading;
+  }
+
+  async function getUserInputSchemaCached(catalogId) {
+    if (!catalogId) return null;
+    if (testParamsSchemaCache.has(catalogId)) {
+      return testParamsSchemaCache.get(catalogId) || null;
+    }
+    try {
+      const schemaRes = await window.cerper.getTestParamsSchema(catalogId);
+      const schema = schemaRes?.ok ? schemaRes.data?.user_input_schema || null : null;
+      testParamsSchemaCache.set(catalogId, schema);
+      return schema;
+    } catch (err) {
+      console.warn("[ParamTests] Error fetching schema:", err);
+      testParamsSchemaCache.set(catalogId, null);
+      return null;
+    }
+  }
+
   // === Renderizar tarjetas dinámicamente ===
   contenedor.innerHTML = "";
   const seleccionadas = new Set();
+  await loadSessionTestParamsCache();
 
 
   if (!res.data || res.data.length === 0) {
@@ -1490,8 +1546,30 @@ document.addEventListener("DOMContentLoaded", async () => {
       statusBadge.textContent = "No aplicable";
     }
 
+    // === Parametrizable tests: set initial status + selection ===
+    const id = test.id;
+    const hasSavedParams = sessionTestParamsCache.has(id);
+    let cachedSchema = null;
+    let isParametrizable = hasSavedParams;
+    if (aplicable) {
+      cachedSchema = await getUserInputSchemaCached(id);
+      if (cachedSchema?.enabled === true) isParametrizable = true;
+    }
+
+    if (aplicable && isParametrizable) {
+      if (hasSavedParams) {
+        seleccionadas.add(id);
+        card.classList.add("selected");
+        statusBadge.className = "status-badge badge-configured";
+        statusBadge.textContent = "Configurada";
+      } else {
+        statusBadge.className = "status-badge badge-needs-config";
+        statusBadge.textContent = "Requiere configuración";
+      }
+    }
+
     // === Selección solo si aplicable ===
-    card.addEventListener("click", () => {
+    card.addEventListener("click", async () => {
       if (isEvaluating) return;
       if (!aplicable) {
         const customMsg = testMeta?.mensaje_no_aplicable;
@@ -1499,6 +1577,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
       const id = test.id;
+
+      // Parametrizable tests: always open modal (selection handled by save/delete)
+      if (isParametrizable) {
+        const opened = await openParamModal(id, test.titulo, card, cachedSchema);
+        if (opened) return;
+      }
+
       if (seleccionadas.has(id)) {
         seleccionadas.delete(id);
         card.classList.remove("selected");
@@ -1665,6 +1750,607 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.cerper.openPage("pdf_config.html");
     }
   });
+
+  // ========================================
+  // Parametrizable Tests Modal Logic
+  // ========================================
+
+  const paramModalBackdrop = document.getElementById("param-modal-backdrop");
+  const paramModalTitle = document.getElementById("param-modal-title");
+  const paramModalSubtitle = document.getElementById("param-modal-subtitle");
+  const paramModalBody = document.getElementById("param-modal-body");
+  const paramForm = document.getElementById("param-form");
+  const paramValidationErrors = document.getElementById("param-validation-errors");
+  const paramModalClose = document.getElementById("param-modal-close");
+  const paramModalCancel = document.getElementById("param-modal-cancel");
+  const paramModalDelete = document.getElementById("param-modal-delete");
+  const paramModalSubmit = document.getElementById("param-modal-submit");
+
+  // State for current parametrizable test being configured
+  const paramModalState = {
+    isOpen: false,
+    currentCatalogId: null,
+    currentSchema: null,
+    currentCard: null,
+    savedParams: sessionTestParamsCache, // Map<catalogId, params>
+  };
+
+  // Load saved params for all tests in this session on init
+  async function loadAllSessionParams() {
+    await loadSessionTestParamsCache();
+  }
+
+  // Check if a test is parametrizable (has user_input_schema enabled)
+  function isTestParametrizable(testMeta) {
+    return testMeta?.parametros_json?.user_input_schema?.enabled === true;
+  }
+
+  // Get the schema for a parametrizable test
+  function getTestParamSchema(testMeta) {
+    return testMeta?.parametros_json?.user_input_schema || null;
+  }
+
+  // Open the param modal for a specific test
+  async function openParamModal(catalogId, testTitle, card, preloadedSchema = null) {
+    // Resolve schema (prefer preloaded/cache)
+    let schema = preloadedSchema;
+    if (schema) {
+      testParamsSchemaCache.set(catalogId, schema);
+    } else {
+      schema = await getUserInputSchemaCached(catalogId);
+    }
+
+    if (!schema || schema.enabled !== true) return false;
+    if (!Array.isArray(schema.fields) || schema.fields.length === 0) {
+      notify("La prueba tiene un schema de parámetros inválido (sin fields)", "warning");
+      return false;
+    }
+
+    paramModalState.currentCatalogId = catalogId;
+    paramModalState.currentSchema = schema;
+    paramModalState.currentCard = card;
+
+    // Toggle delete button based on whether params exist
+    if (paramModalDelete) {
+      const hasSaved = paramModalState.savedParams.has(catalogId);
+      paramModalDelete.classList.toggle("hidden", !hasSaved);
+    }
+
+    // Update modal header
+    if (paramModalTitle) paramModalTitle.textContent = schema.layout?.title || "Configurar Parámetros";
+    if (paramModalSubtitle) paramModalSubtitle.textContent = `Prueba: ${testTitle}`;
+
+    // Generate form fields
+    generateParamForm(schema, paramModalState.savedParams.get(catalogId) || {});
+
+    // Clear validation errors
+    if (paramValidationErrors) {
+      paramValidationErrors.innerHTML = "";
+      paramValidationErrors.classList.add("hidden");
+    }
+
+    // Open modal
+    if (paramModalBackdrop) {
+      paramModalBackdrop.classList.add("visible");
+      paramModalState.isOpen = true;
+      return true;
+    }
+    return false;
+  }
+
+  // Close the param modal
+  function closeParamModal() {
+    if (paramModalBackdrop) {
+      paramModalBackdrop.classList.remove("visible");
+    }
+    clearParamValidationErrors();
+    paramModalDelete?.classList.add("hidden");
+    paramModalState.isOpen = false;
+    paramModalState.currentCatalogId = null;
+    paramModalState.currentSchema = null;
+    paramModalState.currentCard = null;
+    if (paramForm) paramForm.innerHTML = "";
+  }
+
+  // Generate dynamic form fields from schema
+  function generateParamForm(schema, savedValues) {
+    if (!paramForm) return;
+    paramForm.innerHTML = "";
+
+    const fields = schema.fields || [];
+    for (const field of fields) {
+      const fieldType = String(field.type || "").toLowerCase();
+      const fieldWrapper = document.createElement("div");
+      fieldWrapper.className = "param-field";
+      fieldWrapper.dataset.fieldName = field.name;
+
+      // Label
+      const label = document.createElement("label");
+      label.className = "param-field-label";
+      label.innerHTML = `${field.label || field.name}${field.required ? ' <span class="required-mark">*</span>' : ''}`;
+      fieldWrapper.appendChild(label);
+
+      // Description
+      if (field.description) {
+        const desc = document.createElement("p");
+        desc.className = "param-field-description";
+        desc.textContent = field.description;
+        fieldWrapper.appendChild(desc);
+      }
+
+      // Input based on type
+      const savedValue = savedValues[field.name];
+
+      if (fieldType === "boolean" || fieldType === "checkbox") {
+        // Checkbox
+        const checkWrapper = document.createElement("div");
+        checkWrapper.className = "param-checkbox-wrapper";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "param-checkbox";
+        checkbox.id = `param-${field.name}`;
+        checkbox.name = field.name;
+        checkbox.checked = savedValue !== undefined ? Boolean(savedValue) : Boolean(field.default);
+
+        const checkLabel = document.createElement("label");
+        checkLabel.htmlFor = checkbox.id;
+        checkLabel.textContent = "Activar";
+        checkLabel.style.cursor = "pointer";
+        checkLabel.style.fontSize = "0.875rem";
+        checkLabel.style.color = "#475569";
+
+        checkWrapper.appendChild(checkbox);
+        checkWrapper.appendChild(checkLabel);
+        fieldWrapper.appendChild(checkWrapper);
+
+      } else if (fieldType === "select") {
+        // Select dropdown
+        const rawOptions = Array.isArray(field.options) && field.options.length
+          ? field.options
+          : Array.isArray(field.enum) && field.enum.length
+            ? field.enum
+            : [];
+
+        const select = document.createElement("select");
+        select.className = "param-select";
+        select.name = field.name;
+        select.id = `param-${field.name}`;
+
+        const defaultOpt = document.createElement("option");
+        defaultOpt.value = "";
+        defaultOpt.textContent = "Seleccionar...";
+        select.appendChild(defaultOpt);
+
+        for (const opt of rawOptions) {
+          const optValue =
+            opt && typeof opt === "object"
+              ? opt.value ?? opt.id ?? opt.key ?? opt.label
+              : opt;
+          const optLabel =
+            opt && typeof opt === "object"
+              ? opt.label ?? opt.name ?? optValue
+              : optValue;
+
+          const option = document.createElement("option");
+          option.value = String(optValue ?? "");
+          option.textContent = String(optLabel ?? "");
+          if ((savedValue !== undefined && String(savedValue) === String(optValue)) ||
+              (savedValue === undefined && String(field.default) === String(optValue))) {
+            option.selected = true;
+          }
+          select.appendChild(option);
+        }
+
+        fieldWrapper.appendChild(select);
+
+      } else if (fieldType === "range") {
+        // Range input (min/max)
+        const rangeWrapper = document.createElement("div");
+        rangeWrapper.className = "param-range-wrapper";
+
+        const inputsWrapper = document.createElement("div");
+        inputsWrapper.className = "param-range-inputs";
+
+        const minInput = document.createElement("input");
+        minInput.type = "number";
+        minInput.className = "param-input";
+        minInput.name = `${field.name}_min`;
+        minInput.id = `param-${field.name}-min`;
+        minInput.placeholder = "Min";
+        if (field.validation?.min !== undefined) minInput.min = field.validation.min;
+        if (field.validation?.step !== undefined) minInput.step = field.validation.step;
+        if (savedValue?.min !== undefined) {
+          minInput.value = savedValue.min;
+        } else if (field.default?.min !== undefined) {
+          minInput.value = field.default.min;
+        }
+
+        const separator = document.createElement("span");
+        separator.className = "param-range-separator";
+        separator.textContent = "—";
+
+        const maxInput = document.createElement("input");
+        maxInput.type = "number";
+        maxInput.className = "param-input";
+        maxInput.name = `${field.name}_max`;
+        maxInput.id = `param-${field.name}-max`;
+        maxInput.placeholder = "Max";
+        if (field.validation?.max !== undefined) maxInput.max = field.validation.max;
+        if (field.validation?.step !== undefined) maxInput.step = field.validation.step;
+        if (savedValue?.max !== undefined) {
+          maxInput.value = savedValue.max;
+        } else if (field.default?.max !== undefined) {
+          maxInput.value = field.default.max;
+        }
+
+        inputsWrapper.appendChild(minInput);
+        inputsWrapper.appendChild(separator);
+        inputsWrapper.appendChild(maxInput);
+        rangeWrapper.appendChild(inputsWrapper);
+
+        // Visual slider track (optional enhancement)
+        const sliderTrack = document.createElement("div");
+        sliderTrack.className = "param-range-slider";
+        const sliderFill = document.createElement("div");
+        sliderFill.className = "param-range-track";
+        sliderTrack.appendChild(sliderFill);
+        rangeWrapper.appendChild(sliderTrack);
+
+        const sliderMin = field.validation?.min !== undefined ? Number(field.validation.min) : null;
+        const sliderMax = field.validation?.max !== undefined ? Number(field.validation.max) : null;
+
+        const candidates = [];
+        if (savedValue && typeof savedValue === "object") {
+          if (Number.isFinite(Number(savedValue.min))) candidates.push(Number(savedValue.min));
+          if (Number.isFinite(Number(savedValue.max))) candidates.push(Number(savedValue.max));
+        }
+        if (field.default && typeof field.default === "object") {
+          if (Number.isFinite(Number(field.default.min))) candidates.push(Number(field.default.min));
+          if (Number.isFinite(Number(field.default.max))) candidates.push(Number(field.default.max));
+        }
+
+        const inferredMin = candidates.length ? Math.min(...candidates) : 0;
+        const inferredMax = candidates.length ? Math.max(...candidates) : inferredMin + 1;
+
+        const trackMin = Number.isFinite(sliderMin) ? sliderMin : inferredMin;
+        const trackMax = Number.isFinite(sliderMax) ? sliderMax : inferredMax;
+
+        const updateTrack = () => {
+          const denom = trackMax - trackMin;
+          if (!Number.isFinite(denom) || denom <= 0) {
+            sliderFill.style.left = "0%";
+            sliderFill.style.width = "0%";
+            return;
+          }
+
+          const minValRaw = Number(minInput.value);
+          const maxValRaw = Number(maxInput.value);
+          const minVal = Number.isFinite(minValRaw) ? minValRaw : trackMin;
+          const maxVal = Number.isFinite(maxValRaw) ? maxValRaw : trackMax;
+
+          const leftPct = ((Math.min(minVal, maxVal) - trackMin) / denom) * 100;
+          const rightPct = ((Math.max(minVal, maxVal) - trackMin) / denom) * 100;
+          sliderFill.style.left = `${Math.max(0, Math.min(100, leftPct))}%`;
+          sliderFill.style.width = `${Math.max(0, Math.min(100, rightPct)) - Math.max(0, Math.min(100, leftPct))}%`;
+        };
+
+        minInput.addEventListener("input", updateTrack);
+        maxInput.addEventListener("input", updateTrack);
+        updateTrack();
+
+        fieldWrapper.appendChild(rangeWrapper);
+
+      } else {
+        // Default: number or text input
+        const input = document.createElement("input");
+        input.type = fieldType === "number" ? "number" : "text";
+        input.className = "param-input";
+        input.name = field.name;
+        input.id = `param-${field.name}`;
+        input.placeholder = field.placeholder || `Ingrese ${(field.label || field.name).toLowerCase()}`;
+
+        if (fieldType === "number") {
+          if (field.validation?.min !== undefined) input.min = field.validation.min;
+          if (field.validation?.max !== undefined) input.max = field.validation.max;
+          if (field.validation?.step !== undefined) input.step = field.validation.step;
+        }
+
+        if (savedValue !== undefined) {
+          input.value = savedValue;
+        } else if (field.default !== undefined) {
+          input.value = field.default;
+        }
+
+        fieldWrapper.appendChild(input);
+      }
+
+      paramForm.appendChild(fieldWrapper);
+    }
+  }
+
+  // Validate form values against schema
+  function validateParamForm(schema, values) {
+    const errors = {};
+    const fields = schema.fields || [];
+
+    for (const field of fields) {
+      const fieldType = String(field.type || "").toLowerCase();
+      const value = values[field.name];
+
+      // Required validation
+      if (field.required) {
+        if (fieldType === "range") {
+          if (value?.min === undefined || value?.min === "" || value?.max === undefined || value?.max === "") {
+            errors[field.name] = `${field.label || field.name} es requerido (min y max)`;
+            continue;
+          }
+        } else if (value === undefined || value === null || value === "") {
+          errors[field.name] = `${field.label || field.name} es requerido`;
+          continue;
+        }
+      }
+
+      // Skip further validation if empty and not required
+      if (value === undefined || value === null || value === "") continue;
+
+      // Type-specific validation
+      if (fieldType === "number") {
+        const numValue = Number(value);
+        if (isNaN(numValue)) {
+          errors[field.name] = `${field.label || field.name} debe ser un número válido`;
+          continue;
+        }
+        if (field.validation?.min !== undefined && numValue < field.validation.min) {
+          errors[field.name] = `${field.label || field.name} debe ser >= ${field.validation.min}`;
+        }
+        if (field.validation?.max !== undefined && numValue > field.validation.max) {
+          errors[field.name] = `${field.label || field.name} debe ser <= ${field.validation.max}`;
+        }
+      }
+
+      if (fieldType === "range" && value) {
+        const minVal = Number(value.min);
+        const maxVal = Number(value.max);
+        if (isNaN(minVal) || isNaN(maxVal)) {
+          errors[field.name] = `${field.label || field.name} debe tener valores numéricos válidos`;
+          continue;
+        }
+        if (maxVal <= minVal) {
+          errors[field.name] = `${field.label || field.name}: el máximo debe ser mayor que el mínimo`;
+        }
+        if (field.validation?.min !== undefined && minVal < field.validation.min) {
+          errors[field.name] = `${field.label || field.name}: mínimo debe ser >= ${field.validation.min}`;
+        }
+        if (field.validation?.max !== undefined && maxVal > field.validation.max) {
+          errors[field.name] = `${field.label || field.name}: máximo debe ser <= ${field.validation.max}`;
+        }
+      }
+
+      if (fieldType === "select") {
+        const allowedOptions =
+          (Array.isArray(field.options) && field.options.length ? field.options : null) ||
+          (Array.isArray(field.enum) && field.enum.length ? field.enum : null) ||
+          (Array.isArray(field.validation?.enum) && field.validation.enum.length ? field.validation.enum : null);
+        if (allowedOptions) {
+          const allowed = new Set(allowedOptions.map((opt) => String(opt && typeof opt === "object" ? (opt.value ?? opt.id ?? opt.key ?? opt.label) : opt)));
+          if (!allowed.has(String(value))) {
+            errors[field.name] = `${field.label || field.name} tiene un valor no permitido`;
+          }
+        }
+      }
+
+      if (fieldType === "text" || fieldType === "string") {
+        const pattern = field.validation?.pattern;
+        if (pattern) {
+          try {
+            const re = new RegExp(pattern);
+            if (!re.test(String(value))) {
+              errors[field.name] = `${field.label || field.name} no cumple el formato requerido`;
+            }
+          } catch (reErr) {
+            console.warn("[ParamModal] Invalid regex pattern:", pattern, reErr);
+          }
+        }
+      }
+
+      // Cross-field validation (gt_field, lt_field)
+      if (field.validation?.gt_field) {
+        const otherValue = values[field.validation.gt_field];
+        if (otherValue !== undefined && Number(value) <= Number(otherValue)) {
+          errors[field.name] = `${field.label || field.name} debe ser mayor que ${field.validation.gt_field}`;
+        }
+      }
+      if (field.validation?.lt_field) {
+        const otherValue = values[field.validation.lt_field];
+        if (otherValue !== undefined && Number(value) >= Number(otherValue)) {
+          errors[field.name] = `${field.label || field.name} debe ser menor que ${field.validation.lt_field}`;
+        }
+      }
+    }
+
+    return { valid: Object.keys(errors).length === 0, errors };
+  }
+
+  // Collect form values
+  function collectParamFormValues(schema) {
+    const values = {};
+    const fields = schema.fields || [];
+
+    for (const field of fields) {
+      const fieldType = String(field.type || "").toLowerCase();
+      if (fieldType === "boolean" || fieldType === "checkbox") {
+        const checkbox = document.getElementById(`param-${field.name}`);
+        values[field.name] = checkbox ? checkbox.checked : false;
+      } else if (fieldType === "range") {
+        const minInput = document.getElementById(`param-${field.name}-min`);
+        const maxInput = document.getElementById(`param-${field.name}-max`);
+        values[field.name] = {
+          min: minInput?.value ? Number(minInput.value) : undefined,
+          max: maxInput?.value ? Number(maxInput.value) : undefined,
+        };
+      } else if (fieldType === "number") {
+        const input = document.getElementById(`param-${field.name}`);
+        values[field.name] = input?.value ? Number(input.value) : undefined;
+      } else {
+        const input = document.getElementById(`param-${field.name}`);
+        values[field.name] = input?.value || undefined;
+      }
+    }
+
+    return values;
+  }
+
+  // Show validation errors in modal
+  function showParamValidationErrors(errors) {
+    if (!paramValidationErrors) return;
+    paramValidationErrors.innerHTML = "";
+
+    for (const [fieldName, message] of Object.entries(errors)) {
+      const item = document.createElement("div");
+      item.className = "param-error-item";
+      item.innerHTML = `<span>⚠</span> ${message}`;
+      paramValidationErrors.appendChild(item);
+
+      // Highlight field with error
+      const fieldWrapper = document.querySelector(`[data-field-name="${fieldName}"]`);
+      if (fieldWrapper) {
+        const input = fieldWrapper.querySelector("input, select");
+        if (input) input.classList.add("error");
+      }
+    }
+
+    paramValidationErrors.classList.remove("hidden");
+  }
+
+  // Clear error highlights
+  function clearParamValidationErrors() {
+    if (paramValidationErrors) {
+      paramValidationErrors.innerHTML = "";
+      paramValidationErrors.classList.add("hidden");
+    }
+    document.querySelectorAll(".param-input.error, .param-select.error").forEach(el => {
+      el.classList.remove("error");
+    });
+  }
+
+  // Save params and update card state
+  async function saveParamsAndSelect() {
+    if (!paramModalState.currentSchema || !paramModalState.currentCatalogId) return;
+
+    clearParamValidationErrors();
+
+    const values = collectParamFormValues(paramModalState.currentSchema);
+    const validation = validateParamForm(paramModalState.currentSchema, values);
+
+    if (!validation.valid) {
+      showParamValidationErrors(validation.errors);
+      return;
+    }
+
+    // Save to backend
+    try {
+      const res = await window.cerper.saveSessionTestParams({
+        sessionId,
+        catalogId: paramModalState.currentCatalogId,
+        params: values,
+      });
+
+      if (!res?.ok) {
+        throw new Error(res?.error || "Error al guardar");
+      }
+
+      // Update local cache
+      paramModalState.savedParams.set(paramModalState.currentCatalogId, values);
+
+      // Update card UI
+      const card = paramModalState.currentCard;
+      const catalogId = paramModalState.currentCatalogId;
+
+      if (card) {
+        seleccionadas.add(catalogId);
+        card.classList.add("selected");
+        const statusBadge = card.querySelector(".status-badge");
+        if (statusBadge) {
+          statusBadge.className = "status-badge badge-configured";
+          statusBadge.textContent = "Configurada";
+        }
+      }
+
+      notify("Parámetros guardados correctamente", "success");
+      closeParamModal();
+
+    } catch (err) {
+      console.error("[ParamModal] Error saving params:", err);
+      notify("Error al guardar parámetros", "error");
+    }
+  }
+
+  // Delete params for a test
+  async function deleteTestParams(catalogId) {
+    if (!sessionId) return;
+    try {
+      await window.cerper.deleteSessionTestParams(sessionId, catalogId);
+      paramModalState.savedParams.delete(catalogId);
+    } catch (err) {
+      console.warn("[ParamModal] Error deleting params:", err);
+    }
+  }
+
+  async function deleteParamsAndDeselect() {
+    const catalogId = paramModalState.currentCatalogId;
+    if (!catalogId) return;
+    const card = paramModalState.currentCard;
+
+    const ok = window.confirm("¿Quitar configuración y deseleccionar esta prueba?");
+    if (!ok) return;
+
+    await deleteTestParams(catalogId);
+
+    // Update UI + selection state
+    seleccionadas.delete(catalogId);
+    if (card) {
+      card.classList.remove("selected");
+      const statusBadge = card.querySelector(".status-badge");
+      if (statusBadge) {
+        statusBadge.className = "status-badge badge-needs-config";
+        statusBadge.textContent = "Requiere configuración";
+      }
+    }
+
+    notify("Configuración eliminada", "success");
+    closeParamModal();
+  }
+
+  // Event listeners for modal
+  paramModalClose?.addEventListener("click", closeParamModal);
+  paramModalCancel?.addEventListener("click", closeParamModal);
+  paramModalDelete?.addEventListener("click", deleteParamsAndDeselect);
+  paramModalSubmit?.addEventListener("click", saveParamsAndSelect);
+
+  paramModalBackdrop?.addEventListener("click", (e) => {
+    if (e.target === paramModalBackdrop) closeParamModal();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && paramModalState.isOpen) {
+      closeParamModal();
+    }
+  });
+
+  // Load saved params on init
+  loadAllSessionParams();
+
+  // Export functions for external use
+  window.ParamModal = {
+    open: openParamModal,
+    close: closeParamModal,
+    isParametrizable: isTestParametrizable,
+    getSchema: getTestParamSchema,
+    hasSavedParams: (catalogId) => paramModalState.savedParams.has(catalogId),
+    getSavedParams: (catalogId) => paramModalState.savedParams.get(catalogId),
+    deleteParams: deleteTestParams,
+  };
 });
 
 // === Notificaciones flotantes ===

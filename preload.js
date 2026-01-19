@@ -59,6 +59,17 @@ contextBridge.exposeInMainWorld('cerper', {
     ipcRenderer.invoke("db-get-tests-with-metadata", session_id),
   getTestsFormattingConfig: () =>
     ipcRenderer.invoke("db-get-tests-formatting-config"),
+  // Parametrizable tests - user params CRUD
+  getTestParamsSchema: (catalogId) =>
+    ipcRenderer.invoke("db-get-test-params-schema", catalogId),
+  getSessionTestParams: (sessionId, catalogId) =>
+    ipcRenderer.invoke("db-get-session-test-params", { sessionId, catalogId }),
+  getAllSessionTestParams: (sessionId) =>
+    ipcRenderer.invoke("db-get-all-session-test-params", sessionId),
+  saveSessionTestParams: ({ sessionId, catalogId, params }) =>
+    ipcRenderer.invoke("db-save-session-test-params", { sessionId, catalogId, params }),
+  deleteSessionTestParams: (sessionId, catalogId) =>
+    ipcRenderer.invoke("db-delete-session-test-params", { sessionId, catalogId }),
   runEvaluations: (args) => ipcRenderer.invoke("db-run-evaluaciones", args),
   getEvaluacionesProgress: (session_id) =>
     ipcRenderer.invoke("db-get-evaluaciones-progress", session_id),

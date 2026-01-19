@@ -682,6 +682,62 @@ ipcMain.handle("db-get-tests-formatting-config", async () => {
   }
 });
 
+// === Pruebas Parametrizables - User Params CRUD ===
+ipcMain.handle("db-get-test-params-schema", async (_event, catalogId) => {
+  try {
+    const payload = await proxyFetch(`/tests/${catalogId}/params-schema`);
+    return { ok: true, ...payload };
+  } catch (err) {
+    console.error("[PROXY] Error obteniendo params schema:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("db-get-session-test-params", async (_event, { sessionId, catalogId }) => {
+  try {
+    const payload = await proxyFetch(`/tests/session/${sessionId}/params/${catalogId}`);
+    return { ok: true, ...payload };
+  } catch (err) {
+    console.error("[PROXY] Error obteniendo test params:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("db-get-all-session-test-params", async (_event, sessionId) => {
+  try {
+    const payload = await proxyFetch(`/tests/session/${sessionId}/params`);
+    return { ok: true, data: payload.data || [] };
+  } catch (err) {
+    console.error("[PROXY] Error obteniendo all session params:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("db-save-session-test-params", async (_event, { sessionId, catalogId, params }) => {
+  try {
+    const payload = await proxyFetch(`/tests/session/${sessionId}/params/${catalogId}`, {
+      method: "POST",
+      body: JSON.stringify({ params }),
+    });
+    return { ok: true, data: payload.data };
+  } catch (err) {
+    console.error("[PROXY] Error guardando test params:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("db-delete-session-test-params", async (_event, { sessionId, catalogId }) => {
+  try {
+    const payload = await proxyFetch(`/tests/session/${sessionId}/params/${catalogId}`, {
+      method: "DELETE",
+    });
+    return { ok: true, deleted: payload.deleted };
+  } catch (err) {
+    console.error("[PROXY] Error eliminando test params:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
 // === Control de ventana estilo Apple ===
 ipcMain.handle("window-minimize", () => {
   if (mainWindow) mainWindow.minimize();

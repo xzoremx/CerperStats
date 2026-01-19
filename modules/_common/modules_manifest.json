@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-01-09T01:06:17.155Z",
+  "generated_at": "2026-01-19T02:53:36.637Z",
   "entries": [
     {
       "id": 1,
@@ -105,6 +105,19 @@
       "sha256_module": "8321c45623a7004a6dae51868635a94b20ace568aab0f619c2ea0a2f20047b67",
       "sha256_script_grafico": "475139978beb8d1ed38238df57d1044a3aafb738d5cac5673543ddb331680098",
       "sha256_graph": "475139978beb8d1ed38238df57d1044a3aafb738d5cac5673543ddb331680098"
+    },
+    {
+      "id": 9,
+      "module_id": 9,
+      "nombre_interno": "tendencia_central_rango_aceptacion",
+      "version": "1.0.0",
+      "module_asset": "python/9/principal.py",
+      "script_grafico": "python/9/graph.py",
+      "graph_asset": "python/9/graph.py",
+      "runtime": "stats",
+      "sha256_module": "0a65aa0bc58a00be4c441c690f2451ff4e7b938a772bf4729e539376cc51ce63",
+      "sha256_script_grafico": "afa3aca23b99f744064eb43b1bb68056335f346d50117cdb8f2aba046c0be773",
+      "sha256_graph": "afa3aca23b99f744064eb43b1bb68056335f346d50117cdb8f2aba046c0be773"
     }
   ]
 }

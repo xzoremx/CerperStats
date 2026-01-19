@@ -19,11 +19,11 @@ INSERT INTO tests_catalog (
     'mono',                              -- tipo_analisis
     'cuantitativo',                              -- tipo_dato
     NULL,                                        -- modo_cualitativo
-    'atipicos',       -- nombre_interno
-    'Detección de Atípicos', -- titulo
+    'tendencia_central_rango_aceptacion',       -- nombre_interno
+    'Tendencia Central con Rango Aceptación', -- titulo
     'Tratamiento de Resultados',                              -- categoria
-    'Evalúa si los resultados son atípicos usando Z-Score clásico o robusto.',
-    'lucide:alert-circle'                         -- icon_lib
+    'Evalúa la tendencia central de los resultados y si está dentro del rango de aceptación.',
+    'lucide:trending-up'                         -- icon_lib
 )
 ON CONFLICT (lab_key, nombre_interno) DO NOTHING;
 
@@ -68,11 +68,11 @@ SELECT
     id,
     'v1.0',
     '{}'::jsonb,
-    'zorem',
+    'sistema',
     true,
     '{}'::jsonb
 FROM tests_catalog
-WHERE nombre_interno = 'atipicos'
+WHERE nombre_interno = 'tendencia_central_rango_aceptacion'
 ON CONFLICT (catalog_id, version) DO NOTHING;
 
 INSERT INTO test_modules (

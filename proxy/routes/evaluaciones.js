@@ -484,10 +484,11 @@ router.post('/run', async (req, res) => {
       `SELECT t.id AS catalog_id,
               t.nombre_interno,
               m.module_id,
-              m.version
+              m.version,
+              m.parametros_json
        FROM tests_catalog t
        JOIN LATERAL (
-         SELECT m2.id AS module_id, m2.version
+         SELECT m2.id AS module_id, m2.version, m2.parametros_json
          FROM test_modules m2
          WHERE m2.catalog_id = t.id AND m2.activo = true
          ORDER BY m2.fecha_publicacion DESC NULLS LAST, m2.id DESC
@@ -500,6 +501,18 @@ router.post('/run', async (req, res) => {
       finishProgress(session_id, 'failed', { message: 'tests_not_found' });
       return res.status(400).json({ ok: false, error: 'tests_not_found' });
     }
+
+    // Obtener user_params guardados para esta sesión (pruebas parametrizables)
+    const { rows: savedParams } = await pool.query(
+      `SELECT catalog_id, params_json
+       FROM session_test_params
+       WHERE session_id = $1 AND catalog_id = ANY($2::int[])`,
+      [session_id, catalog_ids]
+    );
+    const userParamsMap = new Map(
+      savedParams.map(row => [row.catalog_id, row.params_json || {}])
+    );
+    console.log(`[EVAL-ROUTE] User params encontrados para ${savedParams.length} pruebas parametrizables`);
 
     const manifest = loadManifest();
     const byModuleId = new Map(
@@ -517,12 +530,22 @@ router.post('/run', async (req, res) => {
         );
         continue;
       }
+
+      // Obtener user_params si es una prueba parametrizable
+      const testUserParams = userParamsMap.get(t.catalog_id) || {};
+      const isParametrizable = t.parametros_json?.user_input_schema?.enabled === true;
+
+      if (isParametrizable && Object.keys(testUserParams).length > 0) {
+        console.log(`[EVAL-ROUTE] Prueba ${t.nombre_interno} (${t.catalog_id}) tiene user_params:`, testUserParams);
+      }
+
       verified.push({
         module_id: t.module_id,
         catalog_id: t.catalog_id,
         nombre_interno: t.nombre_interno,
         version: t.version,
         runtime: manifestEntry.runtime || null,
+        user_params: testUserParams, // Agregar user_params al test
       });
     }
 

@@ -54,5 +54,13 @@
     "nombre_interno": "atipicos_multianalito",
     "version": "1.0.0",
     "runtime": "stats"
+  },
+  "python/9": {
+    "id": 9,
+    "module_id": 9,
+    "nombre_interno": "tendencia_central_rango_aceptacion",
+    "version": "1.0.0",
+    "runtime": "stats"
   }
+
 }
