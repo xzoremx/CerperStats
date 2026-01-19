@@ -61,6 +61,20 @@
     "nombre_interno": "tendencia_central_rango_aceptacion",
     "version": "1.0.0",
     "runtime": "stats"
+  },
+  "python/10": {
+    "id": 10,
+    "module_id": 10,
+    "nombre_interno": "veracidad_recuperacion",
+    "version": "1.0.0",
+    "runtime": "stats"
+  },
+  "python/11": {
+    "id": 11,
+    "module_id": 11,
+    "nombre_interno": "precision_rsd",
+    "version": "1.0.0",
+    "runtime": "stats"
   }
 
 }

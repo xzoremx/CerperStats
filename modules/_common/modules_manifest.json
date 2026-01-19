@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-01-19T02:53:36.637Z",
+  "generated_at": "2026-01-19T03:50:34.146Z",
   "entries": [
     {
       "id": 1,
@@ -14,6 +14,32 @@
       "sha256_module": "be48749d494f1d47c0000c310c3b03c6bc021be72c4c4e5adaf4b84c3792a011",
       "sha256_script_grafico": "968f8ce7f0141c5dab0321290eea2b0b24152457dc644a6e17793c5b063c8539",
       "sha256_graph": "968f8ce7f0141c5dab0321290eea2b0b24152457dc644a6e17793c5b063c8539"
+    },
+    {
+      "id": 10,
+      "module_id": 10,
+      "nombre_interno": "veracidad_recuperacion",
+      "version": "1.0.0",
+      "module_asset": "python/10/principal.py",
+      "script_grafico": "python/10/graph.py",
+      "graph_asset": "python/10/graph.py",
+      "runtime": "stats",
+      "sha256_module": "24d3bfee16152ae91960d50cca41d3d90d20908c3aaea1f7c09bb818c66fc13e",
+      "sha256_script_grafico": "794ee29b3f2e35ce3c65a9ad10c10d3987e973f1b76bf8a83c77c6b2792ce0c5",
+      "sha256_graph": "794ee29b3f2e35ce3c65a9ad10c10d3987e973f1b76bf8a83c77c6b2792ce0c5"
+    },
+    {
+      "id": 11,
+      "module_id": 11,
+      "nombre_interno": "precision_rsd",
+      "version": "1.0.0",
+      "module_asset": "python/11/principal.py",
+      "script_grafico": "python/11/graph.py",
+      "graph_asset": "python/11/graph.py",
+      "runtime": "stats",
+      "sha256_module": "bab65d003689aeeae33c8d3c6a0c965e63698a6e6049af0e7b406d3c9f702fdd",
+      "sha256_script_grafico": "882c5fa340a85da0c805c748c430429b567dbc8f2b098206bc2d6c7881ae1cc9",
+      "sha256_graph": "882c5fa340a85da0c805c748c430429b567dbc8f2b098206bc2d6c7881ae1cc9"
     },
     {
       "id": 2,

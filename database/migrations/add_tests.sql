@@ -1,9 +1,10 @@
 -- =====================================================
 -- Plantilla SQL para insertar columnas en tests_catalog y test_modules
 -- =====================================================
--- 1. Insertar en tests_catalog
--- =====================================================
 
+-- -----------------------------------------------------
+-- Veracidad (Recuperación) - Monoanalito
+-- -----------------------------------------------------
 INSERT INTO tests_catalog (
     lab_key,
     tipo_analisis,
@@ -16,17 +17,20 @@ INSERT INTO tests_catalog (
     icon_lib
 ) VALUES (
     'metales',                                    -- Ajustar según tu lab_key
-    'mono',                              -- tipo_analisis
-    'cuantitativo',                              -- tipo_dato
-    NULL,                                        -- modo_cualitativo
-    'tendencia_central_rango_aceptacion',       -- nombre_interno
-    'Tendencia Central con Rango Aceptación', -- titulo
-    'Tratamiento de Resultados',                              -- categoria
-    'Evalúa la tendencia central de los resultados y si está dentro del rango de aceptación.',
-    'lucide:trending-up'                         -- icon_lib
+    'mono',                                       -- tipo_analisis
+    'cuantitativo',                               -- tipo_dato
+    NULL,                                         -- modo_cualitativo
+    'veracidad_recuperacion',                     -- nombre_interno
+    'Veracidad (Recuperación)',                   -- titulo
+    'Veracidad',                  -- categoria
+    'Evalúa la veracidad en términos de recuperación usando adición y rango de aceptación.',
+    'lucide:check-circle'                         -- icon_lib
 )
 ON CONFLICT (lab_key, nombre_interno) DO NOTHING;
 
+-- -----------------------------------------------------
+-- Precisión (RSD) - Monoanalito
+-- -----------------------------------------------------
 INSERT INTO tests_catalog (
     lab_key,
     tipo_analisis,
@@ -39,23 +43,22 @@ INSERT INTO tests_catalog (
     icon_lib
 ) VALUES (
     'metales',                                    -- Ajustar según tu lab_key
-    'multi',                              -- tipo_analisis
-    'cuantitativo',                              -- tipo_dato
-    NULL,                                        -- modo_cualitativo
-    'atipicos_multianalito',            -- nombre_interno
-    'Detección de Atípicos (Multianalito)',          -- titulo
-    'Tratamiento de Resultados',                         -- categoria
-    'Evalúa si los resultados son atípicos usando Z-Score clásico o robusto.',
-    'lucide:alert-circle'                         -- icon_lib
+    'mono',                                       -- tipo_analisis
+    'cuantitativo',                               -- tipo_dato
+    NULL,                                         -- modo_cualitativo
+    'precision_rsd',                              -- nombre_interno
+    'Precisión (RSD)',                            -- titulo
+    'Precisión',                  -- categoria
+    'Evalúa la precisión comparando los RSD individuales contra un RSD teórico.',
+    'lucide:target'                               -- icon_lib
 )
 ON CONFLICT (lab_key, nombre_interno) DO NOTHING;
-
 
 -- =====================================================
 -- 2. Insertar en test_modules
 -- =====================================================
 
--- Obtener los IDs de los tests recién insertados y crear los módulos
+-- Veracidad (Recuperación) - parámetros (adición + rango)
 INSERT INTO test_modules (
     catalog_id,
     version,
@@ -67,14 +70,49 @@ INSERT INTO test_modules (
 SELECT 
     id,
     'v1.0',
-    '{}'::jsonb,
+    '{
+      "user_input_schema": {
+        "enabled": true,
+        "fields": [
+          {
+            "name": "adicion",
+            "type": "number",
+            "label": "Adición (unidad de medida)",
+            "description": "Valor de adición del estándar de trabajo",
+            "required": true,
+            "default": null,
+            "validation": { "min": 0.0000001 }
+          },
+          {
+            "name": "rango_min",
+            "type": "number",
+            "label": "Recuperación mínima (%)",
+            "description": "Límite inferior del porcentaje de recuperación",
+            "required": true,
+            "default": 70,
+            "validation": { "min": 0 }
+          },
+          {
+            "name": "rango_max",
+            "type": "number",
+            "label": "Recuperación máxima (%)",
+            "description": "Límite superior del porcentaje de recuperación",
+            "required": true,
+            "default": 120,
+            "validation": { "min": 0, "gt_field": "rango_min" }
+          }
+        ],
+        "layout": { "columns": 2, "title": "Configurar Veracidad (Recuperación)" }
+      }
+    }'::jsonb,
     'sistema',
     true,
     '{}'::jsonb
 FROM tests_catalog
-WHERE nombre_interno = 'tendencia_central_rango_aceptacion'
+WHERE nombre_interno = 'veracidad_recuperacion'
 ON CONFLICT (catalog_id, version) DO NOTHING;
 
+-- Precisión (RSD) - parámetro (RSD teórico)
 INSERT INTO test_modules (
     catalog_id,
     version,
@@ -86,12 +124,36 @@ INSERT INTO test_modules (
 SELECT 
     id,
     'v1.0',
-    '{}'::jsonb,
-    'zorem',
+    '{
+      "user_input_schema": {
+        "enabled": true,
+        "fields": [
+          {
+            "name": "rsd_teorico",
+            "type": "number",
+            "label": "RSD Teórico (%)",
+            "description": "Umbral de RSD para comparar contra los RSD individuales",
+            "required": true,
+            "default": 22,
+            "validation": { "min": 0.0000001 }
+          }
+        ],
+        "layout": { "columns": 1, "title": "Configurar Precisión (RSD)" }
+      }
+    }'::jsonb,
+    'sistema',
     true,
     '{}'::jsonb
 FROM tests_catalog
-WHERE nombre_interno = 'atipicos_multianalito'
+WHERE nombre_interno = 'precision_rsd'
 ON CONFLICT (catalog_id, version) DO NOTHING;
+
+
+
+
+
+
+
+
 
 
