@@ -81,7 +81,7 @@ router.post('/login', async (req, res) => {
         default_labs: defaultLabs,
       },
       secret,
-      { expiresIn: '24h' }
+      { expiresIn: '7d' }
     );
 
     return res.json({
