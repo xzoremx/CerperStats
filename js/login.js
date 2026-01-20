@@ -14,10 +14,38 @@ const normalizeColor = raw => {
   return value || DEFAULT_LAB_COLOR;
 };
 
+// Clave para almacenar el usuario recordado (solo username, nunca contraseña)
+const REMEMBERED_USER_KEY = "cerper_remembered_user";
+
+// Sanitiza el username para almacenamiento seguro
+const sanitizeUsername = (username) => {
+  if (!username || typeof username !== "string") return "";
+  // Limitar longitud y eliminar caracteres potencialmente peligrosos
+  return username.trim().slice(0, 100).replace(/[<>"'&]/g, "");
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("login-form");
   const btnLogin = document.getElementById("btn-login");
   const msg = document.getElementById("msg");
+  const usernameInput = document.getElementById("username");
+  const rememberCheckbox = document.getElementById("remember");
+
+  // Cargar usuario recordado al iniciar
+  try {
+    const rememberedUser = localStorage.getItem(REMEMBERED_USER_KEY);
+    if (rememberedUser) {
+      const sanitized = sanitizeUsername(rememberedUser);
+      if (sanitized) {
+        usernameInput.value = sanitized;
+        rememberCheckbox.checked = true;
+        // Activar el label flotante si hay valor
+        usernameInput.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    }
+  } catch (_) {
+    // Ignorar errores de localStorage (modo privado, etc.)
+  }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -44,6 +72,20 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const user = res.user;
+
+      // Gestionar "recordar usuario" de forma segura (solo username)
+      try {
+        if (rememberCheckbox.checked) {
+          const safeUsername = sanitizeUsername(username);
+          if (safeUsername) {
+            localStorage.setItem(REMEMBERED_USER_KEY, safeUsername);
+          }
+        } else {
+          localStorage.removeItem(REMEMBERED_USER_KEY);
+        }
+      } catch (_) {
+        // Ignorar errores de localStorage
+      }
 
       // Guardar datos del usuario en la sesión
       sessionStorage.setItem("usuario", user.username);

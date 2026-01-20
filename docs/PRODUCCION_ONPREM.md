@@ -29,14 +29,15 @@ Hospedar el backend de CerperStats dentro de la red de CERPER para que:
 
 ### 1.3 Requisitos de hardware (sizing inicial)
 
-El dimensionamiento final depende de volumen y concurrencia. Como punto de partida:
+El dimensionamiento final depende de volumen, retención y concurrencia. Para una carga baja (p. ej. ~10 reportes PDF/mes,
+~1000 imágenes/mes, ~10k inputs/mes) se puede iniciar con un sizing compacto y escalar según monitoreo:
 
-- CPU: 4–8 cores
-- RAM: 16–32 GB
-- Disco: 200+ GB SSD (ideal NVMe), con espacio para:
+- CPU: 2–4 cores (escalable a 4–8)
+- RAM: 4–8 GB (escalable a 8–16)
+- Disco: 60–120 GB SSD (ideal NVMe), con espacio para:
   - DB + índices + crecimiento
-  - backups locales temporales
   - logs
+  - (ideal) backups en storage separado; ajustar si TI exige retención local
 - Red: 1 Gbps (mínimo) en LAN
 
 ### 1.4 Requisitos de software (backend)
@@ -200,4 +201,3 @@ Total estimado (sin compras): **2–4 semanas**. Con compras/aprobaciones: depen
 - Backend AWS (base para on‑prem): `docs/AWS_BACKEND.md`
 - Registro web (si se usa): `docs/web_architecture.md`
 - Estados de sesión: `docs/session_states.md`
-

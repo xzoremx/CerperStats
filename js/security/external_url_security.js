@@ -15,6 +15,7 @@ class ExternalUrlSecurityManager {
       'api.whatsapp.com',
       'fonts.googleapis.com',
       'fonts.gstatic.com',
+      'cerper-stats.vercel.app',
       'unpkg.com', // Para Lucide icons CDN
     ]);
 
