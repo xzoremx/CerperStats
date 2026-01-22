@@ -13,8 +13,12 @@ router.get('/dashboard', requireUser, async (req, res) => {
     const queries = await Promise.all([
       // Total de informes generados
       pool.query(`SELECT COUNT(*) as count FROM reports`),
-      // Total de pruebas estadísticas activas
-      pool.query(`SELECT COUNT(*) as count FROM tests_catalog WHERE activo = true`),
+      // Total de pruebas estadísticas activas (activo está en test_modules)
+      pool.query(
+        `SELECT COUNT(DISTINCT t.id) as count
+         FROM tests_catalog t
+         JOIN test_modules m ON m.catalog_id = t.id AND m.activo = true`
+      ),
       // Total de laboratorios activos
       pool.query(`SELECT COUNT(*) as count FROM labs WHERE activo = true`),
       // Total de usuarios activos
