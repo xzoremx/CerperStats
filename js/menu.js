@@ -22,14 +22,14 @@ function buildLabCard(lab, idx) {
     <div class="relative aspect-[16/10] overflow-hidden">
       <img src="${imgSrc}" alt="${nombre}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" onerror="this.onerror=null;this.src='assets/images/labs/placeholder.png';" />
       <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-transparent"></div>
-      <div class="absolute top-3 left-3 inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium text-white backdrop-blur-md" style="background:${color}1a;border:1px solid ${color}33;">
-        <span class="inline-flex items-center justify-center" data-icon-slot></span>
-      </div>
     </div>
     <div class="p-5 bg-transparent">
-      <h3 class="text-base font-semibold tracking-tight text-white drop-shadow-md" title="${nombre}">
-        ${nombre}
-      </h3>
+      <div class="flex items-center gap-2">
+        <h3 class="text-base font-semibold tracking-tight text-white drop-shadow-md" title="${nombre}">
+          ${nombre}
+        </h3>
+        <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-sm backdrop-blur-md" style="background:${color}1a;border:1px solid ${color}33;" data-icon-slot></span>
+      </div>
       <p class="mt-1.5 text-sm leading-relaxed text-neutral-200/90 font-medium line-clamp-2">
         ${descripcion}
       </p>
@@ -85,4 +85,31 @@ async function loadLabs() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", loadLabs);
+async function loadDashboardStats() {
+  try {
+    const res = await window.cerper.getStatsDashboard();
+    if (!res.ok || !res.data) {
+      console.warn("[Menu] No se pudieron cargar las estadísticas");
+      return;
+    }
+    const { informes_generados, pruebas_estadisticas, laboratorios, usuarios, plantillas_informe } = res.data;
+
+    const setStatValue = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value > 0 ? (value >= 10 ? `${value}+` : value) : "0";
+    };
+
+    setStatValue("stat-informes", informes_generados);
+    setStatValue("stat-pruebas", pruebas_estadisticas);
+    setStatValue("stat-plantillas", plantillas_informe);
+    setStatValue("stat-laboratorios", laboratorios);
+    setStatValue("stat-usuarios", usuarios);
+  } catch (err) {
+    console.error("[Menu] Error cargando stats dashboard:", err);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadLabs();
+  loadDashboardStats();
+});

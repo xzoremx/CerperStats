@@ -55,8 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const password = document.getElementById("password").value;
 
     if (!username || !password) {
-      msg.textContent = "Completa todos los campos.";
-      msg.style.color = "#ff8080";
+      notify("Completa todos los campos.", "warning");
       btnLogin.disabled = false;
       return;
     }
@@ -65,8 +64,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await window.cerper.login(username, password);
 
       if (!res.ok) {
-        msg.textContent = res.error || "Credenciales incorrectas.";
-        msg.style.color = "#ff8080";
+        const errorMsg = res.error === "invalid_password"
+          ? "Contraseña incorrecta."
+          : res.error === "user_not_found"
+            ? "Usuario no encontrado."
+            : res.error || "Credenciales incorrectas.";
+        notify(errorMsg, "error");
         btnLogin.disabled = false;
         return;
       }
@@ -141,8 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     } catch (err) {
       console.error("[Login] Error:", err);
-      msg.textContent = "Error de conexión.";
-      msg.style.color = "#ff8080";
+      notify("Error de conexión.", "error");
     } finally {
       btnLogin.disabled = false;
     }

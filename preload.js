@@ -33,6 +33,9 @@ contextBridge.exposeInMainWorld('cerper', {
   },
   getLabByKey: (labKey) => ipcRenderer.invoke("db-get-lab-by-key", labKey),
   getLabModules: (labKey) => ipcRenderer.invoke("db-get-lab-modes", labKey),
+  // Estadísticas
+  getStatsDashboard: () => ipcRenderer.invoke("db-get-stats-dashboard"),
+  getStatsUser: () => ipcRenderer.invoke("db-get-stats-user"),
   insertSession: (data) => ipcRenderer.invoke("db-insert-session", data),
   insertInputs: (session_id, tipoAnalisis, datos) =>
     ipcRenderer.invoke("db-insert-inputs", { session_id, tipoAnalisis, datos }),

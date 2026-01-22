@@ -174,11 +174,34 @@ function gateSessionsSection() {
   sessionsDot?.remove();
 }
 
+async function loadUserStats() {
+  try {
+    const res = await window.cerper.getStatsUser();
+    if (!res.ok || !res.data) {
+      console.warn("[Procedure] No se pudieron cargar las estadísticas de usuario");
+      return;
+    }
+    const { sesiones_guardadas, sesiones_reevaluadas, informes_reprocesados } = res.data;
+
+    const setStatValue = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value !== undefined ? value : "0";
+    };
+
+    setStatValue("stat-sesiones-guardadas", sesiones_guardadas);
+    setStatValue("stat-sesiones-reevaluadas", sesiones_reevaluadas);
+    setStatValue("stat-informes-reprocesados", informes_reprocesados);
+  } catch (err) {
+    console.error("[Procedure] Error cargando stats de usuario:", err);
+  }
+}
+
 async function initPage() {
   window.lucide?.createIcons?.();
   initLabName();
   initLabIcon();
   gateSessionsSection();
+  loadUserStats();
 
   await loadProcedureDictionary();
   renderProcedureCards();

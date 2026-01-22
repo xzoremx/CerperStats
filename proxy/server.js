@@ -13,6 +13,7 @@ const resultsRouter = require('./routes/results');
 const authRouter = require('./routes/auth');
 const testsRouter = require('./routes/tests');
 const registerRouter = require('./routes/register');
+const statsRouter = require('./routes/stats');
 const runEvaluator = require('./lib/runEvaluator');
 
 const SECRET_PATH = path.resolve(__dirname, '../secrets/token_secret.txt');
@@ -100,6 +101,7 @@ app.use('/evaluaciones', apiLimiter, verifyToken, evaluacionesRouter);
 app.use('/reports', apiLimiter, verifyToken, reportsRouter);
 app.use('/tests', apiLimiter, verifyToken, testsRouter);
 app.use('/results', apiLimiter, verifyToken, resultsRouter);
+app.use('/stats', apiLimiter, verifyToken, statsRouter);
 
 function verifyToken(req, res, next) {
   const header = req.headers.authorization || '';

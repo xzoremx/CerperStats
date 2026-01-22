@@ -400,6 +400,26 @@ ipcMain.handle("db-get-lab-modes", async (_e, labKey) => {
     return { ok: false, error: err.message };
   }
 });
+// === Estadísticas del dashboard (global) ===
+ipcMain.handle("db-get-stats-dashboard", async () => {
+  try {
+    const payload = await proxyFetch("/stats/dashboard");
+    return { ok: true, data: payload.data };
+  } catch (err) {
+    console.error("[PROXY] Error obteniendo stats dashboard:", err);
+    return { ok: false, error: err.message };
+  }
+});
+// === Estadísticas del usuario actual ===
+ipcMain.handle("db-get-stats-user", async () => {
+  try {
+    const payload = await proxyFetch("/stats/user");
+    return { ok: true, data: payload.data };
+  } catch (err) {
+    console.error("[PROXY] Error obteniendo stats de usuario:", err);
+    return { ok: false, error: err.message };
+  }
+});
 // === Creación de sesión activa ===
 ipcMain.handle("db-insert-session", async (_event, data) => {
   try {
