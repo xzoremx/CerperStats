@@ -68,11 +68,11 @@ router.get('/user', requireUser, async (req, res) => {
         `SELECT COUNT(*) as count FROM sessions WHERE parent_session_id IS NOT NULL`
       );
       // Informes reprocesados: version_informe es string como 'v1.0', 'v2.0', etc.
-      // Contamos reportes que no sean versión inicial (v1.0 o v1)
+      // Contamos reportes que no sean versión inicial (v1.0)
       reprocessedQuery = pool.query(
         `SELECT COUNT(*) as count FROM reports
          WHERE version_informe IS NOT NULL
-         AND version_informe NOT IN ('v1.0', 'v1', '1.0', '1')`
+         AND version_informe NOT IN ('v1.0')`
       );
     } else if (rol === 'supervisor' && default_labs.length > 0) {
       // Supervisor: sesiones de sus laboratorios asignados
@@ -91,7 +91,7 @@ router.get('/user', requireUser, async (req, res) => {
          JOIN sessions s ON r.session_id = s.id
          WHERE s.lab_key = ANY($1)
          AND r.version_informe IS NOT NULL
-         AND r.version_informe NOT IN ('v1.0', 'v1', '1.0', '1')`,
+         AND r.version_informe NOT IN ('v1.0')`,
         [default_labs]
       );
     } else {
@@ -111,7 +111,7 @@ router.get('/user', requireUser, async (req, res) => {
          JOIN sessions s ON r.session_id = s.id
          WHERE s.usuario_id = $1
          AND r.version_informe IS NOT NULL
-         AND r.version_informe NOT IN ('v1.0', 'v1', '1.0', '1')`,
+         AND r.version_informe NOT IN ('v1.0')`,
         [userId]
       );
     }
