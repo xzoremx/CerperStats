@@ -37,7 +37,7 @@
       "script_grafico": "python/11/graph.py",
       "graph_asset": "python/11/graph.py",
       "runtime": "stats",
-      "sha256_module": "b701772e97e9770946cab50fcf83a26205d28ac5895b12a56f167cb12366e4fb",
+      "sha256_module": "3d2718a507819c3d42a59a8ca4504a40a5f057a96c534e9971caad4e4b03d06d",
       "sha256_script_grafico": "d785050e5b674f704ba55821eaa3979c12a69515b28ab5332dda8bd0a046ef15",
       "sha256_graph": "d785050e5b674f704ba55821eaa3979c12a69515b28ab5332dda8bd0a046ef15"
     },
@@ -76,7 +76,7 @@
       "script_grafico": "python/14/graph.py",
       "graph_asset": "python/14/graph.py",
       "runtime": "stats",
-      "sha256_module": "903437ae90f2fa84dc7a1a66bd624c7b725b591cf93b36de90e9d0b19fbeed12",
+      "sha256_module": "5d92ea5fd3d38421095b23c489f3e61f66bdcd1b2db96b9b01a87a61203d3526",
       "sha256_script_grafico": "a6da3da0ab28734d42bf83ae6dd4c68574b12528c2ea82d14461a7e8fb2a1020",
       "sha256_graph": "a6da3da0ab28734d42bf83ae6dd4c68574b12528c2ea82d14461a7e8fb2a1020"
     },

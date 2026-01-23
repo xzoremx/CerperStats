@@ -127,7 +127,7 @@ for col in df_ingreso.columns:
         "n": str(n),
         "media": round(mean_val, 6),
         "desviacion": None if not np.isfinite(std_val) else round(std_val, 6),
-        "rsd_pct": None if rsd_pct is None else round(float(rsd_pct), 2),
+        "rsd_pct": None if rsd_pct is None else round(float(rsd_pct), 4),
         "rsd_teorico": rsd_teorico,
         "estado": estado,
     })
@@ -191,9 +191,9 @@ if all_values.size >= 2:
 for row in rows:
     row["media_global"] = None if media_global is None else round(media_global, 6)
     row["desviacion_global"] = None if desv_global is None else round(desv_global, 6)
-    row["rsd_experimental"] = None if rsd_experimental is None else round(float(rsd_experimental), 2)
-    row["rsd_r"] = None if rsd_r is None else round(float(rsd_r), 2)
-    row["rsd_R"] = None if rsd_R is None else round(float(rsd_R), 2)
+    row["rsd_experimental"] = None if rsd_experimental is None else round(float(rsd_experimental), 4)
+    row["rsd_r"] = None if rsd_r is None else round(float(rsd_r), 4)
+    row["rsd_R"] = None if rsd_R is None else round(float(rsd_R), 4)
 
 df_resultado = pd.DataFrame(rows).sort_values("parametro").reset_index(drop=True)
 
@@ -220,11 +220,11 @@ elif rsd_err == "user_params_invalid":
 else:
     parts = []
     if rsd_experimental is not None:
-        parts.append(f"RSDexperimental={rsd_experimental:.2f}%")
+        parts.append(f"RSDexperimental={rsd_experimental:.4f}%")
     if rsd_r is not None:
-        parts.append(f"RSDr={rsd_r:.2f}%")
+        parts.append(f"RSDr={rsd_r:.4f}%")
     if rsd_R is not None:
-        parts.append(f"RSDR={rsd_R:.2f}%")
+        parts.append(f"RSDR={rsd_R:.4f}%")
     summary = ", ".join(parts) if parts else "Métricas globales no disponibles"
 
     if len(fallan) == 0 and len(no_evaluable) == 0:
