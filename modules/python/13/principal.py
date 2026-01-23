@@ -1,4 +1,27 @@
-# modules/python/<id>/principal.py
+# modules/python/13/principal.py
+
+"""
+Evaluación de veracidad por parámetro (multianalito) — Rango porcentual.
+
+Este script recibe datos ya filtrados por analito y nivel desde el servidor.
+La estructura de df_ingreso es la misma que para monoanalito:
+- Columnas = parámetros (ej: Analista 1, Analista 2, etc.)
+- Filas = lecturas
+
+Variable adicional disponible: `total_analitos` (cantidad total de analitos en la sesión)
+
+Reglas:
+- Evaluar normalidad global con Shapiro-Wilk (3 ≤ n ≤ 7) o Anderson-Darling (n > 7)
+- Si es normal: usar media global y media por parámetro
+- Si NO es normal: usar mediana global y mediana por parámetro
+- Verificar que cada parámetro esté dentro del rango porcentual de la tendencia central global
+
+Campos de salida en df_resultado:
+- analito (si aplica)
+- parametro, n, metodo_veracidad, veracidad
+- tc_global, porcentaje_min, porcentaje_max, rango_min, rango_max
+- estado, normalidad_global, p_value_normalidad_global, prueba_normalidad_global
+"""
 
 import numpy as np
 from scipy import stats
@@ -9,6 +32,9 @@ if "pd" not in globals() or pd is None:
 
 if "df_ingreso" not in globals():
     raise RuntimeError("df_ingreso requerido no disponible")
+
+# Obtener total_analitos si está disponible (para multianalito)
+n_analitos = globals().get("total_analitos", 1)
 
 
 def _to_float(value):
@@ -114,7 +140,7 @@ else:
     rango_max = None
 
 # --------------------------------------------------------
-# 3. Evaluar tendencia central por parámetro vs rango
+# 3. Evaluar veracidad por parámetro vs rango
 # --------------------------------------------------------
 rows = []
 fuera_rango = []
@@ -126,8 +152,8 @@ for col, serie in col_series:
         rows.append({
             "parametro": col,
             "n": "0",
-            "metodo_tendencia": metodo,
-            "tendencia_central": np.nan,
+            "metodo_veracidad": metodo,
+            "veracidad": np.nan,
             "tc_global": None if tc_global is None else round(tc_global, 4),
             "porcentaje_min": pct_min,
             "porcentaje_max": pct_max,
@@ -141,10 +167,10 @@ for col, serie in col_series:
         sin_datos.append(col)
         continue
 
-    valor_tc = float(serie.mean()) if usar_media else float(serie.median())
+    valor_veracidad = float(serie.mean()) if usar_media else float(serie.median())
     estado = None
     if range_err is None and rango_min is not None and rango_max is not None:
-        if rango_min <= valor_tc <= rango_max:
+        if rango_min <= valor_veracidad <= rango_max:
             estado = "dentro_rango"
         else:
             estado = "fuera_rango"
@@ -155,8 +181,8 @@ for col, serie in col_series:
     rows.append({
         "parametro": col,
         "n": str(n),
-        "metodo_tendencia": metodo,
-        "tendencia_central": round(valor_tc, 4),
+        "metodo_veracidad": metodo,
+        "veracidad": round(valor_veracidad, 4),
         "tc_global": None if tc_global is None else round(tc_global, 4),
         "porcentaje_min": pct_min,
         "porcentaje_max": pct_max,
@@ -170,11 +196,16 @@ for col, serie in col_series:
 
 df_resultado = pd.DataFrame(rows).sort_values("parametro").reset_index(drop=True)
 
+# Agregar columna "analito" si es multianalito (current_analito disponible)
+_current_analito = globals().get("current_analito")
+if _current_analito is not None:
+    df_resultado.insert(0, "analito", _current_analito)
+
 # --------------------------------------------------------
 # 4. Conclusión
 # --------------------------------------------------------
 if all_values.size == 0:
-    conclusion = "No hay datos numéricos suficientes para evaluar tendencia central."
+    conclusion = "No hay datos numéricos suficientes para evaluar veracidad."
     conclusion_status = "neutral"
 elif range_err == "missing_range":
     conclusion = "Falta configurar el rango porcentual de variación (porcentaje_min y porcentaje_max)."
@@ -211,4 +242,3 @@ else:
         if sin_datos:
             conclusion += f" Sin datos en: {', '.join(sin_datos)}."
         conclusion_status = "danger"
-

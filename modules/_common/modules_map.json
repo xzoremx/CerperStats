@@ -75,6 +75,26 @@
     "nombre_interno": "precision_rsd",
     "version": "1.0.0",
     "runtime": "stats"
+  },
+  "python/12": {
+    "id": 12,
+    "module_id": 12,
+    "nombre_interno": "tendencia_central_multi",
+    "version": "1.0.0",
+    "runtime": "stats"
+  },
+  "python/13": {
+    "id": 13,
+    "module_id": 13,
+    "nombre_interno": "veracidad_multi",
+    "version": "1.0.0",
+    "runtime": "stats"
+  },
+  "python/14": {
+    "id": 14,
+    "module_id": 14,
+    "nombre_interno": "precision_rsd_multi",
+    "version": "1.0.0",
+    "runtime": "stats"
   }
-
 }

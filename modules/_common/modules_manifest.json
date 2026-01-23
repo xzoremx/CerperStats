@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-01-19T03:50:34.146Z",
+  "generated_at": "2026-01-23T16:05:11.858Z",
   "entries": [
     {
       "id": 1,
@@ -24,9 +24,9 @@
       "script_grafico": "python/10/graph.py",
       "graph_asset": "python/10/graph.py",
       "runtime": "stats",
-      "sha256_module": "24d3bfee16152ae91960d50cca41d3d90d20908c3aaea1f7c09bb818c66fc13e",
-      "sha256_script_grafico": "794ee29b3f2e35ce3c65a9ad10c10d3987e973f1b76bf8a83c77c6b2792ce0c5",
-      "sha256_graph": "794ee29b3f2e35ce3c65a9ad10c10d3987e973f1b76bf8a83c77c6b2792ce0c5"
+      "sha256_module": "58b60789890cd2e579ada7863574a8b1de8edf89852f2ab39bcc727945a990d0",
+      "sha256_script_grafico": "c19d058fd521768fa3e359475d218021294e3e1c0d6185b3fd50a1895f24fc20",
+      "sha256_graph": "c19d058fd521768fa3e359475d218021294e3e1c0d6185b3fd50a1895f24fc20"
     },
     {
       "id": 11,
@@ -37,9 +37,48 @@
       "script_grafico": "python/11/graph.py",
       "graph_asset": "python/11/graph.py",
       "runtime": "stats",
-      "sha256_module": "bab65d003689aeeae33c8d3c6a0c965e63698a6e6049af0e7b406d3c9f702fdd",
-      "sha256_script_grafico": "882c5fa340a85da0c805c748c430429b567dbc8f2b098206bc2d6c7881ae1cc9",
-      "sha256_graph": "882c5fa340a85da0c805c748c430429b567dbc8f2b098206bc2d6c7881ae1cc9"
+      "sha256_module": "b701772e97e9770946cab50fcf83a26205d28ac5895b12a56f167cb12366e4fb",
+      "sha256_script_grafico": "d785050e5b674f704ba55821eaa3979c12a69515b28ab5332dda8bd0a046ef15",
+      "sha256_graph": "d785050e5b674f704ba55821eaa3979c12a69515b28ab5332dda8bd0a046ef15"
+    },
+    {
+      "id": 12,
+      "module_id": 12,
+      "nombre_interno": "tendencia_central_multi",
+      "version": "1.0.0",
+      "module_asset": "python/12/principal.py",
+      "script_grafico": "python/12/graph.py",
+      "graph_asset": "python/12/graph.py",
+      "runtime": "stats",
+      "sha256_module": "c4fdda1583b237cd2a89a6dc2934932980e67e6800b57f9494575f397c77c2f3",
+      "sha256_script_grafico": "96ed44b1884aafb6a74cc5bdeeb88a7ca83a53c841dcdb60edd9a56e24c54f6e",
+      "sha256_graph": "96ed44b1884aafb6a74cc5bdeeb88a7ca83a53c841dcdb60edd9a56e24c54f6e"
+    },
+    {
+      "id": 13,
+      "module_id": 13,
+      "nombre_interno": "veracidad_multi",
+      "version": "1.0.0",
+      "module_asset": "python/13/principal.py",
+      "script_grafico": "python/13/graph.py",
+      "graph_asset": "python/13/graph.py",
+      "runtime": "stats",
+      "sha256_module": "2c514561527426f568d5819a009045febb490fd1ad8cf8370c54f5faf19ec68c",
+      "sha256_script_grafico": "6a6ac5a721305bc11bdbde8634f879dcac3ee2b392dc729e6043cec186edb1d9",
+      "sha256_graph": "6a6ac5a721305bc11bdbde8634f879dcac3ee2b392dc729e6043cec186edb1d9"
+    },
+    {
+      "id": 14,
+      "module_id": 14,
+      "nombre_interno": "precision_rsd_multi",
+      "version": "1.0.0",
+      "module_asset": "python/14/principal.py",
+      "script_grafico": "python/14/graph.py",
+      "graph_asset": "python/14/graph.py",
+      "runtime": "stats",
+      "sha256_module": "903437ae90f2fa84dc7a1a66bd624c7b725b591cf93b36de90e9d0b19fbeed12",
+      "sha256_script_grafico": "a6da3da0ab28734d42bf83ae6dd4c68574b12528c2ea82d14461a7e8fb2a1020",
+      "sha256_graph": "a6da3da0ab28734d42bf83ae6dd4c68574b12528c2ea82d14461a7e8fb2a1020"
     },
     {
       "id": 2,
@@ -141,9 +180,9 @@
       "script_grafico": "python/9/graph.py",
       "graph_asset": "python/9/graph.py",
       "runtime": "stats",
-      "sha256_module": "0a65aa0bc58a00be4c441c690f2451ff4e7b938a772bf4729e539376cc51ce63",
-      "sha256_script_grafico": "afa3aca23b99f744064eb43b1bb68056335f346d50117cdb8f2aba046c0be773",
-      "sha256_graph": "afa3aca23b99f744064eb43b1bb68056335f346d50117cdb8f2aba046c0be773"
+      "sha256_module": "b26bd8562919bfa727786782c0ac4b90b3514ca5f5519353e2879bd69ad09b05",
+      "sha256_script_grafico": "d16dcc73a46248a1ec8643f0129dd506fce10bfe5372997daca483446b032ed4",
+      "sha256_graph": "d16dcc73a46248a1ec8643f0129dd506fce10bfe5372997daca483446b032ed4"
     }
   ]
 }

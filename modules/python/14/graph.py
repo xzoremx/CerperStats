@@ -1,4 +1,4 @@
-# modules/python/11/graph.py
+# modules/python/14/graph.py
 
 import io
 import base64
@@ -9,14 +9,17 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 """
-Gráfico para Precisión (RSD%) con Umbral Teórico
+Gráfico para Precisión RSD (Multianalito) con Umbral Teórico
+
+Este script recibe datos ya filtrados por analito y nivel desde el servidor.
+La estructura de df_ingreso es la misma que para monoanalito:
+- Columnas = parámetros (ej: Analista 1, Analista 2, etc.)
+- Filas = lecturas
+
+Variable adicional disponible: `total_analitos` (cantidad total de analitos en la sesión)
 
 Entrada:
-- df_resultado: contiene rsd_pct, rsd_teorico, estado
-
-Reglas:
-- Mostrar RSD (%) por parámetro (Analista X)
-- Dibujar línea del RSD teórico
+- df_resultado: contiene rsd_pct, rsd_teorico, estado, rsd_experimental, rsd_r, rsd_R
 
 Salida:
 - grafico_data (PNG base64)
@@ -27,6 +30,9 @@ if "pd" not in globals() or pd is None:
 
 if "df_resultado" not in globals():
     raise RuntimeError("df_resultado requerido no disponible")
+
+# Obtener total_analitos si está disponible
+n_analitos = globals().get("total_analitos", 1)
 
 df_plot = df_resultado.copy(deep=True)
 if "parametro" not in df_plot.columns:
@@ -92,7 +98,14 @@ if rsd_teorico is not None:
 ax.set_xticks(x)
 ax.set_xticklabels(labels, rotation=35, ha="right")
 ax.set_ylabel("RSD (%)")
-ax.set_title("Precisión (RSD%) por parámetro")
+
+# Título con nombre del analito si es multianalito
+_analito = globals().get("current_analito")
+if _analito:
+    ax.set_title(f"Precisión (RSD%) por parámetro - {_analito}")
+else:
+    ax.set_title("Precisión (RSD%) por parámetro")
+
 ax.grid(True, linestyle="--", alpha=0.25, axis="y", zorder=1)
 
 info_lines = []
@@ -132,4 +145,3 @@ plt.close(fig)
 buf.seek(0)
 
 grafico_data = "data:image/png;base64," + base64.b64encode(buf.read()).decode("ascii")
-

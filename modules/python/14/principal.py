@@ -1,4 +1,24 @@
-# modules/python/11/principal.py
+# modules/python/14/principal.py
+
+"""
+Evaluación de precisión RSD (multianalito) — RSD teórico configurable.
+
+Este script recibe datos ya filtrados por analito y nivel desde el servidor.
+La estructura de df_ingreso es la misma que para monoanalito:
+- Columnas = parámetros (ej: Analista 1, Analista 2, etc.)
+- Filas = lecturas
+
+Variable adicional disponible: `total_analitos` (cantidad total de analitos en la sesión)
+
+Reglas:
+- Calcular RSD por parámetro y comparar con RSD teórico
+- Calcular métricas globales: RSDexp, RSDr, RSDR (ISO 5725)
+
+Campos de salida en df_resultado:
+- analito (si aplica)
+- parametro, n, media, desviacion, rsd_pct, rsd_teorico, estado
+- media_global, desviacion_global, rsd_experimental, rsd_r, rsd_R
+"""
 
 import numpy as np
 
@@ -7,6 +27,9 @@ if "pd" not in globals() or pd is None:
 
 if "df_ingreso" not in globals():
     raise RuntimeError("df_ingreso requerido no disponible")
+
+# Obtener total_analitos si está disponible (para multianalito)
+n_analitos = globals().get("total_analitos", 1)
 
 
 def _to_float(value):
@@ -174,6 +197,11 @@ for row in rows:
 
 df_resultado = pd.DataFrame(rows).sort_values("parametro").reset_index(drop=True)
 
+# Agregar columna "analito" si es multianalito (current_analito disponible)
+_current_analito = globals().get("current_analito")
+if _current_analito is not None:
+    df_resultado.insert(0, "analito", _current_analito)
+
 # --------------------------------------------------------
 # 4. Conclusión
 # --------------------------------------------------------
@@ -220,4 +248,3 @@ else:
         if sin_datos:
             conclusion += f" Sin datos en: {', '.join(sin_datos)}."
         conclusion_status = "danger"
-

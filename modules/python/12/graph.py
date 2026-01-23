@@ -1,4 +1,4 @@
-# modules/python/3/graph.py
+# modules/python/12/graph.py
 
 import io
 import base64
@@ -8,15 +8,18 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 """
-Gráfico para Tendencia Central (Monoanalito) con Rango de Aceptación
+Gráfico para Tendencia Central (Multianalito) con Rango de Aceptación Porcentual
+
+Este script recibe datos ya filtrados por analito y nivel desde el servidor.
+La estructura de df_ingreso es la misma que para monoanalito:
+- Columnas = parámetros (ej: Analista 1, Analista 2, etc.)
+- Filas = lecturas
+
+Variable adicional disponible: `total_analitos` (cantidad total de analitos en la sesión)
 
 Entrada:
 - df_ingreso
-- df_resultado: contiene tendencia_central, metodo_tendencia, estado, rango_min, rango_max
-
-Reglas:
-- Mostrar la tendencia central (media/mediana) por parámetro
-- Dibujar el rango de aceptación (mín/max) si está disponible
+- df_resultado: contiene tendencia_central, metodo_tendencia, estado, rango_min, rango_max, tc_global, porcentaje_min, porcentaje_max
 
 Salida:
 - grafico_data (PNG base64)
@@ -34,6 +37,8 @@ if "df_ingreso" not in globals():
 if "df_resultado" not in globals():
     raise RuntimeError("df_resultado requerido no disponible")
 
+# Obtener total_analitos si está disponible
+n_analitos = globals().get("total_analitos", 1)
 
 df_plot = df_resultado.copy(deep=True)
 if "parametro" not in df_plot.columns:
@@ -49,6 +54,9 @@ def _first_non_null(series):
 
 rango_min = _first_non_null(df_plot["rango_min"]) if "rango_min" in df_plot.columns else None
 rango_max = _first_non_null(df_plot["rango_max"]) if "rango_max" in df_plot.columns else None
+tc_global = _first_non_null(df_plot["tc_global"]) if "tc_global" in df_plot.columns else None
+pct_min = _first_non_null(df_plot["porcentaje_min"]) if "porcentaje_min" in df_plot.columns else None
+pct_max = _first_non_null(df_plot["porcentaje_max"]) if "porcentaje_max" in df_plot.columns else None
 
 metodo = _first_non_null(df_plot["metodo_tendencia"]) if "metodo_tendencia" in df_plot.columns else None
 metodo = str(metodo) if metodo else "tendencia_central"
@@ -93,10 +101,16 @@ if rango_min is not None and rango_max is not None:
             ax.axhspan(rmin, rmax, color=(16 / 255, 185 / 255, 129 / 255, 0.12), zorder=0)
             ax.axhline(rmin, color="#10b981", linestyle="--", linewidth=1, alpha=0.9)
             ax.axhline(rmax, color="#10b981", linestyle="--", linewidth=1, alpha=0.9)
+
+            # Etiqueta con porcentaje si está disponible
+            if pct_min is not None and pct_max is not None:
+                label_text = f"Rango [{pct_min:g}%-{pct_max:g}%]: [{rmin:.4f}, {rmax:.4f}]"
+            else:
+                label_text = f"Rango aceptación: [{rmin:g}, {rmax:g}]"
             ax.text(
                 0.01,
                 0.02,
-                f"Rango aceptación: [{rmin:g}, {rmax:g}]",
+                label_text,
                 transform=ax.transAxes,
                 fontsize=9,
                 va="bottom",
@@ -106,10 +120,26 @@ if rango_min is not None and rango_max is not None:
     except Exception:
         pass
 
+# Línea de tendencia central global
+if tc_global is not None:
+    try:
+        tcg = float(tc_global)
+        if np.isfinite(tcg):
+            ax.axhline(tcg, color="#8b5cf6", linestyle=":", linewidth=1.2, alpha=0.9, zorder=1)
+    except Exception:
+        pass
+
 ax.set_xticks(x)
 ax.set_xticklabels(parametros, rotation=35, ha="right")
 ax.set_ylabel(y_label)
-ax.set_title(f"Tendencia central ({metodo}) por parámetro")
+
+# Título con nombre del analito si es multianalito
+_analito = globals().get("current_analito")
+if _analito:
+    ax.set_title(f"Tendencia central ({metodo}) por parámetro - {_analito}")
+else:
+    ax.set_title(f"Tendencia central ({metodo}) por parámetro")
+
 ax.grid(True, linestyle="--", alpha=0.25, zorder=1)
 
 # Caja con info de normalidad global
@@ -126,6 +156,11 @@ if prueba_norm:
 if p_value_norm is not None:
     try:
         normalidad_text += f"\np-value: {float(p_value_norm):.4f}"
+    except Exception:
+        pass
+if tc_global is not None:
+    try:
+        normalidad_text += f"\n{y_label} global: {float(tc_global):.4f}"
     except Exception:
         pass
 

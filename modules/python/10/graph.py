@@ -66,7 +66,7 @@ for estado in estado_values:
     else:
         colors.append("#2563eb")
 
-fig, ax = plt.subplots(figsize=(11, 6), dpi=110)
+fig, ax = plt.subplots(figsize=(10, 6), dpi=100)
 x = np.arange(len(labels))
 
 ax.bar(x, y, color=colors, edgecolor="white", linewidth=0.8, alpha=0.9, zorder=2)

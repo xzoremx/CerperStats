@@ -1,4 +1,27 @@
-# modules/python/<id>/principal.py
+# modules/python/12/principal.py
+
+"""
+Evaluación de tendencia central por parámetro (multianalito) — Rango porcentual.
+
+Este script recibe datos ya filtrados por analito y nivel desde el servidor.
+La estructura de df_ingreso es la misma que para monoanalito:
+- Columnas = parámetros (ej: Analista 1, Analista 2, etc.)
+- Filas = lecturas
+
+Variable adicional disponible: `total_analitos` (cantidad total de analitos en la sesión)
+
+Reglas:
+- Evaluar normalidad global con Shapiro-Wilk (3 ≤ n ≤ 7) o Anderson-Darling (n > 7)
+- Si es normal: usar media global y media por parámetro
+- Si NO es normal: usar mediana global y mediana por parámetro
+- Verificar que cada parámetro esté dentro del rango porcentual de la tendencia central global
+
+Campos de salida en df_resultado:
+- analito (si aplica)
+- parametro, n, metodo_tendencia, tendencia_central
+- tc_global, porcentaje_min, porcentaje_max, rango_min, rango_max
+- estado, normalidad_global, p_value_normalidad_global, prueba_normalidad_global
+"""
 
 import numpy as np
 from scipy import stats
@@ -9,6 +32,9 @@ if "pd" not in globals() or pd is None:
 
 if "df_ingreso" not in globals():
     raise RuntimeError("df_ingreso requerido no disponible")
+
+# Obtener total_analitos si está disponible (para multianalito)
+n_analitos = globals().get("total_analitos", 1)
 
 
 def _to_float(value):
@@ -170,6 +196,11 @@ for col, serie in col_series:
 
 df_resultado = pd.DataFrame(rows).sort_values("parametro").reset_index(drop=True)
 
+# Agregar columna "analito" si es multianalito (current_analito disponible)
+_current_analito = globals().get("current_analito")
+if _current_analito is not None:
+    df_resultado.insert(0, "analito", _current_analito)
+
 # --------------------------------------------------------
 # 4. Conclusión
 # --------------------------------------------------------
@@ -211,4 +242,3 @@ else:
         if sin_datos:
             conclusion += f" Sin datos en: {', '.join(sin_datos)}."
         conclusion_status = "danger"
-

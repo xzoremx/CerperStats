@@ -1,0 +1,177 @@
+-- =====================================================
+-- Actualizar column_labels y value_mappings para tests 9, 10 y 11
+-- (Los tests 12, 13 y 14 ya incluyen estos valores en su INSERT)
+-- =====================================================
+
+-- -----------------------------------------------------
+-- ID 9: Tendencia Central (Monoanalito)
+-- -----------------------------------------------------
+UPDATE tests_catalog SET
+  column_labels = '{
+    "parametro": "Parámetro",
+    "n": "N",
+    "metodo_tendencia": "Método",
+    "tendencia_central": "Tendencia Central",
+    "tc_global": "TC Global",
+    "porcentaje_min": "% Mín",
+    "porcentaje_max": "% Máx",
+    "rango_min": "Rango Mín",
+    "rango_max": "Rango Máx",
+    "estado": "Estado",
+    "normalidad_global": "Normalidad",
+    "p_value_normalidad_global": "P-Value",
+    "prueba_normalidad_global": "Prueba"
+  }'::jsonb,
+  value_mappings = '{
+    "dentro_rango": {
+      "label": "Dentro del rango",
+      "class": "df-value-success",
+      "style": {"text_color": "#059669", "bg_from": "rgba(16,185,129,0.12)", "bg_to": "rgba(5,150,105,0.08)"}
+    },
+    "fuera_rango": {
+      "label": "Fuera del rango",
+      "class": "df-value-danger",
+      "style": {"text_color": "#dc2626", "bg_from": "rgba(239,68,68,0.12)", "bg_to": "rgba(220,38,38,0.08)"}
+    },
+    "sin_datos": {
+      "label": "Sin datos",
+      "class": "df-value-neutral",
+      "style": {"text_color": "#64748b", "bg_from": "rgba(100,116,139,0.12)", "bg_to": "rgba(71,85,105,0.08)"}
+    },
+    "rango_no_configurado": {
+      "label": "Rango no configurado",
+      "class": "df-value-warning",
+      "style": {"text_color": "#d97706", "bg_from": "rgba(245,158,11,0.12)", "bg_to": "rgba(217,119,6,0.08)"}
+    },
+    "normal_dist": {
+      "label": "Normal",
+      "class": "df-value-success",
+      "style": {"text_color": "#059669", "bg_from": "rgba(16,185,129,0.12)", "bg_to": "rgba(5,150,105,0.08)"}
+    },
+    "no_normal_dist": {
+      "label": "NO Normal",
+      "class": "df-value-danger",
+      "style": {"text_color": "#dc2626", "bg_from": "rgba(239,68,68,0.12)", "bg_to": "rgba(220,38,38,0.08)"}
+    },
+    "media": {
+      "label": "Media",
+      "class": "df-value-info",
+      "style": {"text_color": "#2563eb", "bg_from": "rgba(37,99,235,0.12)", "bg_to": "rgba(29,78,216,0.08)"}
+    },
+    "mediana": {
+      "label": "Mediana",
+      "class": "df-value-info",
+      "style": {"text_color": "#7c3aed", "bg_from": "rgba(124,58,237,0.12)", "bg_to": "rgba(109,40,217,0.08)"}
+    }
+  }'::jsonb
+WHERE id = 9;
+
+-- -----------------------------------------------------
+-- ID 10: Veracidad (Monoanalito)
+-- -----------------------------------------------------
+UPDATE tests_catalog SET
+  column_labels = '{
+    "parametro": "Parámetro",
+    "n": "N",
+    "metodo_veracidad": "Método",
+    "veracidad": "Veracidad",
+    "tc_global": "TC Global",
+    "porcentaje_min": "% Mín",
+    "porcentaje_max": "% Máx",
+    "rango_min": "Rango Mín",
+    "rango_max": "Rango Máx",
+    "estado": "Estado",
+    "normalidad_global": "Normalidad",
+    "p_value_normalidad_global": "P-Value",
+    "prueba_normalidad_global": "Prueba"
+  }'::jsonb,
+  value_mappings = '{
+    "dentro_rango": {
+      "label": "Dentro del rango",
+      "class": "df-value-success",
+      "style": {"text_color": "#059669", "bg_from": "rgba(16,185,129,0.12)", "bg_to": "rgba(5,150,105,0.08)"}
+    },
+    "fuera_rango": {
+      "label": "Fuera del rango",
+      "class": "df-value-danger",
+      "style": {"text_color": "#dc2626", "bg_from": "rgba(239,68,68,0.12)", "bg_to": "rgba(220,38,38,0.08)"}
+    },
+    "sin_datos": {
+      "label": "Sin datos",
+      "class": "df-value-neutral",
+      "style": {"text_color": "#64748b", "bg_from": "rgba(100,116,139,0.12)", "bg_to": "rgba(71,85,105,0.08)"}
+    },
+    "rango_no_configurado": {
+      "label": "Rango no configurado",
+      "class": "df-value-warning",
+      "style": {"text_color": "#d97706", "bg_from": "rgba(245,158,11,0.12)", "bg_to": "rgba(217,119,6,0.08)"}
+    },
+    "normal_dist": {
+      "label": "Normal",
+      "class": "df-value-success",
+      "style": {"text_color": "#059669", "bg_from": "rgba(16,185,129,0.12)", "bg_to": "rgba(5,150,105,0.08)"}
+    },
+    "no_normal_dist": {
+      "label": "NO Normal",
+      "class": "df-value-danger",
+      "style": {"text_color": "#dc2626", "bg_from": "rgba(239,68,68,0.12)", "bg_to": "rgba(220,38,38,0.08)"}
+    },
+    "media": {
+      "label": "Media",
+      "class": "df-value-info",
+      "style": {"text_color": "#2563eb", "bg_from": "rgba(37,99,235,0.12)", "bg_to": "rgba(29,78,216,0.08)"}
+    },
+    "mediana": {
+      "label": "Mediana",
+      "class": "df-value-info",
+      "style": {"text_color": "#7c3aed", "bg_from": "rgba(124,58,237,0.12)", "bg_to": "rgba(109,40,217,0.08)"}
+    }
+  }'::jsonb
+WHERE id = 10;
+
+-- -----------------------------------------------------
+-- ID 11: Precisión RSD (Monoanalito)
+-- -----------------------------------------------------
+UPDATE tests_catalog SET
+  column_labels = '{
+    "parametro": "Parámetro",
+    "n": "N",
+    "media": "Media",
+    "desviacion": "Desv. Est.",
+    "rsd_pct": "RSD %",
+    "rsd_teorico": "RSD Teórico",
+    "estado": "Estado",
+    "media_global": "Media Global",
+    "desviacion_global": "Desv. Global",
+    "rsd_experimental": "RSD Exp.",
+    "rsd_r": "RSDr",
+    "rsd_R": "RSDR"
+  }'::jsonb,
+  value_mappings = '{
+    "cumple": {
+      "label": "Cumple",
+      "class": "df-value-success",
+      "style": {"text_color": "#059669", "bg_from": "rgba(16,185,129,0.12)", "bg_to": "rgba(5,150,105,0.08)"}
+    },
+    "no_cumple": {
+      "label": "No cumple",
+      "class": "df-value-danger",
+      "style": {"text_color": "#dc2626", "bg_from": "rgba(239,68,68,0.12)", "bg_to": "rgba(220,38,38,0.08)"}
+    },
+    "sin_datos": {
+      "label": "Sin datos",
+      "class": "df-value-neutral",
+      "style": {"text_color": "#64748b", "bg_from": "rgba(100,116,139,0.12)", "bg_to": "rgba(71,85,105,0.08)"}
+    },
+    "no_evaluable": {
+      "label": "No evaluable",
+      "class": "df-value-warning",
+      "style": {"text_color": "#d97706", "bg_from": "rgba(245,158,11,0.12)", "bg_to": "rgba(217,119,6,0.08)"}
+    },
+    "config_no_valida": {
+      "label": "Config. inválida",
+      "class": "df-value-warning",
+      "style": {"text_color": "#d97706", "bg_from": "rgba(245,158,11,0.12)", "bg_to": "rgba(217,119,6,0.08)"}
+    }
+  }'::jsonb
+WHERE id = 11;
