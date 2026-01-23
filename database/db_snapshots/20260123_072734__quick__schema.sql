@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict okPAaEdSX61s0XlVQyGpCGrneTUOPX6Fdy1oZvoFfeKzyiLYTxGCnAMDoRnvYMl
+\restrict YJeTL16kTDIkLlpeEmvjN6mgcg6emth2hfhhJxnkUOUl3rgKSrdtZw6Y2yKsVjw
 
 -- Dumped from database version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
 -- Dumped by pg_dump version 18.0
@@ -89,6 +89,22 @@ $$;
 
 
 ALTER FUNCTION public.actualizar_timestamp_results_general() OWNER TO cerper_user;
+
+--
+-- Name: actualizar_timestamp_session_test_params(); Type: FUNCTION; Schema: public; Owner: cerper_user
+--
+
+CREATE FUNCTION public.actualizar_timestamp_session_test_params() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.actualizado_en := NOW();
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.actualizar_timestamp_session_test_params() OWNER TO cerper_user;
 
 --
 -- Name: actualizar_timestamp_sessions(); Type: FUNCTION; Schema: public; Owner: cerper_user
@@ -627,6 +643,58 @@ CREATE TABLE public.session_selected_tests (
 ALTER TABLE public.session_selected_tests OWNER TO cerper_user;
 
 --
+-- Name: session_test_params; Type: TABLE; Schema: public; Owner: cerper_user
+--
+
+CREATE TABLE public.session_test_params (
+    id integer NOT NULL,
+    session_id integer NOT NULL,
+    catalog_id integer NOT NULL,
+    params_json jsonb DEFAULT '{}'::jsonb NOT NULL,
+    creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.session_test_params OWNER TO cerper_user;
+
+--
+-- Name: TABLE session_test_params; Type: COMMENT; Schema: public; Owner: cerper_user
+--
+
+COMMENT ON TABLE public.session_test_params IS 'Almacena parámetros de usuario para pruebas parametrizables por sesión';
+
+
+--
+-- Name: COLUMN session_test_params.params_json; Type: COMMENT; Schema: public; Owner: cerper_user
+--
+
+COMMENT ON COLUMN public.session_test_params.params_json IS 'JSON con los valores de parámetros ingresados por el usuario. Ej: {"rango_min": 95, "rango_max": 105}';
+
+
+--
+-- Name: session_test_params_id_seq; Type: SEQUENCE; Schema: public; Owner: cerper_user
+--
+
+CREATE SEQUENCE public.session_test_params_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.session_test_params_id_seq OWNER TO cerper_user;
+
+--
+-- Name: session_test_params_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: cerper_user
+--
+
+ALTER SEQUENCE public.session_test_params_id_seq OWNED BY public.session_test_params.id;
+
+
+--
 -- Name: sessions; Type: TABLE; Schema: public; Owner: cerper_user
 --
 
@@ -852,6 +920,13 @@ ALTER TABLE ONLY public.results_general ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
+-- Name: session_test_params id; Type: DEFAULT; Schema: public; Owner: cerper_user
+--
+
+ALTER TABLE ONLY public.session_test_params ALTER COLUMN id SET DEFAULT nextval('public.session_test_params_id_seq'::regclass);
+
+
+--
 -- Name: sessions id; Type: DEFAULT; Schema: public; Owner: cerper_user
 --
 
@@ -960,6 +1035,14 @@ ALTER TABLE ONLY public.session_selected_tests
 
 
 --
+-- Name: session_test_params session_test_params_pkey; Type: CONSTRAINT; Schema: public; Owner: cerper_user
+--
+
+ALTER TABLE ONLY public.session_test_params
+    ADD CONSTRAINT session_test_params_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: sessions sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: cerper_user
 --
 
@@ -997,6 +1080,14 @@ ALTER TABLE ONLY public.inputs_monoanalito
 
 ALTER TABLE ONLY public.inputs_multianalito
     ADD CONSTRAINT uq_inputs_multianalito UNIQUE (session_id, parametro, analito, nivel, lectura_idx);
+
+
+--
+-- Name: session_test_params uq_session_test_params; Type: CONSTRAINT; Schema: public; Owner: cerper_user
+--
+
+ALTER TABLE ONLY public.session_test_params
+    ADD CONSTRAINT uq_session_test_params UNIQUE (session_id, catalog_id);
 
 
 --
@@ -1152,6 +1243,27 @@ CREATE INDEX idx_rtl_session ON public.reports_tests_link USING btree (session_i
 
 
 --
+-- Name: idx_stp_catalog_id; Type: INDEX; Schema: public; Owner: cerper_user
+--
+
+CREATE INDEX idx_stp_catalog_id ON public.session_test_params USING btree (catalog_id);
+
+
+--
+-- Name: idx_stp_session_catalog; Type: INDEX; Schema: public; Owner: cerper_user
+--
+
+CREATE INDEX idx_stp_session_catalog ON public.session_test_params USING btree (session_id, catalog_id);
+
+
+--
+-- Name: idx_stp_session_id; Type: INDEX; Schema: public; Owner: cerper_user
+--
+
+CREATE INDEX idx_stp_session_id ON public.session_test_params USING btree (session_id);
+
+
+--
 -- Name: idx_test_modules_activo; Type: INDEX; Schema: public; Owner: cerper_user
 --
 
@@ -1230,6 +1342,13 @@ CREATE TRIGGER tr_update_reports BEFORE UPDATE ON public.reports FOR EACH ROW EX
 --
 
 CREATE TRIGGER tr_update_results_general BEFORE UPDATE ON public.results_general FOR EACH ROW EXECUTE FUNCTION public.actualizar_timestamp_results_general();
+
+
+--
+-- Name: session_test_params tr_update_session_test_params; Type: TRIGGER; Schema: public; Owner: cerper_user
+--
+
+CREATE TRIGGER tr_update_session_test_params BEFORE UPDATE ON public.session_test_params FOR EACH ROW EXECUTE FUNCTION public.actualizar_timestamp_session_test_params();
 
 
 --
@@ -1411,6 +1530,22 @@ ALTER TABLE ONLY public.sessions
 
 
 --
+-- Name: session_test_params fk_stp_catalog; Type: FK CONSTRAINT; Schema: public; Owner: cerper_user
+--
+
+ALTER TABLE ONLY public.session_test_params
+    ADD CONSTRAINT fk_stp_catalog FOREIGN KEY (catalog_id) REFERENCES public.tests_catalog(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: session_test_params fk_stp_session; Type: FK CONSTRAINT; Schema: public; Owner: cerper_user
+--
+
+ALTER TABLE ONLY public.session_test_params
+    ADD CONSTRAINT fk_stp_session FOREIGN KEY (session_id) REFERENCES public.sessions(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: tests_catalog fk_test_lab; Type: FK CONSTRAINT; Schema: public; Owner: cerper_user
 --
 
@@ -1446,5 +1581,5 @@ ALTER TABLE ONLY public.session_selected_tests
 -- PostgreSQL database dump complete
 --
 
-\unrestrict okPAaEdSX61s0XlVQyGpCGrneTUOPX6Fdy1oZvoFfeKzyiLYTxGCnAMDoRnvYMl
+\unrestrict YJeTL16kTDIkLlpeEmvjN6mgcg6emth2hfhhJxnkUOUl3rgKSrdtZw6Y2yKsVjw
 
