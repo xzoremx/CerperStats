@@ -170,9 +170,10 @@
                         ${tableData.rows.map(row => `
                             <tr>
                                 ${cols.map(c => {
-                                    const key = c.key || c;
-                                    return `<td>${row[key] !== undefined ? row[key] : '-'}</td>`;
-                                }).join('')}
+                const key = c.key || c;
+                const cellClass = key.toLowerCase() === 'analito' ? 'class="analito-cell"' : '';
+                return `<td ${cellClass}>${row[key] !== undefined ? row[key] : '-'}</td>`;
+            }).join('')}
                             </tr>
                         `).join('')}
                     </tbody>

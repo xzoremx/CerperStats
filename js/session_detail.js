@@ -153,6 +153,81 @@ document.addEventListener("DOMContentLoaded", async () => {
     return raw;
   }
 
+  const DEFAULT_LAB_COLOR = "#22d3ee";
+  const DEFAULT_LAB_ICON = "flask-conical";
+
+  function sanitizeIcon(raw) {
+    const value = String(raw || "").trim().toLowerCase();
+    if (!value) return DEFAULT_LAB_ICON;
+    const normalized = value.startsWith("lucide:") ? value.slice(7) : value;
+    const safe = normalized.replace(/[^a-z0-9-]/g, "");
+    return safe || DEFAULT_LAB_ICON;
+  }
+
+  function normalizeColor(raw) {
+    const value = String(raw || "").trim();
+    return value || DEFAULT_LAB_COLOR;
+  }
+
+  let PROCEDURE_DICT = null;
+
+  async function loadProcedureDictionary() {
+    if (PROCEDURE_DICT && typeof PROCEDURE_DICT === "object") return PROCEDURE_DICT;
+    try {
+      const res = await fetch("config/procedure_descriptions.json", { cache: "no-cache" });
+      if (res.ok) {
+        const json = await res.json();
+        PROCEDURE_DICT = json && typeof json === "object" ? json : {};
+        return PROCEDURE_DICT;
+      }
+    } catch (_) { }
+    PROCEDURE_DICT = {};
+    return PROCEDURE_DICT;
+  }
+
+  function safeProcedureAssetId(value) {
+    const normalized = normalizeText(value)
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_-]/g, "")
+      .slice(0, 80);
+    return normalized || "autorizaciones";
+  }
+
+  function resolveProcedureMetaFromTitle(procTitle) {
+    const dict = PROCEDURE_DICT && typeof PROCEDURE_DICT === "object" ? PROCEDURE_DICT : {};
+    const target = normalizeText(procTitle);
+
+    // Match by dict key first (when procedure is saved as ID)
+    const byKey = dict[target];
+    if (byKey) {
+      return {
+        title: byKey.title || procTitle || "Procedimiento",
+        description: byKey.description || "",
+        image: byKey.image || `assets/logos/procedures/${safeProcedureAssetId(target)}.webp`,
+      };
+    }
+
+    // Match by title (most common: sessions store the human title)
+    for (const meta of Object.values(dict)) {
+      if (!meta) continue;
+      if (normalizeText(meta.title) === target) {
+        return {
+          title: meta.title || procTitle || "Procedimiento",
+          description: meta.description || "",
+          image:
+            meta.image || `assets/logos/procedures/${safeProcedureAssetId(meta.title || procTitle)}.webp`,
+        };
+      }
+    }
+
+    // Fallback
+    return {
+      title: procTitle || "Procedimiento",
+      description: "",
+      image: `assets/logos/procedures/${safeProcedureAssetId(procTitle)}.webp`,
+    };
+  }
+
   function inferKAndLecturas(inputsRows) {
     const rows = Array.isArray(inputsRows) ? inputsRows : [];
     const orderedParams = [];
@@ -728,7 +803,31 @@ document.addEventListener("DOMContentLoaded", async () => {
           if (info.lab_nombre || info.lab_key) {
             sessionStorage.setItem("labNombreVisible", String(info.lab_nombre || info.lab_key));
           }
-          if (info.procedure) sessionStorage.setItem("procedimientoSeleccionado", String(info.procedure));
+          if (info.procedure) {
+            const procTitle = String(info.procedure);
+            sessionStorage.setItem("procedimientoSeleccionado", procTitle);
+            await loadProcedureDictionary();
+            const procMeta = resolveProcedureMetaFromTitle(procTitle);
+            sessionStorage.setItem("procedimientoTitulo", procMeta.title || procTitle);
+            sessionStorage.setItem("procedimientoDescripcion", procMeta.description || "");
+            sessionStorage.setItem("procedimientoImagen", procMeta.image || "");
+          }
+
+          // Completar metadata visual del laboratorio (icono/color) para evitar usar el lab del menú.
+          if (info.lab_key && window.cerper?.getLabByKey) {
+            try {
+              const labRes = await window.cerper.getLabByKey(String(info.lab_key));
+              if (labRes?.ok && labRes.data) {
+                const lab = labRes.data;
+                const nombreVisible =
+                  (lab.nombre || info.lab_nombre || info.lab_key || "").trim() ||
+                  String(info.lab_key);
+                sessionStorage.setItem("labNombreVisible", nombreVisible);
+                sessionStorage.setItem("labColor", normalizeColor(lab.color));
+                sessionStorage.setItem("labIcon", sanitizeIcon(lab.icon_lucide || lab.icono || lab.icon));
+              }
+            } catch (_) { }
+          }
 
           if (info.metodo != null) sessionStorage.setItem("metodo", String(info.metodo || ""));
           if (info.producto != null) sessionStorage.setItem("producto", String(info.producto || ""));
