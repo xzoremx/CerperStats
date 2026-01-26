@@ -863,6 +863,7 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
         // Split into cover page (without header, with footer) and content (with header and footer)
         const coverData = { cover: data.cover, logo_path: data.logo_path };
         const contentData = {
+          cover: data.cover,
           sections: data.sections,
           logo_path: data.logo_path,
           tipo_analisis: data.tipo_analisis || null,
