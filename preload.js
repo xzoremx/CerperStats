@@ -92,8 +92,19 @@ contextBridge.exposeInMainWorld('cerper', {
   windowClose: () => ipcRenderer.invoke("window-close"),
   windowIsMaximized: () => ipcRenderer.invoke("window-is-maximized"),
   // PDF Report Generation
-  generateReports: (sessionId, config) =>
-    ipcRenderer.invoke("generate-reports", { sessionId, config }),
+  generateReports: (sessionId, config, requestId) =>
+    ipcRenderer.invoke("generate-reports", { sessionId, config, requestId }),
+  onReportsProgress: (callback) => {
+    const handler = (_event, data) => {
+      try {
+        callback(data);
+      } catch (e) {
+        console.error("[REPORTS] Error en listener de progreso:", e);
+      }
+    };
+    ipcRenderer.on("reports:progress", handler);
+    return () => ipcRenderer.off("reports:progress", handler);
+  },
   getSessionReports: (sessionId) =>
     ipcRenderer.invoke("get-session-reports", sessionId),
   downloadReportPdf: (reportId) =>

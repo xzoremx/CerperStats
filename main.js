@@ -796,9 +796,20 @@ const { ReportDataProvider } = require('./modules/reports/report_data_provider')
  * 2. Transform data with JavaScript (no Python needed)
  * 3. Render PDF with Puppeteer locally
  */
-ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
+ipcMain.handle("generate-reports", async (_event, { sessionId, config, requestId }) => {
   try {
     console.log("[REPORTS] Starting report generation for session:", sessionId);
+
+    const sendProgress = (payload) => {
+      try {
+        _event.sender.send("reports:progress", { requestId, ...payload });
+      } catch (e) {
+        // Best-effort: do not fail generation if renderer is gone
+        console.warn("[REPORTS] Failed to send progress:", e?.message || e);
+      }
+    };
+
+    sendProgress({ stage: "start", message: "Obteniendo datos..." });
 
     // 1. Fetch results, graphs, session info, and formatting config from server
     const [resultsRes, graphsRes, sessionRes, formattingRes] = await Promise.all([
@@ -809,6 +820,7 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
     ]);
 
     if (!resultsRes.data || resultsRes.data.length === 0) {
+      sendProgress({ stage: "error", message: "No hay resultados para generar reportes" });
       return { ok: false, error: "no_results", message: "No hay resultados para generar reportes" };
     }
 
@@ -851,10 +863,19 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
     const reportsData = dataProvider.getReportData();
     console.log("[REPORTS] JS Data Provider prepared", reportsData.length, "reports. Rendering PDFs...");
 
+    sendProgress({
+      stage: "plan",
+      current: 0,
+      total: reportsData.length,
+      message: `Preparando ${reportsData.length} reporte${reportsData.length !== 1 ? "s" : ""}...`,
+    });
+
     // 5. Render PDFs with Puppeteer
     const generatedReports = [];
+    let processed = 0;
 
     for (const reportItem of reportsData) {
+      const currentFilename = reportItem?.filename || null;
       try {
         const { filename, data, _metadata } = reportItem;
         const pdfPath = path.join(outputDir, filename);
@@ -960,6 +981,15 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
         try { fs.unlinkSync(pdfPath); } catch (_) { }
       } catch (renderErr) {
         console.error("[REPORTS] Failed to render PDF:", reportItem.filename, renderErr);
+      } finally {
+        processed += 1;
+        sendProgress({
+          stage: "render",
+          current: processed,
+          total: reportsData.length,
+          filename: currentFilename,
+          message: `Generando PDFs (${processed}/${reportsData.length})...`,
+        });
       }
     }
 
@@ -969,9 +999,19 @@ ipcMain.handle("generate-reports", async (_event, { sessionId, config }) => {
     } catch (_) { }
 
     console.log("[REPORTS] Successfully generated:", generatedReports.length, "reports");
+    sendProgress({
+      stage: "done",
+      current: reportsData.length,
+      total: reportsData.length,
+      generated: generatedReports.length,
+      message: `Listo: ${generatedReports.length} reporte${generatedReports.length !== 1 ? "s" : ""} generado${generatedReports.length !== 1 ? "s" : ""}.`,
+    });
     return { ok: true, reports: generatedReports };
   } catch (err) {
     console.error("[REPORTS] Error generating reports:", err);
+    try {
+      _event.sender.send("reports:progress", { requestId, stage: "error", message: err.message });
+    } catch (_) { }
     return { ok: false, error: err.message };
   }
 });

@@ -147,6 +147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const selectionCount = document.getElementById('selection-count');
     const bulkActionsBar = document.getElementById('bulk-actions-bar');
     const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    const btnBulkDownloadZip = document.getElementById('btn-bulk-download-zip');
     const bulkSaveForm = document.getElementById('bulk-save-form');
     const bulkComment = document.getElementById('bulk-comment');
 
@@ -661,7 +662,54 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Show progress
         if (progressSection) progressSection.classList.remove('hidden');
+        // Reset any previous error styling
+        if (progressFill) progressFill.style.background = '';
         setProgress(0, 'Preparando datos...');
+
+        // Dynamic progress updates from main process
+        const requestId = (window.crypto?.randomUUID)
+            ? window.crypto.randomUUID()
+            : `reports_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        let lastPercent = 0;
+        const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+        const percentFromCounts = (current, total) => {
+            const t = Number(total);
+            const c = Number(current);
+            if (!t || t <= 0) return 10;
+            return clamp(10 + Math.round((c / t) * 80), 10, 90);
+        };
+
+        const unsubscribeProgress = window.cerper?.onReportsProgress
+            ? window.cerper.onReportsProgress((data) => {
+                if (!data || data.requestId !== requestId) return;
+                if (!isGenerating) return;
+
+                const stage = String(data.stage || '');
+                const message = String(data.message || '');
+
+                if (stage === 'start') {
+                    lastPercent = Math.max(lastPercent, 5);
+                    setProgress(lastPercent, message || 'Iniciando...');
+                } else if (stage === 'plan') {
+                    lastPercent = Math.max(lastPercent, 10);
+                    setProgress(lastPercent, message || 'Preparando reportes...');
+                } else if (stage === 'render') {
+                    const next = percentFromCounts(data.current, data.total);
+                    if (next >= lastPercent) {
+                        lastPercent = next;
+                        const fileHint = data.filename ? ` • ${data.filename}` : '';
+                        setProgress(lastPercent, (message || 'Generando PDFs...') + fileHint);
+                    }
+                } else if (stage === 'done') {
+                    lastPercent = 100;
+                    setProgress(100, message || 'Listo.');
+                } else if (stage === 'error') {
+                    lastPercent = 0;
+                    setProgress(0, `Error: ${message || 'Error desconocido'}`);
+                    if (progressFill) progressFill.style.background = 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)';
+                }
+            })
+            : null;
 
         // Format execution date to DD/MM/YYYY for the PDF
         const dateObj = new Date(executionDate + 'T12:00:00');
@@ -682,15 +730,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         try {
-            setProgress(10, 'Generando PDFs localmente...');
+            lastPercent = Math.max(lastPercent, 10);
+            setProgress(lastPercent, 'Generando PDFs localmente...');
 
-            const result = await window.cerper.generateReports(sessionId, config);
+            const result = await window.cerper.generateReports(sessionId, config, requestId);
 
             if (!result.ok) {
                 throw new Error(result.error || result.message || 'Error desconocido');
             }
 
-            setProgress(90, 'Preparando vista previa...');
+            if (lastPercent < 95) {
+                lastPercent = 95;
+                setProgress(lastPercent, 'Preparando vista previa...');
+            }
 
             const reportCount = result.reports?.length || 0;
 
@@ -702,6 +754,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }));
             localReports = [...localReports, ...reportsWithTimestamp];
 
+            lastPercent = 100;
             setProgress(100, `¡Listo! ${reportCount} reporte${reportCount !== 1 ? 's' : ''} generado${reportCount !== 1 ? 's' : ''}.`);
 
             // Switch to inbox after a moment
@@ -730,6 +783,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (window.lucide) lucide.createIcons();
                 document.body.classList.remove('generating');
             }, 2000);
+        } finally {
+            try { if (unsubscribeProgress) unsubscribeProgress(); } catch (_) { }
         }
     });
 
@@ -1205,16 +1260,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // Helper: download base64 as file
-    function downloadBase64Pdf(base64, filename) {
+    // Helpers: binary + downloads
+    function base64ToUint8Array(base64) {
         const byteCharacters = atob(base64);
-        const byteNumbers = new Array(byteCharacters.length);
+        const bytes = new Uint8Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
+            bytes[i] = byteCharacters.charCodeAt(i);
         }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        return bytes;
+    }
 
+    function downloadBlob(blob, filename) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -1222,7 +1278,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        // Revoke after a tick to avoid canceling large downloads
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function downloadBase64Pdf(base64, filename) {
+        const blob = new Blob([base64ToUint8Array(base64)], { type: 'application/pdf' });
+        downloadBlob(blob, filename);
+    }
+
+    // Helpers: ZIP filenames
+    function sanitizeZipFilename(filename) {
+        const raw = String(filename || '').trim() || 'reporte.pdf';
+        // Avoid zip-slip and invalid filename chars (Windows + common restrictions)
+        const cleaned = raw
+            .replace(/[\\/:*?"<>|\x00-\x1F]/g, '_')
+            .replace(/\s+/g, ' ')
+            .trim();
+        // Prevent relative/absolute paths inside the zip
+        const safe = cleaned.replace(/^\.+/g, '').replace(/\.\.+/g, '_');
+        return safe || 'reporte.pdf';
+    }
+
+    function ensurePdfExtension(name) {
+        const v = String(name || '').trim();
+        if (!v) return 'reporte.pdf';
+        return v.toLowerCase().endsWith('.pdf') ? v : `${v}.pdf`;
+    }
+
+    function uniqueZipName(name, used) {
+        const base = String(name || 'reporte.pdf');
+        if (!used.has(base)) {
+            used.add(base);
+            return base;
+        }
+        const dot = base.lastIndexOf('.');
+        const stem = dot > 0 ? base.slice(0, dot) : base;
+        const ext = dot > 0 ? base.slice(dot) : '';
+        let i = 2;
+        while (used.has(`${stem} (${i})${ext}`)) i++;
+        const next = `${stem} (${i})${ext}`;
+        used.add(next);
+        return next;
     }
 
     // === FILTERS ===
@@ -1287,12 +1384,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             bulkActionsBar.classList.toggle('hidden', count === 0);
         }
 
-        // Update select all checkbox
+        // Update select all checkbox (only visible items)
         const { local, saved } = getFilteredReports();
-        const totalVisible = local.length + saved.length;
+        const visibleKeys = new Set();
+        local.forEach((report) => {
+            const originalIndex = localReports.indexOf(report);
+            if (originalIndex !== -1) visibleKeys.add(`local_${originalIndex}`);
+        });
+        saved.forEach((report) => {
+            if (report?.id != null) visibleKeys.add(`saved_${report.id}`);
+        });
+
+        let visibleSelectedCount = 0;
+        visibleKeys.forEach((key) => {
+            if (selectedItems.has(key)) visibleSelectedCount++;
+        });
+
+        const totalVisible = visibleKeys.size;
         if (selectAllCheckbox) {
-            selectAllCheckbox.checked = count > 0 && count === totalVisible;
-            selectAllCheckbox.indeterminate = count > 0 && count < totalVisible;
+            selectAllCheckbox.checked = totalVisible > 0 && visibleSelectedCount === totalVisible;
+            selectAllCheckbox.indeterminate = visibleSelectedCount > 0 && visibleSelectedCount < totalVisible;
         }
 
         // Hide bulk save form when selection changes
@@ -1326,7 +1437,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (selectAllCheckbox.checked) {
             // Select all visible
-            local.forEach((r, i) => selectedItems.add(`local_${i}`));
+            local.forEach((report) => {
+                const originalIndex = localReports.indexOf(report);
+                if (originalIndex !== -1) selectedItems.add(`local_${originalIndex}`);
+            });
             saved.forEach(r => selectedItems.add(`saved_${r.id}`));
         } else {
             // Deselect all
@@ -1377,6 +1491,120 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadSavedReports();
         renderInboxList();
         updateSelectionUI();
+    };
+
+    function tipoInformeSlug(tipo) {
+        switch (tipo) {
+            case 'unified': return 'unificado';
+            case 'by_analito': return 'por_analito';
+            case 'by_nivel': return 'por_nivel';
+            case 'by_analito_nivel': return 'analito_nivel';
+            default: return 'reporte';
+        }
+    }
+
+    function buildReportFilename(report, fallbackId) {
+        const plan = report?.plan_json || {};
+        const parts = ['reporte', tipoInformeSlug(report?.tipo_informe)];
+        if (plan.analito) parts.push(String(plan.analito));
+        if (plan.nivel != null) parts.push(`nivel_${plan.nivel}`);
+        if (fallbackId) parts.push(String(fallbackId));
+        return ensurePdfExtension(parts.join('_'));
+    }
+
+    window.bulkDownloadZip = async function () {
+        if (selectedItems.size === 0) {
+            await showCustomAlert('Selecciona al menos un reporte para descargar.', 'Selección requerida', 'warning');
+            return;
+        }
+
+        if (!window.JSZip) {
+            await showCustomAlert(
+                'No se pudo cargar el generador de ZIP (JSZip). Verifica tu conexión a internet y recarga la página.',
+                'Error',
+                'error'
+            );
+            return;
+        }
+
+        const btn = btnBulkDownloadZip || document.getElementById('btn-bulk-download-zip');
+        const originalHtml = btn?.innerHTML;
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Creando ZIP...';
+            if (window.lucide) lucide.createIcons();
+        }
+
+        try {
+            const zip = new window.JSZip();
+            const usedNames = new Set();
+            let added = 0;
+
+            const localIndices = [...selectedItems]
+                .filter(k => k.startsWith('local_'))
+                .map(k => parseInt(k.replace('local_', ''), 10))
+                .filter(idx => !isNaN(idx) && idx >= 0 && idx < localReports.length);
+
+            const savedIds = [...selectedItems]
+                .filter(k => k.startsWith('saved_'))
+                .map(k => parseInt(k.replace('saved_', ''), 10))
+                .filter(id => !isNaN(id) && id > 0);
+
+            for (const idx of localIndices) {
+                const report = localReports[idx];
+                if (!report?.pdf_base64) continue;
+
+                const desiredName = report.filename || buildReportFilename(report, `local_${idx}`);
+                const name = uniqueZipName(sanitizeZipFilename(ensurePdfExtension(desiredName)), usedNames);
+                zip.file(name, base64ToUint8Array(report.pdf_base64));
+                added++;
+            }
+
+            for (const id of savedIds) {
+                const meta = savedReports.find(r => Number(r.id) === Number(id));
+                const desiredName = meta?.filename || buildReportFilename(meta, `id_${id}`);
+
+                const res = await window.cerper.downloadReportPdf(id);
+                if (!res?.ok || !res.pdf_base64) {
+                    throw new Error(res?.error || `No se pudo descargar el reporte ${id}`);
+                }
+
+                const name = uniqueZipName(sanitizeZipFilename(ensurePdfExtension(desiredName)), usedNames);
+                zip.file(name, base64ToUint8Array(res.pdf_base64));
+                added++;
+            }
+
+            if (added === 0) {
+                await showCustomAlert('No se encontraron PDFs válidos en la selección.', 'Sin archivos', 'info');
+                return;
+            }
+
+            const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const zipName = `reportes_${sessionId || 'sesion'}_${stamp}.zip`;
+
+            const zipBlob = await zip.generateAsync(
+                { type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } },
+                (metadata) => {
+                    if (btn && metadata?.percent != null) {
+                        const p = Math.max(0, Math.min(100, Math.round(metadata.percent)));
+                        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> ZIP ${p}%`;
+                        if (window.lucide) lucide.createIcons();
+                    }
+                }
+            );
+
+            downloadBlob(zipBlob, zipName);
+            if (window.notify) notify(`ZIP descargado (${added} PDF${added !== 1 ? 's' : ''}).`, 'success');
+        } catch (err) {
+            console.error('[PDFConfig] Bulk ZIP download error:', err);
+            await showCustomAlert('No se pudo crear el ZIP: ' + err.message, 'Error', 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml || '<i data-lucide="archive" class="w-4 h-4"></i> Descargar ZIP';
+                if (window.lucide) lucide.createIcons();
+            }
+        }
     };
 
     // Mark selected items as important/urgent (set estado to 'a_revisar')

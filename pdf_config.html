@@ -12,6 +12,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkGray: {
+                            50: 'hsl(25, 20%, 10%)',
+                            100: 'hsl(25, 15%, 15%)',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
         body {
             font-family: 'Inter', sans-serif
@@ -496,15 +510,7 @@
     </style>
 </head>
 
-<body
-    class="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 text-white relative overflow-x-hidden">
-    <!-- Video Background -->
-    <div class="fixed inset-0 -z-20">
-        <div class="w-full h-full">
-            <img src="assets/images/pdf_config/background.jpg" alt="Background" class="w-full h-full object-cover">
-        </div>
-    </div>
-
+<body class="min-h-screen bg-gradient-to-r from-darkGray-100 to-darkGray-50 text-white relative overflow-x-hidden">
     <!-- Main Application Window -->
     <div class="flex-1 flex px-4 sm:px-6 pb-16 pt-8 items-start justify-center relative">
         <div id="main-panel"
@@ -817,6 +823,12 @@
                                     <i data-lucide="alert-circle" class="w-4 h-4"></i>
                                     Marcar como importante
                                 </button>
+                                <button id="btn-bulk-download-zip" onclick="bulkDownloadZip()"
+                                    class="px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 transition-all"
+                                    style="background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); color: #a5b4fc;">
+                                    <i data-lucide="archive" class="w-4 h-4"></i>
+                                    Descargar ZIP
+                                </button>
                                 <button id="btn-bulk-delete" onclick="bulkDeleteSelected()"
                                     class="px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 transition-all"
                                     style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171;">
@@ -916,23 +928,24 @@
     <script src="js/security/icon_safety.js"></script>
     <script src="js/liquid_glass.js"></script>
     <script>
-        // Initialize custom dialogs immediately
-        (function () {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initCustomDialogs);
-            } else {
-                initCustomDialogs();
-            }
-
-            function initCustomDialogs() {
-                const backdrop = document.getElementById('custom-dialog-backdrop');
-                if (backdrop) {
-                    window.customDialogReady = true;
+            // Initialize custom dialogs immediately
+            (function () {
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initCustomDialogs);
+                } else {
+                    initCustomDialogs();
                 }
-            }
-        })();
+
+                function initCustomDialogs() {
+                    const backdrop = document.getElementById('custom-dialog-backdrop');
+                    if (backdrop) {
+                        window.customDialogReady = true;
+                    }
+                }
+            })();
     </script>
     <script src="js/notify.js"></script>
+    <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="js/pdf_config.js"></script>
     <script>
         if (window.lucide) lucide.createIcons();
