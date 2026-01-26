@@ -27,7 +27,15 @@ describe('modules/_common/modules_manifest.json sha256_module', () => {
             const modulePath = path.join(repoRoot, 'modules', ...moduleAsset.split('/'));
             const actual = sha256Hex(fs.readFileSync(modulePath)).toLowerCase();
             expect(actual).toBe(String(entry.sha256_module).toLowerCase());
+
+            const graphAsset = entry.script_grafico || entry.graph_asset;
+            if (graphAsset) {
+                const graphPath = path.join(repoRoot, 'modules', ...String(graphAsset).split('/'));
+                const graphActual = sha256Hex(fs.readFileSync(graphPath)).toLowerCase();
+                const expectedGraphHash = String(entry.sha256_script_grafico || entry.sha256_graph || '').toLowerCase();
+                expect(expectedGraphHash).toBeTruthy();
+                expect(graphActual).toBe(expectedGraphHash);
+            }
         }
     });
 });
-

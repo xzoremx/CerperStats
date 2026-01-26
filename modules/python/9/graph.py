@@ -54,10 +54,6 @@ metodo = _first_non_null(df_plot["metodo_tendencia"]) if "metodo_tendencia" in d
 metodo = str(metodo) if metodo else "tendencia_central"
 y_label = "Media" if metodo.lower() == "media" else "Mediana"
 
-normalidad_global = _first_non_null(df_plot["normalidad_global"]) if "normalidad_global" in df_plot.columns else None
-p_value_norm = _first_non_null(df_plot["p_value_normalidad_global"]) if "p_value_normalidad_global" in df_plot.columns else None
-prueba_norm = _first_non_null(df_plot["prueba_normalidad_global"]) if "prueba_normalidad_global" in df_plot.columns else None
-
 # Extraer valores (drop rows sin datos de tendencia)
 df_plot = df_plot.sort_values("parametro").reset_index(drop=True)
 parametros = df_plot["parametro"].astype(str).tolist()
@@ -111,34 +107,6 @@ ax.set_xticklabels(parametros, rotation=35, ha="right")
 ax.set_ylabel(y_label)
 ax.set_title(f"Tendencia central ({metodo}) por parámetro")
 ax.grid(True, linestyle="--", alpha=0.25, zorder=1)
-
-# Caja con info de normalidad global
-normalidad_text = ""
-if normalidad_global == "normal_dist":
-    normalidad_text = "Normalidad global: Normal"
-elif normalidad_global == "no_normal_dist":
-    normalidad_text = "Normalidad global: NO normal"
-else:
-    normalidad_text = "Normalidad global: N/A"
-
-if prueba_norm:
-    normalidad_text += f"\nPrueba: {prueba_norm}"
-if p_value_norm is not None:
-    try:
-        normalidad_text += f"\np-value: {float(p_value_norm):.4f}"
-    except Exception:
-        pass
-
-ax.text(
-    0.99,
-    0.95,
-    normalidad_text,
-    transform=ax.transAxes,
-    fontsize=9,
-    va="top",
-    ha="right",
-    bbox=dict(boxstyle="round,pad=0.4", fc="white", ec=(0, 0, 0, 0.15)),
-)
 
 fig.tight_layout()
 

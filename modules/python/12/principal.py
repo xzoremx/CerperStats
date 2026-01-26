@@ -14,13 +14,12 @@ Reglas:
 - Evaluar normalidad global con Shapiro-Wilk (3 ≤ n ≤ 7) o Anderson-Darling (n > 7)
 - Si es normal: usar media global y media por parámetro
 - Si NO es normal: usar mediana global y mediana por parámetro
-- Verificar que cada parámetro esté dentro del rango porcentual de la tendencia central global
+- Verificar que cada parámetro esté dentro del rango definido por el usuario
 
 Campos de salida en df_resultado:
 - analito (si aplica)
 - parametro, n, metodo_tendencia, tendencia_central
-- tc_global, porcentaje_min, porcentaje_max, rango_min, rango_max
-- estado, normalidad_global, p_value_normalidad_global, prueba_normalidad_global
+- rango_min, rango_max, estado
 """
 
 import numpy as np
@@ -117,24 +116,13 @@ es_normal, p_value_normalidad, prueba_normalidad = _evaluar_normalidad_global(al
 
 usar_media = es_normal is True
 metodo = "media" if usar_media else "mediana"
-normalidad_global = (
-    "normal_dist"
-    if es_normal is True
-    else ("no_normal_dist" if es_normal is False else None)
-)
 
 # --------------------------------------------------------
-# 2.1. Calcular tendencia central global y rango de aceptación
+# 2.1. Rango de aceptación (directo desde user_params)
 # --------------------------------------------------------
-if all_values.size > 0:
-    tc_global = float(np.mean(all_values)) if usar_media else float(np.median(all_values))
-else:
-    tc_global = None
-
-# Calcular rango absoluto basado en porcentaje de la tendencia central global
-if tc_global is not None and range_err is None:
-    rango_min = tc_global * (pct_min / 100.0)
-    rango_max = tc_global * (pct_max / 100.0)
+if range_err is None:
+    rango_min = pct_min
+    rango_max = pct_max
 else:
     rango_min = None
     rango_max = None
@@ -154,15 +142,9 @@ for col, serie in col_series:
             "n": "0",
             "metodo_tendencia": metodo,
             "tendencia_central": np.nan,
-            "tc_global": None if tc_global is None else round(tc_global, 4),
-            "porcentaje_min": pct_min,
-            "porcentaje_max": pct_max,
-            "rango_min": None if rango_min is None else round(rango_min, 4),
-            "rango_max": None if rango_max is None else round(rango_max, 4),
+            "rango_min": rango_min,
+            "rango_max": rango_max,
             "estado": "sin_datos",
-            "normalidad_global": normalidad_global,
-            "p_value_normalidad_global": None if p_value_normalidad is None else round(float(p_value_normalidad), 4),
-            "prueba_normalidad_global": prueba_normalidad,
         })
         sin_datos.append(col)
         continue
@@ -183,15 +165,9 @@ for col, serie in col_series:
         "n": str(n),
         "metodo_tendencia": metodo,
         "tendencia_central": round(valor_tc, 4),
-        "tc_global": None if tc_global is None else round(tc_global, 4),
-        "porcentaje_min": pct_min,
-        "porcentaje_max": pct_max,
-        "rango_min": None if rango_min is None else round(rango_min, 4),
-        "rango_max": None if rango_max is None else round(rango_max, 4),
+        "rango_min": rango_min,
+        "rango_max": rango_max,
         "estado": estado,
-        "normalidad_global": normalidad_global,
-        "p_value_normalidad_global": None if p_value_normalidad is None else round(float(p_value_normalidad), 4),
-        "prueba_normalidad_global": prueba_normalidad,
     })
 
 df_resultado = pd.DataFrame(rows).sort_values("parametro").reset_index(drop=True)
@@ -217,27 +193,18 @@ elif range_err == "user_params_invalid":
     conclusion = "Configuración inválida: user_params no es un objeto."
     conclusion_status = "neutral"
 else:
-    normalidad_msg = "no evaluable" if es_normal is None else ("normal" if es_normal else "NO normal")
-    prueba_msg = prueba_normalidad or "N/A"
-    p_msg = "N/A" if p_value_normalidad is None else f"{p_value_normalidad:.4f}"
-    tc_global_msg = f"{tc_global:.4f}" if tc_global is not None else "N/A"
-
     if len(fuera_rango) == 0:
         conclusion = (
-            f"Todos los parámetros tienen {metodo} dentro del rango de variación "
-            f"[{pct_min:g}%-{pct_max:g}%] de la {metodo} global ({tc_global_msg}), "
-            f"equivalente a [{rango_min:.4f}, {rango_max:.4f}]. "
-            f"Normalidad global: {normalidad_msg} ({prueba_msg}, p={p_msg})."
+            f"Todos los parámetros tienen {metodo} dentro del rango "
+            f"[{rango_min:g}, {rango_max:g}]."
         )
         if sin_datos:
             conclusion += f" Sin datos en: {', '.join(sin_datos)}."
         conclusion_status = "success"
     else:
         conclusion = (
-            f"Los siguientes parámetros tienen {metodo} FUERA del rango de variación "
-            f"[{pct_min:g}%-{pct_max:g}%] de la {metodo} global ({tc_global_msg}), "
-            f"equivalente a [{rango_min:.4f}, {rango_max:.4f}]: {', '.join(fuera_rango)}. "
-            f"Normalidad global: {normalidad_msg} ({prueba_msg}, p={p_msg})."
+            f"Los siguientes parámetros tienen {metodo} FUERA del rango "
+            f"[{rango_min:g}, {rango_max:g}]: {', '.join(fuera_rango)}."
         )
         if sin_datos:
             conclusion += f" Sin datos en: {', '.join(sin_datos)}."

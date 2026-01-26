@@ -12,15 +12,9 @@ UPDATE tests_catalog SET
     "n": "N",
     "metodo_tendencia": "Método",
     "tendencia_central": "Tendencia Central",
-    "tc_global": "TC Global",
-    "porcentaje_min": "% Mín",
-    "porcentaje_max": "% Máx",
     "rango_min": "Rango Mín",
     "rango_max": "Rango Máx",
-    "estado": "Estado",
-    "normalidad_global": "Normalidad",
-    "p_value_normalidad_global": "P-Value",
-    "prueba_normalidad_global": "Prueba"
+    "estado": "Estado"
   }'::jsonb,
   value_mappings = '{
     "dentro_rango": {
@@ -42,16 +36,6 @@ UPDATE tests_catalog SET
       "label": "Rango no configurado",
       "class": "df-value-warning",
       "style": {"text_color": "#d97706", "bg_from": "rgba(245,158,11,0.12)", "bg_to": "rgba(217,119,6,0.08)"}
-    },
-    "normal_dist": {
-      "label": "Normal",
-      "class": "df-value-success",
-      "style": {"text_color": "#059669", "bg_from": "rgba(16,185,129,0.12)", "bg_to": "rgba(5,150,105,0.08)"}
-    },
-    "no_normal_dist": {
-      "label": "NO Normal",
-      "class": "df-value-danger",
-      "style": {"text_color": "#dc2626", "bg_from": "rgba(239,68,68,0.12)", "bg_to": "rgba(220,38,38,0.08)"}
     },
     "media": {
       "label": "Media",
@@ -75,15 +59,9 @@ UPDATE tests_catalog SET
     "n": "N",
     "metodo_veracidad": "Método",
     "veracidad": "Veracidad",
-    "tc_global": "TC Global",
-    "porcentaje_min": "% Mín",
-    "porcentaje_max": "% Máx",
     "rango_min": "Rango Mín",
     "rango_max": "Rango Máx",
-    "estado": "Estado",
-    "normalidad_global": "Normalidad",
-    "p_value_normalidad_global": "P-Value",
-    "prueba_normalidad_global": "Prueba"
+    "estado": "Estado"
   }'::jsonb,
   value_mappings = '{
     "dentro_rango": {
@@ -106,16 +84,6 @@ UPDATE tests_catalog SET
       "class": "df-value-warning",
       "style": {"text_color": "#d97706", "bg_from": "rgba(245,158,11,0.12)", "bg_to": "rgba(217,119,6,0.08)"}
     },
-    "normal_dist": {
-      "label": "Normal",
-      "class": "df-value-success",
-      "style": {"text_color": "#059669", "bg_from": "rgba(16,185,129,0.12)", "bg_to": "rgba(5,150,105,0.08)"}
-    },
-    "no_normal_dist": {
-      "label": "NO Normal",
-      "class": "df-value-danger",
-      "style": {"text_color": "#dc2626", "bg_from": "rgba(239,68,68,0.12)", "bg_to": "rgba(220,38,38,0.08)"}
-    },
     "media": {
       "label": "Media",
       "class": "df-value-info",
@@ -134,15 +102,9 @@ WHERE id = 10;
 -- -----------------------------------------------------
 UPDATE tests_catalog SET
   column_labels = '{
-    "parametro": "Parámetro",
     "n": "N",
-    "media": "Media",
-    "desviacion": "Desv. Est.",
-    "rsd_pct": "RSD %",
     "rsd_teorico": "RSD Teórico",
     "estado": "Estado",
-    "media_global": "Media Global",
-    "desviacion_global": "Desv. Global",
     "rsd_experimental": "RSD Exp.",
     "rsd_r": "RSDr",
     "rsd_R": "RSDR"

@@ -19,7 +19,7 @@ La estructura de df_ingreso es la misma que para monoanalito:
 Variable adicional disponible: `total_analitos` (cantidad total de analitos en la sesión)
 
 Entrada:
-- df_resultado: contiene veracidad, tc_global, rango_min, rango_max, porcentaje_min, porcentaje_max, estado
+- df_resultado: contiene veracidad, rango_min, rango_max, estado
 
 Salida:
 - grafico_data (PNG base64)
@@ -51,16 +51,9 @@ def _first_non_null(series):
 
 rango_min = _first_non_null(df_plot["rango_min"]) if "rango_min" in df_plot.columns else None
 rango_max = _first_non_null(df_plot["rango_max"]) if "rango_max" in df_plot.columns else None
-tc_global = _first_non_null(df_plot["tc_global"]) if "tc_global" in df_plot.columns else None
-pct_min = _first_non_null(df_plot["porcentaje_min"]) if "porcentaje_min" in df_plot.columns else None
-pct_max = _first_non_null(df_plot["porcentaje_max"]) if "porcentaje_max" in df_plot.columns else None
 metodo = _first_non_null(df_plot["metodo_veracidad"]) if "metodo_veracidad" in df_plot.columns else None
 metodo = str(metodo) if metodo else "tendencia_central"
 y_label = "Media" if metodo.lower() == "media" else "Mediana"
-
-normalidad_global = _first_non_null(df_plot["normalidad_global"]) if "normalidad_global" in df_plot.columns else None
-p_value_norm = _first_non_null(df_plot["p_value_normalidad_global"]) if "p_value_normalidad_global" in df_plot.columns else None
-prueba_norm = _first_non_null(df_plot["prueba_normalidad_global"]) if "prueba_normalidad_global" in df_plot.columns else None
 
 df_plot = df_plot.sort_values("parametro").reset_index(drop=True)
 labels = df_plot["parametro"].astype(str).tolist()
@@ -94,15 +87,6 @@ if rango_min is not None and rango_max is not None:
     except Exception:
         pass
 
-# Línea de tendencia central global
-if tc_global is not None:
-    try:
-        tcg = float(tc_global)
-        if np.isfinite(tcg):
-            ax.axhline(tcg, color="#8b5cf6", linestyle=":", linewidth=1.2, alpha=0.9, zorder=3)
-    except Exception:
-        pass
-
 ax.set_xticks(x)
 ax.set_xticklabels(labels, rotation=35, ha="right")
 ax.set_ylabel(f"Veracidad ({y_label})")
@@ -117,29 +101,9 @@ else:
 ax.grid(True, linestyle="--", alpha=0.25, axis="y", zorder=1)
 
 info_lines = [f"Método: {metodo}"]
-if tc_global is not None:
+if rango_min is not None and rango_max is not None:
     try:
-        info_lines.append(f"{y_label} global: {float(tc_global):.4f}")
-    except Exception:
-        pass
-if pct_min is not None and pct_max is not None and rango_min is not None and rango_max is not None:
-    try:
-        info_lines.append(f"Rango [{float(pct_min):g}%-{float(pct_max):g}%]:")
-        info_lines.append(f"  [{float(rango_min):.4f}, {float(rango_max):.4f}]")
-    except Exception:
-        pass
-
-# Info de normalidad
-if normalidad_global == "normal_dist":
-    info_lines.append("Normalidad: Normal")
-elif normalidad_global == "no_normal_dist":
-    info_lines.append("Normalidad: NO normal")
-
-if prueba_norm:
-    info_lines.append(f"Prueba: {prueba_norm}")
-if p_value_norm is not None:
-    try:
-        info_lines.append(f"p-value: {float(p_value_norm):.4f}")
+        info_lines.append(f"Rango: [{float(rango_min):g}, {float(rango_max):g}]")
     except Exception:
         pass
 

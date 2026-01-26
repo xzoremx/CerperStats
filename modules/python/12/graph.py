@@ -19,7 +19,7 @@ Variable adicional disponible: `total_analitos` (cantidad total de analitos en l
 
 Entrada:
 - df_ingreso
-- df_resultado: contiene tendencia_central, metodo_tendencia, estado, rango_min, rango_max, tc_global, porcentaje_min, porcentaje_max
+- df_resultado: contiene tendencia_central, metodo_tendencia, estado, rango_min, rango_max
 
 Salida:
 - grafico_data (PNG base64)
@@ -54,17 +54,10 @@ def _first_non_null(series):
 
 rango_min = _first_non_null(df_plot["rango_min"]) if "rango_min" in df_plot.columns else None
 rango_max = _first_non_null(df_plot["rango_max"]) if "rango_max" in df_plot.columns else None
-tc_global = _first_non_null(df_plot["tc_global"]) if "tc_global" in df_plot.columns else None
-pct_min = _first_non_null(df_plot["porcentaje_min"]) if "porcentaje_min" in df_plot.columns else None
-pct_max = _first_non_null(df_plot["porcentaje_max"]) if "porcentaje_max" in df_plot.columns else None
 
 metodo = _first_non_null(df_plot["metodo_tendencia"]) if "metodo_tendencia" in df_plot.columns else None
 metodo = str(metodo) if metodo else "tendencia_central"
 y_label = "Media" if metodo.lower() == "media" else "Mediana"
-
-normalidad_global = _first_non_null(df_plot["normalidad_global"]) if "normalidad_global" in df_plot.columns else None
-p_value_norm = _first_non_null(df_plot["p_value_normalidad_global"]) if "p_value_normalidad_global" in df_plot.columns else None
-prueba_norm = _first_non_null(df_plot["prueba_normalidad_global"]) if "prueba_normalidad_global" in df_plot.columns else None
 
 # Extraer valores (drop rows sin datos de tendencia)
 df_plot = df_plot.sort_values("parametro").reset_index(drop=True)
@@ -102,11 +95,7 @@ if rango_min is not None and rango_max is not None:
             ax.axhline(rmin, color="#10b981", linestyle="--", linewidth=1, alpha=0.9)
             ax.axhline(rmax, color="#10b981", linestyle="--", linewidth=1, alpha=0.9)
 
-            # Etiqueta con porcentaje si está disponible
-            if pct_min is not None and pct_max is not None:
-                label_text = f"Rango [{pct_min:g}%-{pct_max:g}%]: [{rmin:.4f}, {rmax:.4f}]"
-            else:
-                label_text = f"Rango aceptación: [{rmin:g}, {rmax:g}]"
+            label_text = f"Rango aceptación: [{rmin:g}, {rmax:g}]"
             ax.text(
                 0.01,
                 0.02,
@@ -117,15 +106,6 @@ if rango_min is not None and rango_max is not None:
                 ha="left",
                 bbox=dict(boxstyle="round,pad=0.3", fc="white", ec=(0, 0, 0, 0.15)),
             )
-    except Exception:
-        pass
-
-# Línea de tendencia central global
-if tc_global is not None:
-    try:
-        tcg = float(tc_global)
-        if np.isfinite(tcg):
-            ax.axhline(tcg, color="#8b5cf6", linestyle=":", linewidth=1.2, alpha=0.9, zorder=1)
     except Exception:
         pass
 
@@ -141,39 +121,6 @@ else:
     ax.set_title(f"Tendencia central ({metodo}) por parámetro")
 
 ax.grid(True, linestyle="--", alpha=0.25, zorder=1)
-
-# Caja con info de normalidad global
-normalidad_text = ""
-if normalidad_global == "normal_dist":
-    normalidad_text = "Normalidad global: Normal"
-elif normalidad_global == "no_normal_dist":
-    normalidad_text = "Normalidad global: NO normal"
-else:
-    normalidad_text = "Normalidad global: N/A"
-
-if prueba_norm:
-    normalidad_text += f"\nPrueba: {prueba_norm}"
-if p_value_norm is not None:
-    try:
-        normalidad_text += f"\np-value: {float(p_value_norm):.4f}"
-    except Exception:
-        pass
-if tc_global is not None:
-    try:
-        normalidad_text += f"\n{y_label} global: {float(tc_global):.4f}"
-    except Exception:
-        pass
-
-ax.text(
-    0.99,
-    0.95,
-    normalidad_text,
-    transform=ax.transAxes,
-    fontsize=9,
-    va="top",
-    ha="right",
-    bbox=dict(boxstyle="round,pad=0.4", fc="white", ec=(0, 0, 0, 0.15)),
-)
 
 fig.tight_layout()
 

@@ -59,7 +59,6 @@ rsd_teorico, rsd_err = _extract_rsd_teorico(user_params)
 # --------------------------------------------------------
 # 2. Calcular RSD por analista (columna)
 # --------------------------------------------------------
-rows = []
 fallan = []
 sin_datos = []
 no_evaluable = []
@@ -72,42 +71,20 @@ for col in df_ingreso.columns:
     n = int(len(serie))
     if n == 0:
         sin_datos.append(col)
-        rows.append({
-            "parametro": col,
-            "n": "0",
-            "media": np.nan,
-            "desviacion": np.nan,
-            "rsd_pct": np.nan,
-            "rsd_teorico": rsd_teorico,
-            "estado": "sin_datos",
-        })
         continue
 
     mean_val = float(serie.mean())
     std_val = float(serie.std(ddof=1)) if n > 1 else np.nan
     rsd_pct = _safe_rsd_pct(mean_val, std_val) if n > 1 else None
 
-    estado = None
     if rsd_err is not None:
-        estado = "config_no_valida"
+        pass
     elif rsd_pct is None:
-        estado = "no_evaluable"
         no_evaluable.append(col)
     elif rsd_pct <= rsd_teorico:
-        estado = "cumple"
+        pass
     else:
-        estado = "no_cumple"
         fallan.append(col)
-
-    rows.append({
-        "parametro": col,
-        "n": str(n),
-        "media": round(mean_val, 6),
-        "desviacion": None if not np.isfinite(std_val) else round(std_val, 6),
-        "rsd_pct": None if rsd_pct is None else round(float(rsd_pct), 4),
-        "rsd_teorico": rsd_teorico,
-        "estado": estado,
-    })
 
     col_stats.append((n, mean_val, std_val))
     all_values.extend(serie.to_numpy(dtype=float).tolist())
@@ -165,14 +142,25 @@ if all_values.size >= 2:
         SR = float(np.sqrt(Sr_squared + SL_squared))
         rsd_R = _safe_rsd_pct(media_global, SR)
 
-for row in rows:
-    row["media_global"] = None if media_global is None else round(media_global, 6)
-    row["desviacion_global"] = None if desv_global is None else round(desv_global, 6)
-    row["rsd_experimental"] = None if rsd_experimental is None else round(float(rsd_experimental), 4)
-    row["rsd_r"] = None if rsd_r is None else round(float(rsd_r), 4)
-    row["rsd_R"] = None if rsd_R is None else round(float(rsd_R), 4)
+if all_values.size == 0:
+    estado_global = "sin_datos"
+elif rsd_err is not None:
+    estado_global = "config_no_valida"
+elif len(fallan) > 0:
+    estado_global = "no_cumple"
+elif len(no_evaluable) > 0:
+    estado_global = "no_evaluable"
+else:
+    estado_global = "cumple"
 
-df_resultado = pd.DataFrame(rows).sort_values("parametro").reset_index(drop=True)
+df_resultado = pd.DataFrame([{
+    "n": str(int(all_values.size)),
+    "rsd_teorico": rsd_teorico,
+    "estado": estado_global,
+    "rsd_experimental": None if rsd_experimental is None else round(float(rsd_experimental), 4),
+    "rsd_r": None if rsd_r is None else round(float(rsd_r), 4),
+    "rsd_R": None if rsd_R is None else round(float(rsd_R), 4),
+}])
 
 # --------------------------------------------------------
 # 4. Conclusión
