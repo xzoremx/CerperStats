@@ -223,7 +223,6 @@ else:
         )
         if sin_datos:
             conclusion += f" Sin datos en: {', '.join(sin_datos)}."
-        conclusion_status = "success"
     else:
         msg = []
         if fallan:
@@ -236,4 +235,12 @@ else:
         )
         if sin_datos:
             conclusion += f" Sin datos en: {', '.join(sin_datos)}."
+
+    # conclusion_status basado solo en RSDs globales
+    _global_rsds = [v for v in [rsd_experimental, rsd_r, rsd_R] if v is not None]
+    if len(_global_rsds) > 0 and all(r <= rsd_teorico for r in _global_rsds):
+        conclusion_status = "success"
+    elif len(_global_rsds) == 0:
+        conclusion_status = "neutral"
+    else:
         conclusion_status = "danger"
