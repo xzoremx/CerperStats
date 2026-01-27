@@ -120,6 +120,86 @@ else:
         )
         conclusion_status = "danger"
 
+# --- Información diagnóstica para el gráfico cuando hay danger ---
+if conclusion_status == "danger":
+    cols = list(df_ingreso.columns)
+    grupo_stats = []
+    varianzas = []
+    for i, col in enumerate(cols):
+        vals = grupos[i]
+        n = n_por_grupo[i]
+        std_val = float(np.std(vals, ddof=1))
+        var_val = float(np.var(vals, ddof=1))
+        varianzas.append(var_val)
+        grupo_stats.append({
+            "grupo": col,
+            "n": n,
+            "std": round(std_val, 4),
+            "var": round(var_val, 6),
+        })
+
+    stds_list = [g["std"] for g in grupo_stats]
+    std_promedio = round(float(np.mean(stds_list)), 4)
+
+    for g in grupo_stats:
+        g["diff_pct"] = round(abs(g["std"] - std_promedio) / max(std_promedio, 1e-12) * 100, 1)
+
+    # El grupo a revisar es el más alejado del promedio
+    idx_revisar = max(range(len(grupo_stats)), key=lambda i: grupo_stats[i]["diff_pct"])
+    
+    # --- Calcular razón de varianzas crítica basada en la prueba aplicada ---
+    var_max = max(varianzas)
+    var_min = min(varianzas)
+    idx_var_max = varianzas.index(var_max)
+    idx_var_min = varianzas.index(var_min)
+    
+    razon_var_actual = round(var_max / var_min, 4) if var_min > 0 else float('inf')
+    
+    # Calcular F crítico
+    n_max = n_por_grupo[idx_var_max]
+    n_min = n_por_grupo[idx_var_min]
+    df1 = n_max - 1
+    df2 = n_min - 1
+    
+    # F crítico para alfa=0.05 (dos colas, usamos cola superior)
+    f_crit = fdist.ppf(0.975, df1, df2) if df1 > 0 and df2 > 0 else 3.0
+    
+    razon_critica = round(f_crit, 4)
+    
+    # Calcular varianza target para el grupo más disperso (OPCIÓN 1: reducir máximo)
+    var_target_max = f_crit * var_min
+    std_target_max = round(np.sqrt(var_target_max), 4)
+    
+    # Calcular varianza target para el grupo más preciso (OPCIÓN 2: aumentar mínimo)
+    var_target_min = var_max / f_crit if f_crit > 0 else var_max
+    std_target_min = round(np.sqrt(var_target_min), 4)
+    
+    # Reducción/aumento necesarios en desv. estándar
+    std_actual_max = grupo_stats[idx_var_max]["std"]
+    std_actual_min = grupo_stats[idx_var_min]["std"]
+    reduccion_std = round(std_actual_max - std_target_max, 4) if std_actual_max > std_target_max else 0
+    aumento_std = round(std_target_min - std_actual_min, 4) if std_target_min > std_actual_min else 0
+    
+    exceso_razon = round(razon_var_actual - f_crit, 4) if razon_var_actual > f_crit else 0
+
+    danger_info = {
+        "prueba": prueba,
+        "grupo_stats": grupo_stats,
+        "std_promedio": std_promedio,
+        "grupo_revisar": grupo_stats[idx_revisar]["grupo"],
+        "grupo_var_max": grupo_stats[idx_var_max]["grupo"],
+        "grupo_var_min": grupo_stats[idx_var_min]["grupo"],
+        "std_max": std_actual_max,
+        "std_min": std_actual_min,
+        "razon_var_actual": razon_var_actual,
+        "razon_critica": razon_critica,
+        "exceso_razon": exceso_razon,
+        "std_target_max": std_target_max,
+        "std_target_min": std_target_min,
+        "reduccion_std": reduccion_std,
+        "aumento_std": aumento_std,
+    }
+
 
 # ----------------------------------------
 # 3. Construir df_resultado

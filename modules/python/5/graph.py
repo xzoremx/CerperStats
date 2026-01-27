@@ -136,6 +136,64 @@ else:
     ax.grid(True, linestyle="--", alpha=0.3)
     fig.tight_layout()
 
+    # --- Info diagnóstica cuando conclusion_status == "danger" ---
+    _conclusion_status = globals().get("conclusion_status")
+    _danger_info = globals().get("danger_info")
+
+    if _conclusion_status == "danger" and _danger_info and isinstance(_danger_info, dict):
+        grupo_stats = _danger_info.get("grupo_stats", [])
+        grupo_var_max = _danger_info.get("grupo_var_max", "?")
+        grupo_var_min = _danger_info.get("grupo_var_min", "?")
+        std_max = _danger_info.get("std_max", "?")
+        std_min = _danger_info.get("std_min", "?")
+        razon_actual = _danger_info.get("razon_var_actual", "?")
+        razon_critica = _danger_info.get("razon_critica", "?")
+        std_target_max = _danger_info.get("std_target_max", "?")
+        std_target_min = _danger_info.get("std_target_min", "?")
+        reduccion_std = _danger_info.get("reduccion_std", 0)
+        aumento_std = _danger_info.get("aumento_std", 0)
+        prueba_usada = _danger_info.get("prueba", "")
+
+        info_lines = [
+            f"PARA APROBAR LA PRUEBA ({prueba_usada}):",
+            f"",
+            f"Raz\u00f3n varianzas: {razon_actual} (debe ser \u2264 {razon_critica})",
+            f"",
+            f"OPCI\u00d3N 1 - Reducir grupo m\u00e1s disperso:",
+            f"  '{grupo_var_max}': s={std_max} \u2192 s\u2264{std_target_max}",
+        ]
+        if reduccion_std and reduccion_std > 0:
+            info_lines.append(f"  (reducci\u00f3n de ~{reduccion_std})")
+        
+        info_lines.append(f"")
+        info_lines.append(f"OPCI\u00d3N 2 - Aumentar grupo m\u00e1s preciso:")
+        info_lines.append(f"  '{grupo_var_min}': s={std_min} \u2192 s\u2265{std_target_min}")
+        if aumento_std and aumento_std > 0:
+            info_lines.append(f"  (aumento de ~{aumento_std})")
+        
+        info_lines.append(f"")
+        info_lines.append(f"DETALLE:")
+        for gs in grupo_stats:
+            if gs["grupo"] == grupo_var_max:
+                marca = " \u2191 M\u00c1S DISPERSO"
+            elif gs["grupo"] == grupo_var_min:
+                marca = " \u2193 M\u00c1S PRECISO"
+            else:
+                marca = ""
+            info_lines.append(f"  {gs['grupo']}: s={gs['std']}{marca}")
+
+        info_text = "\n".join(info_lines)
+
+        fig.text(
+            0.02, 0.02,
+            info_text,
+            fontsize=7,
+            va='bottom',
+            ha='left',
+            family='monospace',
+            bbox=dict(boxstyle="round,pad=0.5", fc="#fff3cd", ec="#ffc107", alpha=0.95),
+        )
+
     buf = io.BytesIO()
     fig.savefig(buf, format="png")
     plt.close(fig)

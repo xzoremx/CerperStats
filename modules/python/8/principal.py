@@ -176,3 +176,37 @@ else:
         f"Método: {metodo_usado}."
     )
     conclusion_status = "danger"
+
+# --- Información diagnóstica para el gráfico cuando hay danger ---
+if conclusion_status == "danger":
+    if es_normal is not None and es_normal:
+        centro = float(media_global)
+        disp = float(ds_global)
+        factor = disp
+    else:
+        centro = float(mediana_global)
+        disp = float(mad_global)
+        factor = disp / 0.6745 if disp > 0 else 0
+
+    rango_aceptable = (round(centro - 2 * factor, 4), round(centro + 2 * factor, 4))
+    rango_cuestionable_bajo = (round(centro - 3 * factor, 4), round(centro - 2 * factor, 4))
+    rango_cuestionable_alto = (round(centro + 2 * factor, 4), round(centro + 3 * factor, 4))
+
+    datos_problematicos = []
+    for r in rows:
+        if r["estado"] in ("atipico_outlier", "cuestionable_outlier"):
+            datos_problematicos.append({
+                "parametro": r["parametro"],
+                "zscore": r["zscore"],
+                "estado": r["estado"],
+            })
+
+    danger_info = {
+        "metodo": metodo_usado,
+        "centro": round(centro, 4),
+        "dispersion": round(disp, 4),
+        "rango_aceptable": rango_aceptable,
+        "rango_cuestionable_bajo": rango_cuestionable_bajo,
+        "rango_cuestionable_alto": rango_cuestionable_alto,
+        "datos_problematicos": datos_problematicos,
+    }

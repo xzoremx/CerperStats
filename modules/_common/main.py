@@ -399,6 +399,12 @@ def run_single_module(
         else:
             conclusion_status = None
 
+        # Extraer danger_info si el módulo la define (info diagnóstica para graph.py)
+        danger_info = module_ns.get("danger_info", None)
+        if danger_info is not None and not isinstance(danger_info, dict):
+            log_err(f"[EVAL] danger_info no es dict, ignorando")
+            danger_info = None
+
         # Ejecutar script grรกfico si estรก definido (script_grafico o graph_asset)
         script_grafico = manifest_entry.get("script_grafico") or manifest_entry.get("graph_asset")
         if script_grafico:
@@ -470,6 +476,8 @@ def run_single_module(
                 "df_resultado": df_res,
                 "resultado_pc": resultado_pc,
                 "user_params": user_params,
+                "conclusion_status": conclusion_status,
+                "danger_info": danger_info,
             }
             # Agregar variables multianalito si están disponibles
             if total_analitos is not None:

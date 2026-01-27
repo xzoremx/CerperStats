@@ -235,6 +235,37 @@ else:
 
     ax.grid(True, linestyle="--", alpha=0.3)
 
+    # --- Info diagnóstica cuando conclusion_status == "danger" ---
+    _conclusion_status = globals().get("conclusion_status")
+    _danger_info = globals().get("danger_info")
+
+    if _conclusion_status == "danger" and _danger_info and isinstance(_danger_info, dict):
+        ra = _danger_info.get("rango_aceptable", ("?", "?"))
+        rcb = _danger_info.get("rango_cuestionable_bajo", ("?", "?"))
+        rca = _danger_info.get("rango_cuestionable_alto", ("?", "?"))
+        metodo = _danger_info.get("metodo", "")
+
+        info_lines = [
+            f"RANGOS DE VALORES ({metodo})",
+            f"Aceptable (|Z| \u2264 2): [{ra[0]}, {ra[1]}]",
+            f"Cuestionable (2 < |Z| \u2264 3):",
+            f"  Bajo: [{rcb[0]}, {rcb[1]}]",
+            f"  Alto: [{rca[0]}, {rca[1]}]",
+            f"At\u00edpico (|Z| > 3): < {rcb[0]}  o  > {rca[1]}",
+        ]
+
+        info_text = "\n".join(info_lines)
+
+        fig.text(
+            0.69, 0.50,
+            info_text,
+            fontsize=7,
+            va='center',
+            ha='left',
+            family='monospace',
+            bbox=dict(boxstyle="round,pad=0.5", fc="#fff3cd", ec="#ffc107", alpha=0.95),
+        )
+
     buf = io.BytesIO()
     fig.savefig(buf, format="png")
     plt.close(fig)

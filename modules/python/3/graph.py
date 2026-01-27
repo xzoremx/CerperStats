@@ -202,6 +202,75 @@ plt.text(
 plt.grid(True, linestyle="--", alpha=0.3)
 fig.tight_layout()
 
+# --- Info diagnóstica cuando conclusion_status == "danger" ---
+_conclusion_status = globals().get("conclusion_status")
+_danger_info = globals().get("danger_info")
+
+if _conclusion_status == "danger" and _danger_info and isinstance(_danger_info, dict):
+    grupo_stats = _danger_info.get("grupo_stats", [])
+    mayor = _danger_info.get("grupo_mayor", "?")
+    menor = _danger_info.get("grupo_menor", "?")
+    centro_mayor = _danger_info.get("centro_mayor", "?")
+    centro_menor = _danger_info.get("centro_menor", "?")
+    diff_max = _danger_info.get("diferencia_maxima", "?")
+    diff_critica = _danger_info.get("diferencia_critica", "?")
+    exceso = _danger_info.get("exceso_diferencia", 0)
+    metodo_critico = _danger_info.get("metodo_critico", "")
+    ajuste_completo = _danger_info.get("ajuste_completo", 0)
+    ajuste_dividido = _danger_info.get("ajuste_dividido", 0)
+    target_mayor = _danger_info.get("target_mayor", "?")
+    target_menor = _danger_info.get("target_menor", "?")
+    termino_di = _danger_info.get("termino", "medias")
+    es_norm = _danger_info.get("es_normal", True)
+    prueba_usada = _danger_info.get("prueba", "")
+    
+    lbl_centro = "x\u0304" if es_norm else "Me"
+    lbl_termino = "media" if es_norm else "mediana"
+
+    info_lines = [
+        f"PARA APROBAR LA PRUEBA ({prueba_usada}):",
+        f"",
+        f"Diferencia: {diff_max} (debe ser \u2264 {diff_critica})",
+        f"Exceso: {exceso}",
+        f"",
+    ]
+    
+    if exceso and exceso > 0:
+        info_lines.append(f"OPCI\u00d3N A - Ajustar solo un grupo:")
+        info_lines.append(f"  '{mayor}': {lbl_centro}={centro_mayor} \u2192 {lbl_centro}\u2264{target_mayor}")
+        info_lines.append(f"  O '{menor}': {lbl_centro}={centro_menor} \u2192 {lbl_centro}\u2265{target_menor}")
+        info_lines.append(f"")
+        info_lines.append(f"OPCI\u00d3N B - Dividir ajuste:")
+        info_lines.append(f"  Reducir '{mayor}' en ~{ajuste_dividido}")
+        info_lines.append(f"  Y aumentar '{menor}' en ~{ajuste_dividido}")
+    
+    info_lines.append(f"")
+    info_lines.append(f"DETALLE ({termino_di.upper()}):")
+    for gs in grupo_stats:
+        centro = gs['media'] if es_norm else gs['mediana']
+        if gs['grupo'] == mayor:
+            marca = " \u2191 MAYOR"
+        elif gs['grupo'] == menor:
+            marca = " \u2193 MENOR"
+        else:
+            marca = ""
+        info_lines.append(f"  {gs['grupo']}: {lbl_centro}={centro}  s={gs['std']}{marca}")
+    
+    info_lines.append(f"")
+    info_lines.append(f"M\u00e9todo: {metodo_critico}")
+
+    info_text = "\n".join(info_lines)
+
+    fig.text(
+        0.02, 0.02,
+        info_text,
+        fontsize=7,
+        va='bottom',
+        ha='left',
+        family='monospace',
+        bbox=dict(boxstyle="round,pad=0.5", fc="#fff3cd", ec="#ffc107", alpha=0.95),
+    )
+
 
 # -------------------------
 # Convertir a base64

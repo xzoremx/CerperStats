@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-01-27T15:57:39.427Z",
+  "generated_at": "2026-01-27T20:26:30.960Z",
   "entries": [
     {
       "id": 1,
@@ -89,9 +89,9 @@
       "script_grafico": "python/2/graph.py",
       "graph_asset": "python/2/graph.py",
       "runtime": "stats",
-      "sha256_module": "caf5b97f65e0841abceb8767b8536f7f778965e8a6a8f4136843f679fc907e2d",
-      "sha256_script_grafico": "136c22977b9e25fc3fb8cf7ec4c55695ff7d734d4a4aee508e0b48998e50d5f5",
-      "sha256_graph": "136c22977b9e25fc3fb8cf7ec4c55695ff7d734d4a4aee508e0b48998e50d5f5"
+      "sha256_module": "08d9628d911191abc2758bae515d90a453d9af0575d5c38c9e1d54f863fc7cae",
+      "sha256_script_grafico": "75ea4f31cd88505eb42fe57a873df441e8e41a855b1bd8035c60e96bdf18f813",
+      "sha256_graph": "75ea4f31cd88505eb42fe57a873df441e8e41a855b1bd8035c60e96bdf18f813"
     },
     {
       "id": 3,
@@ -102,9 +102,9 @@
       "script_grafico": "python/3/graph.py",
       "graph_asset": "python/3/graph.py",
       "runtime": "stats",
-      "sha256_module": "27dbd5ed25697abd69b9e88ca6d52ce861498d51b6ca5a4f0ebad08adaf2f555",
-      "sha256_script_grafico": "40f405d4b3172472b6c9cb50f9b9d4be4fcd80855ef750e703a3877a2eaf5314",
-      "sha256_graph": "40f405d4b3172472b6c9cb50f9b9d4be4fcd80855ef750e703a3877a2eaf5314"
+      "sha256_module": "ffd1221d6b09891e79fa02b786dc94e68fba9fc1213a26d9f35d3fb945c0027a",
+      "sha256_script_grafico": "789c7f57330e37f796d4b92c294fcc91d3ef45367c55fede6a734bbd2f028e9c",
+      "sha256_graph": "789c7f57330e37f796d4b92c294fcc91d3ef45367c55fede6a734bbd2f028e9c"
     },
     {
       "id": 4,
@@ -128,9 +128,9 @@
       "script_grafico": "python/5/graph.py",
       "graph_asset": "python/5/graph.py",
       "runtime": "stats",
-      "sha256_module": "7f512001d2458fd0687b5700dc99a46e22fad9f751cb1977398cda8d5038e4a5",
-      "sha256_script_grafico": "51ea8f73c981c05fce9b0c386b75e70b0524ade152294f366415c2da7d76f681",
-      "sha256_graph": "51ea8f73c981c05fce9b0c386b75e70b0524ade152294f366415c2da7d76f681"
+      "sha256_module": "f574ca8498bc4141b6ecdf69eb4dd31adf65fbff54d0f5ca49a274f971a7587b",
+      "sha256_script_grafico": "7407fb436dab9f51fdd9d61fcbfa8beaf2929e14a11d675dce3f49081edea957",
+      "sha256_graph": "7407fb436dab9f51fdd9d61fcbfa8beaf2929e14a11d675dce3f49081edea957"
     },
     {
       "id": 6,
@@ -141,9 +141,9 @@
       "script_grafico": "python/6/graph.py",
       "graph_asset": "python/6/graph.py",
       "runtime": "stats",
-      "sha256_module": "23ebfe41fb8c0caecbd72f37ce5295d510109f8270fd74573c4e6aaa7c268f91",
-      "sha256_script_grafico": "95fc544f4c20e2edf6e2681a5b8e659b01f79449fe60032aa92ff23f0d054af6",
-      "sha256_graph": "95fc544f4c20e2edf6e2681a5b8e659b01f79449fe60032aa92ff23f0d054af6"
+      "sha256_module": "d4bd67e764adc0a7a6c755eacadc16c76add745176ec3156555e8d067d6a6ad7",
+      "sha256_script_grafico": "efe4fd3f159e02a54f6eaf0a6e6cbd0bd41d90ea60218a886a5fb2d5db4feff9",
+      "sha256_graph": "efe4fd3f159e02a54f6eaf0a6e6cbd0bd41d90ea60218a886a5fb2d5db4feff9"
     },
     {
       "id": 7,
@@ -154,9 +154,9 @@
       "script_grafico": "python/7/graph.py",
       "graph_asset": "python/7/graph.py",
       "runtime": "stats",
-      "sha256_module": "3e2bcaec98388ac29f7902d53f1ca3bca7be54e103836f69c7f34d6765e3a727",
-      "sha256_script_grafico": "49ea9af061ce9d352dc54988c30faa1f0fcee39bbbe32fae6b9afa27748b864a",
-      "sha256_graph": "49ea9af061ce9d352dc54988c30faa1f0fcee39bbbe32fae6b9afa27748b864a"
+      "sha256_module": "8b0ec58fd74852a98d7b472df8bc8e8b34f034b71759ddd684f3cec8b9998649",
+      "sha256_script_grafico": "21876f7dfc3da32dc042643b62b15ee6dec36c2df422d709780a588b4508260b",
+      "sha256_graph": "21876f7dfc3da32dc042643b62b15ee6dec36c2df422d709780a588b4508260b"
     },
     {
       "id": 8,
@@ -167,9 +167,9 @@
       "script_grafico": "python/8/graph.py",
       "graph_asset": "python/8/graph.py",
       "runtime": "stats",
-      "sha256_module": "8321c45623a7004a6dae51868635a94b20ace568aab0f619c2ea0a2f20047b67",
-      "sha256_script_grafico": "475139978beb8d1ed38238df57d1044a3aafb738d5cac5673543ddb331680098",
-      "sha256_graph": "475139978beb8d1ed38238df57d1044a3aafb738d5cac5673543ddb331680098"
+      "sha256_module": "a7b58f70badfa0f16c71a2d14f964d7d088376e15ca8408d76f81b731f73f7a0",
+      "sha256_script_grafico": "beea63f8345f08f9c664376cc1efacfa4e2f4491a91026108b04dca21c32a7ec",
+      "sha256_graph": "beea63f8345f08f9c664376cc1efacfa4e2f4491a91026108b04dca21c32a7ec"
     },
     {
       "id": 9,
