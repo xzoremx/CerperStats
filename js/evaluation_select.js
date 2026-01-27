@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnVizList = document.getElementById("btn-viz-list");
   const btnCardTheme = document.getElementById("btn-card-theme");
   const btnVizDangerToggle = document.getElementById("btn-viz-danger-toggle");
+  const btnVizFullscreen = document.getElementById("btn-viz-fullscreen");
   const vizRolodexView = document.getElementById("viz-rolodex-view");
   const vizListView = document.getElementById("viz-list-view");
   const vizCardsContainer = document.getElementById("viz-cards-container");
@@ -351,6 +352,73 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (viewVisualizaciones) {
       viewVisualizaciones.classList.toggle("viz-cards-light", vizCardTheme === "light");
     }
+  }
+
+  // Fullscreen image modal
+  function showFullscreenImage() {
+    if (filteredGraphs.length === 0 || vizActiveIndex < 0) return;
+    const g = filteredGraphs[vizActiveIndex];
+    if (!g?.grafico_data) return;
+
+    const title = g?.test_titulo || g?.nombre_interno || "Visualización";
+    const subtitleParts = [];
+    if (g?.analito) subtitleParts.push(g.analito);
+    if (hasMultipleLevels && g?.nivel != null) subtitleParts.push(`Nivel ${g.nivel}`);
+    const subtitle = subtitleParts.join(" · ");
+
+    // Remove any existing overlay
+    const existing = document.querySelector(".cs-inline-modal-overlay");
+    if (existing) existing.remove();
+
+    // Create overlay with dark variant
+    const overlay = document.createElement("div");
+    overlay.className = "cs-inline-modal-overlay cs-inline-modal-overlay--dark";
+
+    // Create modal with image viewer variant
+    const modal = document.createElement("div");
+    modal.className = "cs-inline-modal cs-inline-modal--image-viewer";
+
+    modal.innerHTML = `
+      <div class="cs-inline-modal__header">
+        <div class="cs-inline-modal__header-info">
+          <span class="cs-inline-modal__badge">#${vizActiveIndex + 1}</span>
+          <div>
+            <h3 class="cs-inline-modal__header-title">${title}</h3>
+            ${subtitle ? `<p class="cs-inline-modal__header-subtitle">${subtitle}</p>` : ""}
+          </div>
+        </div>
+        <button class="cs-inline-modal__close-btn" aria-label="Cerrar">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="cs-inline-modal__image-container">
+        <img class="cs-inline-modal__image" src="${g.grafico_data}" alt="${title}">
+      </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Close handlers
+    const closeModal = () => {
+      overlay.classList.add("is-closing");
+      setTimeout(() => overlay.remove(), 200);
+    };
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeModal();
+    });
+
+    modal.querySelector(".cs-inline-modal__close-btn")?.addEventListener("click", closeModal);
+
+    document.addEventListener("keydown", function escHandler(e) {
+      if (e.key === "Escape") {
+        closeModal();
+        document.removeEventListener("keydown", escHandler);
+      }
+    });
   }
 
   function renderVizCards() {
@@ -823,6 +891,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // View toggle event listeners
   btnVizRolodex?.addEventListener("click", () => setVizView("rolodex"));
   btnVizList?.addEventListener("click", () => setVizView("list"));
+
+  // Fullscreen button event listener
+  btnVizFullscreen?.addEventListener("click", showFullscreenImage);
 
   // Keyboard navigation
   document.addEventListener("keydown", handleVizKeydown);
@@ -1936,7 +2007,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           option.value = String(optValue ?? "");
           option.textContent = String(optLabel ?? "");
           if ((savedValue !== undefined && String(savedValue) === String(optValue)) ||
-              (savedValue === undefined && String(field.default) === String(optValue))) {
+            (savedValue === undefined && String(field.default) === String(optValue))) {
             option.selected = true;
           }
           select.appendChild(option);
