@@ -187,7 +187,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
           }
 
-          notify("Datos validados correctamente. Creando sesión...", "success");
+          notify("Datos validados correctamente", "success");
 
           // --- Crear sesión ---
           const usuario = sessionStorage.getItem("usuario_id");
