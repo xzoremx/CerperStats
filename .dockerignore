@@ -1,0 +1,24 @@
+# Node / build
+node_modules
+**/node_modules
+dist
+dist-react
+build
+out
+coverage
+*.log
+
+# VCS
+.git
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Secrets / env (mount at runtime)
+.env
+.env.local
+secrets
+
+# Electron assets not needed for backend image
+chrome-bundled

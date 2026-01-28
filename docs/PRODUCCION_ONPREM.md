@@ -22,6 +22,10 @@ Hospedar el backend de CerperStats dentro de la red de CERPER para que:
   - Runtime Python + virtualenv para módulos de evaluación
   - (Opcional) Nginx como reverse proxy para HTTPS y control de cabeceras
 
+**Alternativa equivalente (más simple de operar):**
+
+- Docker Compose (proxy + PostgreSQL en contenedores) — ver `docs/DOCKER_BACKEND.md`.
+
 **Opción escalable (si crece el uso):**
 
 - Servidor A: Proxy API + runtime Python

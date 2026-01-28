@@ -1,5 +1,7 @@
 # CerperStats - Backend en AWS Lightsail
 
+> Alternativa portable (AWS/on‑prem): ver `docs/DOCKER_BACKEND.md` (Docker Compose: proxy + PostgreSQL).
+
 ## Estructura de Archivos en el Servidor
 
 ```
@@ -150,6 +152,10 @@ openssl x509 -in /etc/postgresql/certs/server.crt -noout -subject -dates
 ### Límites de consulta (en `routes/evaluaciones.js`)
 - **Gráficos por sesión**: 500 (variable: `CERPER_GRAFICOS_MAX_TESTS`)
 - **Resultados por sesión**: 500 (variable: `CERPER_RESULTADOS_MAX_TESTS`)
+
+### Concurrencia de ejecución (multianalito)
+- `CERPER_EVAL_CONCURRENCY_MULTI`: cantidad de **analitos** a procesar en paralelo (default `1`).
+  - Recomendación: en instancias con poca RAM (ej. 0.5 GB), mantener `1` para evitar swap/OOM. En instancias ≥ 2 GB, probar `2` y ajustar.
 
 ## Flujo de Ejecución de Evaluaciones
 

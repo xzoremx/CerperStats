@@ -128,6 +128,33 @@ function finishProgress(sessionId, status, patch = {}) {
   return merged;
 }
 
+function normalizeConcurrency(value, { min = 1, max = 8, fallback = 1 } = {}) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, Math.trunc(n)));
+}
+
+async function runWithConcurrency(items, concurrency, worker) {
+  const list = Array.isArray(items) ? items : [];
+  if (list.length === 0) return [];
+
+  const limit = normalizeConcurrency(concurrency, { min: 1, max: 64, fallback: 1 });
+  const runnerCount = Math.min(limit, list.length);
+  const results = new Array(list.length);
+  let nextIndex = 0;
+
+  const runners = Array.from({ length: runnerCount }, async () => {
+    while (true) {
+      const idx = nextIndex++;
+      if (idx >= list.length) break;
+      results[idx] = await worker(list[idx], idx);
+    }
+  });
+
+  await Promise.all(runners);
+  return results;
+}
+
 function sanitizeEvals(rows) {
   return rows.map((r) => {
     const iconLib = r.icon_lib_sanitized || '';
@@ -588,27 +615,48 @@ router.post('/run', async (req, res) => {
 
     try {
       if (isMultianalito) {
-        // MULTIANALITO: Iterar por analito × nivel
-        console.log(`[EVAL] Iniciando procesamiento MULTIANALITO: ${analitos.length} analitos × ${niveles.length} niveles`);
+        const multiConcurrency = normalizeConcurrency(
+          process.env.CERPER_EVAL_CONCURRENCY_MULTI || process.env.CERPER_EVAL_CONCURRENCY || 1,
+          { min: 1, max: 8, fallback: 1 }
+        );
 
-        for (const analito of analitos) {
-          const nivelesDisponibles = [...(nivelesPorAnalito?.get(analito) || [])].sort((a, b) => a - b);
+        // MULTIANALITO: paralelizar por analito (configurable).
+        console.log(
+          `[EVAL] Iniciando procesamiento MULTIANALITO: ${analitos.length} analitos × ${niveles.length} niveles (concurrency=${multiConcurrency})`
+        );
+
+        // Pre-indexar filas por (analito, nivel) para evitar filtrar el array completo en cada iteración.
+        const rowsByAnalitoNivel = new Map();
+        for (const row of dfIngresoConNivel) {
+          const analito = row?.analito;
+          if (!analito) continue;
+          const nivel = Number(row?.nivel) || 1;
+          const key = `${analito}\u0000${nivel}`;
+          const bucket = rowsByAnalitoNivel.get(key);
+          if (bucket) bucket.push(row);
+          else rowsByAnalitoNivel.set(key, [row]);
+        }
+
+        const analitoTasks = analitos
+          .map((analito) => ({
+            analito,
+            nivelesDisponibles: [...(nivelesPorAnalito?.get(analito) || [])].sort((a, b) => a - b),
+          }))
+          .filter((t) => t.nivelesDisponibles.length > 0);
+
+        await runWithConcurrency(analitoTasks, multiConcurrency, async ({ analito, nivelesDisponibles }) => {
           for (const nivel of nivelesDisponibles) {
             console.log(`[EVAL] === INICIO PROCESAMIENTO: analito=${analito}, nivel=${nivel} ===`);
             updateProgress(session_id, { current: { analito, nivel }, message: 'ejecutando' });
 
-            // Filtrar datos para este analito y nivel específicos
-            const dfIngreso = dfIngresoConNivel
-              .filter(d => d.analito === analito && (Number(d.nivel) || 1) === nivel)
-              .map(d => {
-                const { nivel: _, analito: __, ...rest } = d;
-                return rest;
-              });
+            const key = `${analito}\u0000${nivel}`;
+            const dfIngreso = rowsByAnalitoNivel.get(key) || [];
 
             console.log(`[EVAL] Procesando analito=${analito}, nivel=${nivel}: ${dfIngreso.length} registros encontrados`);
 
             if (dfIngreso.length === 0) {
               console.warn(`[EVAL] No hay datos para analito=${analito}, nivel=${nivel}, saltando...`);
+              bumpProgress(session_id, { processed_tasks: verified.length, failed_tasks: verified.length });
               continue;
             }
 
@@ -699,7 +747,7 @@ router.post('/run', async (req, res) => {
 
             console.log(`[EVAL] === FIN PROCESAMIENTO: analito=${analito}, nivel=${nivel} (${totalResults} resultados guardados hasta ahora) ===`);
           }
-        }
+        });
 
         console.log(`[EVAL] ==========================================`);
         console.log(`[EVAL] PROCESAMIENTO MULTIANALITO COMPLETADO: ${totalResults} módulos procesados en ${analitos.length} analitos × ${niveles.length} niveles`);
