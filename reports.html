@@ -86,14 +86,191 @@
             background-position: right 0.75rem center;
             padding-right: 2.25rem !important;
         }
+
+        /* Glass Dropdown Custom */
+        .glass-dropdown {
+            position: relative;
+            display: inline-block;
+            min-width: 160px;
+        }
+
+        .glass-dropdown-trigger {
+            width: 100%;
+            padding: 0.5rem 2.25rem 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 0.875rem;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .glass-dropdown-trigger::after {
+            content: '';
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-size: contain;
+            transition: transform 0.2s ease;
+        }
+
+        .glass-dropdown.open .glass-dropdown-trigger::after {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .glass-dropdown-trigger:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .glass-dropdown-trigger:focus {
+            outline: none;
+            border-color: rgba(16, 185, 129, 0.5);
+        }
+
+        .glass-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            z-index: 50;
+            background: rgba(30, 30, 40, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.2s ease;
+            overflow: hidden;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .glass-dropdown.open .glass-dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .glass-dropdown-option {
+            padding: 0.5rem 0.75rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-dropdown-option:last-child {
+            border-bottom: none;
+        }
+
+        .glass-dropdown-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .glass-dropdown-option.selected {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+        }
+
+        .glass-dropdown-option.selected:hover {
+            background: rgba(16, 185, 129, 0.3);
+        }
+
+        /* Scrollbar para el dropdown */
+        .glass-dropdown-menu::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .glass-dropdown-menu::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-dropdown-menu::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        .glass-dropdown-menu::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .glass-dropdown.disabled .glass-dropdown-trigger {
+            opacity: 0.7;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Apple-style Loading Animation */
+        .apple-loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 3rem 0;
+        }
+
+        .apple-spinner {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: rgba(255, 255, 255, 0.7);
+            animation: apple-spin 0.8s linear infinite;
+        }
+
+        @keyframes apple-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .apple-loader-text {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.875rem;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            animation: apple-pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes apple-pulse {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 
-<body class="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 text-white relative overflow-x-hidden">
-    <!-- Background -->
+<body
+    class="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 text-white relative overflow-x-hidden">
+    <!-- Video Background -->
     <div class="fixed inset-0 -z-20">
         <div class="w-full h-full">
-            <img src="assets/images/resultado/background.jpg" alt="Background" class="w-full h-full object-cover">
+            <video id="bg-video" autoplay loop muted playsinline class="w-full h-full object-cover">
+                <source src="assets/videos/evaluation_reports.mp4" type="video/mp4">
+            </video>
         </div>
     </div>
 
@@ -102,7 +279,8 @@
         <div id="main-panel"
             class="relative w-full max-w-6xl mt-6 glass-container rounded-3xl overflow-hidden shadow-2xl min-h-[80vh]">
             <!-- Header -->
-            <div class="p-6 sm:p-8 border-b border-white/10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div
+                class="p-6 sm:p-8 border-b border-white/10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <span class="text-xs font-medium text-gray-400 tracking-wide uppercase mb-1 block">Reportes</span>
                     <h1 class="font-semibold text-white text-2xl">PDFs guardados</h1>
@@ -135,28 +313,34 @@
                                     class="pl-10 pr-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-emerald-500/50 w-full sm:w-72"
                                     autocomplete="off">
                             </div>
-                            <select id="filter-estado"
-                                class="filter-select px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-emerald-500/50">
-                                <option value="">Todos los estados</option>
-                                <option value="generado">Generado</option>
-                                <option value="a_revisar">A revisar</option>
-                                <option value="aprobado">Aprobado</option>
-                                <option value="rechazado">Desaprobado</option>
-                                <option value="archivado">Archivado</option>
-                            </select>
+                            <div id="filter-estado" class="glass-dropdown" data-value="">
+                                <button type="button" class="glass-dropdown-trigger">Todos los estados</button>
+                                <div class="glass-dropdown-menu">
+                                    <div class="glass-dropdown-option selected" data-value="">Todos los estados</div>
+                                    <div class="glass-dropdown-option" data-value="generado">Generado</div>
+                                    <div class="glass-dropdown-option" data-value="a_revisar">A revisar</div>
+                                    <div class="glass-dropdown-option" data-value="aprobado">Aprobado</div>
+                                    <div class="glass-dropdown-option" data-value="rechazado">Desaprobado</div>
+                                    <div class="glass-dropdown-option" data-value="archivado">Archivado</div>
+                                </div>
+                            </div>
                         </div>
                         <div id="reports-stats" class="text-sm text-gray-400">—</div>
                     </div>
                 </div>
 
                 <div id="reports-list" class="space-y-3">
-                    <div id="reports-loading" class="text-gray-400">Cargando reportes...</div>
+                    <div id="reports-loading" class="apple-loader">
+                        <div class="apple-spinner"></div>
+                        <span class="apple-loader-text">Cargando reportes</span>
+                    </div>
                     <div id="reports-empty" class="text-center py-16 hidden">
                         <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
                             <i data-lucide="inbox" class="w-8 h-8 text-gray-500"></i>
                         </div>
                         <p class="text-gray-400 mb-2">No hay reportes guardados para esta sesión</p>
-                        <p class="text-sm text-gray-500">Genera y guarda reportes desde pdf_config.</p>
+                        <p class="text-sm text-gray-500">Recuerda generar y guardar reportes antes de cerrar la app :D
+                        </p>
                     </div>
                     <div id="reports-error" class="text-center py-10 text-red-300 hidden"></div>
                 </div>

@@ -293,6 +293,57 @@ body {
   outline-offset: 2px;
 }
 
+/* Rainbow Border Button - Reuse Session */
+@property --rainbow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+#btn-reuse {
+  position: relative;
+  background: var(--glass-bg-solid);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  isolation: isolate;
+}
+
+#btn-reuse::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: calc(var(--radius-md) + 1px);
+  background: conic-gradient(from var(--rainbow-angle),
+      #ff6b6b,
+      #feca57,
+      #48dbfb,
+      #ff9ff3,
+      #54a0ff,
+      #5f27cd,
+      #ff6b6b);
+  z-index: -1;
+  animation: rainbow-rotate 3s linear infinite;
+}
+
+#btn-reuse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--glass-bg-solid);
+  border-radius: calc(var(--radius-md) - 3px);
+  z-index: -1;
+}
+
+@keyframes rainbow-rotate {
+  to {
+    --rainbow-angle: 360deg;
+  }
+}
+
+#btn-reuse:hover::after {
+  background: rgba(255, 255, 255, 0.98);
+}
+
 /* ========================================
    Return Button
    ======================================== */

@@ -727,9 +727,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const currentCacheVersion = sessionStorage.getItem("evalCacheVersion") || "0";
     if (cachedGraphsSessionId === sessionId && cacheVersion === currentCacheVersion && allGraphs.length > 0) {
       console.log("[EvalSelect] Usando gráficos en cache");
-      applyVizFilters();
-      initVizCards();
-      if (emptyState) emptyState.classList.add("hidden");
+      applyFilters();
+      setVizView(vizCurrentView);
       return;
     }
 

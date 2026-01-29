@@ -45,6 +45,16 @@ Health check del proxy:
 curl http://localhost:4000/health
 ```
 
+## AWS (build en servidor con layout `/home/ubuntu/cerper-eval`)
+
+En AWS tu carpeta normalmente tiene `proxy/` con su propio `package.json` (no existe el `package.json` del repo raíz).
+En ese caso construye usando:
+
+```bash
+cd /home/ubuntu/cerper-eval
+docker build -f proxy/Dockerfile.aws -t cerperstats-proxy:latest .
+```
+
 ## 4) Migrar datos desde AWS (recomendado)
 
 En AWS (Lightsail/Ubuntu), generar dump en formato custom:

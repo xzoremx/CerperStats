@@ -205,6 +205,33 @@
       cursor: not-allowed;
     }
 
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .nav-tab {
+      background: transparent;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .nav-tab:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .nav-tab.active {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.15);
+      color: white;
+    }
+
     /* ========================================
        Visualization UI Styles
        ======================================== */
@@ -1481,65 +1508,48 @@
 
   <!-- Main Application Window -->
   <div class="flex-1 flex px-4 sm:px-6 pb-16 pt-8 items-start justify-center relative">
-    <div
-      class="relative w-full max-w-[80rem] mt-6 glass-container rounded-3xl flex flex-col overflow-hidden shadow-2xl min-h-[85vh]">
+    <div id="main-panel"
+      class="relative w-full max-w-6xl mt-6 glass-container rounded-3xl overflow-hidden shadow-2xl min-h-[85vh] flex flex-col">
 
-      <!-- Main Workspace Content -->
-      <div class="flex flex-1 min-h-0 relative">
-        <!-- Enhanced Sidebar -->
-        <div class="glass-sidebar w-80 lg:w-96 flex flex-col relative z-10">
-
-          <!-- Enhanced Navigation -->
-          <div class="flex-1 p-4 space-y-3 overflow-y-auto">
-            <div class="mb-8">
-              <h3 class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-4 px-3">Dashboard</h3>
-              <nav class="space-y-1.5">
-                <a href="#" id="menu-visualizaciones"
-                  class="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/8 transition-all duration-200 group">
-                  <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
-                  <span class="font-medium">Visualizaciones</span>
-                </a>
-
-                <a href="#" id="menu-resultados"
-                  class="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/8 transition-all duration-200 group">
-                  <i data-lucide="table-2" class="w-5 h-5"></i>
-                  <span class="font-medium">Resultados Preliminares</span>
-                </a>
-
-                <a href="#" id="menu-configuracion"
-                  class="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/8 transition-all duration-200 group">
-                  <i data-lucide="settings" class="w-5 h-5"></i>
-                  <span class="font-medium">Configuración</span>
-                </a>
-              </nav>
-            </div>
-          </div>
-
-          <!-- Back Button - Fixed at bottom -->
-          <div class="p-4 border-t border-white/10">
-            <button id="go-back"
-              class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/8 transition-all duration-200 w-full">
-              <i data-lucide="arrow-left" class="w-5 h-5"></i>
-              <span class="font-medium">Volver</span>
-            </button>
-          </div>
+      <!-- Header -->
+      <div class="p-6 sm:p-8 border-b border-white/10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <span class="text-xs font-medium text-gray-400 tracking-wide uppercase mb-1 block">Resultados</span>
+          <h1 class="font-semibold text-white text-2xl">Latest results!</h1>
         </div>
 
-        <!-- Main Content Area with Liquid Glass Effect -->
-        <div id="main-content-panel" class="flex-1 flex flex-col min-h-0 relative"
-          style="border-left: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0 28px 28px 0; background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);">
-          <!-- Content Header -->
-          <div class="p-8 border-b border-white/5">
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div>
-                <h2 class="text-3xl font-bold text-white mb-2 tracking-tight">Hola de nuevo</h2>
-                <p id="page-subtitle" class="text-gray-200 text-lg">Recordemos los resultados de esta sesión</p>
-              </div>
-            </div>
-          </div>
+        <div class="flex items-center gap-2">
+          <button id="go-back"
+            class="btn-secondary px-4 py-2 rounded-lg flex items-center gap-2 text-gray-300 hover:text-white">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            Volver
+          </button>
+        </div>
+      </div>
 
-          <!-- Dashboard Content -->
-          <div class="flex-1 p-8 overflow-y-auto">
+      <!-- Navigation Tabs -->
+      <div class="px-6 sm:px-8 py-4 border-b border-white/10">
+        <nav class="flex items-center gap-2">
+          <button id="menu-visualizaciones"
+            class="nav-tab px-4 py-2 rounded-lg flex items-center gap-2 text-gray-300 hover:text-white transition-all">
+            <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+            <span class="font-medium text-sm">Visualizaciones</span>
+          </button>
+          <button id="menu-resultados"
+            class="nav-tab px-4 py-2 rounded-lg flex items-center gap-2 text-gray-300 hover:text-white transition-all">
+            <i data-lucide="table-2" class="w-4 h-4"></i>
+            <span class="font-medium text-sm">Resultados</span>
+          </button>
+          <button id="menu-configuracion"
+            class="nav-tab px-4 py-2 rounded-lg flex items-center gap-2 text-gray-300 hover:text-white transition-all">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+            <span class="font-medium text-sm">Configuración</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Main Content Area -->
+      <div id="main-content-panel" class="flex-1 p-6 sm:p-8 overflow-y-auto">
             <div id="view-evaluaciones" class="hidden">
               <!-- Progress Card -->
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
@@ -1647,6 +1657,16 @@
                       <circle cx="12" cy="12" r="4"></circle>
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 2v2m0 16v2m-8-10H2m20 0h-2m-2.93-6.36l-1.41 1.41m-9.32 9.32l-1.41 1.41m0-12.14l1.41 1.41m9.32 9.32l1.41 1.41">
+                      </path>
+                    </svg>
+                  </button>
+
+                  <!-- Fullscreen Button -->
+                  <button id="btn-viz-fullscreen" class="viz-theme-toggle" aria-label="Ampliar imagen"
+                    title="Ver imagen completa">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4">
                       </path>
                     </svg>
                   </button>
@@ -1967,8 +1987,6 @@
                 </div>
               </div>
             </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -2011,9 +2029,9 @@
     // Initialize Lucide icons
     if (window.lucide) lucide.createIcons();
 
-    // Initialize Liquid Glass effect on main content panel using saved settings
+    // Initialize Liquid Glass effect on main panel using saved settings
     document.addEventListener('DOMContentLoaded', function () {
-      const mainPanel = document.getElementById('main-content-panel');
+      const mainPanel = document.getElementById('main-panel');
       if (mainPanel && window.LiquidGlass && window.SettingsManager) {
         // Apply glass effect with saved settings
         SettingsManager.applyGlassSettings();

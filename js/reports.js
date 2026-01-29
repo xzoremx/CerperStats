@@ -199,8 +199,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const statusOptionsHtml = STATUS_OPTIONS.map((o) => {
           const selected = o.value === estado ? "selected" : "";
-          return `<option value="${o.value}" ${selected}>${escapeHtml(o.label)}</option>`;
+          return `<div class="glass-dropdown-option ${selected}" data-value="${o.value}">${escapeHtml(o.label)}</div>`;
         }).join("");
+
+        const currentLabel = STATUS_OPTIONS.find((o) => o.value === estado)?.label || "Generado";
 
         return `
           <div class="report-item flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" data-report-id="${id}">
@@ -229,10 +231,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
 
             <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-end">
-              <select class="filter-select px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-emerald-500/50"
-                data-action="status" data-report-id="${id}" data-prev-value="${escapeHtml(estado)}">
-                ${statusOptionsHtml}
-              </select>
+              <div class="glass-dropdown" data-action="status" data-report-id="${id}" data-value="${escapeHtml(estado)}" data-prev-value="${escapeHtml(estado)}">
+                <button type="button" class="glass-dropdown-trigger">${escapeHtml(currentLabel)}</button>
+                <div class="glass-dropdown-menu">
+                  ${statusOptionsHtml}
+                </div>
+              </div>
               <button class="download-btn px-4 py-2 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all"
                 data-action="download" data-report-id="${id}">
                 <i data-lucide="download" class="w-4 h-4"></i>
@@ -307,12 +311,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const next = String(estado || "").trim().toLowerCase();
     if (!id || !next) return;
 
-    const select = reportsListEl?.querySelector(`select[data-action="status"][data-report-id="${id}"]`);
-    const prev = select ? String(select.dataset.prevValue || "") : "";
+    const dropdown = reportsListEl?.querySelector(`.glass-dropdown[data-action="status"][data-report-id="${id}"]`);
+    const prev = dropdown ? String(dropdown.dataset.prevValue || "") : "";
 
-    if (select) {
-      select.disabled = true;
-      select.classList.add("opacity-70");
+    if (dropdown) {
+      dropdown.classList.add("disabled");
     }
 
     try {
@@ -320,8 +323,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!res?.ok) throw new Error(res?.error || "No se pudo actualizar el estado");
 
       const idx = state.reports.findIndex((r) => Number(r.id) === id);
-      if (idx >= 0) state.reports[idx].estado = next;
-      if (select) select.dataset.prevValue = next;
+      if (idx >= 0) {
+        state.reports[idx].estado = next;
+        state.reports[idx].actualizado_en = new Date().toISOString();
+      }
+      if (dropdown) dropdown.dataset.prevValue = next;
+
+      // Re-fetch metadata to reflect actualizado_en from backend (NOW()).
+      try {
+        const refresh = await window.cerper.getSessionReports(sessionId);
+        if (refresh?.ok) {
+          state.reports = Array.isArray(refresh.data) ? refresh.data : state.reports;
+        }
+      } catch (refreshErr) {
+        console.warn("[Reports] No se pudo refrescar metadata tras actualizar estado:", refreshErr);
+      }
 
       notify("Estado actualizado.", "success");
       renderList();
@@ -329,13 +345,22 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error("[Reports] Status update error:", err);
       notify(err?.message || "No se pudo actualizar el estado.", "error");
 
-      if (select) {
-        if (prev) select.value = prev;
+      if (dropdown && prev) {
+        // Revert to previous value
+        const prevOption = STATUS_OPTIONS.find((o) => o.value === prev);
+        if (prevOption) {
+          const trigger = dropdown.querySelector(".glass-dropdown-trigger");
+          if (trigger) trigger.textContent = prevOption.label;
+          dropdown.dataset.value = prev;
+
+          dropdown.querySelectorAll(".glass-dropdown-option").forEach((o) => {
+            o.classList.toggle("selected", o.dataset.value === prev);
+          });
+        }
       }
     } finally {
-      if (select) {
-        select.disabled = false;
-        select.classList.remove("opacity-70");
+      if (dropdown) {
+        dropdown.classList.remove("disabled");
       }
     }
   }
@@ -397,23 +422,114 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderList();
   });
 
-  filterEstadoEl?.addEventListener("change", (e) => {
-    state.estado = e.target.value || "";
-    renderList();
+  // Glass Dropdown Logic
+  function setupGlassDropdown(dropdown) {
+    const trigger = dropdown.querySelector(".glass-dropdown-trigger");
+    const menu = dropdown.querySelector(".glass-dropdown-menu");
+    const options = dropdown.querySelectorAll(".glass-dropdown-option");
+
+    trigger?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (dropdown.classList.contains("disabled")) return;
+
+      // Close other dropdowns
+      document.querySelectorAll(".glass-dropdown.open").forEach((d) => {
+        if (d !== dropdown) d.classList.remove("open");
+      });
+
+      dropdown.classList.toggle("open");
+    });
+
+    options.forEach((opt) => {
+      opt.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const value = opt.dataset.value;
+        const label = opt.textContent;
+
+        // Update selected state
+        options.forEach((o) => o.classList.remove("selected"));
+        opt.classList.add("selected");
+
+        // Update trigger text
+        if (trigger) trigger.textContent = label;
+
+        // Update data-value
+        dropdown.dataset.value = value;
+
+        // Close dropdown
+        dropdown.classList.remove("open");
+
+        // Dispatch custom event
+        dropdown.dispatchEvent(new CustomEvent("dropdown-change", { detail: { value, label } }));
+      });
+    });
+  }
+
+  // Close dropdowns when clicking outside
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".glass-dropdown.open").forEach((d) => d.classList.remove("open"));
   });
+
+  // Setup filter dropdown
+  if (filterEstadoEl) {
+    setupGlassDropdown(filterEstadoEl);
+    filterEstadoEl.addEventListener("dropdown-change", (e) => {
+      state.estado = e.detail.value || "";
+      renderList();
+    });
+  }
 
   reportsListEl?.addEventListener("click", (e) => {
-    const btn = e.target.closest("button[data-action][data-report-id]");
-    if (!btn) return;
-    const action = btn.dataset.action;
-    const reportId = btn.dataset.reportId;
-    if (action === "download") downloadReport(reportId);
-  });
+    // Handle download button
+    const btn = e.target.closest("button[data-action='download'][data-report-id]");
+    if (btn) {
+      downloadReport(btn.dataset.reportId);
+      return;
+    }
 
-  reportsListEl?.addEventListener("change", (e) => {
-    const select = e.target.closest("select[data-action='status'][data-report-id]");
-    if (!select) return;
-    updateStatus(select.dataset.reportId, select.value);
+    // Handle glass dropdown trigger
+    const trigger = e.target.closest(".glass-dropdown-trigger");
+    if (trigger) {
+      const dropdown = trigger.closest(".glass-dropdown");
+      if (dropdown && dropdown.dataset.action === "status") {
+        e.stopPropagation();
+        if (dropdown.classList.contains("disabled")) return;
+
+        // Close other dropdowns
+        document.querySelectorAll(".glass-dropdown.open").forEach((d) => {
+          if (d !== dropdown) d.classList.remove("open");
+        });
+
+        dropdown.classList.toggle("open");
+      }
+      return;
+    }
+
+    // Handle glass dropdown option selection
+    const option = e.target.closest(".glass-dropdown-option");
+    if (option) {
+      const dropdown = option.closest(".glass-dropdown");
+      if (dropdown && dropdown.dataset.action === "status") {
+        e.stopPropagation();
+        const value = option.dataset.value;
+        const label = option.textContent;
+        const reportId = dropdown.dataset.reportId;
+
+        // Update selected state
+        dropdown.querySelectorAll(".glass-dropdown-option").forEach((o) => o.classList.remove("selected"));
+        option.classList.add("selected");
+
+        // Update trigger text
+        const triggerEl = dropdown.querySelector(".glass-dropdown-trigger");
+        if (triggerEl) triggerEl.textContent = label;
+
+        // Close dropdown
+        dropdown.classList.remove("open");
+
+        // Update status
+        updateStatus(reportId, value);
+      }
+    }
   });
 
   await loadSessionMeta();

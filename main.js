@@ -15,7 +15,6 @@ const ROUTES = new Set([
   'procedure_select.html',
   'sessions_panel.html',
   'session_detail.html',
-  'results_general.html',
   'reports.html',
   // Flujo input_data
   'input_data/input_data_info.html',

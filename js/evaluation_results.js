@@ -1,23 +1,13 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  const contenedor = document.querySelector(".analysis-grid");
-  const btnEvaluar = document.getElementById("btn-evaluar");
-  const btnContinuar = document.getElementById("btn-continuar");
   const btnVolver = document.getElementById("go-back");
-  const menuEvaluaciones = document.getElementById("menu-evaluaciones");
   const menuVisualizaciones = document.getElementById("menu-visualizaciones");
   const menuConfiguracion = document.getElementById("menu-configuracion");
-  const progressBar = document.getElementById("progress-bar");
-  const progressPercent = document.getElementById("progress-percent");
-  const progressStatus = document.getElementById("progress-status");
-  const viewEvaluaciones = document.getElementById("view-evaluaciones");
   const viewVisualizaciones = document.getElementById("view-visualizaciones");
   const viewConfiguracion = document.getElementById("view-configuracion");
   const emptyState = document.getElementById("empty-state");
   const emptyTitle = document.getElementById("empty-title");
   const emptyText = document.getElementById("empty-text");
   const runInfo = document.getElementById("run-info");
-
-  const RESULTS_ONLY = true;
 
   function readResultsSessionId() {
     return (
@@ -46,6 +36,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnVizList = document.getElementById("btn-viz-list");
   const btnCardTheme = document.getElementById("btn-card-theme");
   const btnVizDangerToggle = document.getElementById("btn-viz-danger-toggle");
+  const btnVizFullscreen = document.getElementById("btn-viz-fullscreen");
   const vizRolodexView = document.getElementById("viz-rolodex-view");
   const vizListView = document.getElementById("viz-list-view");
   const vizCardsContainer = document.getElementById("viz-cards-container");
@@ -54,13 +45,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const vizHoverPreview = document.getElementById("viz-hover-preview");
   const vizHoverImage = document.getElementById("viz-hover-image");
 
-  const PROGRESS_POLL_INTERVAL_MS = 700;
-  let progressPollTimer = null;
-  let stopProgressPolling = false;
-  let isEvaluating = false;
   let activeView = "visualizaciones";
   let visualizacionesLoading = false;
-  let expectedResultsCount = 0; // Track expected results from last evaluation
 
   // Visualization state
   let allGraphs = [];
@@ -82,17 +68,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   let cachedResultsSessionId = null;
   let cacheVersion = sessionStorage.getItem("evalCacheVersion") || "0";
 
-  // Function to invalidate cache (called after new evaluation or when inputs change)
-  function invalidateCache() {
-    cachedGraphsSessionId = null;
-    cachedResultsSessionId = null;
-    allGraphs = [];
-    allResults = [];
-    cacheVersion = String(Date.now());
-    sessionStorage.setItem("evalCacheVersion", cacheVersion);
-    console.log("[EvalSelect] Cache invalidado");
-  }
-
   // === Obtener y mostrar el usuario actual ===
   try {
     const userRes = await window.cerper.getCurrentUser();
@@ -104,14 +79,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
   } catch (err) {
-    console.warn("[EvalSelect] No se pudo obtener usuario:", err);
+    console.warn("[EvalResults] No se pudo obtener usuario:", err);
   }
 
   // === Configuración dinámica de formateo (dataframes) ===
   try {
     await window.DataframeRenderer?.loadConfig?.();
   } catch (err) {
-    console.warn("[EvalSelect] No se pudo cargar formatting config:", err);
+    console.warn("[EvalResults] No se pudo cargar formatting config:", err);
   }
 
   // --- Boton Volver ---
@@ -176,29 +151,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
     } catch (err) {
-      console.warn("[EvalSelect] No se pudo hidratar sesión:", err);
+      console.warn("[EvalResults] No se pudo hidratar sesión:", err);
     }
   }
 
-  const MENU_ACTIVE_CLASSES = [
-    "bg-blue-500/15",
-    "border",
-    "border-blue-500/20",
-    "text-blue-200",
-    "hover:bg-blue-500/25",
-  ];
-  const MENU_INACTIVE_CLASSES = ["text-gray-300", "hover:text-white", "hover:bg-white/8"];
-
   function setMenuActiveState(el, isActive) {
     if (!el) return;
-    if (isActive) {
-      el.classList.add(...MENU_ACTIVE_CLASSES);
-      el.classList.remove(...MENU_INACTIVE_CLASSES);
-    } else {
-      el.classList.remove(...MENU_ACTIVE_CLASSES);
-      el.classList.add(...MENU_INACTIVE_CLASSES);
-      el.classList.remove("border", "border-blue-500/20");
-    }
+    el.classList.toggle("active", isActive);
   }
 
   function showVisualizacionesEmpty(title, message) {
@@ -656,8 +615,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!sessionId) {
       showVisualizacionesEmpty(
-        "No hay sesión activa",
-        "Regresa al flujo de sesión y ejecuta las evaluaciones para ver gráficos."
+        "No se encontró la sesión",
+        "Abre este reporte desde el panel de sesiones o reportes para ver las visualizaciones."
       );
       return;
     }
@@ -665,10 +624,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     // === CACHE CHECK: Skip fetch if we already have data for this session ===
     const currentCacheVersion = sessionStorage.getItem("evalCacheVersion") || "0";
     if (cachedGraphsSessionId === sessionId && cacheVersion === currentCacheVersion && allGraphs.length > 0) {
-      console.log("[EvalSelect] Usando gráficos en cache");
-      applyVizFilters();
-      initVizCards();
-      if (emptyState) emptyState.classList.add("hidden");
+      console.log("[EvalResults] Usando gráficos en cache");
+      applyFilters();
+      setVizView(vizCurrentView);
       return;
     }
 
@@ -692,7 +650,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       res = await window.cerper.getEvaluacionesGraficos(sessionId);
     } catch (err) {
-      console.error("[EvalSelect] Error obteniendo gráficos:", err);
+      console.error("[EvalResults] Error obteniendo gráficos:", err);
       showVisualizacionesEmpty("Error al cargar visualizaciones", "No se pudieron obtener los gráficos.");
       visualizacionesLoading = false;
       return;
@@ -713,15 +671,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (graphs.length === 0) {
       if (!lastRunAt) {
         showVisualizacionesEmpty(
-          "No hay nada que ver aquí aún",
-          "Ejecuta las evaluaciones para ver algo."
+          "No hay gráficos para esta sesión",
+          "Esta sesión aún no tiene una corrida registrada, por lo que no hay gráficos para mostrar."
         );
         visualizacionesLoading = false;
         return;
       }
       showVisualizacionesEmpty(
-        "Aún no hay gráficos para mostrar",
-        "Se encontró una corrida previa, pero no hay gráficos generados en la última ejecución."
+        "No hay gráficos para esta sesión",
+        "Se encontró una corrida registrada para esta sesión, pero no se encontraron gráficos guardados."
       );
       visualizacionesLoading = false;
       return;
@@ -831,6 +789,76 @@ document.addEventListener("DOMContentLoaded", async () => {
   btnVizRolodex?.addEventListener("click", () => setVizView("rolodex"));
   btnVizList?.addEventListener("click", () => setVizView("list"));
 
+  // Fullscreen image modal
+  function showFullscreenImage() {
+    if (filteredGraphs.length === 0 || vizActiveIndex < 0) return;
+    const g = filteredGraphs[vizActiveIndex];
+    if (!g?.grafico_data) return;
+
+    const title = g?.test_titulo || g?.nombre_interno || "Visualización";
+    const subtitleParts = [];
+    if (g?.analito) subtitleParts.push(g.analito);
+    if (hasMultipleLevels && g?.nivel != null) subtitleParts.push(`Nivel ${g.nivel}`);
+    const subtitle = subtitleParts.join(" · ");
+
+    // Remove any existing overlay
+    const existing = document.querySelector(".cs-inline-modal-overlay");
+    if (existing) existing.remove();
+
+    // Create overlay with dark variant
+    const overlay = document.createElement("div");
+    overlay.className = "cs-inline-modal-overlay cs-inline-modal-overlay--dark";
+
+    // Create modal with image viewer variant
+    const modal = document.createElement("div");
+    modal.className = "cs-inline-modal cs-inline-modal--image-viewer";
+
+    modal.innerHTML = `
+      <div class="cs-inline-modal__header">
+        <div class="cs-inline-modal__header-info">
+          <span class="cs-inline-modal__badge">#${vizActiveIndex + 1}</span>
+          <div>
+            <h3 class="cs-inline-modal__header-title">${title}</h3>
+            ${subtitle ? `<p class="cs-inline-modal__header-subtitle">${subtitle}</p>` : ""}
+          </div>
+        </div>
+        <button class="cs-inline-modal__close-btn" aria-label="Cerrar">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="cs-inline-modal__image-container">
+        <img class="cs-inline-modal__image" src="${g.grafico_data}" alt="${title}">
+      </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Close handlers
+    const closeModal = () => {
+      overlay.classList.add("is-closing");
+      setTimeout(() => overlay.remove(), 200);
+    };
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeModal();
+    });
+
+    modal.querySelector(".cs-inline-modal__close-btn")?.addEventListener("click", closeModal);
+
+    document.addEventListener("keydown", function escHandler(e) {
+      if (e.key === "Escape") {
+        closeModal();
+        document.removeEventListener("keydown", escHandler);
+      }
+    });
+  }
+
+  // Fullscreen button event listener
+  btnVizFullscreen?.addEventListener("click", showFullscreenImage);
+
   // Keyboard navigation
   document.addEventListener("keydown", handleVizKeydown);
 
@@ -839,7 +867,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     activeView = validViews.includes(nextView) ? nextView : "visualizaciones";
     sessionStorage.setItem("evalResultsView", activeView);
 
-    if (viewEvaluaciones) viewEvaluaciones.classList.add("hidden");
     if (viewVisualizaciones)
       viewVisualizaciones.classList.toggle("hidden", activeView !== "visualizaciones");
     if (viewConfiguracion)
@@ -1093,8 +1120,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!sessionId) {
       showResultadosEmpty(
-        "No hay sesión activa",
-        "Regresa al flujo de sesión y ejecuta las evaluaciones para ver resultados."
+        "No se encontró la sesión",
+        "Abre este reporte desde el panel de sesiones o reportes para ver los resultados."
       );
       return;
     }
@@ -1102,7 +1129,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // === CACHE CHECK: Skip fetch if we already have data for this session ===
     const currentCacheVersion = sessionStorage.getItem("evalCacheVersion") || "0";
     if (cachedResultsSessionId === sessionId && cacheVersion === currentCacheVersion && allResults.length > 0) {
-      console.log("[EvalSelect] Usando resultados en cache");
+      console.log("[EvalResults] Usando resultados en cache");
       applyResultFilters();
       hideResultadosEmpty();
       return;
@@ -1135,7 +1162,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       res = await window.cerper.getResultadosPreliminares(sessionId);
     } catch (err) {
-      console.error("[EvalSelect] Error obteniendo resultados:", err);
+      console.error("[EvalResults] Error obteniendo resultados:", err);
       cleanupResultSpinner();
       showResultadosEmpty("Error al cargar resultados", "No se pudieron obtener los resultados preliminares.");
       resultadosLoading = false;
@@ -1158,8 +1185,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (results.length === 0) {
       cleanupResultSpinner();
       showResultadosEmpty(
-        "No hay resultados aún",
-        "Ejecuta las evaluaciones para ver los resultados preliminares."
+        "No hay resultados para esta sesión",
+        "No se encontraron resultados preliminares guardados para esta sesión."
       );
       resultadosLoading = false;
       return;
@@ -1227,425 +1254,4 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Restore last view (results/visualizations only)
   const savedView = sessionStorage.getItem("evalResultsView");
   setActiveView(savedView === "resultados" || savedView === "configuracion" ? savedView : "visualizaciones");
-
-  // Página solo-lectura: no cargar ni ejecutar evaluaciones aquí.
-  if (RESULTS_ONLY) return;
-
-  function clampPercent(value) {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return 0;
-    return Math.max(0, Math.min(100, Math.round(n)));
-  }
-
-  function setProgressUi({ percent = 0, badgeVariant = "pending", badgeText = "Pendiente" }) {
-    const safePercent = clampPercent(percent);
-
-    if (progressBar) progressBar.style.width = `${safePercent}%`;
-    if (progressPercent) progressPercent.textContent = `${safePercent}%`;
-
-    if (!progressStatus) return;
-    const base = "text-xs px-2 py-1 rounded-full font-medium";
-    const variants = {
-      pending: "bg-yellow-500/20 text-yellow-400",
-      running: "bg-blue-500/20 text-blue-400",
-      success: "bg-emerald-500/20 text-emerald-400",
-      warning: "bg-yellow-500/20 text-yellow-400",
-      error: "bg-red-500/20 text-red-400",
-    };
-    progressStatus.className = `${base} ${variants[badgeVariant] || variants.pending}`;
-    progressStatus.textContent = badgeText;
-  }
-
-  const PROGRESS_MESSAGE_LABELS = {
-    inicializando: "Inicializando",
-    preparando_evaluacion: "Preparando",
-    cargando_inputs: "Cargando datos",
-    ejecutando: "Ejecutando",
-    completed: "Completo",
-    completed_with_errors: "Completo con errores",
-    failed: "Falló",
-  };
-
-  function formatProgressCurrent(current) {
-    if (!current) return "";
-    const parts = [];
-    if (current.analito) parts.push(String(current.analito));
-    if (current.nivel != null) parts.push(`Nivel ${current.nivel}`);
-    return parts.length ? ` (${parts.join(" · ")})` : "";
-  }
-
-  function renderExecutionProgress(progress) {
-    if (!progress) {
-      setProgressUi({ percent: 0, badgeVariant: "pending", badgeText: "Pendiente" });
-      return;
-    }
-
-    const percent = clampPercent(progress.percent_tasks);
-    const processed = Number(progress.processed_tasks) || 0;
-    const total = Number(progress.total_tasks) || 0;
-    const saved = Number(progress.saved_results) || 0;
-    const failed = Number(progress.failed_tasks) || 0;
-    const stage =
-      PROGRESS_MESSAGE_LABELS[progress.message] ||
-      PROGRESS_MESSAGE_LABELS[progress.status] ||
-      (progress.message ? String(progress.message) : "Ejecutando");
-    const currentText = formatProgressCurrent(progress.current);
-
-    if (progress.status === "running") {
-      if (total > 0) {
-        const failedText = failed > 0 ? ` · ✗${failed}` : "";
-        setProgressUi({
-          percent,
-          badgeVariant: "running",
-          badgeText: `${stage}: ${processed}/${total}${failedText}${currentText}`,
-        });
-      } else {
-        setProgressUi({ percent, badgeVariant: "running", badgeText: `${stage}${currentText}` });
-      }
-      return;
-    }
-
-    if (progress.status === "completed") {
-      const details = total > 0 ? `✓${saved}/${total}` : "Completo";
-      setProgressUi({ percent: 100, badgeVariant: "success", badgeText: `Completo · ${details}` });
-      return;
-    }
-
-    if (progress.status === "completed_with_errors") {
-      const details = total > 0 ? `✓${saved} · ✗${failed}` : "Con errores";
-      setProgressUi({ percent: 100, badgeVariant: "warning", badgeText: `Con errores · ${details}` });
-      return;
-    }
-
-    if (progress.status === "failed") {
-      setProgressUi({ percent, badgeVariant: "error", badgeText: "Falló" });
-      return;
-    }
-
-    setProgressUi({ percent, badgeVariant: "running", badgeText: `${stage}${currentText}` });
-  }
-
-  function isTerminalProgress(status) {
-    return status === "completed" || status === "completed_with_errors" || status === "failed";
-  }
-
-  async function getEvaluacionesProgressSafe() {
-    if (!window.cerper || typeof window.cerper.getEvaluacionesProgress !== "function") {
-      return { ok: false, error: "progress_api_not_available" };
-    }
-    try {
-      return await window.cerper.getEvaluacionesProgress(sessionId);
-    } catch (err) {
-      return { ok: false, error: err?.message || String(err) };
-    }
-  }
-
-  function clearProgressPolling() {
-    stopProgressPolling = true;
-    if (progressPollTimer) {
-      clearTimeout(progressPollTimer);
-      progressPollTimer = null;
-    }
-  }
-
-  function startProgressPolling(
-    { stopOnTerminal = true, skipTerminalRender = false, onTerminal = null } = {}
-  ) {
-    clearProgressPolling();
-    stopProgressPolling = false;
-
-    const loop = async () => {
-      if (stopProgressPolling) return;
-
-      const progressRes = await getEvaluacionesProgressSafe();
-      if (progressRes?.error === "progress_api_not_available") {
-        clearProgressPolling();
-        return;
-      }
-      if (progressRes?.ok && progressRes.data) {
-        const terminal = isTerminalProgress(progressRes.data.status);
-        if (!(skipTerminalRender && terminal)) {
-          renderExecutionProgress(progressRes.data);
-        }
-        if (terminal && stopOnTerminal) {
-          clearProgressPolling();
-          if (typeof onTerminal === "function") onTerminal(progressRes.data);
-          return;
-        }
-      } else if (progressRes?.status !== 404 && progressRes?.error !== "progress_not_found") {
-        console.warn("[EvalSelect] Progreso no disponible:", progressRes?.error || progressRes);
-      }
-
-      if (stopProgressPolling) return;
-      progressPollTimer = setTimeout(loop, PROGRESS_POLL_INTERVAL_MS);
-    };
-
-    loop();
-  }
-
-  // === Cargar evaluaciones disponibles desde la base ===
-  let res;
-  try {
-    res = await window.cerper.getEvaluaciones({
-      lab_key: labKey,
-      tipo_analisis: tipoAnalisis,
-      tipo_dato: tipoDato,
-      modo_cualitativo: modoCualitativo
-    });
-  } catch (err) {
-    console.error("[EvalSelect] Error de conexión:", err);
-    notify("No se pudieron cargar las evaluaciones.", "error");
-    return;
-  }
-
-  // === Obtener aplicabilidad desde la base ===
-  let resTests;
-  try {
-    resTests = await window.cerper.getTestsWithMetadata(sessionId);
-    if (!resTests.ok) throw new Error(resTests.error || "Error al cargar pruebas.");
-  } catch (err) {
-    console.error("[EvalSelect] Error cargando metadata:", err);
-    notify("No se pudieron cargar las condiciones de elegibilidad.", "warning");
-    resTests = { data: [] };
-  }
-
-
-  if (!res.ok) {
-    console.error("[EvalSelect] Error:", res.error);
-    notify("Error al cargar las evaluaciones del laboratorio.", "error");
-    return;
-  }
-
-  // === Renderizar tarjetas dinámicamente ===
-  contenedor.innerHTML = "";
-  const seleccionadas = new Set();
-
-
-  if (!res.data || res.data.length === 0) {
-    contenedor.innerHTML = `<p style="text-align:center; opacity:0.8;">No hay pruebas disponibles para este tipo de análisis.</p>`;
-    return;
-  }
-
-  // Color palette for card icons (neon/intense variants, no purple-like colors)
-  const iconColors = ['cyan', 'teal', 'lime', 'amber', 'orange', 'rose', 'sky', 'yellow'];
-  let colorIndex = 0;
-
-  for (const test of res.data) {
-    const card = document.createElement("div");
-    card.className = "glass-card pokemon-card rounded-2xl overflow-hidden group cursor-pointer";
-    card.dataset.catalogId = test.id;
-
-    // Pick a color for this card
-    const color = iconColors[colorIndex % iconColors.length];
-    colorIndex++;
-
-    // --- Build Pokemon-style card: title + large centered icon
-    card.innerHTML = `
-      <div class="pokemon-card-inner">
-        <span class="status-badge badge-available">Disponible</span>
-        <h3 class="pokemon-card-title group-hover:text-${color}-300">${test.titulo}</h3>
-        <div class="pokemon-card-icon-wrapper">
-          <div class="card-icon text-${color}-400"></div>
-        </div>
-      </div>
-    `;
-
-    // --- Icono (seguro): usa módulo IconSafety
-    const rawIcon = (test.icon_value || "").trim();
-    const iconSlot = card.querySelector('.card-icon');
-    const ok = await window.IconSafety.attachIcon(iconSlot, rawIcon);
-    if (!ok) {
-      iconSlot.innerHTML = `<i data-lucide="bar-chart-2"></i>`;
-    }
-
-    // === Verificar si es aplicable según metadata ===
-    const testMeta = resTests.data.find(t => t.id === test.id);
-    const aplicable = testMeta ? testMeta.aplicable === 1 : true;
-
-    const statusBadge = card.querySelector('.status-badge');
-    if (!aplicable) {
-      card.classList.add("blocked");
-      statusBadge.className = "status-badge badge-blocked";
-      statusBadge.textContent = "No aplicable";
-    }
-
-    // === Selección solo si aplicable ===
-    card.addEventListener("click", () => {
-      if (isEvaluating) return;
-      if (!aplicable) {
-        const customMsg = testMeta?.mensaje_no_aplicable;
-        notify(customMsg || "No aplicable, condiciones no cumplidas para ejecutar esta prueba", "warning");
-        return;
-      }
-      const id = test.id;
-      if (seleccionadas.has(id)) {
-        seleccionadas.delete(id);
-        card.classList.remove("selected");
-        statusBadge.className = "status-badge badge-available";
-        statusBadge.textContent = "Disponible";
-      } else {
-        seleccionadas.add(id);
-        card.classList.add("selected");
-        statusBadge.className = "status-badge badge-selected";
-        statusBadge.textContent = "Seleccionada";
-      }
-    });
-
-    contenedor.appendChild(card);
-  }
-
-
-  // Render icons depending on available library
-  if (window.feather && typeof window.feather.replace === "function") {
-    window.feather.replace();
-  }
-  if (window.lucide && typeof window.lucide.createIcons === "function") {
-    window.lucide.createIcons();
-  }
-
-  // === Función auxiliar ===
-  const bloquearBotones = (estado) => {
-    btnEvaluar.disabled = estado;
-    btnContinuar.disabled = estado;
-    btnEvaluar.style.opacity = estado ? 0.6 : 1;
-    btnContinuar.style.opacity = estado ? 0.6 : 1;
-    if (contenedor) {
-      contenedor.style.pointerEvents = estado ? "none" : "auto";
-      contenedor.style.opacity = estado ? "0.7" : "1";
-    }
-  };
-
-  // Si existe una evaluación en curso, reflejar progreso al entrar
-  const initialProgressRes = await getEvaluacionesProgressSafe();
-  if (initialProgressRes?.ok && initialProgressRes.data) {
-    if (initialProgressRes.data.status === "running") {
-      renderExecutionProgress(initialProgressRes.data);
-      isEvaluating = true;
-      bloquearBotones(true);
-      startProgressPolling({
-        stopOnTerminal: true,
-        skipTerminalRender: false,
-        onTerminal: (finalProgress) => {
-          isEvaluating = false;
-          bloquearBotones(false);
-          if (finalProgress && activeView === "visualizaciones") loadVisualizaciones();
-        },
-      });
-    } else {
-      setProgressUi({ percent: 0, badgeVariant: "pending", badgeText: "Listo para evaluar" });
-    }
-  }
-
-  // === Botón EVALUAR ===
-  btnEvaluar.addEventListener("click", async () => {
-    if (seleccionadas.size === 0) {
-      notify("Selecciona al menos una evaluación.", "warning");
-      return;
-    }
-
-    bloquearBotones(true);
-    isEvaluating = true;
-    setProgressUi({ percent: 0, badgeVariant: "running", badgeText: "Iniciando..." });
-    notify("Ejecutando evaluaciones seleccionadas...", "info");
-
-    try {
-      const result = await window.cerper.runEvaluations({
-        session_id: sessionId,
-        catalog_ids: Array.from(seleccionadas)
-      });
-
-      if (!result.ok) {
-        throw new Error(result.error || "Error desconocido");
-      }
-
-      // Backend starts processing in background - now poll for completion
-      console.log("[EvalSelect] Evaluaciones iniciadas, polling progreso...");
-      startProgressPolling({
-        stopOnTerminal: true,
-        skipTerminalRender: false,
-        onTerminal: (finalProgress) => {
-          isEvaluating = false;
-          bloquearBotones(false);
-
-          // Invalidate cache - new results are available
-          invalidateCache();
-
-          // Save expected count for validation when clicking Continuar
-          if (finalProgress?.total_tasks) {
-            expectedResultsCount = finalProgress.total_tasks;
-            console.log(`[EvalSelect] Guardando expectedResultsCount: ${expectedResultsCount}`);
-          }
-
-          if (finalProgress?.status === "completed") {
-            notify("Evaluaciones completadas y guardadas correctamente.", "success");
-          } else if (finalProgress?.status === "completed_with_errors") {
-            notify("Evaluaciones completadas con algunos errores.", "warning");
-          } else {
-            notify("Las evaluaciones finalizaron.", "info");
-          }
-
-          // Refresh visualizations if on that view
-          if (activeView === "visualizaciones") loadVisualizaciones();
-          if (activeView === "resultados") loadResultados();
-        },
-      });
-
-    } catch (err) {
-      console.error("[EvalSelect] Error al iniciar evaluaciones:", err);
-      notify("Ocurrió un error al iniciar las evaluaciones.", "error");
-      setProgressUi({ percent: 0, badgeVariant: "error", badgeText: "Error" });
-      clearProgressPolling();
-      isEvaluating = false;
-      bloquearBotones(false);
-    }
-  });
-
-  // === Botón CONTINUAR ===
-  btnContinuar.addEventListener("click", async () => {
-    if (!sessionId) {
-      notify("No hay sesión activa.", "error");
-      return;
-    }
-
-    // Use lightweight endpoint to check results count
-    try {
-      const statusRes = await window.cerper.getSessionResultsStatus(sessionId);
-
-      if (!statusRes?.ok) {
-        // If server is down, allow navigation anyway - pdf_config will validate
-        console.warn("[EvalSelect] No se pudo verificar estado, navegando de todos modos...");
-        notify("Redirigiendo a configuración de PDF...", "info");
-        window.cerper.openPage("pdf_config.html");
-        return;
-      }
-
-      if (!statusRes.has_results || statusRes.results_count === 0) {
-        notify("No hay resultados de evaluación. Ejecuta las pruebas primero.", "warning");
-        return;
-      }
-
-      // Validate that we have all expected results
-      if (expectedResultsCount > 0 && statusRes.results_count < expectedResultsCount) {
-        notify(
-          `Resultados incompletos: ${statusRes.results_count}/${expectedResultsCount}. ` +
-          `Espera a que termine o vuelve a ejecutar.`,
-          "warning"
-        );
-        return;
-      }
-
-      console.log(`[EvalSelect] Validación OK: ${statusRes.results_count} resultados`);
-      notify("Redirigiendo a configuración de PDF...", "info");
-      window.cerper.openPage("pdf_config.html");
-    } catch (err) {
-      console.error("[EvalSelect] Error checking results:", err);
-      // On error, still allow navigation - pdf_config will do final validation
-      notify("Redirigiendo a configuración de PDF...", "info");
-      window.cerper.openPage("pdf_config.html");
-    }
-  });
 });
-
-// === Notificaciones flotantes ===
-// NOTE: notify() is now provided by js/notify.js (centralized module)
-// Ensure evaluation_select.html includes <script src="js/notify.js"></script>
