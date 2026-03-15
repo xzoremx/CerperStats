@@ -9,7 +9,15 @@
       "Bash(mkdir -p:*)",
       "Bash(rm:*)",
       "Bash(npm run build:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(xargs ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(docker compose:*)",
+      "Bash(netstat:*)",
+      "Bash(pg_dump:*)",
+      "Bash(PGPASSWORD=PristonXzoreX105 pg_restore:*)",
+      "Bash(PGPASSWORD=PristonXzoreX105 psql:*)",
+      "Bash(node:*)"
     ]
   }
 }
