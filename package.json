@@ -12,7 +12,7 @@
     "pack": "npm run prebuild && electron-builder --dir",
     "dist": "npm run prebuild && electron-builder",
     "dist:win": "npm run prebuild && electron-builder --win",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "npm run prebuild && electron-builder install-app-deps"
   },
   "author": "Renato Huamani",
   "license": "MIT",
