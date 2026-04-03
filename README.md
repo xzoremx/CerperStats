@@ -27,7 +27,7 @@ Ubicado en `proxy/` (en produccion corre en AWS Lightsail):
 - Endpoints: labs, sessions, inputs, evaluaciones, reports, results, tests formatting config.
 - Admin: panel estatico en `/admin-panel/` y API en `/admin` (usa header `X-Admin-Auth`).
 
-### 3) PostgreSQL (backend)
+### 3) PostgreSQL (BD)
 
 Persistencia principal (usuarios, labs, sessions, inputs, results_general, reports, tests_catalog, etc.).
 

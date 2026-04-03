@@ -17,7 +17,15 @@
       "Bash(pg_dump:*)",
       "Bash(PGPASSWORD=PristonXzoreX105 pg_restore:*)",
       "Bash(PGPASSWORD=PristonXzoreX105 psql:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(psql:*)",
+      "Bash(grep -E \"\\(^[^/]+$|/$\\)\")",
+      "Bash(git ls-tree:*)",
+      "Bash(ls -1d */)",
+      "Bash(git add:*)",
+      "Bash(git commit -m 'Automate chrome-bundled generation in postinstall:*)",
+      "Bash(git push:*)",
+      "Bash(git commit -m ':*)"
     ]
   }
 }
